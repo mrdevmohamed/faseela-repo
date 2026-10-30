@@ -9,7 +9,7 @@ recipes/      one recipe.toml per package (toolchain, base, system, boot, gui, e
 scripts/      recipe tooling: check-recipes, recipe-ids, fill-sha256,
               gen-recipes-extra, pin-nawa-source
 .github/workflows/
-  ci.yml        validates the recipe tree (required check on master)
+  ci.yml        validates the recipe tree (required check on main)
   packages.yml  builds packages and publishes them
 ```
 
@@ -33,13 +33,13 @@ order.
   nawa upgrade --repo https://github.com/mrdevmohamed/faseela-repo/releases/download/stable
   ```
 
-* **ISO.** faseela fetches these recipes from `master` at build time
+* **ISO.** faseela fetches these recipes from `main` at build time
   (`bootstrap/fetch-recipes.sh`) and, on a `v*` tag, records the commit it used,
   so a release can be rebuilt from the same recipes.
 
 * **Setup.** See the header of `.github/workflows/packages.yml` for the
   one-time secret and optional variables (`PKG_TAG`, `DISTRO_REPO`, `DISTRO_REF`).
-  Make `CI passed` a required check on `master`: faseela builds from it.
+  Make `CI passed` a required check on `main`: faseela builds from it.
 
 ## Working on a recipe
 
@@ -51,7 +51,7 @@ python3 scripts/recipe-ids.py recipes    # list category / name / id
 Whether every source URL is still reachable is checked by the ISO workflow with
 `scripts/check-sources.py` of faseela (`python3 check-sources.py <path to recipes>`).
 
-A push to `master` that touches `recipes/**` builds the changed packages. To
+A push to `main` that touches `recipes/**` builds the changed packages. To
 build others, run *Build packages* by hand (names, `@category` or `ALL`).
 To try a recipe change inside the ISO build before merging it, point faseela at
 a branch: `RECIPES_REF=<branch> bootstrap/fetch-recipes.sh`, or the local

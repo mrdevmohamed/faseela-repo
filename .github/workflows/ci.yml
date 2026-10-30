@@ -4,8 +4,8 @@ name: CI
 # and the scripts that work on it. Building and publishing is packages.yml.
 #
 # The distribution (github.com/mrdevmohamed/faseela) takes its recipes from the
-# master branch of this repository, so a red master here breaks its builds:
-# make "CI passed" a required check in the branch protection of master.
+# main branch of this repository, so a red main here breaks its builds:
+# make "CI passed" a required check in the branch protection of main.
 
 on:
   push:

@@ -6,6 +6,10 @@ Usage:
     python3 gen-recipes-extra.py extra1   # dev + archive tools only
     python3 gen-recipes-extra.py extra2   # networking + editors only
     python3 gen-recipes-extra.py extra3   # misc + libs + hw only
+
+WARNING: this OVERWRITES recipes/extra/*/recipe.toml. Several of them have been
+edited by hand since they were generated (pins, fixes), so run it only for a
+new package and review `git diff` before committing.
 """
 import os
 import sys
@@ -13,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from recipe_data_extra import EXTRA
 
-ROOT = "/home/z/my-project/mydistro/recipes"
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "recipes")
 
 
 def toml_str_list(items):

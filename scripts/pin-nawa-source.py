@@ -10,8 +10,9 @@ package version (read from the tarball's Cargo.toml) and `rel`:
     python3 scripts/pin-nawa-source.py <40-hex sha>  # an explicit commit
 
 The commit must already be PUSHED to GitHub (the hash is computed from the
-tarball GitHub serves). bootstrap/fetch-nawa.sh reads the same pin, so the
-bootstrap and the recipe can never disagree about which nawa is shipped.
+tarball GitHub serves). bootstrap/fetch-nawa.sh of the distribution repository
+(github.com/mrdevmohamed/faseela) reads the same pin, so the bootstrap and the
+recipe can never disagree about which nawa is shipped.
 """
 import hashlib
 import io

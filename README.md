@@ -6,7 +6,7 @@ packages**.
 
 ```
 recipes/      one recipe.toml per package (toolchain, base, system, boot, gui, extra)
-scripts/      recipe tooling: check-recipes, recipe-ids, check-sources, fill-sha256,
+scripts/      recipe tooling: check-recipes, recipe-ids, fill-sha256,
               gen-recipes-extra, pin-nawa-source
 .github/workflows/
   ci.yml        validates the recipe tree (required check on master)
@@ -47,6 +47,9 @@ order.
 python3 -I scripts/check-recipes.py      # validate the tree
 python3 scripts/recipe-ids.py recipes    # list category / name / id
 ```
+
+Whether every source URL is still reachable is checked by the ISO workflow with
+`scripts/check-sources.py` of faseela (`python3 check-sources.py <path to recipes>`).
 
 A push to `master` that touches `recipes/**` builds the changed packages. To
 build others, run *Build packages* by hand (names, `@category` or `ALL`).

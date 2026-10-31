@@ -2,7 +2,7 @@
 [package]
 name = "coreutils"
 version = "9.12"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU core utilities (ls, cp, cat, ...)"
 license = ["GPL-3.0"]
@@ -10,8 +10,10 @@ source = "https://mirrors.kernel.org/gnu/coreutils/coreutils-9.12.tar.xz"
 sha256 = "a480198559733e9b3da999e90543ac6f888a2caa544d8d664c5a1f17e528e210"
 
 [depends]
-build = []
-run = []
+# factor/expr link libgmp when it is present; declare it so the graph (and a
+# user install) pulls it in instead of picking it up from the bootstrap seed.
+build = ["gmp"]
+run = ["gmp"]
 
 [build]
 configure = "FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr --enable-install-program=hostname --enable-no-install-program=kill,uptime"

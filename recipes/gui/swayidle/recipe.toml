@@ -1,0 +1,26 @@
+# gui recipe: swayidle — without logind (no systemd/elogind here).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r swayidle` pins it.
+[package]
+name = "swayidle"
+version = "1.8.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Idle management daemon for Wayland (lock/suspend on timeout)"
+license = ["MIT"]
+source = "https://github.com/swaywm/swayidle/releases/download/%{version}/swayidle-%{version}.tar.gz"
+sha256 = "16b3e76a117f2f0ff2ee5fbebf38849595cdd705db1cd5f6aceaed00d71b3aa1"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols"]
+run = ["wayland"]
+
+[build]
+configure = '''
+opts=
+for o in man-pages logind; do
+    if grep -qs "'$o'" meson_options.txt; then opts="$opts -D $o=disabled"; fi
+done
+meson setup build --prefix=/usr --libdir=lib --buildtype=release $opts
+'''
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,35 @@
+# gui recipe: swaylock — no PAM in this distro: it authenticates against /etc/shadow,
+# so the binary is setuid root (asserted again in post_install).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r swaylock` pins it.
+[package]
+name = "swaylock"
+version = "1.8.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Screen locker for Wayland (sway)"
+license = ["MIT"]
+source = "https://github.com/swaywm/swaylock/releases/download/v%{version}/swaylock-%{version}.tar.gz"
+sha256 = "6a1175442380b87b2d2868c4a5366ee3592163158d02e3a7fbf3a0bfe07d8b00"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libxkbcommon", "cairo", "libxcrypt"]
+run = ["wayland", "libxkbcommon", "cairo", "libxcrypt", "shadow"]
+
+[build]
+configure = '''
+opts=
+for o in man-pages gdk-pixbuf; do
+    if grep -qs "'$o'" meson_options.txt; then opts="$opts -D $o=disabled"; fi
+done
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -D pam=disabled $opts
+'''
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+chmod 4755 %{pkgdir}/usr/bin/swaylock
+'''
+
+[hooks]
+post_install = '''
+chown root:root /usr/bin/swaylock && chmod 4755 /usr/bin/swaylock
+'''

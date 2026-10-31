@@ -1,0 +1,20 @@
+# system recipe: lm-sensors — upstream tag is V3-6-0; change URL and source_dir when bumping.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lm-sensors` pins it.
+[package]
+name = "lm-sensors"
+version = "3.6.0"
+rel = 1
+arch = ["x86_64"]
+summary = "lm-sensors: temperature, voltage and fan readings (sensors, sensors-detect)"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://github.com/lm-sensors/lm-sensors/archive/refs/tags/V3-6-0.tar.gz"
+sha256 = "0591f9fa0339f0d15e75326d0365871c2d4e2ed8aa1ff759b3a55d3734b7d197"
+source_dir = "lm-sensors-3-6-0"
+
+[depends]
+build = ["flex", "bison"]
+run = ["perl"]
+
+[build]
+compile = "make -j%{jobs} PREFIX=/usr"
+install = "make PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man DESTDIR=%{pkgdir} install"

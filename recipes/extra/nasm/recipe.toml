@@ -1,0 +1,20 @@
+# extra recipe: nasm — also builds libjpeg-turbo's SIMD code.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r nasm` pins it.
+[package]
+name = "nasm"
+version = "2.16.03"
+rel = 1
+arch = ["x86_64"]
+summary = "NASM — the Netwide Assembler"
+license = ["BSD-2-Clause"]
+source = "https://www.nasm.us/pub/nasm/releasebuilds/%{version}/nasm-%{version}.tar.xz"
+sha256 = "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

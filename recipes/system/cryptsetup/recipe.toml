@@ -1,0 +1,21 @@
+# system recipe: cryptsetup — OpenSSL backend, bundled argon2, no ssh-token.
+# Needs CONFIG_DM_CRYPT + CRYPTO_XTS in the kernel (see recipe `linux`).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r cryptsetup` pins it.
+[package]
+name = "cryptsetup"
+version = "2.7.5"
+rel = 1
+arch = ["x86_64"]
+summary = "cryptsetup: LUKS/dm-crypt disk encryption"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://www.kernel.org/pub/linux/utils/cryptsetup/v2.7/cryptsetup-%{version}.tar.xz"
+sha256 = "d2be4395b8f503b0ebf4b2d81db90c35a97050a358ee21fe62a0dfb66e5d5522"
+
+[depends]
+build = ["lvm2", "openssl", "json-c", "popt", "util-linux", "pkgconf"]
+run = ["lvm2", "openssl", "json-c", "popt", "util-linux"]
+
+[build]
+configure = "./configure --prefix=/usr --sbindir=/usr/bin --disable-static --disable-ssh-token --disable-asciidoc --with-crypto_backend=openssl --enable-internal-argon2"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

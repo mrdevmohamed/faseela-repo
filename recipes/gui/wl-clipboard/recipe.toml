@@ -1,0 +1,20 @@
+# gui recipe: wl-clipboard — man pages need xsltproc and are skipped when it is missing.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wl-clipboard` pins it.
+[package]
+name = "wl-clipboard"
+version = "2.2.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Command-line copy/paste utilities for Wayland (wl-copy, wl-paste)"
+license = ["GPL-3.0-or-later"]
+source = "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "6eb8081207fb5581d1d82c4bcd9587205a31a3d47bea3ebeb7f41aa1143783eb"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols"]
+run = ["wayland"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

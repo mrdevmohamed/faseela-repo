@@ -2,7 +2,7 @@
 
 A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
 **wlroots 0.18**, **foot** terminal, DejaVu fonts, **seatd** for seat
-management (no systemd/logind), supervised by runit. 33 packages.
+management (no systemd/logind), supervised by runit. 42 packages.
 
 > **Status: written offline, not yet built.** These recipes were authored
 > without network access, so (a) every `sha256` is an all-zero placeholder and
@@ -49,6 +49,7 @@ done
 | graphics | mesa (+ python-mako python-markupsafe python-pyyaml python-packaging as build helpers) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
+| sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
@@ -57,7 +58,7 @@ done
 the `seatd` service. Then:
 
 ```
-usermod -aG seat,video,input <user>     # log out and in again
+usermod -aG seat,video,input,audio <user>     # log out and in again
 start-sway                               # from a text console
 ```
 

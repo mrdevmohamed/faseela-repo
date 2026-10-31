@@ -1,0 +1,40 @@
+# system recipe: tzdata — compiled with glibc's zic from the IANA data files.
+# Source is the eggert/tz tag (it has a top-level directory; the IANA tarballs are flat).
+# Only the data files are used, not tz's Makefile (it needs a generated `version` file).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r tzdata` pins it.
+[package]
+name = "tzdata"
+version = "2025b"
+rel = 1
+arch = ["x86_64"]
+summary = "IANA time zone database (/usr/share/zoneinfo)"
+license = ["LicenseRef-Public-Domain"]
+source = "https://github.com/eggert/tz/archive/refs/tags/%{version}.tar.gz"
+sha256 = "7e281b316b85e20c9a67289805aa2a2ee041b5a41ccf5d096af3386ba76cf9d5"
+source_dir = "tz-%{version}"
+
+[depends]
+build = ["glibc"]
+run = []
+
+[build]
+install = '''
+# zic is installed by glibc (/usr/sbin/zic)
+ZIC=$(command -v zic || true)
+[ -x "$ZIC" ] || ZIC=/usr/sbin/zic
+[ -x "$ZIC" ] || { echo "tzdata: zic (from glibc) not found" >&2; exit 1; }
+zd=%{pkgdir}/usr/share/zoneinfo
+install -d -m755 "$zd"
+# -b fat: full transition tables, readable by old software too
+for f in etcetera southamerica northamerica europe africa antarctica asia australasia backward; do
+    "$ZIC" -b fat -L /dev/null -d "$zd" "$f"
+done
+install -m644 zone.tab zone1970.tab iso3166.tab "$zd"/
+'''
+
+[hooks]
+post_install = '''
+# default to UTC until the admin picks a zone
+[ -e /etc/localtime ] || ln -s /usr/share/zoneinfo/UTC /etc/localtime
+echo "tzdata: set your zone with:  ln -sf /usr/share/zoneinfo/Africa/Cairo /etc/localtime"
+'''

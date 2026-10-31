@@ -1,0 +1,21 @@
+# system recipe: libnl — the release tag in the URL is the version with underscores
+# (libnl3_11_0); change both when bumping.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r libnl` pins it.
+[package]
+name = "libnl"
+version = "3.11.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Netlink library (needed by iw and wpa_supplicant)"
+license = ["LGPL-2.1-only"]
+source = "https://github.com/thom311/libnl/releases/download/libnl3_11_0/libnl-%{version}.tar.gz"
+sha256 = "2a56e1edefa3e68a7c00879496736fdbf62fc94ed3232c0baba127ecfa76874d"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --sysconfdir=/etc --disable-static --disable-cli"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

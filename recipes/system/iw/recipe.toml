@@ -1,0 +1,19 @@
+# system recipe: iw — replaces the old wireless-tools.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r iw` pins it.
+[package]
+name = "iw"
+version = "6.9"
+rel = 1
+arch = ["x86_64"]
+summary = "iw: nl80211 wireless configuration tool (scan, link, regdom)"
+license = ["ISC"]
+source = "https://www.kernel.org/pub/software/network/iw/iw-%{version}.tar.xz"
+sha256 = "3f2db22ad41c675242b98ae3942dbf3112548c60a42ff739210f2de4e98e4894"
+
+[depends]
+build = ["libnl", "pkgconf"]
+run = ["libnl"]
+
+[build]
+compile = "make -j%{jobs} PREFIX=/usr"
+install = "make DESTDIR=%{pkgdir} PREFIX=/usr SBINDIR=/usr/bin install"

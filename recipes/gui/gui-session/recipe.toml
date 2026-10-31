@@ -3,14 +3,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
 
 [build]
 install = '''
@@ -73,6 +73,27 @@ input type:keyboard {
 KBD
 chmod 644 %{pkgdir}/etc/sway/config.d/20-keyboard.conf
 
+# --- lock, idle, screenshots, brightness, volume (drop-in, read through sway's
+#     `include /etc/sway/config.d/*`; $mod comes from sway's stock config) -----
+cat > %{pkgdir}/etc/sway/config.d/30-session.conf <<'SES'
+# lock the screen: $mod+Escape; also before suspend and after 5 min idle
+set $lock swaylock -f -c 000000
+bindsym $mod+Escape exec $lock
+exec swayidle -w timeout 300 '$lock' before-sleep '$lock'
+
+# screenshots to the clipboard (paste with wl-paste > file.png)
+bindsym Print exec grim - | wl-copy -t image/png
+bindsym $mod+Print exec grim -g "$(slurp)" - | wl-copy -t image/png
+
+# brightness (needs group `video`) and volume (needs group `audio`)
+bindsym XF86MonBrightnessUp exec brightnessctl set 5%+
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+bindsym XF86AudioRaiseVolume exec amixer -q sset Master 5%+ unmute
+bindsym XF86AudioLowerVolume exec amixer -q sset Master 5%- unmute
+bindsym XF86AudioMute exec amixer -q sset Master toggle
+SES
+chmod 644 %{pkgdir}/etc/sway/config.d/30-session.conf
+
 # --- start-sway: launch a Sway session from a text console ------------------
 install -d -m755 %{pkgdir}/usr/bin
 cat > %{pkgdir}/usr/bin/start-sway <<'EOF'
@@ -132,9 +153,9 @@ chmod 644 %{pkgdir}/etc/profile.d/gui-session.sh
 '''
 
 [hooks]
-post_install = '''for g in seat video input; do
+post_install = '''for g in seat video input audio; do
     getent group "$g" >/dev/null 2>&1 || groupadd -r "$g"
 done
-echo "gui-session: add your user:  usermod -aG seat,video,input <user>"
+echo "gui-session: add your user:  usermod -aG seat,video,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"
 '''

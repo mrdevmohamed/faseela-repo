@@ -1,0 +1,75 @@
+# system recipe: wpa_supplicant — Wi-Fi authentication, driven with wpa_cli.
+# nl80211 only (libnl), no D-Bus control interface (D-Bus is not packaged).
+# Service is available but not enabled: nawa service enable wpa_supplicant
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wpa_supplicant` pins it.
+[package]
+name = "wpa_supplicant"
+version = "2.11"
+rel = 1
+arch = ["x86_64"]
+summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, no D-Bus)"
+license = ["BSD-3-Clause"]
+source = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
+sha256 = "912ea06f74e30a8e36fbb68064d6cdff218d8d591db0fc5d75dee6c81ac7fc0a"
+
+[depends]
+build = ["libnl", "openssl", "readline", "pkgconf"]
+run = ["libnl", "openssl", "readline"]
+
+[build]
+prepare = '''
+cd wpa_supplicant
+cp defconfig .config
+# nl80211 through libnl3, wpa_cli with readline
+sed -i -e 's/^#CONFIG_LIBNL32=y/CONFIG_LIBNL32=y/' -e 's/^#CONFIG_READLINE=y/CONFIG_READLINE=y/' .config
+# no D-Bus here: switch its control interfaces off
+sed -i -e 's/^CONFIG_CTRL_IFACE_DBUS/#&/' .config
+grep -q '^CONFIG_LIBNL32=y' .config
+grep -q '^CONFIG_DRIVER_NL80211=y' .config
+'''
+compile = "cd wpa_supplicant && make -j%{jobs} BINDIR=/usr/bin LIBDIR=/usr/lib"
+install = '''
+cd wpa_supplicant
+install -Dm755 wpa_supplicant %{pkgdir}/usr/bin/wpa_supplicant
+install -Dm755 wpa_cli        %{pkgdir}/usr/bin/wpa_cli
+install -Dm755 wpa_passphrase %{pkgdir}/usr/bin/wpa_passphrase
+# pre-generated man pages in the release tarball
+for m in wpa_supplicant.8:man8 wpa_cli.8:man8 wpa_passphrase.8:man8 wpa_supplicant.conf.5:man5; do
+    f=doc/docbook/${m%%:*}; d=${m##*:}
+    [ -f "$f" ] && install -Dm644 "$f" %{pkgdir}/usr/share/man/$d/${m%%:*}
+done
+install -d -m755 %{pkgdir}/etc/wpa_supplicant
+cat > %{pkgdir}/etc/wpa_supplicant/wpa_supplicant.conf <<'CONF'
+# /etc/wpa_supplicant/wpa_supplicant.conf
+# Add networks with wpa_cli (as root or in group wheel):
+#   wpa_cli add_network / set_network 0 ssid '"name"' / set_network 0 psk '"pass"'
+#   wpa_cli enable_network 0 && wpa_cli save_config
+ctrl_interface=/run/wpa_supplicant
+ctrl_interface_group=wheel
+update_config=1
+CONF
+chmod 0600 %{pkgdir}/etc/wpa_supplicant/wpa_supplicant.conf
+install -d -m755 %{pkgdir}/etc/sv/wpa_supplicant
+cat > %{pkgdir}/etc/sv/wpa_supplicant/run <<'RUN'
+#!/bin/sh
+# first wireless interface; override with IFACE=... in /etc/default/wpa_supplicant
+IFACE=
+for d in /sys/class/net/*/wireless; do
+    [ -d "$d" ] || continue
+    IFACE=${d%/wireless}; IFACE=${IFACE##*/}
+    break
+done
+[ -r /etc/default/wpa_supplicant ] && . /etc/default/wpa_supplicant
+if [ -z "$IFACE" ]; then
+    echo "wpa_supplicant: no wireless interface found" >&2
+    exec sleep 300
+fi
+exec wpa_supplicant -i "$IFACE" -c /etc/wpa_supplicant/wpa_supplicant.conf
+RUN
+chmod 755 %{pkgdir}/etc/sv/wpa_supplicant/run
+'''
+
+[hooks]
+post_install = '''
+echo "wpa_supplicant: enable with  nawa service enable wpa_supplicant  (dhcpcd then gets the address)"
+'''

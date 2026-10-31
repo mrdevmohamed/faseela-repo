@@ -1,0 +1,20 @@
+# extra recipe: alsa-lib — direct ALSA audio, no sound server needed.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r alsa-lib` pins it.
+[package]
+name = "alsa-lib"
+version = "1.2.13"
+rel = 1
+arch = ["x86_64"]
+summary = "ALSA sound library and configuration files"
+license = ["LGPL-2.1-or-later"]
+source = "https://www.alsa-project.org/files/pub/lib/alsa-lib-%{version}.tar.bz2"
+sha256 = "8c4ff37553cbe89618e187e4c779f71a9bb2a8b27b91f87ed40987cc9233d8f6"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

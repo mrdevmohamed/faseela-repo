@@ -1,0 +1,28 @@
+# extra recipe: alsa-utils — sound from the command line (`alsamixer`, `aplay file.wav`).
+# No alsaconf (needs dialog), no bat, no xmlto, no systemd units.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r alsa-utils` pins it.
+[package]
+name = "alsa-utils"
+version = "1.2.13"
+rel = 1
+arch = ["x86_64"]
+summary = "ALSA utilities: alsamixer, amixer, aplay, arecord, alsactl"
+license = ["GPL-2.0-or-later"]
+source = "https://www.alsa-project.org/files/pub/utils/alsa-utils-%{version}.tar.bz2"
+sha256 = "1702a6b1cdf9ba3e996ecbc1ddcf9171e6808f5961d503d0f27e80ee162f1daa"
+
+[depends]
+build = ["alsa-lib", "ncurses", "pkgconf"]
+run = ["alsa-lib", "ncurses", "eudev"]
+
+[build]
+configure = "./configure --prefix=/usr --sbindir=/usr/bin --with-curses=ncursesw --disable-alsaconf --disable-bat --disable-xmlto --with-udev-rules-dir=/usr/lib/udev/rules.d --with-systemdsystemunitdir=no"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"
+
+[hooks]
+post_install = '''
+getent group audio >/dev/null 2>&1 || groupadd -r audio
+install -d -m755 /var/lib/alsa
+echo "alsa-utils: add your user:  usermod -aG audio <user>   then unmute with alsamixer"
+'''

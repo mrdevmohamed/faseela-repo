@@ -1,0 +1,19 @@
+# system recipe: dmidecode — also biosdecode, ownership, vpddecode.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r dmidecode` pins it.
+[package]
+name = "dmidecode"
+version = "3.6"
+rel = 1
+arch = ["x86_64"]
+summary = "dmidecode: read BIOS/DMI hardware tables"
+license = ["GPL-2.0-or-later"]
+source = "https://download.savannah.gnu.org/releases/dmidecode/dmidecode-%{version}.tar.xz"
+sha256 = "e40c65f3ec3dafe31ad8349a4ef1a97122d38f65004ed66575e1a8d575dd8bae"
+
+[depends]
+build = []
+run = []
+
+[build]
+compile = "make -j%{jobs} prefix=/usr"
+install = "make prefix=/usr sbindir=/usr/bin DESTDIR=%{pkgdir} install"

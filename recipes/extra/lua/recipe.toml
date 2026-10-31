@@ -1,0 +1,19 @@
+# extra recipe: lua — static liblua.a plus the lua and luac interpreters.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lua` pins it.
+[package]
+name = "lua"
+version = "5.4.7"
+rel = 1
+arch = ["x86_64"]
+summary = "Lua — small embeddable scripting language"
+license = ["MIT"]
+source = "https://www.lua.org/ftp/lua-%{version}.tar.gz"
+sha256 = "9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30"
+
+[depends]
+build = ["readline", "ncurses"]
+run = ["readline", "ncurses"]
+
+[build]
+compile = "make -j%{jobs} linux-readline"
+install = "make INSTALL_TOP=%{pkgdir}/usr INSTALL_MAN=%{pkgdir}/usr/share/man/man1 install"

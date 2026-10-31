@@ -1,12 +1,14 @@
 # boot recipe: Linux kernel (x86_64 defconfig base image)
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
+# rel 7: device-mapper + dm-crypt/XTS (recipes lvm2, cryptsetup)
+# rel 6: WIREGUARD and EXFAT_FS as modules (recipes wireguard-tools, exfatprogs)
 # rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
 #        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
 [package]
 name = "linux"
 version = "6.10"
-rel = 5
+rel = 7
 arch = ["x86_64"]
 summary = "Linux kernel (x86_64 defconfig base image)"
 license = ["GPL-2.0"]
@@ -35,7 +37,14 @@ scripts/config -e DRM -e DRM_FBDEV_EMULATION -e DRM_VIRTIO_GPU -e DRM_BOCHS -e D
 # size: no DWARF / BTF (the live ISO is not a kernel-debugging image); the
 # modules are stripped again at install time as a second line
 scripts/config -e DEBUG_INFO_NONE -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG_INFO_BTF -d DEBUG_INFO_BTF_MODULES
+# wireguard-tools and exfatprogs need their kernel side (modules, autoloaded on use)
+scripts/config -m WIREGUARD -m EXFAT_FS
+# lvm2 and cryptsetup: device-mapper built in, dm-crypt and its default cipher mode (aes-xts) as modules
+scripts/config -e MD -e BLK_DEV_DM -m DM_CRYPT -m CRYPTO_XTS
 make olddefconfig
+# fail here, not at runtime, if olddefconfig dropped them
+grep -q '^CONFIG_WIREGUARD=m' .config && grep -q '^CONFIG_EXFAT_FS=m' .config
+grep -q '^CONFIG_BLK_DEV_DM=y' .config && grep -q '^CONFIG_DM_CRYPT=m' .config
 """
 compile = "make -j%{jobs}"
 install = """

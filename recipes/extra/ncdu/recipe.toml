@@ -1,0 +1,20 @@
+# extra recipe: ncdu 1.x (C). 2.x is written in Zig, which is not packaged.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r ncdu` pins it.
+[package]
+name = "ncdu"
+version = "1.21"
+rel = 1
+arch = ["x86_64"]
+summary = "ncdu — NCurses disk usage analyzer"
+license = ["MIT"]
+source = "https://dev.yorhel.nl/download/ncdu-%{version}.tar.gz"
+sha256 = "a894d3a9b46bce578a6039bef48f54533ec402fb589b0769bfbb1d1edf9601a6"
+
+[depends]
+build = ["ncurses", "pkgconf"]
+run = ["ncurses"]
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

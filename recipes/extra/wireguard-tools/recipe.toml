@@ -1,0 +1,19 @@
+# extra recipe: wireguard-tools — needs CONFIG_WIREGUARD in the kernel (module or built in).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wireguard-tools` pins it.
+[package]
+name = "wireguard-tools"
+version = "1.0.20210914"
+rel = 1
+arch = ["x86_64"]
+summary = "WireGuard userspace tools: wg and wg-quick"
+license = ["GPL-2.0-only"]
+source = "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-%{version}.tar.xz"
+sha256 = "942ed32d1d6631932c82ff86c91ae8428d4c90bfec231a14ebdf6c29f068e60b"
+
+[depends]
+build = []
+run = ["bash", "iproute2"]
+
+[build]
+compile = "make -C src -j%{jobs} PREFIX=/usr WITH_WGQUICK=yes WITH_BASHCOMPLETION=yes WITH_SYSTEMDUNITS=no"
+install = "make -C src DESTDIR=%{pkgdir} PREFIX=/usr BINDIR=/usr/bin WITH_WGQUICK=yes WITH_BASHCOMPLETION=yes WITH_SYSTEMDUNITS=no install"

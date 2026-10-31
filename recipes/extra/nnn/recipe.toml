@@ -1,0 +1,20 @@
+# extra recipe: nnn — the tarball is named nnn-v<version>.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r nnn` pins it.
+[package]
+name = "nnn"
+version = "5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "nnn — tiny, fast terminal file manager"
+license = ["BSD-2-Clause"]
+source = "https://github.com/jarun/nnn/releases/download/v%{version}/nnn-v%{version}.tar.gz"
+sha256 = "ba82d6c685bb3687521de2f576244f82558a4af9afeeedda434d5ecb1c029520"
+source_dir = "nnn-%{version}"
+
+[depends]
+build = ["ncurses", "readline", "pkgconf"]
+run = ["ncurses", "readline"]
+
+[build]
+compile = "make -j%{jobs} PREFIX=/usr"
+install = "make PREFIX=/usr DESTDIR=%{pkgdir} install"

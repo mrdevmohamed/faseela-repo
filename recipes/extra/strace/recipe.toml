@@ -1,0 +1,20 @@
+# extra recipe: strace — no multi-personality (32-bit) support, needs no 32-bit headers.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r strace` pins it.
+[package]
+name = "strace"
+version = "6.12"
+rel = 1
+arch = ["x86_64"]
+summary = "strace — trace system calls and signals"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/strace/strace/releases/download/v%{version}/strace-%{version}.tar.xz"
+sha256 = "c47da93be45b6055f4dc741d7f20efaf50ca10160a5b100c109b294fd9c0bdfe"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --enable-mpers=no"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -1,0 +1,22 @@
+# system recipe: lvm2 — also provides libdevmapper (needed by cryptsetup).
+# Needs CONFIG_BLK_DEV_DM in the kernel (see recipe `linux`). No thin/cache tools, no systemd/dbus.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lvm2` pins it.
+[package]
+name = "lvm2"
+version = "2.03.30"
+rel = 1
+arch = ["x86_64"]
+summary = "LVM2 and device-mapper: logical volume manager, libdevmapper, dmsetup"
+license = ["GPL-2.0-only", "LGPL-2.1-only"]
+source = "https://sourceware.org/pub/lvm2/LVM2.%{version}.tgz"
+sha256 = "ad76abecb8dc887733e06c449cb9add04a3506f9f0780c128817a6e1a17cec05"
+source_dir = "LVM2.%{version}"
+
+[depends]
+build = ["eudev", "util-linux", "readline", "ncurses", "pkgconf"]
+run = ["eudev", "util-linux", "readline", "ncurses"]
+
+[build]
+configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --sbindir=/usr/bin --enable-pkgconfig --enable-udev_rules --enable-udev_sync --with-udevdir=/usr/lib/udev/rules.d --with-thin=none --with-cache=none --disable-selinux --disable-notify-dbus --disable-app-machineid --disable-systemd-journal"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

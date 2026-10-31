@@ -1,0 +1,20 @@
+# extra recipe: exfatprogs — user space for the kernel's exfat driver (CONFIG_EXFAT_FS).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r exfatprogs` pins it.
+[package]
+name = "exfatprogs"
+version = "1.2.6"
+rel = 1
+arch = ["x86_64"]
+summary = "exfatprogs — mkfs/fsck/label tools for exFAT (USB sticks, SD cards)"
+license = ["GPL-2.0-only"]
+source = "https://github.com/exfatprogs/exfatprogs/releases/download/%{version}/exfatprogs-%{version}.tar.xz"
+sha256 = "89d05b7a9537f2413079b724ec8d02d7a2e291c29c52e7256303e9456200fb0f"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --sbindir=/usr/bin"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

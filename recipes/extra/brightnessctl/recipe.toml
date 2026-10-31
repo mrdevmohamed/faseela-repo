@@ -1,0 +1,31 @@
+# extra recipe: brightnessctl — NOT setuid: the udev rule gives group `video` write access
+# to /sys/class/backlight and /sys/class/leds (add the user to `video`).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r brightnessctl` pins it.
+[package]
+name = "brightnessctl"
+version = "0.5.1"
+rel = 1
+arch = ["x86_64"]
+summary = "brightnessctl — read and control backlight and LED brightness"
+license = ["MIT"]
+source = "https://github.com/Hummer12007/brightnessctl/archive/refs/tags/%{version}.tar.gz"
+sha256 = "a68869e23f56ac4f2e28f1783002810ddbf10f95e1af9b48b2912fb169f46994"
+
+[depends]
+build = []
+run = ["eudev"]
+
+[build]
+compile = "make -j%{jobs}"
+install = '''
+install -Dm755 brightnessctl %{pkgdir}/usr/bin/brightnessctl
+install -Dm644 90-brightnessctl.rules %{pkgdir}/usr/lib/udev/rules.d/90-brightnessctl.rules
+[ -f brightnessctl.1 ] && install -Dm644 brightnessctl.1 %{pkgdir}/usr/share/man/man1/brightnessctl.1
+true
+'''
+
+[hooks]
+post_install = '''
+getent group video >/dev/null 2>&1 || groupadd -r video
+echo "brightnessctl: add your user:  usermod -aG video <user>   (log in again)"
+'''

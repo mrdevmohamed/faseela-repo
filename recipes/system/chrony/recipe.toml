@@ -1,0 +1,44 @@
+# system recipe: chrony — NTP daemon with a runit service (not enabled by default).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r chrony` pins it.
+[package]
+name = "chrony"
+version = "4.6.1"
+rel = 1
+arch = ["x86_64"]
+summary = "chrony: NTP client/server, keeps the system clock in sync"
+license = ["GPL-2.0-only"]
+source = "https://chrony-project.org/releases/chrony-%{version}.tar.gz"
+sha256 = "571ff73fbf0ae3097f0604eca2e00b1d8bb2e91affe1a3494785ff21d6199c5c"
+
+[depends]
+build = ["readline", "ncurses"]
+run = ["readline", "ncurses"]
+
+[build]
+configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-nts"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+install -d -m755 %{pkgdir}/etc
+cat > %{pkgdir}/etc/chrony.conf <<'CONF'
+# /etc/chrony.conf — minimal client configuration
+pool pool.ntp.org iburst
+driftfile /var/lib/chrony/drift
+# step the clock if it is off by more than 1 s in the first 3 updates
+makestep 1.0 3
+# keep the hardware clock in sync (kernel 11-minute mode)
+rtcsync
+CONF
+chmod 0644 %{pkgdir}/etc/chrony.conf
+install -d -m755 %{pkgdir}/etc/sv/chronyd
+printf '#!/bin/sh\nexec chronyd -n -u chrony\n' > %{pkgdir}/etc/sv/chronyd/run
+chmod 755 %{pkgdir}/etc/sv/chronyd/run
+'''
+
+[hooks]
+post_install = '''
+getent group chrony >/dev/null 2>&1 || groupadd -r chrony
+id chrony >/dev/null 2>&1 || useradd -r -g chrony -d /var/lib/chrony -s /bin/false -c chrony chrony
+install -d -m750 -o chrony -g chrony /var/lib/chrony
+echo "chrony: available but not enabled by default:  nawa service enable chronyd"
+'''

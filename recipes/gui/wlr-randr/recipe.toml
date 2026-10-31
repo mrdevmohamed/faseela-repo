@@ -1,0 +1,26 @@
+# gui recipe: wlr-randr — e.g.  wlr-randr --output Virtual-1 --mode 1920x1080
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wlr-randr` pins it.
+[package]
+name = "wlr-randr"
+version = "0.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "wlr-randr — xrandr for wlroots compositors (sway outputs)"
+license = ["MIT"]
+source = "https://gitlab.freedesktop.org/emersion/wlr-randr/-/archive/v%{version}/wlr-randr-v%{version}.tar.gz"
+sha256 = "c566d94fddb84f801c733f1415a4ad5b75870305346363074cbdf468d4ac263a"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols"]
+run = ["wayland"]
+
+[build]
+configure = '''
+opts=
+for o in man-pages; do
+    if grep -qs "'$o'" meson_options.txt; then opts="$opts -D $o=disabled"; fi
+done
+meson setup build --prefix=/usr --libdir=lib --buildtype=release $opts
+'''
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

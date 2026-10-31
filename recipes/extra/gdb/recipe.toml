@@ -1,0 +1,26 @@
+# extra recipe: gdb — no Python scripting. Only gdb/ and gdbserver/ are installed (not the whole
+# binutils-gdb tree) so nothing collides with the binutils package. MAKEINFO=true: no texinfo in the build.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r gdb` pins it.
+[package]
+name = "gdb"
+version = "16.1"
+rel = 1
+arch = ["x86_64"]
+summary = "GDB — the GNU debugger"
+license = ["GPL-3.0-or-later"]
+source = "https://mirrors.kernel.org/gnu/gdb/gdb-%{version}.tar.xz"
+sha256 = "c2cc5ccca029b7a7c3879ce8a96528fdfd056b4d884f2b0511e8f7bc723355c6"
+
+[depends]
+build = ["gmp", "mpfr", "ncurses", "readline", "zlib", "expat", "texinfo"]
+run = ["gmp", "mpfr", "ncurses", "readline", "zlib", "expat"]
+
+[build]
+prepare = "mkdir -p build"
+configure = "cd build && ../configure --prefix=/usr --with-system-readline --with-system-zlib --with-expat --with-python=no --without-guile --disable-werror --disable-nls"
+compile = "cd build && make -j%{jobs} MAKEINFO=true"
+install = '''
+cd build
+make -C gdb DESTDIR=%{pkgdir} install MAKEINFO=true
+make -C gdbserver DESTDIR=%{pkgdir} install MAKEINFO=true
+'''

@@ -1,0 +1,27 @@
+# extra recipe: man-pages — the kernel/glibc manual (man-db alone has only the tools' pages).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r man-pages` pins it.
+[package]
+name = "man-pages"
+version = "6.12"
+rel = 1
+arch = ["x86_64"]
+summary = "Linux man pages, sections 2-8 (system calls, library, devices, formats)"
+license = ["BSD-3-Clause", "GPL-2.0-or-later", "Linux-man-pages-copyleft"]
+source = "https://www.kernel.org/pub/linux/docs/man-pages/man-pages-%{version}.tar.xz"
+sha256 = "b6cb5d67e0bb00a3b3f3d1bcb3fe06c26b045ba63923ed7ae79412350c5e1cb5"
+
+[depends]
+build = []
+run = ["man-db"]
+
+[slim]
+# The whole package IS documentation: without this nawa would move every page into
+# man-pages-doc and leave man-pages empty.
+split = false
+
+[build]
+prepare = '''
+# libxcrypt ships the crypt(3) pages
+rm -f man3/crypt*
+'''
+install = "make -R GIT=false prefix=/usr DESTDIR=%{pkgdir} install"

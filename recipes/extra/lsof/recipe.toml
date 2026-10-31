@@ -1,0 +1,20 @@
+# extra recipe: lsof — built without libtirpc (no RPC/NFS name lookups).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lsof` pins it.
+[package]
+name = "lsof"
+version = "4.99.4"
+rel = 1
+arch = ["x86_64"]
+summary = "lsof — list open files and the processes using them"
+license = ["lsof"]
+source = "https://github.com/lsof-org/lsof/releases/download/%{version}/lsof-%{version}.tar.gz"
+sha256 = "0c444e2dabec14ad146cbb7f5b52b5ab4976728402ff348d9feced9ad9740c66"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

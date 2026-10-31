@@ -1,0 +1,26 @@
+# gui recipe: slurp — e.g.  grim -g "$(slurp)" shot.png
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r slurp` pins it.
+[package]
+name = "slurp"
+version = "1.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Select a region on a Wayland screen (pairs with grim)"
+license = ["MIT"]
+source = "https://github.com/emersion/slurp/releases/download/v%{version}/slurp-%{version}.tar.gz"
+sha256 = "eeb282b2adc8db5614b852596340b69da6f3954cf6cfbdc4392da509c934208a"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libxkbcommon", "cairo"]
+run = ["wayland", "libxkbcommon", "cairo"]
+
+[build]
+configure = '''
+opts=
+for o in man-pages; do
+    if grep -qs "'$o'" meson_options.txt; then opts="$opts -D $o=disabled"; fi
+done
+meson setup build --prefix=/usr --libdir=lib --buildtype=release $opts
+'''
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

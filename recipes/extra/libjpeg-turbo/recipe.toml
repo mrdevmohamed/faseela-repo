@@ -1,0 +1,20 @@
+# extra recipe: libjpeg-turbo — lets grim and other tools handle JPEG.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r libjpeg-turbo` pins it.
+[package]
+name = "libjpeg-turbo"
+version = "3.0.4"
+rel = 1
+arch = ["x86_64"]
+summary = "libjpeg-turbo — fast JPEG codec (libjpeg API)"
+license = ["IJG", "BSD-3-Clause", "Zlib"]
+source = "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/%{version}/libjpeg-turbo-%{version}.tar.gz"
+sha256 = "99130559e7d62e8d695f2c0eaeef912c5828d5b84a0537dcb24c9678c9d5b76b"
+
+[depends]
+build = ["cmake", "nasm"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_STATIC=FALSE -DWITH_JAVA=FALSE"
+compile = "cmake --build build -j %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

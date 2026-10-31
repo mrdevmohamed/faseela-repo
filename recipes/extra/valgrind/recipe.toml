@@ -1,0 +1,20 @@
+# extra recipe: valgrind — 64-bit only (no multilib in this distro).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r valgrind` pins it.
+[package]
+name = "valgrind"
+version = "3.24.0"
+rel = 1
+arch = ["x86_64"]
+summary = "valgrind — memory error detector and profiler"
+license = ["GPL-2.0-or-later"]
+source = "https://sourceware.org/pub/valgrind/valgrind-%{version}.tar.bz2"
+sha256 = "71aee202bdef1ae73898ccf7e9c315134fa7db6c246063afc503aef702ec03bd"
+
+[depends]
+build = []
+run = ["perl"]
+
+[build]
+configure = "./configure --prefix=/usr --enable-only64bit"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

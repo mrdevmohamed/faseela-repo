@@ -31,7 +31,9 @@ rtcsync
 CONF
 chmod 0644 %{pkgdir}/etc/chrony.conf
 install -d -m755 %{pkgdir}/etc/sv/chronyd
-printf '#!/bin/sh\nexec chronyd -n -u chrony\n' > %{pkgdir}/etc/sv/chronyd/run
+# the state dir is created/owned at service start: the post_install hook also runs in the
+# stage2 /sysroot chroot where only bash + shadow exist (no coreutils: install/chown missing)
+printf '#!/bin/sh\ninstall -d -m750 -o chrony -g chrony /var/lib/chrony\nexec chronyd -n -u chrony\n' > %{pkgdir}/etc/sv/chronyd/run
 chmod 755 %{pkgdir}/etc/sv/chronyd/run
 '''
 
@@ -39,6 +41,5 @@ chmod 755 %{pkgdir}/etc/sv/chronyd/run
 post_install = '''
 getent group chrony >/dev/null 2>&1 || groupadd -r chrony
 id chrony >/dev/null 2>&1 || useradd -r -g chrony -d /var/lib/chrony -s /bin/false -c chrony chrony
-install -d -m750 -o chrony -g chrony /var/lib/chrony
 echo "chrony: available but not enabled by default:  nawa service enable chronyd"
 '''

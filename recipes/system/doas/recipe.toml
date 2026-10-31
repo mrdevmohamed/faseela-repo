@@ -38,6 +38,7 @@ chmod 0644 %{pkgdir}/etc/doas.conf
 
 [hooks]
 post_install = '''getent group wheel >/dev/null 2>&1 || groupadd -r wheel
-chown root:root /usr/bin/doas && chmod 4755 /usr/bin/doas
+# setuid bit is already set by the package; re-assert only when coreutils is present (stage2 chroot lacks it)
+chown root:root /usr/bin/doas 2>/dev/null && chmod 4755 /usr/bin/doas 2>/dev/null || true
 echo "doas: allow a user with:  usermod -aG wheel <user>   (policy: /etc/doas.conf)"
 '''

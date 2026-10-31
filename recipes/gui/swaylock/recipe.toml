@@ -31,5 +31,5 @@ chmod 4755 %{pkgdir}/usr/bin/swaylock
 
 [hooks]
 post_install = '''
-chown root:root /usr/bin/swaylock && chmod 4755 /usr/bin/swaylock
+chown root:root /usr/bin/swaylock 2>/dev/null && chmod 4755 /usr/bin/swaylock 2>/dev/null || true
 '''

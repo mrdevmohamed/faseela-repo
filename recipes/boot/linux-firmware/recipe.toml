@@ -1,20 +1,22 @@
-# boot recipe: linux-firmware — firmware blobs for the kernel (GPU, wifi, bluetooth, NICs, ...)
-# Large (several hundred MB unpacked). sha256 is an all-zero placeholder until
-# `python3 scripts/fill-sha256.py -r linux-firmware` pins it.
+# boot recipe: linux-firmware — meta package: the FULL firmware set
+# (several hundred MB unpacked). It ships no firmware itself: it pulls
+#   linux-firmware-lite   curated subset (GPU, wifi, bluetooth, common NICs, AMD microcode)
+#   linux-firmware-extra  everything else
+# which own disjoint files, so nothing conflicts. Install only
+# `linux-firmware-lite` on machines that do not need the rest.
 [package]
 name = "linux-firmware"
 version = "20260910"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "Firmware files used by the Linux kernel"
-license = ["Redistributable-firmware"]
-source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
-sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
+summary = "Meta package: all Linux kernel firmware (linux-firmware-lite + linux-firmware-extra)"
 
 [depends]
-build = []
-run = []
+run = ["linux-firmware-lite", "linux-firmware-extra"]
 
 [build]
-# /usr/lib/firmware == /lib/firmware (merged-usr), the kernel's default search path
-install = "make DESTDIR=%{pkgdir} FIRMWAREDIR=/usr/lib/firmware install"
+# meta package: no sources, ships the manifest so the set is introspectable
+install = """
+mkdir -p %{pkgdir}/usr/share/nawa
+printf '%s\\n' linux-firmware-lite linux-firmware-extra > %{pkgdir}/usr/share/nawa/linux-firmware.list
+"""

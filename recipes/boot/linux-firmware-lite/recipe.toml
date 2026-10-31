@@ -1,10 +1,11 @@
 # boot recipe: linux-firmware-lite — a curated subset of linux-firmware
 # Same upstream tarball as `linux-firmware`, but only ships what typical x86
 # machines and VMs need (GPU, wifi, bluetooth, common NICs, AMD microcode).
-# Roughly a tenth of the full size. CONFLICTS with `linux-firmware`: install one.
-# The tarball is identical, so the sha256 is the same as in linux-firmware;
-# until pinned it is an all-zero placeholder:
-#   python3 scripts/fill-sha256.py -r linux-firmware-lite
+# Roughly a tenth of the full size. Does NOT conflict with `linux-firmware`:
+# that is now a meta package of this one + `linux-firmware-extra`, which ships
+# everything this one does not. KEEP must stay identical in both recipes
+# (scripts/check-recipes.py checks it).
+# The tarball is identical to linux-firmware's, hence the same sha256.
 [package]
 name = "linux-firmware-lite"
 version = "20260910"

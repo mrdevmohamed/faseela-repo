@@ -1,0 +1,50 @@
+# boot recipe: linux-firmware-extra — the rest of linux-firmware
+# Same upstream tarball as `linux-firmware-lite`; ships EVERYTHING EXCEPT what
+# `linux-firmware-lite` ships, so the two never own the same file and can be
+# installed together. `linux-firmware` (meta) depends on both.
+#
+# KEEP below MUST stay identical to KEEP in linux-firmware-lite (a file in both
+# lists would be shipped by neither or by both). scripts/check-recipes.py fails
+# when they differ.
+[package]
+name = "linux-firmware-extra"
+version = "20260910"
+rel = 1
+arch = ["x86_64"]
+summary = "Linux kernel firmware not in linux-firmware-lite (with it: the full set)"
+license = ["Redistributable-firmware"]
+source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
+sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
+source_dir = "linux-firmware-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+install = """
+KEEP='
+amdgpu radeon amd-ucode
+i915 xe
+iwlwifi-* rtw88 rtw89 rtlwifi ath9k_htc ath10k ath11k brcm cypress mediatek regulatory.db regulatory.db.p7s
+rtl_nic rtl_bt bnx2 qca
+intel/ibt-*
+'
+stage=$PWD/.fw-stage
+rm -rf "$stage"
+make DESTDIR="$stage" FIRMWAREDIR=/usr/lib/firmware install
+fw="$stage/usr/lib/firmware"
+# drop exactly what linux-firmware-lite copies (same globs, same test)
+set -f; set -- $KEEP; set +f
+for pat in "$@"; do
+    for p in "$fw"/$pat; do
+        [ -e "$p" ] || [ -L "$p" ] || continue
+        rm -rf "$p"
+    done
+done
+dest=%{pkgdir}/usr/lib/firmware
+mkdir -p "$dest"
+cp -a "$fw/." "$dest/"
+[ -n "$(find "$dest" -type f -print -quit)" ] || { echo "linux-firmware-extra: nothing left to ship" >&2; exit 1; }
+rm -rf "$stage"
+"""

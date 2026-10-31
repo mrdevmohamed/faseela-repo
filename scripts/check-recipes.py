@@ -7,6 +7,7 @@ Checks (no network, no cargo needed):
   * every build/run dependency names an existing recipe
   * the dependency graph (build + run) has no cycles
   * sha256 is a 64-hex string (or the all-zero placeholder, reported)
+  * linux-firmware-lite / -extra carry the same KEEP list
 
 Usage:
   python3 scripts/check-recipes.py              # whole tree
@@ -70,6 +71,24 @@ def order(recs, targets):
     return out
 
 
+def keep_list(r):
+    """The KEEP='...' word list of a recipe's install script (None if absent)."""
+    m = re.search(r"KEEP='([^']*)'", r.get("build", {}).get("install", ""))
+    return m.group(1).split() if m else None
+
+
+def firmware_split(recs):
+    """linux-firmware-lite and -extra split ONE file set: their KEEP lists must match."""
+    lite, extra = recs.get("linux-firmware-lite"), recs.get("linux-firmware-extra")
+    if not (lite and extra):
+        return []
+    a, b = keep_list(lite), keep_list(extra)
+    if a is None or b is None or a != b:
+        return [f"{extra['_path']}: KEEP differs from linux-firmware-lite's - the two "
+                "packages would overlap or drop files (see scripts/test-firmware-split.py)"]
+    return []
+
+
 def main():
     recs, errors = load()
     placeholders = []
@@ -85,6 +104,7 @@ def main():
                 placeholders.append(n)
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
+    errors += firmware_split(recs)
     if not errors:
         try:
             order(recs, list(recs))

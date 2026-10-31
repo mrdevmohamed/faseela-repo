@@ -3,7 +3,7 @@
 [package]
 name = "chrony"
 version = "4.6.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "chrony: NTP client/server, keeps the system clock in sync"
 license = ["GPL-2.0-only"]
@@ -12,7 +12,7 @@ sha256 = "571ff73fbf0ae3097f0604eca2e00b1d8bb2e91affe1a3494785ff21d6199c5c"
 
 [depends]
 build = ["readline", "ncurses"]
-run = ["readline", "ncurses"]
+run = ["readline", "ncurses", "shadow"]
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-nts"

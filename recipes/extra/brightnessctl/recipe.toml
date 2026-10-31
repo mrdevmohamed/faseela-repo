@@ -4,7 +4,7 @@
 [package]
 name = "brightnessctl"
 version = "0.5.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "brightnessctl — read and control backlight and LED brightness"
 license = ["MIT"]
@@ -13,7 +13,7 @@ sha256 = "a68869e23f56ac4f2e28f1783002810ddbf10f95e1af9b48b2912fb169f46994"
 
 [depends]
 build = []
-run = ["eudev"]
+run = ["eudev", "shadow"]
 
 [build]
 compile = "make -j%{jobs}"

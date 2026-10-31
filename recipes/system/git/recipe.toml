@@ -2,7 +2,7 @@
 [package]
 name = "git"
 version = "2.56.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Distributed version-control system"
 license = ["GPL-2.0"]
@@ -15,5 +15,17 @@ run = ["curl", "expat", "gettext", "openssl", "pcre2", "perl", "zlib"]
 
 [build]
 configure = "./configure --prefix=/usr --with-gitconfig=/etc/gitconfig"
-compile = "make -j%{jobs}"
-install = "make DESTDIR=%{pkgdir} install"
+# git's Makefile runs cargo without make's `+` prefix, so make closes its
+# jobserver fds while MAKEFLAGS still names them, and cargo warns "failed to
+# connect to jobserver" on every build. A PATH shim hands cargo a clean
+# environment (cargo gets its job count from CARGO_BUILD_JOBS instead).
+compile = '''
+real_cargo=$(command -v cargo)
+mkdir -p .nawa-shim
+printf '#!/bin/sh\nexec env -u MAKEFLAGS -u MFLAGS -u CARGO_MAKEFLAGS %s "$@"\n' "$real_cargo" > .nawa-shim/cargo
+chmod +x .nawa-shim/cargo
+PATH="$PWD/.nawa-shim:$PATH" CARGO_BUILD_JOBS=%{jobs} make -j%{jobs}
+'''
+install = '''
+PATH="$PWD/.nawa-shim:$PATH" make DESTDIR=%{pkgdir} install
+'''

@@ -2,7 +2,7 @@
 [package]
 name = "cronie"
 version = "1.7.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "cronie — standard UNIX cron daemon (Vixie fork)"
 license = ["GPL-2.0-or-later"]
@@ -20,5 +20,8 @@ install = """
 
 make DESTDIR=%{pkgdir} install
 install -d %{pkgdir}/var/spool/cron
+# crond scans /etc/cron.d at every start; `make install` does not create it
+# (or the periodic dirs), which made crond log \"STAT FAILED (/etc/cron.d)\"
+install -d -m755 %{pkgdir}/etc/cron.d %{pkgdir}/etc/cron.hourly %{pkgdir}/etc/cron.daily %{pkgdir}/etc/cron.weekly %{pkgdir}/etc/cron.monthly
 
 """

@@ -1,0 +1,59 @@
+# boot recipe: linux-firmware-lite — a curated subset of linux-firmware
+# Same upstream tarball as `linux-firmware`, but only ships what typical x86
+# machines and VMs need (GPU, wifi, bluetooth, common NICs, AMD microcode).
+# Roughly a tenth of the full size. CONFLICTS with `linux-firmware`: install one.
+# The tarball is identical, so the sha256 is the same as in linux-firmware;
+# until pinned it is an all-zero placeholder:
+#   python3 scripts/fill-sha256.py -r linux-firmware-lite
+[package]
+name = "linux-firmware-lite"
+version = "20260910"
+rel = 1
+arch = ["x86_64"]
+summary = "Curated subset of the Linux kernel firmware (GPU, wifi, bluetooth, NICs)"
+license = ["Redistributable-firmware"]
+source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
+sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
+source_dir = "linux-firmware-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+# Install everything into a scratch tree with upstream's own installer (it
+# resolves WHENCE links and renames), then copy only the wanted paths. Edit KEEP
+# to add/remove hardware; paths are relative to the firmware root and may be globs.
+install = """
+KEEP='
+amdgpu radeon amd-ucode
+i915 xe
+iwlwifi-* rtw88 rtw89 rtlwifi ath9k_htc ath10k ath11k brcm cypress mediatek regulatory.db regulatory.db.p7s
+rtl_nic rtl_bt bnx2 qca
+intel/ibt-*
+'
+stage=$PWD/.fw-stage
+rm -rf "$stage"
+make DESTDIR="$stage" FIRMWAREDIR=/usr/lib/firmware install
+fw="$stage/usr/lib/firmware"
+dest=%{pkgdir}/usr/lib/firmware
+mkdir -p "$dest"
+# split KEEP into words WITHOUT expanding the globs against the source tree
+set -f; set -- $KEEP; set +f
+n=0
+for pat in "$@"; do
+    found=0
+    for p in "$fw"/$pat; do
+        [ -e "$p" ] || [ -L "$p" ] || continue
+        rel=${p#"$fw"/}
+        mkdir -p "$dest/$(dirname "$rel")"
+        cp -a "$p" "$dest/$rel"
+        found=1; n=$((n + 1))
+    done
+    [ "$found" = 1 ] || echo "linux-firmware-lite: note: nothing matched '$pat'" >&2
+done
+[ "$n" -gt 0 ] || { echo "linux-firmware-lite: no firmware selected" >&2; exit 1; }
+# a WHENCE link whose target was not kept would be dangling: report it
+find "$dest" -xtype l -printf 'linux-firmware-lite: dangling link: %P\\n' >&2
+rm -rf "$stage"
+"""

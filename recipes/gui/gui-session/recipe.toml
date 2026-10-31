@@ -3,14 +3,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
+run = ["sway", "swaybg", "foot", "wmenu", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
 
 [build]
 install = '''

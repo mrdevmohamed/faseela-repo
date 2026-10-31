@@ -5,7 +5,7 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
@@ -43,11 +43,11 @@ if [ -r /etc/hostname ]; then
     [ -n "$_h" ] && echo "$_h" > /proc/sys/kernel/hostname 2>/dev/null
 fi
 
-# udev coldplug (udevd itself runs supervised under /etc/sv/udevd)
+# udev: the daemon and the coldplug both live in /etc/sv/udevd/run. Coldplug
+# must run AFTER udevd is up (stage 1 runs before runsvdir starts any service),
+# otherwise the events are lost and /run/udev/data stays empty, so libinput
+# sees no input devices and sway ignores the keyboard.
 mkdir -p /run/udev
-udevadm trigger --action=add --type=subsystems 2>/dev/null || true
-udevadm trigger --action=add --type=devices 2>/dev/null || true
-udevadm settle 2>/dev/null || true
 
 # fresh /tmp (we own it at boot)
 find /tmp -xdev -mindepth 1 -delete 2>/dev/null || true
@@ -108,8 +108,21 @@ chmod 755 %{pkgdir}/etc/sv/getty-ttyS0/run
 install -d -m755 %{pkgdir}/etc/sv/udevd
 cat > %{pkgdir}/etc/sv/udevd/run <<'EOF'
 #!/bin/sh
+# udevd + coldplug. udevd must be listening before the trigger, so it runs in
+# the background here; the trap forwards runsv's TERM so it is never orphaned.
 [ -d /run/udev ] || mkdir -p /run/udev
-exec udevd
+udevd &
+pid=$!
+trap 'kill "$pid" 2>/dev/null' TERM INT
+i=0
+while [ ! -S /run/udev/control ] && [ "$i" -lt 100 ]; do
+    sleep 0.1
+    i=$((i + 1))
+done
+udevadm trigger --action=add --type=subsystems
+udevadm trigger --action=add --type=devices
+udevadm settle
+wait "$pid"
 EOF
 
 install -d -m755 %{pkgdir}/etc/sv/dhcpcd

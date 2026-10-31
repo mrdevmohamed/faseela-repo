@@ -4,7 +4,7 @@
 [package]
 name = "glibc"
 version = "2.40"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "The GNU C Library (glibc)"
 license = ["LGPL-2.1"]
@@ -47,6 +47,19 @@ cd build && make DESTDIR=%{pkgdir} install INSTALL_INFO=:
 # binaries (getent, ...) run with a loader/libc mismatch and segfault.
 mkdir -p %{pkgdir}/usr/lib64
 ln -sfv ../lib/ld-linux-x86-64.so.2 %{pkgdir}/usr/lib64/ld-linux-x86-64.so.2
+
+# C.UTF-8: `make install` does not ship a compiled locale, and without a UTF-8
+# locale foot (and anything that checks nl_langinfo(CODESET)) refuses to start.
+# Compile it at BUILD time with the localedef we just built, straight from the
+# source tree, so it is part of the package (/usr/lib/locale/C.utf8) and nothing
+# has to be generated on the target. The new loader is invoked explicitly
+# because the staged binaries cannot find their libc under DESTDIR otherwise.
+if [ -f ../localedata/locales/C ]; then _src=C; else _src=POSIX; fi
+mkdir -p %{pkgdir}/usr/lib/locale
+%{pkgdir}/usr/lib/ld-linux-x86-64.so.2 --library-path %{pkgdir}/usr/lib \
+    %{pkgdir}/usr/bin/localedef --prefix=%{pkgdir} --no-archive \
+    -i ../localedata/locales/$_src -f ../localedata/charmaps/UTF-8 C.UTF-8
+[ -d %{pkgdir}/usr/lib/locale/C.utf8 ] || { echo "glibc: C.UTF-8 was not generated" >&2; exit 1; }
 """
 
 [hooks]

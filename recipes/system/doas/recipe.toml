@@ -1,0 +1,43 @@
+# system recipe: doas — OpenDoas, minimal sudo replacement (shadow auth, no PAM)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r doas` pins it.
+[package]
+name = "doas"
+version = "6.8.2"
+rel = 1
+arch = ["x86_64"]
+summary = "OpenDoas: portable version of OpenBSD's doas (minimal sudo replacement)"
+license = ["ISC"]
+source = "https://github.com/Duncaen/OpenDoas/releases/download/v%{version}/opendoas-%{version}.tar.gz"
+sha256 = "28dca29adec5f4336465812d9e2243f599e62a78903de71c24f0cd6fe667edac"
+source_dir = "opendoas-%{version}"
+
+[depends]
+build = ["bison"]
+run = ["shadow"]
+
+[build]
+# no PAM in this distro: authenticate against /etc/shadow
+configure = "./configure --prefix=/usr --sysconfdir=/etc --without-pam --with-shadow --with-timestamp"
+compile = "make -j%{jobs}"
+# installed by hand: upstream's `make install` chowns to root, which fails when
+# building unprivileged; the setuid bit/ownership is (re)asserted in post_install
+install = """
+install -Dm4755 doas %{pkgdir}/usr/bin/doas
+for m in doas.1:man1 doas.conf.5:man5 doas.5:man5; do
+    f=${m%%:*}; d=${m##*:}
+    [ -f "$f" ] && install -Dm644 "$f" %{pkgdir}/usr/share/man/$d/$f
+done
+install -d -m755 %{pkgdir}/etc
+cat > %{pkgdir}/etc/doas.conf <<'CONF'
+# /etc/doas.conf — members of group `wheel` may run commands as root.
+# `persist` remembers the password for a few minutes per terminal.
+permit persist :wheel
+CONF
+chmod 0644 %{pkgdir}/etc/doas.conf
+"""
+
+[hooks]
+post_install = '''getent group wheel >/dev/null 2>&1 || groupadd -r wheel
+chown root:root /usr/bin/doas && chmod 4755 /usr/bin/doas
+echo "doas: allow a user with:  usermod -aG wheel <user>   (policy: /etc/doas.conf)"
+'''

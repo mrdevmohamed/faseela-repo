@@ -1,0 +1,20 @@
+# boot recipe: linux-firmware — firmware blobs for the kernel (GPU, wifi, bluetooth, NICs, ...)
+# Large (several hundred MB unpacked). sha256 is an all-zero placeholder until
+# `python3 scripts/fill-sha256.py -r linux-firmware` pins it.
+[package]
+name = "linux-firmware"
+version = "20260910"
+rel = 1
+arch = ["x86_64"]
+summary = "Firmware files used by the Linux kernel"
+license = ["Redistributable-firmware"]
+source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
+sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
+
+[depends]
+build = []
+run = []
+
+[build]
+# /usr/lib/firmware == /lib/firmware (merged-usr), the kernel's default search path
+install = "make DESTDIR=%{pkgdir} FIRMWAREDIR=/usr/lib/firmware install"

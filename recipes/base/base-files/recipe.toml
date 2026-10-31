@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -130,12 +130,23 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export PS1='\u@\h:\w\$ '
 export LESS="-R"
 
+# system locale: single source of truth is /etc/locale.conf (LANG=..., LC_*=...)
+if [ -r /etc/locale.conf ]; then
+    set -a; . /etc/locale.conf; set +a
+fi
+
 if [ -d /etc/profile.d ]; then
     for _sh in /etc/profile.d/*.sh; do
         [ -r "$_sh" ] && . "$_sh"
     done
     unset _sh
 fi
+EOF
+
+cat > %{pkgdir}/etc/locale.conf <<'EOF'
+# /etc/locale.conf - system-wide locale, read by /etc/profile.
+# UTF-8 is required by foot and most Wayland/terminal software.
+LANG=C.UTF-8
 EOF
 
 cat > %{pkgdir}/etc/skel/.bashrc <<'EOF'

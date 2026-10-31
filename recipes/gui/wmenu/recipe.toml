@@ -1,0 +1,26 @@
+# gui recipe: wmenu — efficient dynamic menu for Wayland (sway's default `$menu` is wmenu-run)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wmenu` pins it.
+[package]
+name = "wmenu"
+version = "0.2.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Efficient dynamic menu for Wayland (dmenu for sway)"
+license = ["MIT"]
+source = "https://codeberg.org/adnano/wmenu/archive/%{version}.tar.gz"
+sha256 = "b1b593a80310085a90bd349d458ffbcfacf875d74468ae4428bdf5692a671ef9"
+source_dir = "wmenu"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libxkbcommon", "cairo", "pango", "glib"]
+run = ["wayland", "libxkbcommon", "cairo", "pango", "glib", "fontconfig"]
+
+[build]
+# man pages need scdoc (not packaged): disable them when upstream offers the option
+configure = """
+opts=
+if grep -qs 'man-pages' meson_options.txt; then opts='-D man-pages=disabled'; fi
+meson setup build --prefix=/usr --libdir=lib --buildtype=release $opts
+"""
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

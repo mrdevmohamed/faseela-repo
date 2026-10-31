@@ -48,7 +48,7 @@ done
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
 | graphics | mesa (+ python-mako python-markupsafe python-pyyaml python-packaging as build helpers) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
-| apps | tllist fcft foot swaybg |
+| apps | tllist fcft foot swaybg wmenu |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
@@ -75,8 +75,8 @@ DRM (virtio-gpu, bochs, simpledrm) and evdev/HID input; to try it in QEMU use
   — add `llvm` (and `libpciaccess` for `libdrm`'s intel support) and extend
   `-D gallium-drivers`.
 * No Xwayland/X11, no D-Bus, so no sway tray (`-D tray=disabled`) and no
-  portals. No launcher (sway's default `wmenu-run`) or lock screen — add `wmenu`
-  and `swaylock` recipes as needed.
+  portals. The launcher is `wmenu` (`Super+D`, sway's default `wmenu-run`);
+  there is no lock screen yet — add a `swaylock` recipe as needed.
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).
   sway's stock `output * bg ...` line is commented out by the sway recipe;
   `gui-session` installs `/usr/share/backgrounds/mydistro/default.png` and the

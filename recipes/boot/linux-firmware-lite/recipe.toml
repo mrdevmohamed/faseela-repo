@@ -31,7 +31,7 @@ amdgpu radeon amd-ucode
 i915 xe
 iwlwifi-* rtw88 rtw89 rtlwifi ath9k_htc ath10k ath11k brcm cypress mediatek regulatory.db regulatory.db.p7s
 rtl_nic rtl_bt bnx2 qca
-intel/ibt-*
+intel/ibt-* intel/iwlwifi
 '
 stage=$PWD/.fw-stage
 rm -rf "$stage"

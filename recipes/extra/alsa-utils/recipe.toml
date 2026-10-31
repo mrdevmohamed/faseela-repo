@@ -12,7 +12,7 @@ source = "https://www.alsa-project.org/files/pub/utils/alsa-utils-%{version}.tar
 sha256 = "1702a6b1cdf9ba3e996ecbc1ddcf9171e6808f5961d503d0f27e80ee162f1daa"
 
 [depends]
-build = ["alsa-lib", "ncurses", "pkgconf"]
+build = ["alsa-lib", "ncurses", "pkgconf", "shadow"]
 run = ["alsa-lib", "ncurses", "eudev", "shadow"]
 
 [build]

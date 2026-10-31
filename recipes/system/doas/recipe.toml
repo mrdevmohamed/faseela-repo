@@ -12,7 +12,7 @@ sha256 = "28dca29adec5f4336465812d9e2243f599e62a78903de71c24f0cd6fe667edac"
 source_dir = "opendoas-%{version}"
 
 [depends]
-build = ["bison", "libxcrypt"]   # glibc >= 2.38 has no libcrypt: doas links -lcrypt
+build = ["bison", "libxcrypt", "shadow"]   # glibc >= 2.38 has no libcrypt: doas links -lcrypt
 run = ["shadow", "libxcrypt"]
 
 [build]

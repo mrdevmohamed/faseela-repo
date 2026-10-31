@@ -11,7 +11,7 @@ source = "https://chrony-project.org/releases/chrony-%{version}.tar.gz"
 sha256 = "571ff73fbf0ae3097f0604eca2e00b1d8bb2e91affe1a3494785ff21d6199c5c"
 
 [depends]
-build = ["readline", "ncurses"]
+build = ["readline", "ncurses", "shadow"]
 run = ["readline", "ncurses", "shadow"]
 
 [build]

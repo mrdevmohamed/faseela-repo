@@ -56,6 +56,11 @@ ln -sfv ../lib/ld-linux-x86-64.so.2 %{pkgdir}/usr/lib64/ld-linux-x86-64.so.2
 # because the staged binaries cannot find their libc under DESTDIR otherwise.
 if [ -f ../localedata/locales/C ]; then _src=C; else _src=POSIX; fi
 mkdir -p %{pkgdir}/usr/lib/locale
+# `-i <path>` only opens that ONE file. The C locale does `copy "i18n_ctype"`,
+# and localedef resolves `copy` names via its own search path (I18NPATH, then
+# <prefix>/usr/share/i18n), NOT relative to the -i file -> "cannot open locale
+# definition file `i18n_ctype'". Point I18NPATH at the source tree's localedata.
+I18NPATH="$(cd ../localedata && pwd)" \
 %{pkgdir}/usr/lib/ld-linux-x86-64.so.2 --library-path %{pkgdir}/usr/lib \
     %{pkgdir}/usr/bin/localedef --prefix=%{pkgdir} --no-archive \
     -i ../localedata/locales/$_src -f ../localedata/charmaps/UTF-8 C.UTF-8

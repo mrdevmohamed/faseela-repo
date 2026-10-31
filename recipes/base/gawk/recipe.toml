@@ -2,7 +2,7 @@
 [package]
 name = "gawk"
 version = "5.4.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU awk text-processing language"
 license = ["GPL-3.0"]
@@ -10,8 +10,10 @@ source = "https://mirrors.kernel.org/gnu/gawk/gawk-5.4.1.tar.xz"
 sha256 = "07f6f7342b7febe4313fc2c2542ad93d64fe20ad8717200109f105a826f5fd37"
 
 [depends]
-build = ["readline"]
-run = ["readline"]
+# gawk -M (bignum) links libmpfr/libgmp; declared so they never leak in from
+# the bootstrap seed.
+build = ["gmp", "mpfr", "readline"]
+run = ["gmp", "mpfr", "readline"]
 
 [build]
 configure = "./configure --prefix=/usr"

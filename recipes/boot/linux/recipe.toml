@@ -1,10 +1,12 @@
 # boot recipe: Linux kernel (x86_64 defconfig base image)
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
+# rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
+#        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
 [package]
 name = "linux"
 version = "6.10"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Linux kernel (x86_64 defconfig base image)"
 license = ["GPL-2.0"]
@@ -30,11 +32,14 @@ scripts/config -e TMPFS -e UNIX98_PTYS -e DEVTMPFS
 # graphical session prerequisites (recipes/gui): DRM/KMS for QEMU + virtio-gpu,
 # simple framebuffer DRM, and evdev/HID input for libinput
 scripts/config -e DRM -e DRM_FBDEV_EMULATION -e DRM_VIRTIO_GPU -e DRM_BOCHS -e DRM_SIMPLEDRM -e INPUT_EVDEV -e HID_GENERIC -e USB_HID
+# size: no DWARF / BTF (the live ISO is not a kernel-debugging image); the
+# modules are stripped again at install time as a second line
+scripts/config -e DEBUG_INFO_NONE -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG_INFO_BTF -d DEBUG_INFO_BTF_MODULES
 make olddefconfig
 """
 compile = "make -j%{jobs}"
 install = """
-make INSTALL_MOD_PATH=%{pkgdir} modules_install
+make INSTALL_MOD_PATH=%{pkgdir} INSTALL_MOD_STRIP=1 modules_install
 install -Dm644 arch/x86/boot/bzImage %{pkgdir}/boot/vmlinuz-%{version}
 install -Dm644 System.map %{pkgdir}/boot/System.map-%{version}
 install -Dm644 .config %{pkgdir}/boot/config-%{version}

@@ -6,7 +6,8 @@ packages**.
 
 ```
 recipes/      one recipe.toml per package (toolchain, base, system, boot, gui, extra)
-scripts/      recipe tooling: check-recipes, recipe-ids, fill-sha256,
+flavors.toml  which packages make up which image (bootstrap, rootfs-min, docker, iso-*)
+scripts/      recipe tooling: check-recipes, recipe-ids, flavor, fill-sha256,
               gen-recipes-extra, pin-nawa-source
 .github/workflows/
   ci.yml        validates the recipe tree (required check on main)

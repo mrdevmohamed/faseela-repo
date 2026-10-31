@@ -1,0 +1,57 @@
+# flavors.toml — what each flavor of the distribution contains.
+#
+# ONE source of truth: the recipes (recipes/) say how a package is built, this
+# file says which packages make up which image. The faseela repository builds
+# the bootstrap and then only INSTALLS the other flavors from the package
+# repository (packages.yml publishes it); nothing here is compiled per flavor.
+#
+#   scripts/flavor.py list                 the flavors
+#   scripts/flavor.py resolve NAME         their packages, dependencies first
+#   scripts/flavor.py check                every flavor resolves (run by ci.yml)
+#
+# Keys of a [flavor.NAME] table
+#   summary   one line
+#   include   package names, or @category (toolchain base system boot extra gui)
+#   extends   other flavors whose packages are included too
+#   exclude   packages left out of the result (nothing else is dropped)
+#   closure   "run"   (default) add every [depends].run dependency, transitively:
+#                     what has to be INSTALLED for the packages to work
+#             "build" add [depends].build AND .run: what has to exist so the
+#                     packages can be BUILT (the bootstrap)
+
+# What stage 2 and stage 3 of faseela build with the seed toolchain, and the
+# only thing they build. `nawa` is written in Rust, so its build dependencies
+# (rust, cmake, ...) are in the closure; `curl` fetches sources. This is also
+# the seed of the next bootstrap (faseela-x86_64-rootfs.tar.zst).
+[flavor.bootstrap]
+summary = "the self-hosting core: base-devel + nawa + curl (and what builds them)"
+include = ["base-devel", "nawa", "curl"]
+closure = "build"
+
+# The rootfs a later build uses instead of the Debian seed.
+[flavor.seed]
+summary = "rootfs that seeds the next bootstrap"
+extends = ["bootstrap"]
+closure = "build"
+
+# The small build environment: packages.yml builds the rest of the packages in it.
+[flavor.rootfs-min]
+summary = "base-devel + nawa + git + curl: a build environment without rust"
+include = ["base-devel", "nawa", "git", "curl", "ca-certificates"]
+
+[flavor.docker]
+summary = "rootfs-min imported as a container image (ghcr.io/<owner>/faseela-build)"
+extends = ["rootfs-min"]
+
+# The live ISO without a graphical session. Firmware is the bulk of an ISO:
+# linux-firmware-lite stays, the full set is installed on demand
+# (`nawa install linux-firmware`).
+[flavor.iso-nogui]
+summary = "live ISO, no GUI"
+include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
+exclude = ["linux-firmware", "linux-firmware-extra"]
+
+[flavor.iso-gui]
+summary = "live ISO with the sway/Wayland stack"
+extends = ["iso-nogui"]
+include = ["@gui"]

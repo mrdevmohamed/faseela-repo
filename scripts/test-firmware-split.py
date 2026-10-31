@@ -55,13 +55,18 @@ def main():
             else:
                 p.write_text(rel)
         full = tree(fixture)
-        lite = tree(run_install("linux-firmware-lite", work, fixture))
+        lite_root = run_install("linux-firmware-lite", work, fixture)
+        lite = tree(lite_root)
+        dangling = sorted(str(p.relative_to(lite_root)) for p in lite_root.rglob("*")
+                          if p.is_symlink() and not p.exists())
         extra = tree(run_install("linux-firmware-extra", work, fixture))
     errors = []
     if lite & extra:
         errors.append(f"in BOTH packages: {sorted(lite & extra)}")
     if full - (lite | extra):
         errors.append(f"in NEITHER package: {sorted(full - (lite | extra))}")
+    if dangling:
+        errors.append(f"linux-firmware-lite ships dangling links (target not kept): {dangling}")
     if not lite or not extra:
         errors.append("a package is empty")
     for e in errors:

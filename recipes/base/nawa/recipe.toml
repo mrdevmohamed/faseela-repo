@@ -14,13 +14,13 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
-source = "https://github.com/mrdevmohamed/nawa/archive/34d4beaeaf29bc58e49bb1f5374e424f99ab8596.tar.gz"
-sha256 = "04174aadb5f96bcb960333e1eafa9f59b1f673d08fbac5dff95ae406401bc648"
-source_dir = "nawa-34d4beaeaf29bc58e49bb1f5374e424f99ab8596"
+source = "https://github.com/mrdevmohamed/nawa/archive/5ccd1d4c5b40eaf98d18ce250013deb9aea07f4a.tar.gz"
+sha256 = "86101c6bf8ff4053c2e8d080186ededf6dea8d2d29646e72aba84019e5a97d31"
+source_dir = "nawa-5ccd1d4c5b40eaf98d18ce250013deb9aea07f4a"
 
 [depends]
 build = ["rust"]

@@ -13,7 +13,7 @@
 [package]
 name = "rust"
 version = "1.96.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Rust compiler, cargo and standard library (official binary release)"
 license = ["MIT", "Apache-2.0"]
@@ -25,6 +25,14 @@ source_dir = "rust-%{version}-x86_64-unknown-linux-gnu"
 build = []
 # rustc links through `cc` and needs libc at run time
 run = ["gcc", "glibc"]
+
+[slim]
+# Never strip this package. `strip --strip-unneeded` (binutils 2.43) rewrites
+# librustc_driver-*.so and libLLVM.so.* — PGO/BOLT-laid-out objects with
+# .text.warm/.text.cold — and fails with "section can't be allocated in
+# segment" while still exiting 0; the result segfaults on load, so even
+# `rustc -vV` dies with SIGSEGV (this broke the git build in stage2).
+strip = false
 
 [build]
 # only the components nawa needs: no docs, clippy, rustfmt, rust-src, ...

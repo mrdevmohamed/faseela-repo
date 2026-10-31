@@ -2,7 +2,7 @@
 [package]
 name = "curl"
 version = "8.16.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Command-line tool and library for transferring data with URLs"
 license = ["curl"]
@@ -10,10 +10,13 @@ source = "https://curl.se/download/curl-8.16.0.tar.xz"
 sha256 = "40c8cddbcb6cc6251c03dea423a472a6cea4037be654ba5cf5dec6eb2d22ff1d"
 
 [depends]
-build = ["libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
-run = ["libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
+build = ["brotli", "libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
+run = ["brotli", "libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
 
 [build]
-configure = "./configure --prefix=/usr --disable-static --with-openssl --with-libpsl --with-libidn2 --with-zlib --without-librtmp --disable-ldap --disable-ldaps --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt"
+# brotli is declared and enabled explicitly: left to autodetection, libcurl links
+# libbrotlidec.so.1 only when the build root happens to have it, and then fails
+# at run time on a root that does not (git-remote-https: cannot open shared object file).
+configure = "./configure --prefix=/usr --disable-static --with-openssl --with-libpsl --with-libidn2 --with-zlib --with-brotli --without-librtmp --disable-ldap --disable-ldaps --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

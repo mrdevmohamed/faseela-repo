@@ -4,7 +4,7 @@
 [package]
 name = "gcc"
 version = "14.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU Compiler Collection (C, C++)"
 license = ["GPL-3.0", "LGPL-3.0"]
@@ -17,7 +17,13 @@ build = ["binutils", "glibc", "gmp", "mpfr", "mpc"]
 run = ["glibc", "gmp", "mpfr", "mpc"]
 
 [build]
-prepare = "mkdir -v build"
+# x86_64 gcc names the 64-bit multilib dir ../lib64 even with --disable-multilib
+# (gcc/config/i386/t-linux64). Everything that asks the compiler
+# (`gcc -print-multi-os-directory`: libgcc_s, libstdc++, libffi, ...) would then
+# install into /usr/lib64, which this distro's glibc loader does not search
+# (its libdir is /usr/lib; /usr/lib64 only holds the ld-linux symlink).
+# Same fix as LFS: name the directory `lib`.
+prepare = "sed -e '/m64=/s/lib64/lib/' -i.orig gcc/config/i386/t-linux64 && mkdir -v build"
 configure = """
 cd build && ../configure --prefix=/usr          \
     LD=ld                                       \

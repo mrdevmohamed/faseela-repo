@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -107,10 +107,10 @@ cat > %{pkgdir}/etc/fstab <<'EOF'
 # tmpfs      /run   tmpfs defaults,mode=0755  0 0
 EOF
 
-printf 'mydistro\n' > %{pkgdir}/etc/hostname
+printf 'faseela\n' > %{pkgdir}/etc/hostname
 
 cat > %{pkgdir}/etc/hosts <<'EOF'
-127.0.0.1  localhost mydistro
+127.0.0.1  localhost faseela
 ::1        localhost
 EOF
 
@@ -158,9 +158,9 @@ EOF
 cp %{pkgdir}/etc/skel/.bashrc %{pkgdir}/root/.bashrc
 
 cat > %{pkgdir}/etc/os-release <<'EOF'
-NAME="mydistro"
-PRETTY_NAME="mydistro 0.4"
-ID=mydistro
+NAME="faseela"
+PRETTY_NAME="faseela 0.4"
+ID=faseela
 VERSION_ID="0.4"
 ANSI_COLOR="0;36"
 EOF

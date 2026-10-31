@@ -3,7 +3,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
@@ -22,8 +22,8 @@ ln -s /etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default/seatd
 
 # --- default wallpaper: sway's stock config has its own wallpaper line disabled;
 #     this drop-in is read through its `include /etc/sway/config.d/*` -----------
-install -d -m755 %{pkgdir}/usr/share/backgrounds/mydistro %{pkgdir}/etc/sway/config.d
-base64 -d > %{pkgdir}/usr/share/backgrounds/mydistro/default.png <<'PNG'
+install -d -m755 %{pkgdir}/usr/share/backgrounds/faseela %{pkgdir}/etc/sway/config.d
+base64 -d > %{pkgdir}/usr/share/backgrounds/faseela/default.png <<'PNG'
 iVBORw0KGgoAAAANSUhEUgAAAGAAAAA2CAIAAAC3LQuFAAAHK0lEQVR42r1aWbLbMAwjMp7pZ+/Q
 +9+R/fAigQQpOV3yZvIc23FMCAQ348fPXwbYeOF+e3biPg7af+3F80fnPGee3waseG+OXj+MdNnp
 4Hwb09eHIdO9GVmKYC+/7j3H9J0WmvnqfE9QoEQjSwsh7ccCULkS0y2FW6XFq5AyueegHeALIKNG
@@ -59,8 +59,8 @@ GobhWjlXDSBvM8OJ5T6jNjAaUw2ZYvUGO09pK2bJiMMbPt+DfD+BmAgzlo6D+mMk+iKUzxbQnCp9
 MShjYRodPCtsCoISnUliaxKdEDgc58ljD8HndrLI3EcfyF3cch3fXWc9A5o7iPlv0x13VNF+g3QA
 AAAASUVORK5CYII=
 PNG
-chmod 644 %{pkgdir}/usr/share/backgrounds/mydistro/default.png
-printf '# default wallpaper (needs swaybg)\noutput * bg /usr/share/backgrounds/mydistro/default.png fill\n' \
+chmod 644 %{pkgdir}/usr/share/backgrounds/faseela/default.png
+printf '# default wallpaper (needs swaybg)\noutput * bg /usr/share/backgrounds/faseela/default.png fill\n' \
     > %{pkgdir}/etc/sway/config.d/10-wallpaper.conf
 
 # --- keyboard layouts: US + Arabic, Alt+Shift toggles (sway reads the drop-in) -

@@ -46,8 +46,8 @@ name: Build packages
 #     is published (prune).
 #
 # Build environment: the rootfs of the newest release of DISTRO_REPO
-#   min   mydistro-x86_64-rootfs-min.tar.zst   base-devel + nawa, small, NO rust
-#   seed  mydistro-x86_64-rootfs.tar.zst       the full system incl. rust
+#   min   faseela-x86_64-rootfs-min.tar.zst     base-devel + nawa, small, NO rust
+#   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust
 #   auto  (default) seed when rust or nawa is in the list, else min
 # Both come from the ISO workflow (release.yml) of DISTRO_REPO on a `v*` tag:
 # run that once before the first package build.
@@ -225,12 +225,16 @@ jobs:
           GH_REPO: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}
         run: |
           set -euo pipefail
-          asset=mydistro-x86_64-rootfs-min.tar.zst
-          [[ "$ROOTFS_KIND" == seed ]] && asset=mydistro-x86_64-rootfs.tar.zst
+          asset=faseela-x86_64-rootfs-min.tar.zst
+          legacy=mydistro-x86_64-rootfs-min.tar.zst   # releases made before the rename
+          if [[ "$ROOTFS_KIND" == seed ]]; then
+            asset=faseela-x86_64-rootfs.tar.zst
+            legacy=mydistro-x86_64-rootfs.tar.zst
+          fi
           dir="$RUNNER_TEMP/rootfs"
           rc=0
           # verifies the .sha256 sidecar; exit 3 = no release carries the asset
-          ROOTFS_ASSET="$asset" bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
+          ROOTFS_ASSET="$asset" ROOTFS_LEGACY_ASSET="$legacy" bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
           if [[ $rc -eq 3 ]]; then
             echo "::error::no release of $GH_REPO carries $asset. Push a v* tag (workflow 'Build ISO (CD)') once, so there is a rootfs to build in."
             exit 1
@@ -265,7 +269,7 @@ jobs:
           # network for the source downloads inside the root
           sudo rm -f "$T/etc/resolv.conf"
           sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
-          sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/mydistro
+          sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
           sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
 
       # Everything already published goes into the build root's out/ dir: that
@@ -298,7 +302,7 @@ jobs:
           sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env -i \
             HOME=/root TERM=dumb NAWA_JOBS="$(nproc)" PKGS="$PKGS" ISOLATION="$ISOLATION" \
             BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
-            bash /mydistro/bootstrap/build-packages-inner.sh
+            bash /faseela/bootstrap/build-packages-inner.sh
 
       # `always()`: the build step exits red when ANY package failed, and a
       # timeout kills it - the archives built until then must still be published.
@@ -360,7 +364,7 @@ jobs:
           # sign the index inside the root (nawa links against the distro's libc)
           printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
           rargs=()
-          if (( withrecipes )); then rargs=(--recipes /mydistro/recipes --recipes-rev "$rev"); fi
+          if (( withrecipes )); then rargs=(--recipes /faseela/recipes --recipes-rev "$rev"); fi
           sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
             --out index.toml --sign --key /root/nawa.sec "${rargs[@]}"
           # nawa refuses an archive without a detached <archive>.sig when the

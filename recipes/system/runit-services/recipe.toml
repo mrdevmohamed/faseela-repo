@@ -5,7 +5,7 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
@@ -76,7 +76,7 @@ cat > %{pkgdir}/etc/runit/3 <<'EOF'
 # runit stage 3 — tear services down (runit then halts/reboots the machine)
 PATH=/usr/bin:/usr/sbin:/bin:/sbin
 
-echo "mydistro is going down..."
+echo "faseela is going down..."
 for s in /etc/runit/runsvdir/default/*; do
     [ -d "$s" ] && sv down "$(basename "$s")" 2>/dev/null
 done

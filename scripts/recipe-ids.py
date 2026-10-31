@@ -9,7 +9,8 @@
     scripts/recipe-ids.py --stale PKG_DIR [RECIPES_DIR]
         names of the *.nawa.tar.zst files in PKG_DIR that belong to a package
         which still has a recipe but whose version/rel has since changed, i.e.
-        archives a newer build has replaced. Archives of packages that no
+        archives a newer build has replaced (including the <name>-doc /
+        <name>-lang sub-packages nawa splits off). Archives of packages that no
         longer have a recipe are NOT reported (removing a package is a
         decision for a human).
 
@@ -40,15 +41,26 @@ def load(root: Path):
     return out, bad
 
 
+# sub-packages nawa splits off a package (see nawa's src/slim.rs):
+# <name>-doc-<version>-<rel> and <name>-lang-<version>-<rel>
+SUBPACKAGES = ("doc", "lang")
+
+
 def stale(pkg_dir: Path, recipes):
     current = {i for _, _, i in recipes}
+    # a recipe's sub-package archives are current exactly when its main one is
+    for _, n, i in recipes:
+        current.update(i.replace(n, f"{n}-{sub}", 1) for sub in SUBPACKAGES)
     names = [n for _, n, _ in recipes]
     for f in sorted(pkg_dir.glob("*" + SUFFIX)):
         stem = f.name[: -len(SUFFIX)]
         if stem in current:
             continue
-        if any(re.fullmatch(re.escape(n) + r"-\d.*-\d+", stem) for n in names):
-            yield f.name
+        for n in names:
+            subs = "|".join(SUBPACKAGES)
+            if re.fullmatch(re.escape(n) + r"(?:-(?:" + subs + r"))?-\d.*-\d+", stem):
+                yield f.name
+                break
 
 
 def main(argv) -> int:

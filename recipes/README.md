@@ -43,6 +43,10 @@ The `extra/` recipes are generated from a single data table — edit
   into srcdir as-is; used by `ca-certificates` for the pinned Mozilla CA
   bundle.
 * `rel` must be bumped on every recipe change that changes the output.
+* nawa slims every package after `install` (strip, cleanup) and splits man/info/doc
+  into `<name>-doc` and gettext catalogs into `<name>-lang` — separate archives of
+  the same version/rel that depend on `<name>`. Recipes need no changes; to opt out
+  add `[slim]` with `strip = false`, `cleanup = false` and/or `split = false`.
 * `%{...}` placeholders available in build sections: `name version rel
   arch jobs pkgdir srcdir`.
 * `[hooks]` scripts run on the target system (not at build time).

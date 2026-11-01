@@ -335,6 +335,15 @@ jobs:
             BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
             bash /faseela/bootstrap/build-packages-inner.sh
 
+      # nawa refuses to install a package that ships a file another one owns, and
+      # an image build only finds out one package at a time. Look at the archives
+      # (the ones just built AND the ones fetched from the release) for every
+      # flavor now. Publishing is not held back (the other packages are fine and
+      # the build took hours), but the run turns red and names the files.
+      - name: No two packages of a flavor may ship the same file
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        run: python3 -I scripts/check-file-conflicts.py "$T/build/out"
+
       # `always()`: the build step exits red when ANY package failed, and a
       # timeout kills it - the archives built until then must still be published.
       - name: Publish to the package repository

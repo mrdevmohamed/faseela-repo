@@ -3,7 +3,7 @@
 [package]
 name = "foot"
 version = "1.19.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Fast, lightweight Wayland terminal emulator"
 license = ["MIT"]
@@ -13,9 +13,13 @@ source_dir = "foot"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libxkbcommon", "pixman", "fontconfig", "fcft", "tllist", "ncurses"]
-run = ["fcft", "fontconfig", "pixman", "libxkbcommon", "wayland"]
+run = ["fcft", "fontconfig", "pixman", "libxkbcommon", "wayland", "ncurses"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D docs=disabled -D grapheme-clustering=disabled -D utmp-backend=none -D terminfo=enabled -D b_lto=false"
 compile = "ninja -C build"
-install = "DESTDIR=%{pkgdir} meson install -C build"
+# ncurses already ships the `foot` and `foot-direct` terminfo entries
+# (/usr/share/terminfo/f/): nawa refuses foot otherwise ("file conflicts ...
+# terminfo/f/foot (owned by ncurses)"). One owner per file: ncurses keeps them,
+# foot drops its copies (TERM=foot keeps working), hence ncurses in run.
+install = "DESTDIR=%{pkgdir} meson install -C build && rm -f %{pkgdir}/usr/share/terminfo/f/foot %{pkgdir}/usr/share/terminfo/f/foot-direct"

@@ -5,7 +5,7 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
@@ -78,7 +78,7 @@ PATH=/usr/bin:/usr/sbin:/bin:/sbin
 
 echo "faseela is going down..."
 for s in /etc/runit/runsvdir/default/*; do
-    [ -d "$s" ] && sv down "$(basename "$s")" 2>/dev/null
+    [ -d "$s" ] && sv down "$s" 2>/dev/null
 done
 sleep 1
 swapoff -a 2>/dev/null || true
@@ -129,7 +129,7 @@ install -d -m755 %{pkgdir}/etc/sv/dhcpcd
 printf '#!/bin/sh\nexec dhcpcd -B\n' > %{pkgdir}/etc/sv/dhcpcd/run
 
 install -d -m755 %{pkgdir}/etc/sv/sysklogd
-printf '#!/bin/sh\nexec syslogd -n\n' > %{pkgdir}/etc/sv/sysklogd/run
+printf '#!/bin/sh\nexec syslogd -F\n' > %{pkgdir}/etc/sv/sysklogd/run
 
 install -d -m755 %{pkgdir}/etc/sv/crond
 printf '#!/bin/sh\nexec crond -n\n' > %{pkgdir}/etc/sv/crond/run

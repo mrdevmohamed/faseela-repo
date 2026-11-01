@@ -35,7 +35,10 @@ def make_archive(path: Path, entries: dict):
                 ti.size = len(v)
                 tf.addfile(ti, io.BytesIO(v))
     if shutil.which("zstd"):
-        subprocess.run(["zstd", "-q", "-f", "--rm", str(path), "-o", str(path)], check=True)
+        # zstd refuses input == output: compress next to it, then move over it
+        tmp = path.with_name(path.name + ".tmp")
+        subprocess.run(["zstd", "-q", "-f", str(path), "-o", str(tmp)], check=True)
+        os.replace(tmp, path)
 
 
 class Conflicts(unittest.TestCase):

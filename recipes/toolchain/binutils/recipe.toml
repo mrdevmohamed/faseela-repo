@@ -24,8 +24,13 @@ prepare = "mkdir -v build"
 # `ar`/`ld`/... get DT_NEEDED libfl.so.2. flex is build-only and absent from the
 # final system, so every binutils tool then dies with
 # "error while loading shared libraries: libfl.so.2".
+#
+# MAKEINFO=true — no texinfo in the build root (the seed rootfs has none; the old
+# Debian seed did): the tarball's doc timestamps make make try to regenerate the
+# .info files and die with "makeinfo: command not found" (error 127). The info
+# pages are simply not built; man pages are unaffected.
 configure = """
-cd build && LEX=: ../configure --prefix=/usr      \
+cd build && LEX=: MAKEINFO=true ../configure --prefix=/usr      \
     --sysconfdir=/etc                             \
     --enable-ld=default                           \
     --enable-plugins                              \
@@ -35,5 +40,5 @@ cd build && LEX=: ../configure --prefix=/usr      \
     --enable-new-dtags                            \
     --enable-default-hash-style=gnu
 """
-compile = "cd build && make tooldir=/usr -j%{jobs}"
-install = "cd build && make tooldir=/usr DESTDIR=%{pkgdir} install && rm -f %{pkgdir}/usr/lib/*.la"
+compile = "cd build && make MAKEINFO=true tooldir=/usr -j%{jobs}"
+install = "cd build && make MAKEINFO=true tooldir=/usr DESTDIR=%{pkgdir} install && rm -f %{pkgdir}/usr/lib/*.la"

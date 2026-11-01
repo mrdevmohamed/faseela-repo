@@ -2,13 +2,16 @@
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
 # rel 7: device-mapper + dm-crypt/XTS (recipes lvm2, cryptsetup)
+# rel 8: squashfs xz + zstd decompressors. bootstrap/mkiso.sh compresses the live
+#        rootfs with xz (-Xbcj x86) by default and defconfig only has zlib:
+#        "Filesystem uses "xz" compression. This is not supported"
 # rel 6: WIREGUARD and EXFAT_FS as modules (recipes wireguard-tools, exfatprogs)
 # rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
 #        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
 [package]
 name = "linux"
 version = "6.10"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "Linux kernel (x86_64 defconfig base image)"
 license = ["GPL-2.0"]
@@ -25,6 +28,9 @@ make mrproper
 make defconfig
 # live-boot prerequisites: overlay root from squashfs on iso9660/usb
 scripts/config -e OVERLAY_FS -e ISO9660_FS -e SQUASHFS -e BLK_DEV_LOOP -e DEVTMPFS -e DEVTMPFS_MOUNT
+# the kernel must read every compression mkiso.sh can write (SQUASH_COMP=xz|zstd|gzip);
+# zlib is already on in defconfig
+scripts/config -e SQUASHFS_XZ -e SQUASHFS_ZSTD
 # build-isolation.md §9: the sandbox's user/pid/net/ipc/uts namespaces
 # (USER_NS defaults to n on x86_64 defconfig — without it nawa's `sandbox`
 # and `closure` isolation levels cannot work on this distro's own kernel)
@@ -45,6 +51,9 @@ make olddefconfig
 # fail here, not at runtime, if olddefconfig dropped them
 grep -q '^CONFIG_WIREGUARD=m' .config && grep -q '^CONFIG_EXFAT_FS=m' .config
 grep -q '^CONFIG_BLK_DEV_DM=y' .config && grep -q '^CONFIG_DM_CRYPT=m' .config
+grep -q '^CONFIG_SQUASHFS_ZLIB=y' .config && grep -q '^CONFIG_SQUASHFS_XZ=y' .config && grep -q '^CONFIG_SQUASHFS_ZSTD=y' .config
+# mkiso.sh passes -Xbcj x86: the x86 BCJ filter decoder has to be there too
+grep -q '^CONFIG_XZ_DEC_X86=y' .config
 """
 compile = "make -j%{jobs}"
 install = """

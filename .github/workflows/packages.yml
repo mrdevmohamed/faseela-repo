@@ -27,7 +27,8 @@ name: Build packages
 #   names         `curl git jq`            exactly those (+ missing dependencies)
 #   @category     `@extra` `@system` `@base` `@boot` `@gui` `@toolchain`
 #   flavor:NAME   everything flavor NAME (flavors.toml) needs beyond the bootstrap
-#                 core, e.g. `flavor:iso-gui` — what the ISO workflow then installs
+#                 core, plus the core's @toolchain packages (they must be published
+#                 for the flavor jobs to install them), e.g. `flavor:iso-gui`
 #   ALL / @all    base + system + boot + extra  (NOT gui, NOT toolchain)
 #   mix them      `@all @gui`   `@extra vim`
 #
@@ -127,11 +128,17 @@ jobs:
                 ALL|@all)
                   pkgs+=" $(awk '$1 != "gui" && $1 != "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")" ;;
                 flavor:*)
-                  # what the flavor adds on top of the bootstrap core (that one is
-                  # built by the ISO workflow and is already in the build root)
+                  # what the flavor needs beyond the bootstrap core, PLUS the
+                  # toolchain packages of that core (glibc, gcc, binutils ...):
+                  # ALL never builds @toolchain, so without this nothing ever
+                  # publishes them and every flavor install dies on `binutils`.
                   names="$(python3 scripts/flavor.py resolve "${tok#flavor:}" --without bootstrap)" \
                     || { echo "::error::cannot resolve flavor '${tok#flavor:}'"; exit 1; }
-                  pkgs+=" $names" ;;
+                  tc="$(awk '$1 == "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")"
+                  boot="$(python3 scripts/flavor.py resolve bootstrap)"
+                  full="$(python3 scripts/flavor.py resolve "${tok#flavor:}")"
+                  keep="$(for t in $tc; do grep -qxF "$t" <<< "$boot" && grep -qxF "$t" <<< "$full" && echo "$t"; done || true)"
+                  pkgs+=" $names $keep" ;;
                 @*)
                   names="$(awk -v c="${tok#@}" '$1 == c {print $2}' "$RUNNER_TEMP/ids.txt")"
                   [[ -n "$names" ]] || { echo "::error::no recipe category '${tok#@}' (have: $(awk '{print $1}' "$RUNNER_TEMP/ids.txt" | sort -u | tr '\n' ' '))"; exit 1; }

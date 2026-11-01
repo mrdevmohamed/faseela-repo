@@ -1,0 +1,21 @@
+# system recipe: libaio — Linux-native asynchronous I/O library (libaio.h, libaio.so).
+# lvm2 2.03.x needs it unconditionally (device/bcache.c includes <libaio.h>).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r libaio` pins it.
+[package]
+name = "libaio"
+version = "0.3.113"
+rel = 1
+arch = ["x86_64"]
+summary = "libaio: Linux-native asynchronous I/O access library"
+license = ["LGPL-2.1-or-later"]
+source = "https://codeberg.org/jmoyer/libaio/releases/download/libaio-%{version}/libaio-%{version}.tar.gz"
+sha256 = "2c44d1c5fd0d43752287c9ae1eb9c023f04ef848ea8d4aafa46e9aedb678200b"
+source_dir = "libaio-libaio-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+compile = "make -j%{jobs} prefix=/usr"
+install = "make prefix=/usr DESTDIR=%{pkgdir} install"

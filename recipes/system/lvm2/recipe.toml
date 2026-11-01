@@ -1,4 +1,5 @@
 # system recipe: lvm2 — also provides libdevmapper (needed by cryptsetup).
+# Needs libaio (device/bcache.c includes <libaio.h>).
 # Needs CONFIG_BLK_DEV_DM in the kernel (see recipe `linux`). No thin/cache tools, no systemd/dbus.
 # sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lvm2` pins it.
 [package]
@@ -13,8 +14,8 @@ sha256 = "ad76abecb8dc887733e06c449cb9add04a3506f9f0780c128817a6e1a17cec05"
 source_dir = "LVM2.%{version}"
 
 [depends]
-build = ["eudev", "util-linux", "readline", "ncurses", "pkgconf"]
-run = ["eudev", "util-linux", "readline", "ncurses"]
+build = ["eudev", "util-linux", "readline", "ncurses", "libaio", "pkgconf"]
+run = ["eudev", "util-linux", "readline", "ncurses", "libaio"]
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --sbindir=/usr/bin --enable-pkgconfig --enable-udev_rules --enable-udev_sync --with-udevdir=/usr/lib/udev/rules.d --with-thin=none --with-cache=none --disable-selinux --disable-notify-dbus --disable-app-machineid --disable-systemd-journal"

@@ -111,7 +111,14 @@ def resolve(flavors, recipes, name):
     for pkg in roots:
         visit(pkg, None)
     drop = set(exclude)
-    return [p for p in order if p not in drop]
+    result = [p for p in order if p not in drop]
+    # base-files lays down the merged-/usr symlinks (/sbin -> usr/bin ...): it must
+    # come before anything that ships files there (glibc owns /sbin otherwise
+    # and base-files then fails with "file conflicts ... /sbin (owned by glibc)")
+    if "base-files" in result:
+        result.remove("base-files")
+        result.insert(0, "base-files")
+    return result
 
 
 def main(argv=None):

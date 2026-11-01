@@ -2,7 +2,7 @@
 [package]
 name = "gettext"
 version = "0.26"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU internationalization library and tools"
 license = ["GPL-3.0", "LGPL-2.1"]
@@ -10,8 +10,8 @@ source = "https://mirrors.kernel.org/gnu/gettext/gettext-0.26.tar.xz"
 sha256 = "d1fb86e260cfe7da6031f94d2e44c0da55903dbae0a2fa0fae78c91ae1b56f00"
 
 [depends]
-build = []
-run = []
+build = ["libxml2"]
+run = ["libxml2"]
 
 # --disable-openmp: otherwise it links libgomp from the bootstrap seed's gcc,
 # an undeclared dependency (libgomp belongs to the gcc package).

@@ -1,4 +1,12 @@
 # boot recipe: Linux kernel (x86_64 defconfig base image)
+# rel 9: real hardware. defconfig is a server/VM config: no wifi/bluetooth stack worth
+#        the name, no GPU drivers, no HDA audio, no laptop platform drivers, no
+#        touchpad (i2c-hid), no SD-card readers. Root-capable storage (NVMe, AHCI,
+#        eMMC/SD) is BUILT IN (the initramfs only stages a fixed module list);
+#        everything that needs firmware or is only useful after boot is a module,
+#        autoloaded by udev from its modalias (blobs: linux-firmware-lite). Also
+#        virtio-input for QEMU's keyboard/mouse. Not covered yet: Intel SOF audio
+#        (newer laptops' internal microphones/speakers), Thunderbolt/USB4.
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
 # rel 7: device-mapper + dm-crypt/XTS (recipes lvm2, cryptsetup)
@@ -11,7 +19,7 @@
 [package]
 name = "linux"
 version = "6.10"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "Linux kernel (x86_64 defconfig base image)"
 license = ["GPL-2.0"]
@@ -47,6 +55,47 @@ scripts/config -e DEBUG_INFO_NONE -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG
 scripts/config -m WIREGUARD -m EXFAT_FS
 # lvm2 and cryptsetup: device-mapper built in, dm-crypt and its default cipher mode (aes-xts) as modules
 scripts/config -e MD -e BLK_DEV_DM -m DM_CRYPT -m CRYPTO_XTS
+# ---- real hardware (rel 9) ----
+# boot-critical storage built in: NVMe, SATA/AHCI, eMMC + SD readers (a laptop's
+# root can be on any of them and the initramfs does not load them from a list)
+scripts/config -e BLK_DEV_NVME -e SATA_AHCI -e MMC -e MMC_BLOCK -e MMC_SDHCI -e MMC_SDHCI_PCI -e MMC_SDHCI_ACPI
+# filesystems on removable media and other disks; vfat needs its NLS tables to mount without warnings
+scripts/config -e EXT4_FS -e FAT_FS -e VFAT_FS -e NLS_CODEPAGE_437 -e NLS_ISO8859_1 -e NLS_UTF8
+scripts/config -m BTRFS_FS -m XFS_FS -m F2FS_FS -m NTFS3_FS -m FUSE_FS
+# wired NICs defconfig lacks (e1000e/igb/r8169 are already built in) and USB ethernet dongles
+scripts/config -e NET_VENDOR_INTEL -e NET_VENDOR_BROADCOM -e USB_NETDEVICES
+scripts/config -m IGC -m TIGON3 -m USB_RTL8152
+# wifi: stack built in, drivers as modules (they load firmware: not before the root is mounted)
+scripts/config -e WIRELESS -e CFG80211 -e MAC80211 -e RFKILL -e WLAN
+scripts/config -e WLAN_VENDOR_INTEL -e WLAN_VENDOR_ATH -e WLAN_VENDOR_REALTEK -e WLAN_VENDOR_MEDIATEK -e WLAN_VENDOR_BROADCOM
+scripts/config -m IWLWIFI -m IWLDVM -m IWLMVM
+scripts/config -m ATH9K -m ATH10K -m ATH10K_PCI -m ATH11K -m ATH11K_PCI -m ATH12K
+scripts/config -m RTW88 -m RTW88_8822BE -m RTW88_8822CE -m RTW88_8723DE -m RTW88_8821CE
+scripts/config -m RTW89 -m RTW89_8852AE -m RTW89_8852BE -m RTW89_8852CE
+scripts/config -m MT7921E -m BRCMFMAC -e BRCMFMAC_PCIE -e BRCMFMAC_USB
+# bluetooth (the kernel side; a userspace daemon is not packaged yet)
+scripts/config -m BT -e BT_BREDR -e BT_LE -m BT_RFCOMM -m BT_BNEP -m BT_HIDP -m BT_HCIBTUSB
+scripts/config -e BT_HCIBTUSB_BCM -e BT_HCIBTUSB_RTL -e BT_HCIBTUSB_MTK
+# GPUs: modules (firmware: amdgpu/i915/radeon blobs are in linux-firmware-lite); simpledrm
+# on the UEFI framebuffer covers the time before they load
+scripts/config -e SYSFB_SIMPLEFB
+scripts/config -m DRM_I915 -m DRM_AMDGPU -e DRM_AMDGPU_SI -e DRM_AMDGPU_CIK -e DRM_AMD_DC -m DRM_NOUVEAU -m DRM_RADEON -m DRM_QXL
+# touchpads/keyboards behind i2c-hid (nearly every laptop since ~2015), multitouch, Intel LPSS i2c
+scripts/config -m I2C_HID_ACPI -m HID_MULTITOUCH -m I2C_DESIGNWARE_PLATFORM -e MFD_INTEL_LPSS_PCI -e MFD_INTEL_LPSS_ACPI
+# audio: HDA controller + the common codecs, USB audio (alsa-utils is in the ISO)
+scripts/config -e SOUND -e SND -e SND_PCI
+scripts/config -m SND_HDA_INTEL -m SND_HDA_CODEC_REALTEK -m SND_HDA_CODEC_HDMI -m SND_HDA_CODEC_CONEXANT -m SND_HDA_CODEC_SIGMATEL -m SND_HDA_CODEC_VIA -m SND_HDA_CODEC_ANALOG -m SND_USB_AUDIO
+# webcams (UVC)
+scripts/config -e MEDIA_SUPPORT -e MEDIA_CAMERA_SUPPORT -e MEDIA_USB_SUPPORT -m USB_VIDEO_CLASS
+# laptop platform: battery/AC/lid/backlight, vendor hotkeys + WMI, cpufreq (schedutil, not performance), suspend/hibernate
+scripts/config -e ACPI -e ACPI_BATTERY -e ACPI_AC -e ACPI_BUTTON -e ACPI_VIDEO -e ACPI_THERMAL -e X86_PLATFORM_DEVICES
+scripts/config -e BACKLIGHT_CLASS_DEVICE -e LEDS_CLASS -e INTEL_IDLE
+scripts/config -m THINKPAD_ACPI -m ASUS_WMI -m ASUS_NB_WMI -m IDEAPAD_LAPTOP -m ACER_WMI -m DELL_LAPTOP -m DELL_WMI -m HP_WMI
+scripts/config -e CPU_FREQ -e X86_INTEL_PSTATE -e X86_AMD_PSTATE -e X86_ACPI_CPUFREQ -e CPU_FREQ_GOV_SCHEDUTIL
+scripts/config -d CPU_FREQ_DEFAULT_GOV_PERFORMANCE -e CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
+scripts/config -e SUSPEND -e HIBERNATION
+# QEMU guests: virtio keyboard/mouse (-device virtio-keyboard-pci/virtio-mouse-pci), ballooning, entropy
+scripts/config -e VIRTIO_INPUT -e VIRTIO_BALLOON -e HW_RANDOM_VIRTIO
 make olddefconfig
 # fail here, not at runtime, if olddefconfig dropped them
 grep -q '^CONFIG_WIREGUARD=m' .config && grep -q '^CONFIG_EXFAT_FS=m' .config
@@ -54,6 +103,13 @@ grep -q '^CONFIG_BLK_DEV_DM=y' .config && grep -q '^CONFIG_DM_CRYPT=m' .config
 grep -q '^CONFIG_SQUASHFS_ZLIB=y' .config && grep -q '^CONFIG_SQUASHFS_XZ=y' .config && grep -q '^CONFIG_SQUASHFS_ZSTD=y' .config
 # mkiso.sh passes -Xbcj x86: the x86 BCJ filter decoder has to be there too
 grep -q '^CONFIG_XZ_DEC_X86=y' .config
+# real hardware: the root device drivers must be built in, the rest present as modules
+# (a typo or a Kconfig dependency olddefconfig could not meet fails the build HERE, not on a laptop)
+grep -q '^CONFIG_BLK_DEV_NVME=y' .config && grep -q '^CONFIG_SATA_AHCI=y' .config && grep -q '^CONFIG_MMC_SDHCI_PCI=y' .config
+grep -q '^CONFIG_IWLWIFI=m' .config && grep -q '^CONFIG_IWLMVM=m' .config && grep -q '^CONFIG_ATH9K=m' .config && grep -q '^CONFIG_RTW88=m' .config
+grep -q '^CONFIG_BT_HCIBTUSB=m' .config
+grep -q '^CONFIG_DRM_I915=m' .config && grep -q '^CONFIG_DRM_AMDGPU=m' .config && grep -q '^CONFIG_DRM_NOUVEAU=m' .config
+grep -q '^CONFIG_SND_HDA_INTEL=m' .config && grep -q '^CONFIG_NTFS3_FS=m' .config && grep -q '^CONFIG_VIRTIO_INPUT=y' .config
 """
 compile = "make -j%{jobs}"
 install = """

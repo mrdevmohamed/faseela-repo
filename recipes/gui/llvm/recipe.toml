@@ -1,0 +1,60 @@
+# gui recipe: llvm — only what mesa's llvmpipe needs (shared libLLVM, X86 target, llvm-config)
+#
+# Why: wlroots here is built `-D renderers=gles2` only, so every frame goes through
+# mesa's GL. Without LLVM mesa has only `softpipe`, a reference rasterizer that is
+# an order of magnitude slower than `llvmpipe` (a JIT-compiled, multithreaded one).
+# That is why the GUI crawled in QEMU (and on any machine without a GPU driver).
+#
+# Scope kept deliberately small — this is by far the longest build in the tree:
+#   * LLVM_TARGETS_TO_BUILD=X86: llvmpipe JITs for the host CPU only. The AMDGPU
+#     target (radeonsi) is NOT built; adding it later means this recipe and mesa's
+#     gallium-drivers change together.
+#   * one shared libLLVM-18.so (mesa links it with -D shared-llvm=enabled) instead of
+#     ~1 GB of static archives, which are removed again after the install.
+#   * no clang/lld/lldb, no tests, examples, docs or benchmarks.
+# Only /usr/bin/llvm-config is kept from the tools: mesa's meson asks it for flags.
+[package]
+name = "llvm"
+version = "18.1.8"
+rel = 1
+arch = ["x86_64"]
+summary = "LLVM libraries (X86 target, shared libLLVM) for mesa's llvmpipe"
+license = ["Apache-2.0 WITH LLVM-exception"]
+source = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
+sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a"
+source_dir = "llvm-project-%{version}.src"
+
+[depends]
+build = ["cmake", "ninja", "python", "zlib", "zstd"]
+run = ["zlib", "zstd"]
+
+[build]
+# RTTI on: the mesa/LLVM combination every distro ships is built that way.
+# LLVM_PARALLEL_LINK_JOBS=1: linking libLLVM-18.so needs several GB of RAM per job.
+# The two sed lines below: llvm-config embeds LLVM_SRC_ROOT / LLVM_OBJ_ROOT (its
+# --src-root/--obj-root), i.e. the build directory, which the post-build lint
+# rejects (`/build/src` in a file). -ffile-prefix-map covers __FILE__ in the code.
+configure = """
+cmake -S llvm -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_C_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
+    -DCMAKE_CXX_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
+    -DLLVM_TARGETS_TO_BUILD=X86 \
+    -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_ASSERTIONS=OFF \
+    -DLLVM_ENABLE_ZLIB=ON -DLLVM_ENABLE_ZSTD=ON \
+    -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_FFI=OFF \
+    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_DOCS=OFF \
+    -DLLVM_OPTIMIZED_TABLEGEN=ON -DLLVM_PARALLEL_LINK_JOBS=1
+sed -i 's#/build/src#/usr/src#g' build/tools/llvm-config/BuildVariables.inc
+grep -rl '/build/src' build/tools/llvm-config 2>/dev/null | head -3 | while read f; do echo "llvm: build path left in $f" >&2; done
+"""
+compile = "ninja -C build -j%{jobs}"
+install = """
+DESTDIR=%{pkgdir} cmake --install build --strip
+# static archives: unused with the shared libLLVM, and ~1 GB
+rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a
+# keep llvm-config only (the other tools are not needed to build or run mesa)
+find %{pkgdir}/usr/bin -mindepth 1 ! -name llvm-config -delete
+rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc
+"""

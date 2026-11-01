@@ -1,20 +1,22 @@
-# gui recipe: mesa — OpenGL/GLES/EGL/GBM implementation (software + virgl only)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+# gui recipe: mesa — OpenGL/GLES/EGL/GBM implementation (llvmpipe + softpipe + virgl)
+# rel 2: llvmpipe (recipe `llvm`). wlroots is gles2-only, so all drawing goes through
+#        mesa's GL; with softpipe alone the GUI was unusably slow in QEMU. softpipe stays
+#        as the last-resort fallback (llvmpipe falls back to it if the JIT cannot start).
 [package]
 name = "mesa"
 version = "24.3.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "OpenGL/GLES/EGL/GBM implementation (software + virgl only)"
+summary = "OpenGL/GLES/EGL/GBM implementation (llvmpipe + softpipe + virgl; no hardware drivers yet)"
 license = ["MIT"]
 source = "https://archive.mesa3d.org/mesa-%{version}.tar.xz"
 sha256 = "97813fe65028ef21b4d4e54164563059e8408d8fee3489a2323468d198bf2efc"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "python-pyyaml", "python-packaging", "libdrm", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "bison", "flex"]
-run = ["libdrm", "wayland", "expat", "zlib", "zstd"]
+build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "python-pyyaml", "python-packaging", "libdrm", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "bison", "flex", "llvm"]
+run = ["libdrm", "wayland", "expat", "zlib", "zstd", "llvm"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D platforms=wayland -D gallium-drivers=softpipe,virgl -D vulkan-drivers= -D llvm=disabled -D glx=disabled -D egl=enabled -D gbm=enabled -D gles1=disabled -D gles2=enabled -D glvnd=disabled -D valgrind=disabled -D libunwind=disabled -D lmsensors=disabled -D build-tests=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D platforms=wayland -D gallium-drivers=softpipe,llvmpipe,virgl -D vulkan-drivers= -D llvm=enabled -D shared-llvm=enabled -D glx=disabled -D egl=enabled -D gbm=enabled -D gles1=disabled -D gles2=enabled -D glvnd=disabled -D valgrind=disabled -D libunwind=disabled -D lmsensors=disabled -D build-tests=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

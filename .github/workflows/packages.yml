@@ -309,8 +309,10 @@ jobs:
           n="$(gh release view "$PKG_TAG" --repo "$PKG_REPO" --json assets \
                  --jq '[.assets[].name | select(endswith(".nawa.tar.zst"))] | length')"
           if (( n > 0 )); then
+            # the detached <archive>.sig comes with every archive: once the build
+            # root trusts the repository key, nawa verifies each dependency
             gh release download "$PKG_TAG" --repo "$PKG_REPO" --dir "$T/build/out" \
-              --pattern '*.nawa.tar.zst' --clobber
+              --pattern '*.nawa.tar.zst' --pattern '*.nawa.tar.zst.sig' --clobber
           fi
           echo "published=$n" >> "$GITHUB_OUTPUT"
           echo "$n archive(s) already in $PKG_REPO ($PKG_TAG)"

@@ -26,6 +26,8 @@ name: Build packages
 #   (push)        the recipes changed by the push
 #   names         `curl git jq`            exactly those (+ missing dependencies)
 #   @category     `@extra` `@system` `@base` `@boot` `@gui` `@toolchain`
+#   flavor:NAME   everything flavor NAME (flavors.toml) needs beyond the bootstrap
+#                 core, e.g. `flavor:iso-gui` — what the ISO workflow then installs
 #   ALL / @all    base + system + boot + extra  (NOT gui, NOT toolchain)
 #   mix them      `@all @gui`   `@extra vim`
 #
@@ -122,6 +124,12 @@ jobs:
               case "$tok" in
                 ALL|@all)
                   pkgs+=" $(awk '$1 != "gui" && $1 != "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")" ;;
+                flavor:*)
+                  # what the flavor adds on top of the bootstrap core (that one is
+                  # built by the ISO workflow and is already in the build root)
+                  names="$(python3 scripts/flavor.py resolve "${tok#flavor:}" --without bootstrap)" \
+                    || { echo "::error::cannot resolve flavor '${tok#flavor:}'"; exit 1; }
+                  pkgs+=" $names" ;;
                 @*)
                   names="$(awk -v c="${tok#@}" '$1 == c {print $2}' "$RUNNER_TEMP/ids.txt")"
                   [[ -n "$names" ]] || { echo "::error::no recipe category '${tok#@}' (have: $(awk '{print $1}' "$RUNNER_TEMP/ids.txt" | sort -u | tr '\n' ' '))"; exit 1; }

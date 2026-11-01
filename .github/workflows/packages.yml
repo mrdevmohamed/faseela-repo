@@ -63,7 +63,7 @@ on:
   workflow_dispatch:
     inputs:
       packages:
-        description: "Names, @category or ALL, space separated (empty = recipes changed by this push)"
+        description: "Names, @category, flavor:NAME or ALL, space separated, e.g. `flavor:iso-nogui flavor:iso-gui flavor:rootfs-min` (empty = recipes changed by this push)"
         type: string
         default: ""
       rootfs:

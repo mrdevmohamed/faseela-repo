@@ -9,6 +9,7 @@ summary = "wlr-randr — xrandr for wlroots compositors (sway outputs)"
 license = ["MIT"]
 source = "https://gitlab.freedesktop.org/emersion/wlr-randr/-/archive/v%{version}/wlr-randr-v%{version}.tar.gz"
 sha256 = "c566d94fddb84f801c733f1415a4ad5b75870305346363074cbdf468d4ac263a"
+source_dir = "wlr-randr-v%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols"]

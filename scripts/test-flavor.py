@@ -89,6 +89,36 @@ class RealTree(unittest.TestCase):
         self.assertIn("sway", got["iso-gui"])
         self.assertNotIn("sway", got["iso-nogui"])
 
+    def test_base_files_first_everywhere(self):
+        # base-files owns the merged-/usr symlinks (/sbin -> usr/bin ...). If glibc
+        # lands first it owns /sbin and base-files fails with "file conflicts
+        # installing base-files: /sbin (owned by glibc)" (iso-nogui/iso-gui, 1 Nov).
+        root = Path(__file__).resolve().parent.parent
+        flavors = flavor.load_flavors(root / "flavors.toml")
+        recipes = flavor.load_recipes(root / "recipes")
+        for n in flavors:
+            got = flavor.resolve(flavors, recipes, n)
+            if "base-files" in got:
+                self.assertEqual(got[0], "base-files", n)
+        # moving it to the front must not put it before a dependency of its own
+        self.assertEqual(recipes["base-files"][1].get("run", []), [])
+
+    def test_installed_packages_come_after_their_run_dependencies(self):
+        # mkflavor installs one package at a time with --no-deps, so the order
+        # is the only thing that makes each package's libraries available.
+        root = Path(__file__).resolve().parent.parent
+        flavors = flavor.load_flavors(root / "flavors.toml")
+        recipes = flavor.load_recipes(root / "recipes")
+        for n in flavors:
+            got = flavor.resolve(flavors, recipes, n)
+            pos = {p: i for i, p in enumerate(got)}
+            for p in got:
+                for dep in recipes[p][1].get("run", []):
+                    if dep in pos:
+                        self.assertLess(pos[dep], pos[p], f"{n}: {dep} must precede {p}")
+                    else:
+                        self.assertIn(dep, flavors[n].get("exclude", []) + [x for f in flavors.values() for x in f.get("exclude", [])], f"{n}: {p} needs {dep}, which is not in the flavor")
+
 
 if __name__ == "__main__":
     unittest.main()

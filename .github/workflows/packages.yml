@@ -51,8 +51,10 @@ name: Build packages
 #   min   faseela-x86_64-rootfs-min.tar.zst     base-devel + nawa, small, NO rust
 #   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust
 #   auto  (default) seed when rust or nawa is in the list, else min
-# Both come from the ISO workflow (release.yml) of DISTRO_REPO on a `v*` tag:
-# run that once before the first package build.
+# Both come from the ISO workflow (release.yml) of DISTRO_REPO, which publishes them in
+# a release (a `v*` tag, or a manual run with `release` ticked; `outputs=core` makes a
+# release with the seed rootfs alone). `auto` falls back to the seed rootfs while no
+# release carries the small one yet. Run that once before the first package build.
 
 on:
   push:
@@ -231,20 +233,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}
+          ROOTFS_REQUESTED: ${{ inputs.rootfs || 'auto' }}
         run: |
           set -euo pipefail
-          asset=faseela-x86_64-rootfs-min.tar.zst
-          legacy=mydistro-x86_64-rootfs-min.tar.zst   # releases made before the rename
-          if [[ "$ROOTFS_KIND" == seed ]]; then
-            asset=faseela-x86_64-rootfs.tar.zst
-            legacy=mydistro-x86_64-rootfs.tar.zst
-          fi
           dir="$RUNNER_TEMP/rootfs"
-          rc=0
-          # verifies the .sha256 sidecar; exit 3 = no release carries the asset
-          ROOTFS_ASSET="$asset" ROOTFS_LEGACY_ASSET="$legacy" bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
+          fetch() {   # $1 = min | seed -> sets asset; returns fetch-rootfs-seed.sh's status
+            asset=faseela-x86_64-rootfs-min.tar.zst
+            legacy=mydistro-x86_64-rootfs-min.tar.zst   # releases made before the rename
+            if [[ "$1" == seed ]]; then
+              asset=faseela-x86_64-rootfs.tar.zst
+              legacy=mydistro-x86_64-rootfs.tar.zst
+            fi
+            rc=0
+            # verifies the .sha256 sidecar; exit 3 = no release carries the asset
+            ROOTFS_ASSET="$asset" ROOTFS_LEGACY_ASSET="$legacy" bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
+          }
+          fetch "$ROOTFS_KIND"
+          # `auto` picked the small rootfs, but it is a FLAVOR (rootfs-min) that only exists
+          # once the packages are published: before that, the seed rootfs (the bootstrap core
+          # every release carries) is a build environment too.
+          if [[ $rc -eq 3 && "$ROOTFS_KIND" == min && "$ROOTFS_REQUESTED" == auto ]]; then
+            echo "::notice::no release carries the small rootfs yet - building in the seed rootfs instead"
+            ROOTFS_KIND=seed
+            fetch seed
+          fi
           if [[ $rc -eq 3 ]]; then
-            echo "::error::no release of $GH_REPO carries $asset. Push a v* tag (workflow 'Build ISO (CD)') once, so there is a rootfs to build in."
+            echo "::error::no release of $GH_REPO carries $asset. Publish one without a tag: faseela > Actions > Build ISO (CD) > Run workflow with outputs=core and release ticked, then re-run this workflow."
             exit 1
           elif [[ $rc -ne 0 ]]; then
             echo "::error::could not fetch/verify $asset (fetch-rootfs-seed.sh exit $rc)"

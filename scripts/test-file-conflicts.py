@@ -65,8 +65,10 @@ class Conflicts(unittest.TestCase):
             f'[depends]\nbuild = []\nrun = [{", ".join(chr(34) + x + chr(34) for x in run)}]\n')
 
     def archive(self, name, entries):
+        # the layout nawa writes: metadata at the top, the files under payload/
         make_archive(self.d / "out" / f"{name}-1-1.nawa.tar.zst",
-                     {".PKGINFO": b"name\n", **entries})
+                     {".PKGINFO": b"name\n", "payload/": None,
+                      **{f"payload/{k}": v for k, v in entries.items()}})
 
     def run_check(self, flavors_toml, *extra):
         (self.d / "f.toml").write_text(textwrap.dedent(flavors_toml))
@@ -113,16 +115,35 @@ class Conflicts(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("/usr/bin/tool", r.stdout)
 
-    def test_symlink_vs_directory_is_a_warning_and_missing_archive_too(self):
-        for n in ("base-files", "glibc", "ghost"):
+    def test_symlink_before_directory_is_fine_after_it_is_an_error(self):
+        # base-files' /sbin symlink must be installed before glibc's /sbin
+        # directory; the other way round nawa fails ("/sbin (owned by glibc)")
+        for n in ("links", "libc"):
             self.recipe(n)
-        self.archive("base-files", {"sbin": ("->", "usr/bin")})
-        self.archive("glibc", {"usr/": None, "usr/bin/": None, "usr/bin/ldd": b"1", "sbin/": None})
-        toml = '[flavor.x]\ninclude = ["base-files", "glibc", "ghost"]\n'
+        self.archive("links", {"sbin": ("->", "usr/bin")})
+        self.archive("libc", {"usr/": None, "usr/bin/": None, "usr/bin/ldd": b"1", "sbin/": None})
+        good = self.run_check('[flavor.x]\ninclude = ["links", "libc"]\n')
+        self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
+        self.assertEqual(good.stderr, "")
+        bad = self.run_check('[flavor.x]\ninclude = ["libc", "links"]\n')
+        self.assertEqual(bad.returncode, 1, bad.stdout + bad.stderr)
+        self.assertIn("/sbin is a file/symlink of links but a directory of libc", bad.stdout)
+
+    def test_files_outside_payload_are_metadata(self):
+        for n in ("a", "b"):
+            self.recipe(n)
+        self.archive("a", {"usr/bin/a": b"1"})
+        self.archive("b", {"usr/bin/b": b"2"})
+        # .PKGINFO exists in both archives; it must never count as a shared file
+        r = self.run_check('[flavor.x]\ninclude = ["a", "b"]\n')
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_missing_archive_is_a_warning_and_an_error_when_strict(self):
+        self.recipe("ghost")
+        toml = '[flavor.x]\ninclude = ["ghost"]\n'
         r = self.run_check(toml)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("no archive ghost-1-1.nawa.tar.zst", r.stderr)
-        self.assertIn("/sbin is a file/symlink of base-files but a directory of glibc", r.stderr)
         self.assertEqual(self.run_check(toml, "--strict").returncode, 1)
 
 

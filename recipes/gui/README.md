@@ -2,7 +2,7 @@
 
 A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
 **wlroots 0.18**, **foot** terminal, DejaVu fonts, **seatd** for seat
-management (no systemd/logind), supervised by runit. 42 packages.
+management (no systemd/logind), supervised by runit. 43 packages (incl. `llvm`).
 
 > **Status: written offline, not yet built.** These recipes were authored
 > without network access, so (a) every `sha256` is an all-zero placeholder and
@@ -71,10 +71,15 @@ DRM (virtio-gpu, bochs, simpledrm) and evdev/HID input; to try it in QEMU use
 
 ## Limitations / next steps
 
-* **Mesa is software + virgl only** (`softpipe`, `virgl`, built `-D llvm=disabled`).
-  Real GPUs (Intel `iris`, AMD `radeonsi`, `llvmpipe`) need LLVM (and libclc)
-  — add `llvm` (and `libpciaccess` for `libdrm`'s intel support) and extend
-  `-D gallium-drivers`.
+* **Mesa is software + virgl only** (`llvmpipe`, `softpipe`, `virgl`; `-D llvm=enabled`
+  with the `llvm` recipe, X86 target only). wlroots is built `renderers=gles2` only,
+  so everything is drawn through mesa's GL: `llvmpipe` (JIT, multithreaded) is what
+  keeps sway usable in QEMU and on machines without a mesa hardware driver — with
+  `softpipe` alone it crawled. Give the VM several cores and `-cpu host` with KVM
+  (llvmpipe picks its SIMD path from the CPU flags; `scripts/qemu-run.sh` in faseela
+  does this). Real GPUs (Intel `iris`, AMD `radeonsi`) still need more: extend the
+  `llvm` recipe's `LLVM_TARGETS_TO_BUILD` (AMDGPU for radeonsi), add libclc/libpciaccess
+  and extend `-D gallium-drivers`. The `llvm` recipe is the longest build in the tree.
 * No Xwayland/X11, no D-Bus, so no sway tray (`-D tray=disabled`) and no
   portals. The launcher is `wmenu` (`Super+D`, sway's default `wmenu-run`);
   there is no lock screen yet — add a `swaylock` recipe as needed.

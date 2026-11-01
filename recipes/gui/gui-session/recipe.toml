@@ -3,7 +3,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
@@ -115,7 +115,8 @@ fi
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=sway
 export LIBSEAT_BACKEND=seatd
-# mesa here only ships software (softpipe) and virgl drivers
+# mesa here ships software rendering only (llvmpipe, softpipe) plus virgl; wlroots
+# refuses software GL unless this is set
 : "${WLR_RENDERER_ALLOW_SOFTWARE:=1}"
 export WLR_RENDERER_ALLOW_SOFTWARE
 exec sway "$@"
@@ -146,7 +147,8 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
     unset _uid
 fi
 export LIBSEAT_BACKEND=seatd
-# mesa here only ships software (softpipe) and virgl drivers
+# mesa here ships software rendering only (llvmpipe, softpipe) plus virgl; wlroots
+# refuses software GL unless this is set
 : "${WLR_RENDERER_ALLOW_SOFTWARE:=1}"
 export WLR_RENDERER_ALLOW_SOFTWARE
 EOF

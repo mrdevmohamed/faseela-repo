@@ -2,7 +2,7 @@
 [package]
 name = "dhcpcd"
 version = "10.2.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "DHCP/RA client for IPv4 and IPv6"
 license = ["BSD-2-Clause"]
@@ -20,5 +20,12 @@ install = "make DESTDIR=%{pkgdir} install"
 
 [hooks]
 post_install = """
-getent passwd dhcpcd >/dev/null || useradd -r -s /sbin/nologin dhcpcd
+# privsep chroots into the user's home: it must exist (and not be writable by
+# the user), otherwise dhcpcd logs "refusing chroot: /home/dhcpcd"
+install -d -m755 /var/empty
+if getent passwd dhcpcd >/dev/null; then
+    usermod -d /var/empty dhcpcd
+else
+    useradd -r -d /var/empty -s /sbin/nologin dhcpcd
+fi
 """

@@ -3,7 +3,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
@@ -67,7 +67,7 @@ printf '# default wallpaper (needs swaybg)\noutput * bg /usr/share/backgrounds/f
 cat > %{pkgdir}/etc/sway/config.d/20-keyboard.conf <<'KBD'
 # keyboard layouts (first one is the default); Alt+Shift switches
 input type:keyboard {
-    xkb_layout "us,ar"
+    xkb_layout "us,ara"
     xkb_options "grp:alt_shift_toggle"
 }
 KBD
@@ -82,6 +82,7 @@ bindsym $mod+Escape exec $lock
 exec swayidle -w timeout 300 '$lock' before-sleep '$lock'
 
 # screenshots to the clipboard (paste with wl-paste > file.png)
+unbindsym Print
 bindsym Print exec grim - | wl-copy -t image/png
 bindsym $mod+Print exec grim -g "$(slurp)" - | wl-copy -t image/png
 

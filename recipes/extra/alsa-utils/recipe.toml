@@ -4,7 +4,7 @@
 [package]
 name = "alsa-utils"
 version = "1.2.13"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "ALSA utilities: alsamixer, amixer, aplay, arecord, alsactl"
 license = ["GPL-2.0-or-later"]
@@ -18,7 +18,16 @@ run = ["alsa-lib", "ncurses", "eudev", "shadow"]
 [build]
 configure = "./configure --prefix=/usr --sbindir=/usr/bin --with-curses=ncursesw --disable-alsaconf --disable-bat --disable-xmlto --with-udev-rules-dir=/usr/lib/udev/rules.d --with-systemdsystemunitdir=no"
 compile = "make -j%{jobs}"
-install = "make DESTDIR=%{pkgdir} install"
+# the stock 90-alsa-restore.rules has a GOTO to a missing label with
+# --with-systemdsystemunitdir=no (eudev spams "has no matching label"), so ship
+# a minimal rule instead
+install = '''
+make DESTDIR=%{pkgdir} install
+cat > %{pkgdir}/usr/lib/udev/rules.d/90-alsa-restore.rules <<'RULES'
+ACTION=="add", SUBSYSTEM=="sound", KERNEL=="controlC*", KERNELS!="card*", RUN+="/usr/bin/alsactl restore $attr{device/number}"
+RULES
+chmod 644 %{pkgdir}/usr/lib/udev/rules.d/90-alsa-restore.rules
+'''
 
 [hooks]
 post_install = '''

@@ -21,11 +21,12 @@
 
 # What stage 2 and stage 3 of faseela build with the seed toolchain, and the
 # only thing they build. `nawa` is written in Rust, so its build dependencies
-# (rust, cmake, ...) are in the closure; `curl` fetches sources. This is also
+# (rust, cmake, ...) are in the closure; `curl` and `ca-certificates` let the finished root fetch from https (the
+# package repository). This is also
 # the seed of the next bootstrap (faseela-x86_64-rootfs.tar.zst).
 [flavor.bootstrap]
-summary = "the self-hosting core: base-devel + nawa + curl (and what builds them)"
-include = ["base-devel", "nawa", "curl"]
+summary = "the self-hosting core: base-devel + nawa + curl + ca-certificates (and what builds them)"
+include = ["base-devel", "nawa", "curl", "ca-certificates"]
 closure = "build"
 
 # The rootfs a later build uses instead of the Debian seed.

@@ -8,8 +8,8 @@ rel = 1
 arch = ["x86_64"]
 summary = "libaio: Linux-native asynchronous I/O access library"
 license = ["LGPL-2.1-or-later"]
-source = "https://pagure.io/libaio/archive/libaio-%{version}/libaio-libaio-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source = "https://codeberg.org/jmoyer/libaio/releases/download/libaio-%{version}/libaio-%{version}.tar.gz"
+sha256 = "2c44d1c5fd0d43752287c9ae1eb9c023f04ef848ea8d4aafa46e9aedb678200b"
 source_dir = "libaio-libaio-%{version}"
 
 [depends]

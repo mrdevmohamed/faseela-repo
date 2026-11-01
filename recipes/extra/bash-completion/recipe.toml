@@ -4,7 +4,7 @@
 [package]
 name = "bash-completion"
 version = "2.14.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Programmable completion for bash"
 license = ["GPL-2.0-or-later"]
@@ -16,6 +16,10 @@ build = []
 run = ["bash"]
 
 [build]
+# kmod ships its own, version-matched completions for its tools (insmod, rmmod,
+# ...). bash-completion carries older copies of two of them; one owner per file
+# (nawa refuses the install otherwise: "file conflicts ... completions/insmod
+# (owned by kmod)"), so bash-completion drops its copies and kmod's stay.
 configure = "./configure --prefix=/usr --sysconfdir=/etc"
 compile = "make -j%{jobs}"
-install = "make DESTDIR=%{pkgdir} install"
+install = "make DESTDIR=%{pkgdir} install && rm -f %{pkgdir}/usr/share/bash-completion/completions/insmod %{pkgdir}/usr/share/bash-completion/completions/rmmod"

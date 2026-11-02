@@ -4,14 +4,14 @@
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "System D-Bus service and messagebus account for runit systems"
 license = ["MIT"]
 
 [depends]
 build = []
-run = ["dbus", "runit"]
+run = ["dbus", "runit", "shadow"]
 
 [build]
 install = '''

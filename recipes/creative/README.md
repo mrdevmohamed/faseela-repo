@@ -2,9 +2,10 @@
 
 This category packages the official Linux x86_64 FHS release archives from
 [Storytold](https://github.com/storytold). It currently contains 15 optional
-desktop applications. The recipes install the upstream `usr/` tree as owned
-files under `/usr`; they do not run an application-specific installer and do
-not compile the upstream source.
+desktop applications. The Linux bundles expose an FHS-style `bin/` and `share/` payload. The recipes
+install these as owned files under `/usr/bin` and `/usr/share` (and also
+accept a conventional `usr/` payload); they do not run an application-specific
+installer and do not compile the upstream source.
 
 ## Supported applications
 
@@ -48,7 +49,8 @@ and `pipewire`. Faseela's PipeWire build enables the ALSA plugin; start the
 normal Faseela GUI session so its PipeWire user services are available.
 
 The release bundles contain the upstream desktop entries, icons, MIME data
-and AppStream metadata under `usr/share`; the recipes preserve that tree.
+and AppStream metadata under `share/`; the recipes install that content under
+`/usr/share` alongside the application binaries in `/usr/bin`.
 They do not add an X server, GTK stack, or a second package manager.
 
 ## Install and build
@@ -84,12 +86,12 @@ These exclusions can be revisited when upstream publishes a suitable Linux
 bundle or a nawa-compatible integration.
 
 
-## Packaging fix: locating the FHS tree
+## Packaging layout
 
-The `install` section searches recursively for `*/usr/bin` rather than
-assuming the current working directory is the package root. This handles both
-the normal upstream archive layout (`<release-name>/usr/bin`) and builds
-whose working directory is the archive extraction root. If the tree is truly
-missing, the error includes the working directory that was searched.
+The published Linux tarballs use `bin/` and `share/` directly inside the
+release directory, not `usr/bin/`. The install section handles both this
+upstream layout and a conventional `usr/` tree, whether nawa starts in the
+release directory or the archive extraction root. It copies the files into
+Faseela's `/usr/bin` and `/usr/share` so nawa owns and tracks them normally.
 
-The recipe release number is `rel = 2` for this packaging correction.
+The recipe release number is `rel = 3` for this packaging correction.

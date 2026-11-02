@@ -4,7 +4,7 @@
 [package]
 name = "filmcraft"
 version = "0.16.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Native video editor with timeline, colour grading and effects"
 license = ["MIT", "Apache-2.0"]
@@ -20,14 +20,35 @@ run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"
 install = """
 set -eu
 
-# Upstream release archives may be opened at the package directory or at the
-# archive extraction root. Locate the FHS usr tree in either layout.
-upstream_usr_bin="$(find . -type d -path '*/usr/bin' -print -quit)"
-if [ -z "$upstream_usr_bin" ]; then
-    echo "filmcraft: upstream archive has no usr/bin directory below $(pwd)" >&2
+# Storytold Linux release archives use bin/ and share/ at their FHS root.
+# Accept both that layout and a conventional usr/ tree. Some archives wrap
+# the payload in one top-level release directory.
+upstream_root=""
+if [ -d "bin" ] || [ -d "usr/bin" ]; then
+    upstream_root="."
+else
+    for candidate in */; do
+        if [ -d "${candidate}bin" ] || [ -d "${candidate}usr/bin" ]; then
+            upstream_root="${candidate%/}"
+            break
+        fi
+    done
+fi
+
+if [ -z "$upstream_root" ]; then
+    echo "filmcraft: upstream archive has neither bin/ nor usr/bin/ below $(pwd)" >&2
     exit 1
 fi
-upstream_usr="${upstream_usr_bin%/bin}"
-install -d -m755 "%{pkgdir}/usr"
-cp -a "$upstream_usr/." "%{pkgdir}/usr/"
+
+if [ -d "$upstream_root/usr/bin" ]; then
+    install -d -m755 "%{pkgdir}/usr"
+    cp -a "$upstream_root/usr/." "%{pkgdir}/usr/"
+else
+    install -d -m755 "%{pkgdir}/usr/bin"
+    cp -a "$upstream_root/bin/." "%{pkgdir}/usr/bin/"
+    if [ -d "$upstream_root/share" ]; then
+        install -d -m755 "%{pkgdir}/usr/share"
+        cp -a "$upstream_root/share/." "%{pkgdir}/usr/share/"
+    fi
+fi
 """

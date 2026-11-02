@@ -1,0 +1,34 @@
+# gui recipe: system D-Bus daemon supervised by runit.
+# The existing dbus recipe supplies the binaries and configuration; this small
+# integration package adds the system-bus account and a persistent service.
+[package]
+name = "dbus-system"
+version = "1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "System D-Bus service and messagebus account for runit systems"
+license = ["MIT"]
+
+[depends]
+build = []
+run = ["dbus", "runit"]
+
+[build]
+install = '''
+install -d -m755 %{pkgdir}/etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/dbus/run <<'RUN'
+#!/bin/sh
+install -d -m755 /run/dbus
+dbus-uuidgen --ensure=/etc/machine-id
+exec dbus-daemon --system --nofork --nopidfile
+RUN
+chmod 755 %{pkgdir}/etc/sv/dbus/run
+ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus
+'''
+
+[hooks]
+post_install = '''
+if ! getent passwd messagebus >/dev/null 2>&1; then
+    useradd -r -M -d /nonexistent -s /sbin/nologin messagebus
+fi
+'''

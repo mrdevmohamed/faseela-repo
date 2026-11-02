@@ -1,0 +1,22 @@
+# extra recipe: libpulse — PulseAudio-compatible client libraries only.
+# Faseela uses PipeWire as its sound server; do not build/install the PulseAudio
+# daemon. Firefox's Linux audio backend needs libpulse.so.0 to connect to the
+# pipewire-pulse compatibility endpoint started by gui-session.
+[package]
+name = "libpulse"
+version = "17.0"
+rel = 1
+arch = ["x86_64"]
+summary = "PulseAudio client libraries for PipeWire compatibility"
+license = ["LGPL-2.1-or-later"]
+source = "https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%{version}.tar.xz"
+sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libsndfile"]
+run = ["libsndfile"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D daemon=false -D client=true -D database=simple -D doxygen=false -D man=false -D tests=false -D alsa=disabled -D asyncns=disabled -D avahi=disabled -D bluez5=disabled -D bluez5-gstreamer=disabled -D consolekit=disabled -D dbus=disabled -D elogind=disabled -D fftw=disabled -D glib=disabled -D gsettings=disabled -D gstreamer=disabled -D gtk=disabled -D jack=disabled -D lirc=disabled -D openssl=disabled -D orc=disabled -D oss-output=disabled -D soxr=disabled -D speex=disabled -D systemd=disabled -D tcpwrap=disabled -D udev=disabled -D valgrind=disabled -D x11=disabled -D webrtc-aec=disabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} ninja -C build install"

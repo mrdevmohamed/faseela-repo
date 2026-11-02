@@ -10,7 +10,7 @@ license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils"]
 
 [build]
 install = '''

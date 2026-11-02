@@ -1,0 +1,23 @@
+# extra recipe: neovim — Vim-based text editor focused on extensibility and usability
+# Built against system libraries (USE_BUNDLED=OFF): nothing is downloaded during the build.
+# lpeg is static, so it is a build-only dependency. The bundled tree-sitter parsers
+# (c, lua, vim, vimdoc, query, markdown) are not shipped yet.
+[package]
+name = "neovim"
+version = "0.11.4"
+rel = 1
+arch = ["x86_64"]
+summary = "neovim — Vim-based text editor focused on extensibility and usability"
+license = ["Apache-2.0", "Vim"]
+source = "https://github.com/neovim/neovim/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "neovim-%{version}"
+
+[depends]
+build = ["cmake", "lpeg", "gettext", "libuv", "luv", "luajit", "unibilium", "libvterm", "utf8proc", "msgpack-c", "tree-sitter"]
+run = ["libuv", "luv", "luajit", "unibilium", "libvterm", "utf8proc", "msgpack-c", "tree-sitter"]
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DUSE_BUNDLED=OFF -DENABLE_TRANSLATIONS=ON"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

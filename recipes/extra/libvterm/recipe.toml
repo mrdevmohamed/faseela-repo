@@ -1,0 +1,19 @@
+# extra recipe: libvterm — terminal emulator state machine (Neovim :terminal)
+[package]
+name = "libvterm"
+version = "0.3.3"
+rel = 1
+arch = ["x86_64"]
+summary = "libvterm — terminal emulator state machine (Neovim :terminal)"
+license = ["MIT"]
+source = "https://www.leonerd.org.uk/code/libvterm/libvterm-%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "libvterm-%{version}"
+
+[depends]
+build = ["libtool", "perl"]
+run = []
+
+[build]
+compile = "make -j%{jobs} PREFIX=/usr"
+install = "make PREFIX=/usr DESTDIR=%{pkgdir} install"

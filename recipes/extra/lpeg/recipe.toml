@@ -1,0 +1,30 @@
+# extra recipe: lpeg — pattern-matching library for Lua (static liblpeg.a for Neovim)
+# Neovim links liblpeg.a (PIC) into its build-time Lua; lpeg.so is for LuaJIT scripts.
+[package]
+name = "lpeg"
+version = "1.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "lpeg — pattern-matching library for Lua (static liblpeg.a for Neovim)"
+license = ["MIT"]
+source = "https://www.inf.puc-rio.br/~roberto/lpeg/lpeg-%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "lpeg-%{version}"
+
+[depends]
+build = ["luajit"]
+run = ["luajit"]
+
+[build]
+compile = """
+set -eu
+cc -O2 -fPIC -I/usr/include/luajit-2.1 -c lpcap.c lpcode.c lpcset.c lpprint.c lptree.c lpvm.c
+ar rcs liblpeg.a lp*.o
+cc -shared -o lpeg.so lp*.o
+"""
+install = """
+set -eu
+install -Dm644 liblpeg.a %{pkgdir}/usr/lib/liblpeg.a
+install -Dm755 lpeg.so %{pkgdir}/usr/lib/lua/5.1/lpeg.so
+install -Dm644 re.lua %{pkgdir}/usr/share/lua/5.1/re.lua
+"""

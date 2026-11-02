@@ -1,0 +1,21 @@
+# extra recipe: luv — libuv bindings for Lua (vim.uv in Neovim)
+# Shared libluv (+ luv.pc and headers); the release tarball ships lua-compat-5.3.
+[package]
+name = "luv"
+version = "1.51.0-1"
+rel = 1
+arch = ["x86_64"]
+summary = "luv — libuv bindings for Lua (vim.uv in Neovim)"
+license = ["Apache-2.0"]
+source = "https://github.com/luvit/luv/releases/download/%{version}/luv-%{version}.tar.gz"
+sha256 = "dc706d9141c185bdce08b6fc8a9d4df05c3ac3676809ee4e9e37e1553d821237"
+source_dir = "luv-%{version}"
+
+[depends]
+build = ["cmake", "libuv", "luajit"]
+run = ["libuv", "luajit"]
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DLUA_BUILD_TYPE=System -DWITH_LUA_ENGINE=LuaJIT -DWITH_SHARED_LIBUV=ON -DBUILD_MODULE=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

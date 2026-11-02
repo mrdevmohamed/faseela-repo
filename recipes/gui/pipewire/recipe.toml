@@ -1,0 +1,19 @@
+# gui recipe: PipeWire audio/video server with ALSA and BlueZ support.
+[package]
+name = "pipewire"
+version = "1.6.6"
+rel = 1
+arch = ["x86_64"]
+summary = "Low-latency audio/video server with ALSA and Bluetooth audio support"
+license = ["MIT", "LGPL-2.1-or-later", "GPL-2.0"]
+source = "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/%{version}/pipewire-%{version}.tar.bz2"
+sha256 = "2fdf073869bd171d29a92dc6857979864b53e3dc1a79ac76c15db78e5b12d9f8"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "dbus", "eudev", "alsa-lib", "bluez", "sbc", "libcap"]
+run = ["glib", "dbus-system", "eudev", "alsa-lib", "bluez", "sbc", "libcap"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Ddocs=disabled -Dman=disabled -Dtests=disabled -Dexamples=disabled -Dspa-plugins=enabled -Dalsa=enabled -Dpipewire-alsa=enabled -Dbluez5=enabled -Ddbus=enabled -Dudev=enabled -Dlibsystemd=disabled -Dlogind=disabled -Dsystemd-system-service=disabled -Dsystemd-user-service=disabled -Dselinux=disabled -Dpipewire-jack=disabled -Dpipewire-v4l2=disabled -Djack=disabled -Dgstreamer=disabled -Dffmpeg=disabled -Dlibpulse=disabled -Dsndfile=disabled -Dlibcamera=disabled -Davahi=disabled -Dlibusb=disabled -Dreadline=disabled -Dgsettings=disabled -Dopus=disabled -Draop=disabled -Dlibcanberra=disabled -Dlibmysofa=disabled -Dlibffado=disabled -Dflatpak=disabled -Dsnap=disabled -Dlegacy-rtkit=false -Dsession-managers=[] -Drlimits-install=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

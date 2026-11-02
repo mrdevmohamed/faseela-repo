@@ -3,14 +3,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow"]
 
 [build]
 install = '''
@@ -114,6 +114,10 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
 fi
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=sway
+# Start per-user audio services; system services are supervised by runit.
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session -- sh -c 'pipewire & pw=$!; wireplumber & wp=$!; trap "kill $wp $pw 2>/dev/null" EXIT INT TERM; sway "$@"' sh "$@"
+fi
 export LIBSEAT_BACKEND=seatd
 # mesa here ships software rendering only (llvmpipe, softpipe) plus virgl; wlroots
 # refuses software GL unless this is set

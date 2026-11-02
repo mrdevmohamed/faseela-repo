@@ -53,7 +53,7 @@ include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
 
 [flavor.iso-gui]
-summary = "live ISO with the sway/Wayland stack"
+summary = "live ISO with Sway, PipeWire audio, NetworkManager, Bluetooth and polkit"
 extends = ["iso-nogui"]
 include = ["@gui"]
 

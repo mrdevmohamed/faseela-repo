@@ -9,17 +9,17 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop: sway, foot, mesa, ... (opt-in)
+├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
 ├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
 ├── media/       optional ffmpeg and the mpv player with their codec/subtitle/render libs (opt-in)
 └── extra/       dev tools, editors, net utils, hw tools, misc libs
 ```
 
-Current set: 10 toolchain + 39 base + 36 system + 6 boot + 67 extra =
-**158 packages**, plus the optional `gui/` category (52 packages, see
+Current set: 10 toolchain + 39 base + 37 system + 6 boot + 69 extra =
+**161 packages**, plus the optional `gui/` category (58 packages, see
 [gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
 see [browser/README.md](browser/README.md)), and the optional `media/` category (16 packages,
-see [media/README.md](media/README.md)); the recipe tree counts 238 recipes in total.
+see [media/README.md](media/README.md)); the recipe tree counts 247 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/` and `media/` are never part of them).
 
 The first 47 `extra/` recipes are generated from a data table
@@ -72,7 +72,7 @@ gettext → texinfo → util-linux → perl → python → openssl → sqlite �
 libunistring → libidn2 → less → rust → nawa (self-hosting)
 
 **system** — attr → acl (POSIX ACLs), libcap → iputils (ping, arping,
-clockdiff, tracepath), then libpsl → curl → git → shadow → procps-ng →
+clockdiff, tracepath), libndp, then libpsl → curl → git → shadow → procps-ng →
 psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
 libmnl → iproute2 → dhcpcd → sysklogd → runit
 
@@ -109,7 +109,11 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
 (extra), and `pkgconf` (toolchain); `coreutils` and `tar` pull `acl` + `attr` (system).
 
-Verify any chain — or the whole 238-package graph at once — with:
+**gui, desktop services** — dbus-system → polkit / bluez / network-manager;
+pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;
+PipeWire and WirePlumber start in the user's Sway session.
+
+Verify any chain — or the whole 247-package graph at once — with:
 
 ```
 nawa --recipes recipes deps <name>

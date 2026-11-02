@@ -1,0 +1,21 @@
+# system recipe: libndp, used by NetworkManager for IPv6 Neighbor Discovery.
+[package]
+name = "libndp"
+version = "1.9"
+rel = 1
+arch = ["x86_64"]
+summary = "Library for IPv6 Neighbor Discovery Protocol"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/jpirko/libndp/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "e564f5914a6b1b799c3afa64c258824a801c1b79a29e2fe6525b682249c65261"
+source_dir = "libndp-%{version}"
+
+[depends]
+build = ["autoconf", "automake", "libtool"]
+run = []
+
+[build]
+prepare = "autoreconf -fi"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -53,18 +53,16 @@ include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
 
 [flavor.iso-gui]
-summary = "live ISO with Sway, PipeWire audio, NetworkManager, Bluetooth and polkit"
+summary = "live ISO with Sway, PipeWire audio, Firefox ESR, NetworkManager, Bluetooth and polkit"
 extends = ["iso-nogui"]
-include = ["@gui"]
+# Browser recipes stay in their own category, but Firefox is part of the standard GUI ISO.
+include = ["@gui", "firefox"]
 
-# iso-gui plus a browser. Firefox and the GTK3 stack it needs live in their own category
-# (recipes/browser), so iso-gui does not grow with them: its only new packages are the
-# X11 client libraries cairo now links (libX11, libxcb, libXau, libXext, libXrender and
-# the build helpers xorgproto, xtrans, xcb-proto).
+# Backwards-compatible flavor name for existing build workflow invocations.
+# The standard iso-gui now already includes Firefox and its runtime dependency closure.
 [flavor.iso-gui-firefox]
-summary = "iso-gui plus Firefox ESR (GTK3, official binary)"
+summary = "compatibility alias for iso-gui (includes Firefox ESR)"
 extends = ["iso-gui"]
-include = ["firefox"]
 
 # --- media (recipes/media): opt-in, on top of the images above ----------------------------
 # ffmpeg needs no GUI, so it comes on top of iso-nogui; mpv plays through Wayland/DRM and

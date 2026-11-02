@@ -1,0 +1,20 @@
+# extra recipe: unibilium — terminfo parsing library
+[package]
+name = "unibilium"
+version = "2.1.2"
+rel = 1
+arch = ["x86_64"]
+summary = "unibilium — terminfo parsing library"
+license = ["LGPL-3.0-or-later"]
+source = "https://github.com/neovim/unibilium/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "370ecb07fbbc20d91d1b350c55f1c806b06bf86797e164081ccc977fc9b3af7a"
+source_dir = "unibilium-%{version}"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "perl"]
+run = []
+
+[build]
+configure = "autoreconf -fi && ./configure --prefix=/usr"
+compile = "make -j%{jobs} PREFIX=/usr"
+install = "make PREFIX=/usr DESTDIR=%{pkgdir} install"

@@ -1,0 +1,20 @@
+# extra recipe: utf8proc — Unicode normalization and character-property library
+[package]
+name = "utf8proc"
+version = "2.10.0"
+rel = 1
+arch = ["x86_64"]
+summary = "utf8proc — Unicode normalization and character-property library"
+license = ["MIT"]
+source = "https://github.com/JuliaStrings/utf8proc/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "6f4f1b639daa6dca9f80bc5db1233e9cbaa31a67790887106160b33ef743f136"
+source_dir = "utf8proc-%{version}"
+
+[depends]
+build = ["cmake"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

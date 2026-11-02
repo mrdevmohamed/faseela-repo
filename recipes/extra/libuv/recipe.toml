@@ -1,0 +1,20 @@
+# extra recipe: libuv — multi-platform asynchronous I/O library (Node.js, Neovim)
+[package]
+name = "libuv"
+version = "1.51.0"
+rel = 1
+arch = ["x86_64"]
+summary = "libuv — multi-platform asynchronous I/O library (Node.js, Neovim)"
+license = ["MIT"]
+source = "https://dist.libuv.org/dist/v%{version}/libuv-v%{version}.tar.gz"
+sha256 = "5f0557b90b1106de71951a3c3931de5e0430d78da1d9a10287ebc7a3f78ef8eb"
+source_dir = "libuv-v%{version}"
+
+[depends]
+build = ["cmake"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DLIBUV_BUILD_TESTS=OFF -DLIBUV_BUILD_SHARED=ON"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

@@ -1,0 +1,20 @@
+# extra recipe: msgpack-c — MessagePack C library
+[package]
+name = "msgpack-c"
+version = "6.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "msgpack-c — MessagePack C library"
+license = ["BSL-1.0"]
+source = "https://github.com/msgpack/msgpack-c/releases/download/c-%{version}/msgpack-c-%{version}.tar.gz"
+sha256 = "674119f1a85b5f2ecc4c7d5c2859edf50c0b05e0c10aa0df85eefa2c8c14b796"
+source_dir = "msgpack-c-%{version}"
+
+[depends]
+build = ["cmake"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DMSGPACK_BUILD_TESTS=OFF -DMSGPACK_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

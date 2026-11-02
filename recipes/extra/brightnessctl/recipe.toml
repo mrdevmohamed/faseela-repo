@@ -4,7 +4,7 @@
 [package]
 name = "brightnessctl"
 version = "0.5.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "brightnessctl — read and control backlight and LED brightness"
 license = ["MIT"]
@@ -13,7 +13,7 @@ sha256 = "a68869e23f56ac4f2e28f1783002810ddbf10f95e1af9b48b2912fb169f46994"
 
 [depends]
 build = ["shadow"]
-run = ["eudev", "shadow"]
+run = ["eudev", "shadow", "base-files"]
 
 [build]
 compile = "make -j%{jobs}"
@@ -26,6 +26,6 @@ true
 
 [hooks]
 post_install = '''
-getent group video >/dev/null 2>&1 || groupadd -r video
+/usr/libexec/faseela/ensure-system-account group video
 echo "brightnessctl: add your user:  usermod -aG video <user>   (log in again)"
 '''

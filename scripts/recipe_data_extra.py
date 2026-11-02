@@ -167,8 +167,7 @@ make DESTDIR=%{pkgdir} install
 install -m755 contrib/ssh-copy-id %{pkgdir}/usr/bin/
 """,
      hook="""
-getent group sshd >/dev/null || groupadd -g 50 sshd
-id sshd >/dev/null 2>&1 || useradd -c 'sshd PrivSep' -d /var/lib/sshd -g sshd -s /bin/false -u 50 sshd
+/usr/libexec/faseela/ensure-system-account user sshd sshd "OpenSSH privilege separation" /var/lib/sshd /usr/bin/false
 install -d -m700 /var/lib/sshd
 """),
 

@@ -12,7 +12,7 @@ sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
 source_dir = "Vulkan-Loader-vulkan-sdk-1.3.296.0"
 
 [depends]
-build = ["cmake", "ninja", "pkgconf", "vulkan-headers"]
+build = ["cmake", "ninja", "pkgconf", "vulkan-headers", "wayland"]
 run = ["glibc"]
 
 [build]

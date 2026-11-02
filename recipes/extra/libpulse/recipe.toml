@@ -50,7 +50,7 @@ end = "endif" + newline + newline + "if get_option('daemon')"
 assert s.count(start) == 1 and s.count(end) == 1
 i = s.index(start)
 j = s.index(end, i)
-s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-only build.\n\n" + s[j + len("endif\n\n"):]
+s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-only build." + newline + newline + s[j + len("endif" + newline + newline):]
 p.write_text(s)
 PY
 

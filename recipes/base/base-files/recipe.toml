@@ -173,6 +173,8 @@ chmod 0750 %{pkgdir}/root
 install -d -m755 %{pkgdir}/usr/libexec/faseela
 cat > %{pkgdir}/usr/libexec/faseela/ensure-system-account <<'ACCOUNT'
 #!/bin/sh
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
 # Create locked system users/groups with the base passwd/group databases.
 # Usage:
 #   ensure-system-account group NAME

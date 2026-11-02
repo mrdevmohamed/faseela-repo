@@ -1,0 +1,25 @@
+# media recipe: vulkan-headers — Khronos Vulkan C headers (header-only); build helper of libplacebo
+# libplacebo includes <vulkan/vulkan.h> even when built with vulkan=disabled (its stubs), and
+# the GitLab source archive has no 3rdparty/Vulkan-Headers submodule. No vulkan.pc is shipped on
+# purpose: that file belongs to a future vulkan-loader package.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r vulkan-headers` pins it.
+[package]
+name = "vulkan-headers"
+version = "1.3.296"
+rel = 1
+arch = ["x86_64"]
+summary = "Vulkan C headers (header-only)"
+license = ["Apache-2.0", "MIT"]
+source = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "e204e0b3c19f622d197df945737f5db913d6621830999b8578d34e80a7c90585"
+source_dir = "Vulkan-Headers-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+install = '''
+install -d %{pkgdir}/usr/include
+cp -r include/vulkan include/vk_video %{pkgdir}/usr/include/
+'''

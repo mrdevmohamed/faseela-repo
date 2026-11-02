@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -12,7 +12,7 @@ sha256 = "262864cfd198123d3e5dbe91937441b97ee9059d6d712e1a5bfbb1c54668d14d"
 source_dir = "NetworkManager-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "dbus", "glib", "eudev", "libndp", "libpsl", "util-linux"]
+build = ["meson", "ninja", "pkgconf", "dbus", "glib", "eudev", "libndp", "libpsl", "util-linux", "polkit"]
 run = ["dbus-system", "glib", "eudev", "libndp", "libpsl", "util-linux", "wpa_supplicant", "polkit", "iproute2"]
 
 [build]

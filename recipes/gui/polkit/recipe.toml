@@ -11,7 +11,7 @@ sha256 = "2814a7281989f6baa9e57bd33bbc5e148827e2721ccef22aaf28ab2b376068e8"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt"]
-run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system", "base-files"]
+run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "coreutils"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=ConsoleKit -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"

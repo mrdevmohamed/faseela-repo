@@ -1,0 +1,56 @@
+# extra recipe: libpulse — PulseAudio-compatible client libraries only.
+# Faseela uses PipeWire as its sound server; do not build/install the PulseAudio
+# daemon. Firefox's Linux audio backend needs libpulse.so.0 to connect to the
+# pipewire-pulse compatibility endpoint started by gui-session.
+[package]
+name = "libpulse"
+version = "17.0"
+rel = 1
+arch = ["x86_64"]
+summary = "PulseAudio client libraries for PipeWire compatibility"
+license = ["LGPL-2.1-or-later"]
+source = "https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%{version}.tar.xz"
+sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = """
+# This package ships only libpulse client libraries. PulseAudio's server-side
+# sample-file tools are not needed for Firefox or PipeWire's compatibility
+# server; omit their libsndfile-only code instead of adding an audio parser to
+# the base system.
+python3 - <<'PY'
+from pathlib import Path
+
+p = Path("meson.build")
+s = p.read_text()
+old = "sndfile_dep = dependency('sndfile', version : '>= 1.0.20')"
+new = "sndfile_dep = dependency('sndfile', version : '>= 1.0.20', required : get_option('daemon'))"
+assert s.count(old) == 1, "unexpected PulseAudio top-level Meson layout"
+p.write_text(s.replace(old, new, 1))
+
+p = Path("src/meson.build")
+s = p.read_text()
+for entry in ("  'pulsecore/sndfile-util.c',\n", "  'pulsecore/sndfile-util.h',\n"):
+    assert s.count(entry) == 1, f"unexpected libpulsecommon source list: {entry!r}"
+    s = s.replace(entry, "", 1)
+p.write_text(s)
+
+p = Path("src/utils/meson.build")
+s = p.read_text()
+start = "if get_option('client')\n  pacat_sources = ["
+end = "endif\n\nif get_option('daemon')"
+assert s.count(start) == 1 and s.count(end) == 1
+i = s.index(start)
+j = s.index(end, i)
+s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-only build.\n\n" + s[j + len("endif\n\n"):]
+p.write_text(s)
+PY
+
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -D daemon=false -D client=true -D database=simple -D doxygen=false -D man=false -D tests=false -D alsa=disabled -D asyncns=disabled -D avahi=disabled -D bluez5=disabled -D bluez5-gstreamer=disabled -D consolekit=disabled -D dbus=disabled -D elogind=disabled -D fftw=disabled -D glib=disabled -D gsettings=disabled -D gstreamer=disabled -D gtk=disabled -D jack=disabled -D lirc=disabled -D openssl=disabled -D orc=disabled -D oss-output=disabled -D soxr=disabled -D speex=disabled -D systemd=disabled -D tcpwrap=disabled -D udev=disabled -D valgrind=disabled -D x11=disabled -D webrtc-aec=disabled
+"""
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} ninja -C build install"

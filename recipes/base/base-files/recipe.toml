@@ -191,7 +191,7 @@ valid_name() {
 
 ensure_group() {
     name=$1
-    requested_gid=\${2:-}
+    requested_gid=${2:-}
     valid_name "$name"
     [ -f /etc/group ] || fail "/etc/group is missing"
 
@@ -256,7 +256,7 @@ ensure_user() {
 }
 
 [ "$(id -u)" -eq 0 ] || fail "must run as root"
-case "\${1:-}" in
+case "${1:-}" in
     group)
         [ "$#" -eq 2 ] || fail "usage: $0 group NAME"
         ensure_group "$2"

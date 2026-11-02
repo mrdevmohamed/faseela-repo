@@ -1,0 +1,54 @@
+# creative recipe: lightcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "lightcraft"
+version = "0.17.0"
+rel = 3
+arch = ["x86_64"]
+summary = "Native photo library and non-destructive RAW developer"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/lightcraft/releases/download/v0.17.0/lightcraft-0.17.0-linux-x86_64.tar.gz"
+sha256 = "d187f5a1592d4866220c4d127d6e5a3da4ffa7c966cc87df8f49e735c07cf2c1"
+source_dir = "lightcraft-0.17.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+
+# Storytold Linux release archives use bin/ and share/ at their FHS root.
+# Accept both that layout and a conventional usr/ tree. Some archives wrap
+# the payload in one top-level release directory.
+upstream_root=""
+if [ -d "bin" ] || [ -d "usr/bin" ]; then
+    upstream_root="."
+else
+    for candidate in */; do
+        if [ -d "${candidate}bin" ] || [ -d "${candidate}usr/bin" ]; then
+            upstream_root="${candidate%/}"
+            break
+        fi
+    done
+fi
+
+if [ -z "$upstream_root" ]; then
+    echo "lightcraft: upstream archive has neither bin/ nor usr/bin/ below $(pwd)" >&2
+    exit 1
+fi
+
+if [ -d "$upstream_root/usr/bin" ]; then
+    install -d -m755 "%{pkgdir}/usr"
+    cp -a "$upstream_root/usr/." "%{pkgdir}/usr/"
+else
+    install -d -m755 "%{pkgdir}/usr/bin"
+    cp -a "$upstream_root/bin/." "%{pkgdir}/usr/bin/"
+    if [ -d "$upstream_root/share" ]; then
+        install -d -m755 "%{pkgdir}/usr/share"
+        cp -a "$upstream_root/share/." "%{pkgdir}/usr/share/"
+    fi
+fi
+"""

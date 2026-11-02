@@ -25,12 +25,12 @@ name: Build packages
 # WHICH PACKAGES  (Actions > Build packages > Run workflow > packages)
 #   (push)        the recipes changed by the push
 #   names         `curl git jq`            exactly those (+ missing dependencies)
-#   @category     `@extra` `@system` `@base` `@boot` `@gui` `@browser` `@media` `@toolchain`
+#   @category     `@extra` `@system` `@base` `@boot` `@gui` `@browser` `@media` `@creative` `@toolchain`
 #   flavor:NAME   everything flavor NAME (flavors.toml) needs beyond the bootstrap
 #                 core, plus the core's @toolchain packages (they must be published
 #                 for the flavor jobs to install them), e.g. `flavor:iso-gui`
-#   ALL / @all    base + system + boot + extra  (NOT gui, NOT browser, NOT media, NOT toolchain)
-#   mix them      `@all @gui`   `@extra vim`
+#   ALL / @all    base + system + boot + extra  (NOT gui, browser, media, creative or toolchain)
+#   mix them      `@all @gui @creative`   `@extra vim`
 #
 # `@toolchain` is left out of ALL on purpose: rebuilding glibc/gcc/binutils
 # inside the very root that is running the build replaces the libc under the
@@ -64,7 +64,7 @@ on:
   workflow_dispatch:
     inputs:
       packages:
-        description: "Names, @category, flavor:NAME or ALL, space separated (empty = recipes changed by this push). Firefox is included in `flavor:iso-gui`; `@browser` builds the browser category. mpv: `@media`. ALL does NOT include @gui, @browser, @media or @toolchain. e.g. `flavor:iso-gui` or `@browser @media`"
+        description: "Names, @category, flavor:NAME or ALL, space separated (empty = recipes changed by this push). Firefox is included in `flavor:iso-gui`; `@browser` builds the browser category. mpv: `@media`. ALL does NOT include @gui, @browser, @media, @creative or @toolchain. e.g. `flavor:iso-gui` or `@browser @media`"
         type: string
         default: ""
       rootfs:
@@ -126,7 +126,7 @@ jobs:
             for tok in $INPUT_PKGS; do
               case "$tok" in
                 ALL|@all)
-                  pkgs+=" $(awk '$1 != "gui" && $1 != "browser" && $1 != "media" && $1 != "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")" ;;
+                  pkgs+=" $(awk '$1 != "gui" && $1 != "browser" && $1 != "media" && $1 != "creative" && $1 != "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")" ;;
                 flavor:*)
                   # what the flavor needs beyond the bootstrap core, PLUS the
                   # toolchain packages of that core (glibc, gcc, binutils ...):

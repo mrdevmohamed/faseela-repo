@@ -1,0 +1,54 @@
+# creative recipe: soundcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "soundcraft"
+version = "0.16.0"
+rel = 3
+arch = ["x86_64"]
+summary = "Native digital audio workstation for recording, editing and mixing"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/soundcraft/releases/download/v0.16.0/soundcraft-0.16.0-linux-x86_64.tar.gz"
+sha256 = "25c6b0cb8924198f22e3a6f2771d7dcc9e041a3244a4be445cbde9d00e7dc19e"
+source_dir = "soundcraft-0.16.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"]
+
+[build]
+install = """
+set -eu
+
+# Storytold Linux release archives use bin/ and share/ at their FHS root.
+# Accept both that layout and a conventional usr/ tree. Some archives wrap
+# the payload in one top-level release directory.
+upstream_root=""
+if [ -d "bin" ] || [ -d "usr/bin" ]; then
+    upstream_root="."
+else
+    for candidate in */; do
+        if [ -d "${candidate}bin" ] || [ -d "${candidate}usr/bin" ]; then
+            upstream_root="${candidate%/}"
+            break
+        fi
+    done
+fi
+
+if [ -z "$upstream_root" ]; then
+    echo "soundcraft: upstream archive has neither bin/ nor usr/bin/ below $(pwd)" >&2
+    exit 1
+fi
+
+if [ -d "$upstream_root/usr/bin" ]; then
+    install -d -m755 "%{pkgdir}/usr"
+    cp -a "$upstream_root/usr/." "%{pkgdir}/usr/"
+else
+    install -d -m755 "%{pkgdir}/usr/bin"
+    cp -a "$upstream_root/bin/." "%{pkgdir}/usr/bin/"
+    if [ -d "$upstream_root/share" ]; then
+        install -d -m755 "%{pkgdir}/usr/share"
+        cp -a "$upstream_root/share/." "%{pkgdir}/usr/share/"
+    fi
+fi
+"""

@@ -1,0 +1,54 @@
+# creative recipe: cadcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "cadcraft"
+version = "0.16.0"
+rel = 3
+arch = ["x86_64"]
+summary = "Native 2D CAD drafting and technical drawing application"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/cadcraft/releases/download/v0.16.0/cadcraft-0.16.0-linux-x86_64.tar.gz"
+sha256 = "149820b3d0e1e729a2256e344523b9805871d39ee39c9e085f507707f73ccbd4"
+source_dir = "cadcraft-0.16.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+
+# Storytold Linux release archives use bin/ and share/ at their FHS root.
+# Accept both that layout and a conventional usr/ tree. Some archives wrap
+# the payload in one top-level release directory.
+upstream_root=""
+if [ -d "bin" ] || [ -d "usr/bin" ]; then
+    upstream_root="."
+else
+    for candidate in */; do
+        if [ -d "${candidate}bin" ] || [ -d "${candidate}usr/bin" ]; then
+            upstream_root="${candidate%/}"
+            break
+        fi
+    done
+fi
+
+if [ -z "$upstream_root" ]; then
+    echo "cadcraft: upstream archive has neither bin/ nor usr/bin/ below $(pwd)" >&2
+    exit 1
+fi
+
+if [ -d "$upstream_root/usr/bin" ]; then
+    install -d -m755 "%{pkgdir}/usr"
+    cp -a "$upstream_root/usr/." "%{pkgdir}/usr/"
+else
+    install -d -m755 "%{pkgdir}/usr/bin"
+    cp -a "$upstream_root/bin/." "%{pkgdir}/usr/bin/"
+    if [ -d "$upstream_root/share" ]; then
+        install -d -m755 "%{pkgdir}/usr/share"
+        cp -a "$upstream_root/share/." "%{pkgdir}/usr/share/"
+    fi
+fi
+"""

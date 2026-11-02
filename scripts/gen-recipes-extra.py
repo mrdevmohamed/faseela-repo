@@ -32,7 +32,7 @@ def render(p):
     out.append("[package]")
     out.append(f'name = "{p["name"]}"')
     out.append(f'version = "{p["ver"]}"')
-    out.append("rel = 1")
+    out.append(f"rel = {p.get('rel', 1)}")
     out.append('arch = ["x86_64"]')
     out.append(f'summary = "{p["summary"]}"')
     out.append(f'license = {toml_str_list(p["license"])}')

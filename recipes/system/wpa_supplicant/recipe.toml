@@ -1,20 +1,20 @@
 # system recipe: wpa_supplicant — Wi-Fi authentication, driven with wpa_cli.
-# nl80211 only (libnl), no D-Bus control interface (D-Bus is not packaged).
+# nl80211 + D-Bus control interface for NetworkManager integration.
 # Service is available but not enabled: nawa service enable wpa_supplicant
 # sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wpa_supplicant` pins it.
 [package]
 name = "wpa_supplicant"
-version = "2.11"
+version = "2.12"
 rel = 1
 arch = ["x86_64"]
 summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, no D-Bus)"
 license = ["BSD-3-Clause"]
 source = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
-sha256 = "912ea06f74e30a8e36fbb68064d6cdff218d8d591db0fc5d75dee6c81ac7fc0a"
+sha256 = "08e23937e16d0155e55cab2b51f51fbe10d80a1aa91c4e15442645059b737ef6"
 
 [depends]
-build = ["libnl", "openssl", "readline", "pkgconf"]
-run = ["libnl", "openssl", "readline"]
+build = ["libnl", "openssl", "readline", "pkgconf", "dbus"]
+run = ["libnl", "openssl", "readline", "dbus-system"]
 
 [build]
 prepare = '''
@@ -23,7 +23,7 @@ cp defconfig .config
 # nl80211 through libnl3, wpa_cli with readline
 sed -i -e 's/^#CONFIG_LIBNL32=y/CONFIG_LIBNL32=y/' -e 's/^#CONFIG_READLINE=y/CONFIG_READLINE=y/' .config
 # no D-Bus here: switch its control interfaces off
-sed -i -e 's/^CONFIG_CTRL_IFACE_DBUS/#&/' .config
+sed -i -e 's/^#CONFIG_CTRL_IFACE_DBUS_NEW=y/CONFIG_CTRL_IFACE_DBUS_NEW=y/' .config
 grep -q '^CONFIG_LIBNL32=y' .config
 grep -q '^CONFIG_DRIVER_NL80211=y' .config
 '''
@@ -38,7 +38,7 @@ for m in wpa_supplicant.8:man8 wpa_cli.8:man8 wpa_passphrase.8:man8 wpa_supplica
     f=doc/docbook/${m%%:*}; d=${m##*:}
     [ -f "$f" ] && install -Dm644 "$f" %{pkgdir}/usr/share/man/$d/${m%%:*}
 done
-install -d -m755 %{pkgdir}/etc/wpa_supplicant
+install -d -m755 %{pkgdir}/usr/share/dbus-1/system.d %{pkgdir}/usr/share/dbus-1/system-services %{pkgdir}/etc/wpa_supplicant
 cat > %{pkgdir}/etc/wpa_supplicant/wpa_supplicant.conf <<'CONF'
 # /etc/wpa_supplicant/wpa_supplicant.conf
 # Add networks with wpa_cli (as root or in group wheel):
@@ -49,6 +49,8 @@ ctrl_interface_group=wheel
 update_config=1
 CONF
 chmod 0600 %{pkgdir}/etc/wpa_supplicant/wpa_supplicant.conf
+install -Dm644 dbus/dbus-wpa_supplicant.conf %{pkgdir}/usr/share/dbus-1/system.d/wpa_supplicant.conf
+install -Dm644 dbus/fi.w1.wpa_supplicant1.service %{pkgdir}/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
 install -d -m755 %{pkgdir}/etc/sv/wpa_supplicant
 cat > %{pkgdir}/etc/sv/wpa_supplicant/run <<'RUN'
 #!/bin/sh

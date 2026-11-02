@@ -1,4 +1,7 @@
 # gui recipe: llvm — only what mesa's llvmpipe needs (shared libLLVM, X86 target, llvm-config)
+# rel 2: the build itself worked (48 min, run 41353296341) but the post-build lint refused the
+#        archive: usr/lib/cmake/llvm/LLVMConfig.cmake contains the sandbox path /build/src.
+#        The install step now lists every such line in the log and points them at /usr/src.
 #
 # Why: wlroots here is built `-D renderers=gles2` only, so every frame goes through
 # mesa's GL. Without LLVM mesa has only `softpipe`, a reference rasterizer that is
@@ -16,7 +19,7 @@
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "LLVM libraries (X86 target, shared libLLVM) for mesa's llvmpipe"
 license = ["Apache-2.0 WITH LLVM-exception"]
@@ -52,6 +55,12 @@ grep -rl '/build/src' build/tools/llvm-config 2>/dev/null | head -3 | while read
 compile = "ninja -C build -j%{jobs}"
 install = """
 DESTDIR=%{pkgdir} cmake --install build --strip
+# cmake config files record the build tree (LLVMConfig.cmake): the lint rejects /build/src in any
+# text file. Show every occurrence (so a new kind of leak is readable in the log), then point them
+# at /usr/src, like llvm-config's BuildVariables.inc in `configure`.
+{ grep -rIn '/build/src' %{pkgdir} || true; } | cut -c1-300 | head -20
+{ grep -rIl '/build/src' %{pkgdir} || true; } | while read -r f; do sed -i 's#/build/src#/usr/src#g' "$f"; done
+if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after the rewrite" >&2; exit 1; fi
 # static archives: unused with the shared libLLVM, and ~1 GB
 rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a
 # keep llvm-config only (the other tools are not needed to build or run mesa)

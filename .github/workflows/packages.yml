@@ -313,14 +313,35 @@ jobs:
           set -euo pipefail
           sudo mkdir -p "$T/build/out"
           sudo chown "$(id -u):$(id -g)" "$T/build/out"
-          n="$(gh release view "$PKG_TAG" --repo "$PKG_REPO" --json assets \
-                 --jq '[.assets[].name | select(endswith(".nawa.tar.zst"))] | length')"
-          if (( n > 0 )); then
-            # the detached <archive>.sig comes with every archive: once the build
-            # root trusts the repository key, nawa verifies each dependency
-            gh release download "$PKG_TAG" --repo "$PKG_REPO" --dir "$T/build/out" \
-              --pattern '*.nawa.tar.zst' --pattern '*.nawa.tar.zst.sig' --clobber
-          fi
+          # Read the release asset list once. `gh release download` requests
+          # /releases/assets/<id> separately for EVERY file; with hundreds of
+          # package archives that exhausts the installation token's API quota.
+          # Public release downloads have stable browser URLs, so use the API
+          # only for metadata and fetch each asset from github.com directly.
+          asset_names="$(gh release view "$PKG_TAG" --repo "$PKG_REPO" --json assets \
+            --jq '.assets[].name | select(test("\\\\.nawa\\\\.tar\\\\.zst(\\\\.sig)?$"))')"
+          n=0
+          while IFS= read -r asset; do
+            [[ -n "$asset" ]] || continue
+            # Assets in this flat repository are package archive names and
+            # their detached signatures. Reject paths before using them locally
+            # or interpolating them into a download URL.
+            if [[ ! "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*\\.nawa\\.tar\\.zst(\\.sig)?$ ]]; then
+              echo "::error::unexpected release asset name: $asset"
+              exit 1
+            fi
+            if [[ "$asset" == *.nawa.tar.zst ]]; then
+              n=$((n + 1))
+            fi
+            url="https://github.com/$PKG_REPO/releases/download/$PKG_TAG/$asset"
+            part="$T/build/out/$asset.part"
+            echo "Downloading $asset"
+            curl --fail --location --silent --show-error \
+              --retry 3 --retry-all-errors --retry-delay 2 \
+              --connect-timeout 30 --output "$part" "$url"
+            [[ -s "$part" ]] || { echo "::error::downloaded asset is empty: $asset"; exit 1; }
+            mv -f "$part" "$T/build/out/$asset"
+          done <<< "$asset_names"
           echo "published=$n" >> "$GITHUB_OUTPUT"
           echo "$n archive(s) already in $PKG_REPO ($PKG_TAG)"
           # everything newer than this file was built by THIS run

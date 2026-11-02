@@ -28,6 +28,10 @@ ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus
 
 [hooks]
 post_install = '''
+# Shadow installs useradd under /usr/sbin on this merged-/usr layout.
+# Nawa's chroot hook inherits a minimal PATH which may omit admin binaries.
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
 if ! getent passwd messagebus >/dev/null 2>&1; then
     useradd -r -M -d /nonexistent -s /sbin/nologin messagebus
 fi

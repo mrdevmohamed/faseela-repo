@@ -1,0 +1,42 @@
+# gui recipe: PolicyKit authorization framework (shadow authentication, no systemd).
+[package]
+name = "polkit"
+version = "126"
+rel = 1
+arch = ["x86_64"]
+summary = "PolicyKit authorization framework and privileged action helper"
+license = ["GPL-2.0-or-later"]
+source = "https://github.com/polkit-org/polkit/archive/refs/tags/%{version}.tar.gz"
+sha256 = "2814a7281989f6baa9e57bd33bbc5e148827e2721ccef22aaf28ab2b376068e8"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt"]
+run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=ConsoleKit -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+install -d -m755 %{pkgdir}/etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/polkitd/run <<'RUN'
+#!/bin/sh
+while [ ! -S /run/dbus/system_bus_socket ]; do sleep 1; done
+exec /usr/lib/polkit-1/polkitd --no-debug
+RUN
+chmod 755 %{pkgdir}/etc/sv/polkitd/run
+ln -s /etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default/polkitd
+# Setuid programs must be root-owned on the installed system. Keep the mode
+# in the archive as well; post_install reasserts ownership and mode.
+chmod 4755 %{pkgdir}/usr/bin/pkexec %{pkgdir}/usr/lib/polkit-1/polkit-agent-helper-1
+'''
+
+[hooks]
+post_install = '''
+if ! getent passwd polkitd >/dev/null 2>&1; then
+    useradd -r -d /var/lib/polkit-1 -s /sbin/nologin polkitd
+fi
+install -d -m755 -o polkitd -g polkitd /var/lib/polkit-1
+chown root:root /usr/bin/pkexec /usr/lib/polkit-1/polkit-agent-helper-1
+chmod 4755 /usr/bin/pkexec /usr/lib/polkit-1/polkit-agent-helper-1
+'''

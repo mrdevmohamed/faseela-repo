@@ -64,7 +64,7 @@ on:
   workflow_dispatch:
     inputs:
       packages:
-        description: "Names, @category, flavor:NAME or ALL, space separated (empty = recipes changed by this push). Firefox/GTK3: `@browser` or `flavor:iso-gui-firefox`; mpv: `@media`. ALL does NOT include @gui, @browser, @media or @toolchain. e.g. `@browser @media` or `flavor:iso-gui flavor:iso-gui-firefox`"
+        description: "Names, @category, flavor:NAME or ALL, space separated (empty = recipes changed by this push). Firefox is included in `flavor:iso-gui`; `@browser` builds the browser category. mpv: `@media`. ALL does NOT include @gui, @browser, @media or @toolchain. e.g. `flavor:iso-gui` or `@browser @media`"
         type: string
         default: ""
       rootfs:

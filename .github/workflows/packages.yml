@@ -326,7 +326,7 @@ jobs:
             # Assets in this flat repository are package archive names and
             # their detached signatures. Reject paths before using them locally
             # or interpolating them into a download URL.
-            if [[ ! "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*\\.nawa\\.tar\\.zst(\\.sig)?$ ]]; then
+            if [[ ! "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst([.]sig)?$ ]]; then
               echo "::error::unexpected release asset name: $asset"
               exit 1
             fi

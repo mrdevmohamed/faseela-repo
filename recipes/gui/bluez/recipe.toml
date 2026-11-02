@@ -2,7 +2,7 @@
 [package]
 name = "bluez"
 version = "5.87"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -14,6 +14,10 @@ build = ["dbus", "glib", "eudev", "readline", "pkgconf"]
 run = ["dbus-system", "glib", "eudev"]
 
 [build]
+# BlueZ 5.87 declares bt_ad_has_data() as returning a pointer, but returns
+# boolean false when ad is NULL. Newer GCC diagnoses the incompatible return
+# type; NULL is the correct null-pointer return value.
+prepare = "sed -i '/bt_ad_has_data/,/^}/ s/return false;/return NULL;/' src/shared/ad.c"
 configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --localstatedir=/var --with-dbusconfdir=/usr/share --enable-library --enable-client --enable-tools --enable-monitor --enable-udev --disable-systemd --enable-a2dp --enable-asha --enable-avrcp --enable-bap --enable-bass --enable-mcp --enable-vcp --disable-obex --disable-cups --disable-manpages --disable-asan --disable-lsan --disable-ubsan --disable-pie --disable-mesh --disable-midi --disable-network --disable-nfc --disable-sixaxis --disable-deprecated --disable-test --disable-hid2hci --disable-experimental"
 compile = "make -j%{jobs}"
 install = '''

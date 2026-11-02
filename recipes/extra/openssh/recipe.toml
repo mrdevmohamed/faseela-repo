@@ -2,7 +2,7 @@
 [package]
 name = "openssh"
 version = "9.9p1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "OpenSSH — Secure Shell client and server"
 license = ["BSD-2-Clause", "BSD-3-Clause", "ISC"]
@@ -11,7 +11,7 @@ sha256 = "b343fbcdbff87f15b1986e6e15d6d4fc9a7d36066be6b7fb507087ba8f966c02"
 
 [depends]
 build = ["openssl", "zlib", "shadow"]
-run = ["openssl", "zlib", "shadow"]
+run = ["openssl", "zlib", "shadow", "base-files", "coreutils"]
 
 [build]
 prepare = "install -m700 -d %{pkgdir}/var/lib/sshd"
@@ -28,7 +28,7 @@ install -m755 contrib/ssh-copy-id %{pkgdir}/usr/bin/
 [hooks]
 post_install = """
 
-getent group sshd >/dev/null || groupadd -g 50 sshd
-id sshd >/dev/null 2>&1 || useradd -c 'sshd PrivSep' -d /var/lib/sshd -g sshd -s /bin/false -u 50 sshd
+/usr/libexec/faseela/ensure-system-account user sshd sshd "OpenSSH privilege separation" /var/lib/sshd /usr/bin/false
+install -d -m700 /var/lib/sshd
 
 """

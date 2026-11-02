@@ -58,7 +58,7 @@ them). Versions and option names come from upstream knowledge, not a test build.
   add `[slim]` with `strip = false`, `cleanup = false` and/or `split = false`.
 * `%{...}` placeholders available in build sections: `name version rel
   arch jobs pkgdir srcdir`.
-* `[hooks]` scripts run on the target system (not at build time).
+* `[hooks]` scripts run on the target system (not at build time). For system users and groups, use `/usr/libexec/faseela/ensure-system-account` from `base-files`; do not assume `useradd`/`groupadd` are installed when a package archive is installed directly.
 
 ## Build order
 

@@ -4,7 +4,7 @@
 [package]
 name = "alsa-utils"
 version = "1.2.13"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "ALSA utilities: alsamixer, amixer, aplay, arecord, alsactl"
 license = ["GPL-2.0-or-later"]
@@ -13,7 +13,7 @@ sha256 = "1702a6b1cdf9ba3e996ecbc1ddcf9171e6808f5961d503d0f27e80ee162f1daa"
 
 [depends]
 build = ["alsa-lib", "ncurses", "pkgconf", "shadow"]
-run = ["alsa-lib", "ncurses", "eudev", "shadow"]
+run = ["alsa-lib", "ncurses", "eudev", "shadow", "base-files", "coreutils"]
 
 [build]
 configure = "./configure --prefix=/usr --sbindir=/usr/bin --with-curses=ncursesw --disable-alsaconf --disable-bat --disable-xmlto --with-udev-rules-dir=/usr/lib/udev/rules.d --with-systemdsystemunitdir=no"
@@ -31,7 +31,7 @@ chmod 644 %{pkgdir}/usr/lib/udev/rules.d/90-alsa-restore.rules
 
 [hooks]
 post_install = '''
-getent group audio >/dev/null 2>&1 || groupadd -r audio
+/usr/libexec/faseela/ensure-system-account group audio
 install -d -m755 /var/lib/alsa
 echo "alsa-utils: add your user:  usermod -aG audio <user>   then unmute with alsamixer"
 '''

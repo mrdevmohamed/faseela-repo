@@ -2,7 +2,7 @@
 [package]
 name = "dhcpcd"
 version = "10.2.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "DHCP/RA client for IPv4 and IPv6"
 license = ["BSD-2-Clause"]
@@ -10,8 +10,8 @@ source = "https://github.com/NetworkConfiguration/dhcpcd/releases/download/v10.2
 sha256 = "6721e606609226dbf4d864a78802a9e96beec0ee034a1bd84138b3e037bba7d9"
 
 [depends]
-build = ["shadow"]
-run = ["shadow"]
+build = []
+run = ["base-files", "coreutils"]
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/lib/dhcpcd --dbdir=/var/lib/dhcpcd --runstatedir=/run --privsepuser=dhcpcd"
@@ -20,12 +20,7 @@ install = "make DESTDIR=%{pkgdir} install"
 
 [hooks]
 post_install = """
-# privsep chroots into the user's home: it must exist (and not be writable by
-# the user), otherwise dhcpcd logs "refusing chroot: /home/dhcpcd"
+# privsep chroots into this non-writable directory.
 install -d -m755 /var/empty
-if getent passwd dhcpcd >/dev/null; then
-    usermod -d /var/empty dhcpcd
-else
-    useradd -r -d /var/empty -s /sbin/nologin dhcpcd
-fi
+/usr/libexec/faseela/ensure-system-account user dhcpcd dhcpcd "DHCP client" /var/empty /usr/bin/false
 """

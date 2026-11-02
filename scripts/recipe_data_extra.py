@@ -153,12 +153,12 @@ install -m644 man1/7z.1 man1/7za.1 man1/7zr.1 %{pkgdir}/usr/share/man/man1/
 """),
 
 # ───────────────────────── extra2: networking & editors ─────────────────────────
-dict(sub="extra2", name="openssh", ver="9.9p1",
+dict(sub="extra2", name="openssh", ver="9.9p1", rel=2,
      url="https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-%{version}.tar.gz",
      sha="b343fbcdbff87f15b1986e6e15d6d4fc9a7d36066be6b7fb507087ba8f966c02",
      summary="OpenSSH — Secure Shell client and server",
      license=["BSD-2-Clause", "BSD-3-Clause", "ISC"],
-     bdeps=["openssl", "zlib"], rdeps=["openssl", "zlib"],
+     bdeps=["openssl", "zlib", "shadow"], rdeps=["openssl", "zlib", "shadow", "base-files"],
      prepare="install -m700 -d %{pkgdir}/var/lib/sshd",
      configure="./configure --prefix=/usr --sysconfdir=/etc/ssh --with-privsep-path=/var/lib/sshd",
      compile="make -j%{jobs}",

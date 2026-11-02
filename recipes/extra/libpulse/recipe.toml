@@ -34,15 +34,19 @@ p.write_text(s.replace(old, new, 1))
 
 p = Path("src/meson.build")
 s = p.read_text()
-for entry in ("  'pulsecore/sndfile-util.c',\n", "  'pulsecore/sndfile-util.h',\n"):
-    assert s.count(entry) == 1, f"unexpected libpulsecommon source list: {entry!r}"
-    s = s.replace(entry, "", 1)
+for entry in ("  'pulsecore/sndfile-util.c',", "  'pulsecore/sndfile-util.h',"):
+    # TOML interprets backslash escapes in this multiline string. Build the
+    # newline at runtime so Python receives valid one-line string literals.
+    needle = entry + chr(10)
+    assert s.count(needle) == 1, f"unexpected libpulsecommon source list: {entry!r}"
+    s = s.replace(needle, "", 1)
 p.write_text(s)
 
 p = Path("src/utils/meson.build")
 s = p.read_text()
-start = "if get_option('client')\n  pacat_sources = ["
-end = "endif\n\nif get_option('daemon')"
+newline = chr(10)
+start = "if get_option('client')" + newline + "  pacat_sources = ["
+end = "endif" + newline + newline + "if get_option('daemon')"
 assert s.count(start) == 1 and s.count(end) == 1
 i = s.index(start)
 j = s.index(end, i)

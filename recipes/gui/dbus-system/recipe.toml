@@ -4,14 +4,14 @@
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "System D-Bus service and messagebus account for runit systems"
 license = ["MIT"]
 
 [depends]
 build = []
-run = ["dbus", "runit", "shadow"]
+run = ["dbus", "runit", "base-files"]
 
 [build]
 install = '''
@@ -28,11 +28,5 @@ ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus
 
 [hooks]
 post_install = '''
-# Shadow installs useradd under /usr/sbin on this merged-/usr layout.
-# Nawa's chroot hook inherits a minimal PATH which may omit admin binaries.
-PATH=/usr/bin:/usr/sbin:/bin:/sbin
-export PATH
-if ! getent passwd messagebus >/dev/null 2>&1; then
-    useradd -r -M -d /nonexistent -s /sbin/nologin messagebus
-fi
+/usr/libexec/faseela/ensure-system-account user messagebus messagebus "D-Bus Message Bus" /nonexistent /usr/bin/false
 '''

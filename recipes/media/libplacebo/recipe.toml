@@ -10,7 +10,7 @@ arch = ["x86_64"]
 summary = "libplacebo — GPU-accelerated video/image rendering primitives (OpenGL backend)"
 license = ["LGPL-2.1-or-later"]
 source = "https://code.videolan.org/videolan/libplacebo/-/archive/v%{version}/libplacebo-v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "79120e685a1836344b51b13b6a5661622486a84e4d4a35f6c8d01679a20fbc86"
 source_dir = "libplacebo-v%{version}"
 
 [depends]

@@ -16,7 +16,7 @@ arch = ["x86_64"]
 summary = "mpv — command-line media player (Wayland / DRM, ALSA)"
 license = ["GPL-2.0-or-later"]
 source = "https://github.com/mpv-player/mpv/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "10a0f4654f62140a6dd4d380dcf0bbdbdcf6e697556863dc499c296182f081a3"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva"]

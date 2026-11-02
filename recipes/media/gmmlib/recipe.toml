@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "Intel Graphics Memory Management Library (libigdgmm)"
 license = ["MIT"]
 source = "https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "08db696071510b7e03aa2d9fb7375c6c35f7c327ecd6747424c664c622bb4377"
 source_dir = "gmmlib-intel-gmmlib-%{version}"
 
 [depends]

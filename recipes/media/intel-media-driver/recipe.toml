@@ -16,7 +16,7 @@ arch = ["x86_64"]
 summary = "Intel media driver for VA-API (iHD, gen8+): hardware video decode/encode"
 license = ["MIT", "BSD-3-Clause"]
 source = "https://github.com/intel/media-driver/archive/refs/tags/intel-media-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "3000723faf4dc56eb8276f402c4aa798459bbce860b408a0c480d863b28130ed"
 source_dir = "media-driver-intel-media-%{version}"
 
 [depends]

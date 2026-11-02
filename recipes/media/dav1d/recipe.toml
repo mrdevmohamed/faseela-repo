@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "dav1d — fast AV1 video decoder (libdav1d)"
 license = ["BSD-2-Clause"]
 source = "https://downloads.videolan.org/pub/videolan/dav1d/%{version}/dav1d-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "14bd6f5157808ed9aedcafbe50df689d304fd4810ac20be6eec1ab037436afd6"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "nasm"]

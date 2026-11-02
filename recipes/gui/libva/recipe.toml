@@ -12,7 +12,7 @@ arch = ["x86_64"]
 summary = "libva — VA-API hardware video acceleration interface (DRM + Wayland)"
 license = ["MIT"]
 source = "https://github.com/intel/libva/releases/download/%{version}/libva-%{version}.tar.bz2"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "e3da2250654c8d52b3f59f8cb3f3d8e7fb1a2ee64378dbc400fbc5663de7edb8"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "libdrm", "wayland"]

@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "libvpx — VP8/VP9 video codec library"
 license = ["BSD-3-Clause"]
 source = "https://github.com/webmproject/libvpx/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "e935eded7d81631a538bfae703fd1e293aad1c7fd3407ba00440c95105d2011e"
 source_dir = "libvpx-%{version}"
 
 [depends]

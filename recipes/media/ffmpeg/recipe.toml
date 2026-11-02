@@ -18,7 +18,7 @@ arch = ["x86_64"]
 summary = "ffmpeg — record, convert and stream audio and video (ffmpeg, ffprobe, libav*)"
 license = ["GPL-3.0-or-later"]
 source = "https://ffmpeg.org/releases/ffmpeg-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1"
 
 [depends]
 build = ["pkgconf", "nasm", "zlib", "bzip2", "xz", "openssl", "alsa-lib", "dav1d", "x264", "opus", "lame", "x265", "libvpx", "libass", "freetype", "fontconfig", "fribidi", "harfbuzz", "libva", "libdrm"]

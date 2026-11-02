@@ -9,7 +9,7 @@ arch = ["x86_64"]
 summary = "LAME — MP3 encoder library (libmp3lame)"
 license = ["LGPL-2.0-or-later"]
 source = "https://download.sourceforge.net/lame/lame-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
 
 [depends]
 build = []

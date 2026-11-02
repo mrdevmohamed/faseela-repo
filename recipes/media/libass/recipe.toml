@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "libass — portable SSA/ASS subtitle renderer"
 license = ["ISC"]
 source = "https://github.com/libass/libass/releases/download/%{version}/libass-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "eae425da50f0015c21f7b3a9c7262a910f0218af469e22e2931462fed3c50959"
 
 [depends]
 build = ["pkgconf", "nasm", "freetype", "fribidi", "harfbuzz", "fontconfig"]

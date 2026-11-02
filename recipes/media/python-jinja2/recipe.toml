@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "Python template engine (pure python)"
 license = ["BSD-3-Clause"]
 source = "https://github.com/pallets/jinja/archive/refs/tags/%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337"
 source_dir = "jinja-%{version}"
 
 [depends]

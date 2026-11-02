@@ -2,7 +2,7 @@
 [package]
 name = "tar"
 version = "1.35"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU archiver (tar)"
 license = ["GPL-3.0"]
@@ -14,6 +14,11 @@ build = ["acl", "attr"]
 run = ["acl", "attr"]
 
 [build]
+# libacl 2.4.0 exports *at helpers with an additional at_flags argument.
+# GNU tar 1.35 generates private wrappers with the same names but older
+# signatures; give the tar-local wrappers unique names to avoid declarations
+# colliding with <sys/acl.h>. This preserves ACL support.
+prepare = "sed -i -e 's/acl_get_file_at/tar_acl_get_file_at/g' -e 's/acl_set_file_at/tar_acl_set_file_at/g' -e 's/acl_delete_def_file_at/tar_acl_delete_def_file_at/g' src/xattrs.c"
 configure = "FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

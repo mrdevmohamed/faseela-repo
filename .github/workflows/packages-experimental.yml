@@ -1,5 +1,10 @@
 name: Build packages (experimental)
 
+# Isolated test copy of packages.yml. This workflow is manual-only.
+# By default it builds packages and uploads the newly built archives/logs as
+# workflow artifacts WITHOUT modifying the stable package release.
+# Set the "publish" input only when deliberately testing the existing signed
+# publication path; that publishes to PKG_TAG (stable unless overridden).
 # Builds the packages described by the recipes of THIS repository and publishes
 # them as a flat GitHub Release of this same repository (one fixed tag,
 # default `stable`): every archive is an asset, next to a signed index.toml
@@ -356,13 +361,18 @@ jobs:
                 fi
                 url="https://github.com/$PKG_REPO/releases/download/$PKG_TAG/$asset"
                 part="$T/build/out/$asset.part"
-                trap '\''rm -f "$part"'\'' EXIT
-                curl --fail --location --silent --show-error \
+                if ! curl --fail --location --silent --show-error \
                   --retry 3 --retry-all-errors --retry-delay 2 \
-                  --connect-timeout 30 --output "$part" "$url"
-                [[ -s "$part" ]] || { echo "::error::downloaded asset is empty: $asset" >&2; exit 1; }
+                  --connect-timeout 30 --output "$part" "$url"; then
+                  rm -f "$part"
+                  exit 1
+                fi
+                if [[ ! -s "$part" ]]; then
+                  echo "::error::downloaded asset is empty: $asset" >&2
+                  rm -f "$part"
+                  exit 1
+                fi
                 mv -f "$part" "$T/build/out/$asset"
-                trap - EXIT
                 echo "Downloaded $asset"
               ' _ '{}'
           fi
@@ -564,10 +574,10 @@ jobs:
           mkdir -p ci-packages
           if [[ -s "$T/build/.run-start" ]]; then
             while IFS= read -r -d '' f; do
-              cp --reflink=auto "$f" ci-packages/
+              sudo cp --reflink=auto "$f" ci-packages/
             done < <(find "$T/build/out" -maxdepth 1 -type f -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
           fi
-          chown -R "$(id -u):$(id -g)" ci-packages
+          sudo chown -R "$(id -u):$(id -g)" ci-packages
           echo "Experimental package artifacts: $(find ci-packages -maxdepth 1 -type f -name '*.nawa.tar.zst' | wc -l)"
 
       - name: Collect build logs

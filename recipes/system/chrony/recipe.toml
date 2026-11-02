@@ -3,7 +3,7 @@
 [package]
 name = "chrony"
 version = "4.6.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "chrony: NTP client/server, keeps the system clock in sync"
 license = ["GPL-2.0-only"]
@@ -12,7 +12,7 @@ sha256 = "571ff73fbf0ae3097f0604eca2e00b1d8bb2e91affe1a3494785ff21d6199c5c"
 
 [depends]
 build = ["readline", "ncurses", "shadow"]
-run = ["readline", "ncurses", "shadow"]
+run = ["readline", "ncurses", "shadow", "base-files"]
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-nts"
@@ -39,7 +39,6 @@ chmod 755 %{pkgdir}/etc/sv/chronyd/run
 
 [hooks]
 post_install = '''
-getent group chrony >/dev/null 2>&1 || groupadd -r chrony
-id chrony >/dev/null 2>&1 || useradd -r -g chrony -d /var/lib/chrony -s /bin/false -c chrony chrony
+/usr/libexec/faseela/ensure-system-account user chrony chrony "chrony time daemon" /var/lib/chrony /usr/bin/false
 echo "chrony: available but not enabled by default:  nawa service enable chronyd"
 '''

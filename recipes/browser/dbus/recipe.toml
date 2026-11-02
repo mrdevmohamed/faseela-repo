@@ -1,4 +1,4 @@
-# browser recipe: dbus — message bus library and daemon
+# browser recipe: dbus — session and system message bus library/daemon
 # sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 #
 # Why: at-spi2-core (hard dependency of GTK3) links libdbus, and Firefox uses a session
@@ -9,9 +9,9 @@
 [package]
 name = "dbus"
 version = "1.16.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "D-Bus message bus: library, daemon and tools (no system-bus service)"
+summary = "D-Bus message bus library, daemon, tools and system-bus policy"
 license = ["AFL-2.1", "GPL-2.0-or-later"]
 source = "https://dbus.freedesktop.org/releases/dbus/dbus-%{version}.tar.xz"
 sha256 = "9f8ca5eb51cbe09951aec8624b86c292990ae2428b41b856e2bed17ec65c8849"

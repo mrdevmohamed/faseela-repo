@@ -11,7 +11,7 @@
 #
 # Keys of a [flavor.NAME] table
 #   summary   one line
-#   include   package names, or @category (toolchain base system boot extra gui browser media)
+#   include   package names, or @category (toolchain base system boot extra gui browser media creative)
 #   extends   other flavors whose packages are included too
 #   exclude   packages left out of the result (nothing else is dropped)
 #   closure   "run"   (default) add every [depends].run dependency, transitively:
@@ -76,3 +76,11 @@ include = ["ffmpeg", "intel-media-driver"]
 summary = "iso-gui plus the mpv media player (+ ffmpeg, libass, libplacebo, Intel VA-API driver; AMD's is in mesa)"
 extends = ["iso-gui"]
 include = ["mpv", "intel-media-driver"]
+
+
+# --- creative (recipes/creative): optional Storytold Craft desktop apps ------------------
+# Prebuilt upstream Linux x86_64 bundles for Faseela's Wayland session. Kept
+# separate from the standard ISO and ALL package set; build/install on demand.
+[flavor.creative]
+summary = "15 optional Storytold Craft desktop applications for Wayland"
+include = ["@creative"]

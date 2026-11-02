@@ -1,0 +1,28 @@
+# creative recipe: craft-anything — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "craft-anything"
+version = "0.2.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Native app for investigating software and crafting evidence-based answers"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/craft-anything/releases/download/v0.2.0/craft-anything-0.2.0-linux-x86_64.tar.gz"
+sha256 = "aa670c166b53265d37a64ec544cf7cabecf993802c27c4733746f7b16c12cb21"
+source_dir = "craft-anything-0.2.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+if [ ! -d usr/bin ]; then
+    echo "craft-anything: upstream archive has no usr/bin directory" >&2
+    exit 1
+fi
+install -d -m755 "%{pkgdir}/usr"
+cp -a usr/. "%{pkgdir}/usr/"
+"""

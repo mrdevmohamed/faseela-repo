@@ -1,0 +1,28 @@
+# creative recipe: vectorcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "vectorcraft"
+version = "0.20.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Native vector illustration and SVG editing application"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/vectorcraft/releases/download/v0.20.0/vectorcraft-0.20.0-linux-x86_64.tar.gz"
+sha256 = "d38d83d9e59fdcf7a100414e22b3094094fe4fe2dd43a105f042978012610e86"
+source_dir = "vectorcraft-0.20.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+if [ ! -d usr/bin ]; then
+    echo "vectorcraft: upstream archive has no usr/bin directory" >&2
+    exit 1
+fi
+install -d -m755 "%{pkgdir}/usr"
+cp -a usr/. "%{pkgdir}/usr/"
+"""

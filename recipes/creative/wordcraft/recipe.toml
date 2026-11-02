@@ -1,0 +1,28 @@
+# creative recipe: wordcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "wordcraft"
+version = "0.14.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Native word processor with DOCX and ODT support"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/wordcraft/releases/download/v0.14.0/wordcraft-0.14.0-linux-x86_64.tar.gz"
+sha256 = "3010da3d352d95256ec9a17a03966280a1d41ba09d0ebe569af23092d8b64987"
+source_dir = "wordcraft-0.14.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+if [ ! -d usr/bin ]; then
+    echo "wordcraft: upstream archive has no usr/bin directory" >&2
+    exit 1
+fi
+install -d -m755 "%{pkgdir}/usr"
+cp -a usr/. "%{pkgdir}/usr/"
+"""

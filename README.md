@@ -5,7 +5,7 @@ distribution: the **recipes**, the CI that builds them, and the **published
 packages**.
 
 ```
-recipes/      one recipe.toml per package (toolchain, base, system, boot, gui, browser, media, extra)
+recipes/      one recipe.toml per package (toolchain, base, system, boot, gui, browser, media, creative, extra)
 flavors.toml  which packages make up which image (bootstrap, rootfs-min, docker, iso-*)
 scripts/      recipe tooling: check-recipes, recipe-ids, flavor, fill-sha256,
               gen-recipes-extra, pin-nawa-source

@@ -1,0 +1,28 @@
+# creative recipe: cadcraft — upstream Linux x86_64 release bundle.
+# This is a pinned upstream binary release, not a source build. Its SHA-256
+# comes from GitHub's release-asset metadata; see recipes/creative/README.md.
+[package]
+name = "cadcraft"
+version = "0.16.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Native 2D CAD drafting and technical drawing application"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/storytold/cadcraft/releases/download/v0.16.0/cadcraft-0.16.0-linux-x86_64.tar.gz"
+sha256 = "149820b3d0e1e729a2256e344523b9805871d39ee39c9e085f507707f73ccbd4"
+source_dir = "cadcraft-0.16.0-linux-x86_64"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[build]
+install = """
+set -eu
+if [ ! -d usr/bin ]; then
+    echo "cadcraft: upstream archive has no usr/bin directory" >&2
+    exit 1
+fi
+install -d -m755 "%{pkgdir}/usr"
+cp -a usr/. "%{pkgdir}/usr/"
+"""

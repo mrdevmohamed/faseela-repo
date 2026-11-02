@@ -1,0 +1,33 @@
+# glslang for Mesa's Vulkan shader compiler path, pinned to SDK 1.3.296.0.
+# Its known_good.json pins SPIRV-Tools and SPIRV-Headers; use the separately
+# packaged SPIRV-Tools rather than relying on missing git submodules.
+[package]
+name = "glslang"
+version = "1.3.296"
+rel = 1
+arch = ["x86_64"]
+summary = "Khronos GLSL/HLSL to SPIR-V compiler and libraries"
+license = ["BSD-3-Clause"]
+source = "https://github.com/KhronosGroup/glslang/archive/refs/tags/vulkan-sdk-1.3.296.0.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "glslang-vulkan-sdk-1.3.296.0"
+
+[depends]
+build = ["cmake", "ninja", "spirv-tools"]
+run = ["glibc", "spirv-tools"]
+
+[build]
+configure = '''
+cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_EXTERNAL=OFF \
+    -DALLOW_EXTERNAL_SPIRV_TOOLS=ON \
+    -DSPIRV-Tools-opt_DIR=/usr/lib/cmake/SPIRV-Tools-opt \
+    -DBUILD_SHARED_LIBS=ON \
+    -DGLSLANG_TESTS=OFF \
+    -DGLSLANG_ENABLE_INSTALL=ON
+'''
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

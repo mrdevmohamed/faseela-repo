@@ -1,25 +1,22 @@
-# media recipe: vulkan-headers — Khronos Vulkan C headers (header-only); build helper of libplacebo
-# libplacebo includes <vulkan/vulkan.h> even when built with vulkan=disabled (its stubs), and
-# the GitLab source archive has no 3rdparty/Vulkan-Headers submodule. No vulkan.pc is shipped on
-# purpose: that file belongs to a future vulkan-loader package.
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r vulkan-headers` pins it.
+# Khronos Vulkan C headers and their CMake package config.
+# This extends the previous header-only recipe with its install metadata, which
+# Vulkan-Loader's CMake build requires. The source version stays aligned to Mesa 24.3.
 [package]
 name = "vulkan-headers"
 version = "1.3.296"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "Vulkan C headers (header-only)"
+summary = "Khronos Vulkan C headers (header-only, with CMake config)"
 license = ["Apache-2.0", "MIT"]
 source = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "e204e0b3c19f622d197df945737f5db913d6621830999b8578d34e80a7c90585"
 source_dir = "Vulkan-Headers-%{version}"
 
 [depends]
-build = []
+build = ["cmake", "ninja"]
 run = []
 
 [build]
-install = '''
-install -d %{pkgdir}/usr/include
-cp -r include/vulkan include/vk_video %{pkgdir}/usr/include/
-'''
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DVULKAN_HEADERS_ENABLE_INSTALL=ON -DVULKAN_HEADERS_ENABLE_TESTS=OFF -DVULKAN_HEADERS_ENABLE_MODULE=OFF"
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

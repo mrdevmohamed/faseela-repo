@@ -1,0 +1,20 @@
+# v2rayA's own merged Xray-based core. Its version MUST match the frontend:
+# it implements v2rayA-specific services and is not interchangeable with stock xray.
+[package]
+name = "v2raya-core"
+version = "2.5.13"
+rel = 1
+arch = ["x86_64"]
+summary = "v2rayA merged Xray core (same release as the v2raya frontend)"
+license = ["MPL-2.0"]
+source = "https://github.com/v2rayA/v2rayA/releases/download/v%{version}/v2raya_core_linux_x64_%{version}"
+sha256 = "18c117fc285a4ddf1c34ca6ee6592bda3edc5b85544d4f1e6c94b6801f45bd2c"
+
+[depends]
+build = []
+run = ["glibc", "ca-certificates"]
+
+[build]
+install = '''
+install -Dm755 v2raya_core_linux_x64_%{version} %{pkgdir}/usr/bin/v2raya_core
+'''

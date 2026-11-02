@@ -1,0 +1,17 @@
+# Pinned GeoSite database required by v2raya_core for domain routing rules.
+[package]
+name = "v2raya-geosite"
+version = "202611012203"
+rel = 1
+arch = ["x86_64"]
+summary = "GeoSite database for v2rayA (Loyalsoldier rules snapshot)"
+license = ["GPL-3.0-only"]
+source = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/download/%{version}/geosite.dat"
+sha256 = "704a1d584d330445350a39d140cf019d06c184b22c59bc4aebaa660b1b6c841f"
+
+[depends]
+build = []
+run = []
+
+[build]
+install = "install -Dm644 geosite.dat %{pkgdir}/usr/share/v2raya/geosite.dat"

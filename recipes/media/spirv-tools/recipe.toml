@@ -1,0 +1,31 @@
+# SPIRV-Tools pinned to the matching commit in Khronos SDK 1.3.296.0's glslang known_good.json.
+# It consumes the separately installed SPIRV-Headers package rather than an absent submodule.
+[package]
+name = "spirv-tools"
+version = "1.3.296"
+rel = 1
+arch = ["x86_64"]
+summary = "Khronos SPIR-V tools and shared libraries"
+license = ["Apache-2.0"]
+source = "https://github.com/KhronosGroup/SPIRV-Tools/archive/6dcc7e350a0b9871a825414d42329e44b0eb8109.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "SPIRV-Tools-6dcc7e350a0b9871a825414d42329e44b0eb8109"
+
+[depends]
+build = ["cmake", "ninja", "python", "spirv-headers"]
+run = ["glibc"]
+
+[build]
+configure = '''
+cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DSPIRV-Headers_SOURCE_DIR=/usr \
+    -DSPIRV_WERROR=OFF \
+    -DBUILD_SHARED_LIBS=ON \
+    -DSPIRV_TOOLS_BUILD_STATIC=OFF \
+    -DSPIRV_SKIP_TESTS=ON
+'''
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

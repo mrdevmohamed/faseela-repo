@@ -34,19 +34,19 @@ p.write_text(s.replace(old, new, 1))
 
 p = Path("src/meson.build")
 s = p.read_text()
-for entry in ("  'pulsecore/sndfile-util.c',\\n", "  'pulsecore/sndfile-util.h',\\n"):
+for entry in ("  'pulsecore/sndfile-util.c',\n", "  'pulsecore/sndfile-util.h',\n"):
     assert s.count(entry) == 1, f"unexpected libpulsecommon source list: {entry!r}"
     s = s.replace(entry, "", 1)
 p.write_text(s)
 
 p = Path("src/utils/meson.build")
 s = p.read_text()
-start = "if get_option('client')\\n  pacat_sources = ["
-end = "endif\\n\\nif get_option('daemon')"
+start = "if get_option('client')\n  pacat_sources = ["
+end = "endif\n\nif get_option('daemon')"
 assert s.count(start) == 1 and s.count(end) == 1
 i = s.index(start)
 j = s.index(end, i)
-s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-only build.\\n\\n" + s[j + len("endif\\n\\n"):]
+s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-only build.\n\n" + s[j + len("endif\n\n"):]
 p.write_text(s)
 PY
 

@@ -3,7 +3,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 10
+rel = 11
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
@@ -161,7 +161,7 @@ chmod 644 %{pkgdir}/etc/profile.d/gui-session.sh
 
 [hooks]
 post_install = '''for g in seat video input audio; do
-    getent group "$g" >/dev/null 2>&1 || groupadd -r "$g"
+    /usr/libexec/faseela/ensure-system-account group "$g"
 done
 echo "gui-session: add your user:  usermod -aG seat,video,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"

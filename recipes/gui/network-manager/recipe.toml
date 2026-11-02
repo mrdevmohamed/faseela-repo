@@ -1,0 +1,48 @@
+# gui recipe: NetworkManager with wpa_supplicant and polkit, integrated with runit.
+# Installing it replaces the default dhcpcd service: do not run both DHCP managers.
+[package]
+name = "network-manager"
+version = "1.58.1"
+rel = 1
+arch = ["x86_64"]
+summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/releases/%{version}/downloads/NetworkManager-%{version}.tar.xz"
+sha256 = "262864cfd198123d3e5dbe91937441b97ee9059d6d712e1a5bfbb1c54668d14d"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "dbus", "glib", "eudev", "libndp", "libpsl", "util-linux"]
+run = ["dbus-system", "glib", "eudev", "libndp", "libpsl", "util-linux", "wpa_supplicant", "polkit", "iproute2"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Ddocs=false -Dman=false -Dtests=no -Dqt=false -Dintrospection=false -Dnmcli=true -Dnmtui=false -Dnm_cloud_setup=false -Dwifi=true -Diwd=false -Dconfig_wifi_backend_default=wpa_supplicant -Dconfig_dhcp_default=internal -Dppp=false -Dmodem_manager=false -Dofono=false -Dovs=false -Dteamdctl=false -Dnbft=false -Dclat=false -Dconcheck=false -Dlibaudit=no -Dlibpsl=true -Dcrypto=null -Dpolkit=true -Dpolkit_agent_helper_1=/usr/lib/polkit-1/polkit-agent-helper-1 -Dsystemd_journal=false -Dsystemdsystemunitdir=no -Dsystemdsystemgeneratordir=no -Dsession_tracking=no -Dsuspend_resume=auto -Dsession_tracking_consolekit=false -Dconfig_logging_backend_default=syslog -Dselinux=false -Dfirewalld_zone=false -Difupdown=false"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+install -d -m755 %{pkgdir}/etc/NetworkManager %{pkgdir}/etc/sv/NetworkManager %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/NetworkManager/NetworkManager.conf <<'CONF'
+[main]
+plugins=keyfile
+dhcp=internal
+dns=default
+auth-polkit=true
+
+[device]
+wifi.backend=wpa_supplicant
+CONF
+cat > %{pkgdir}/etc/sv/NetworkManager/run <<'RUN'
+#!/bin/sh
+install -d -m755 /run/NetworkManager
+exec /usr/sbin/NetworkManager --no-daemon --pid-file=/run/NetworkManager/NetworkManager.pid
+RUN
+chmod 755 %{pkgdir}/etc/sv/NetworkManager/run
+ln -s /etc/sv/NetworkManager %{pkgdir}/etc/runit/runsvdir/default/NetworkManager
+'''
+
+[hooks]
+post_install = '''
+# NetworkManager owns DHCP when enabled. Leaving dhcpcd active causes two
+# independent clients to configure the same interface.
+rm -f /etc/runit/runsvdir/default/dhcpcd
+echo "NetworkManager: enabled under runit; dhcpcd's default service was disabled."
+'''

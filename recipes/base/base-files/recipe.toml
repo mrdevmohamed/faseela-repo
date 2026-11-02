@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -168,5 +168,99 @@ EOF
 # permissions that must not be inherited from the build umask
 chmod 1777 %{pkgdir}/tmp %{pkgdir}/var/tmp
 chmod 0750 %{pkgdir}/root
+# Shared account helper for package hooks. Do not depend on shadow's
+# useradd/groupadd being installed when a package archive is installed directly.
+install -d -m755 %{pkgdir}/usr/libexec/faseela
+cat > %{pkgdir}/usr/libexec/faseela/ensure-system-account <<'ACCOUNT'
+#!/bin/sh
+# Create locked service users/groups using only the base user databases.
+# Usage:
+#   ensure-system-account group NAME
+#   ensure-system-account user NAME GROUP GECOS HOME SHELL
+set -eu
+
+fail() { echo "ensure-system-account: $*" >&2; exit 1; }
+
+valid_name() {
+    case "$1" in
+        ''|*[!a-zA-Z0-9_-]*) fail "invalid account name: $1" ;;
+    esac
+}
+
+ensure_group() {
+    name=$1
+    valid_name "$name"
+    [ -f /etc/group ] || fail "/etc/group is missing"
+
+    if ! grep -q "^$name:" /etc/group; then
+        gid=81
+        while grep -q "^[^:]*:[^:]*:$gid:" /etc/group; do
+            gid=$((gid + 1))
+            [ "$gid" -lt 60000 ] || fail "no free system GID"
+        done
+        printf '%s:x:%s:\n' "$name" "$gid" >> /etc/group
+    fi
+
+    if [ -f /etc/gshadow ] && ! grep -q "^$name:" /etc/gshadow; then
+        printf '%s:!::\n' "$name" >> /etc/gshadow
+        chmod 0600 /etc/gshadow
+    fi
+}
+
+ensure_user() {
+    name=$1
+    group=$2
+    gecos=$3
+    home=$4
+    shell=$5
+    valid_name "$name"
+    valid_name "$group"
+    case "$gecos:$home:$shell" in
+        *:*:*) ;;
+    esac
+    [ -f /etc/passwd ] || fail "/etc/passwd is missing"
+    [ -f /etc/group ] || fail "/etc/group is missing"
+
+    # If a prior install already created the user, retain its UID and home.
+    if grep -q "^$name:" /etc/passwd; then
+        old_gid=$(grep "^$name:" /etc/passwd | head -n 1 | cut -d: -f4)
+        if ! grep -q "^$group:" /etc/group; then
+            ensure_group "$group"
+        fi
+        return 0
+    fi
+
+    ensure_group "$group"
+    gid=$(grep "^$group:" /etc/group | head -n 1 | cut -d: -f3)
+    uid=81
+    while grep -q "^[^:]*:[^:]*:$uid:" /etc/passwd; do
+        uid=$((uid + 1))
+        [ "$uid" -lt 60000 ] || fail "no free system UID"
+    done
+
+    printf '%s:x:%s:%s:%s:%s:%s\n' "$name" "$uid" "$gid" "$gecos" "$home" "$shell" >> /etc/passwd
+    if [ -f /etc/shadow ] && ! grep -q "^$name:" /etc/shadow; then
+        printf '%s:*:19980:0:99999:7:::\n' "$name" >> /etc/shadow
+        chmod 0600 /etc/shadow
+    fi
+}
+
+[ "$(id -u)" -eq 0 ] || fail "must run as root"
+case "${1:-}" in
+    group)
+        [ "$#" -eq 2 ] || fail "usage: $0 group NAME"
+        ensure_group "$2"
+        ;;
+    user)
+        [ "$#" -eq 6 ] || fail "usage: $0 user NAME GROUP GECOS HOME SHELL"
+        ensure_user "$2" "$3" "$4" "$5" "$6"
+        ;;
+    *)
+        fail "usage: $0 {group NAME|user NAME GROUP GECOS HOME SHELL}"
+        ;;
+esac
+ACCOUNT
+chmod 0755 %{pkgdir}/usr/libexec/faseela/ensure-system-account
+
 chmod 0600 %{pkgdir}/etc/shadow %{pkgdir}/etc/gshadow
 '''

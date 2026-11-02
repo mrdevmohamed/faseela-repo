@@ -21,6 +21,8 @@
 # library is missing, so a dependency this recipe forgot shows up in the build log
 # of the first run, not as a crash on a user's machine.
 #
+# Audio: Firefox uses the PulseAudio client API on Linux. `libpulse` supplies
+# that client library; Faseela serves it through PipeWire's pipewire-pulse endpoint.
 # Needs from the kernel: user namespaces and seccomp (the content sandbox) — the
 # linux recipe enables both. Without them Firefox still starts, with a weaker sandbox.
 [package]
@@ -36,8 +38,8 @@ source_dir = "firefox"
 
 [depends]
 # the libraries are build dependencies too: the ldd guard resolves them
-build = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "mesa", "dbus", "dejavu-fonts"]
-run = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "mesa", "dbus", "dejavu-fonts", "gcc", "glibc"]
+build = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "libpulse", "mesa", "dbus", "dejavu-fonts"]
+run = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "libpulse", "mesa", "dbus", "dejavu-fonts", "gcc", "glibc"]
 
 [slim]
 # Never strip: libxul.so is PGO/BOLT-laid-out, like rust's librustc_driver (see the

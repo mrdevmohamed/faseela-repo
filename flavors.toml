@@ -56,13 +56,23 @@ exclude = ["linux-firmware", "linux-firmware-extra"]
 summary = "live ISO with Sway, PipeWire audio, Firefox ESR, NetworkManager, Bluetooth and polkit"
 extends = ["iso-nogui"]
 # Browser recipes stay in their own category, but Firefox is part of the standard GUI ISO.
+# zed lives in gui/ (stage2/stage3 skip that category) but is opt-in: see iso-gui-zed.
 include = ["@gui", "firefox"]
+exclude = ["zed"]
 
 # Backwards-compatible flavor name for existing build workflow invocations.
 # The standard iso-gui now already includes Firefox and its runtime dependency closure.
 [flavor.iso-gui-firefox]
 summary = "compatibility alias for iso-gui (includes Firefox ESR)"
 extends = ["iso-gui"]
+
+# iso-gui plus the Zed editor. It does NOT extend iso-gui: `exclude` is inherited and cannot be
+# undone further down, so this repeats iso-gui's include list on top of iso-nogui.
+# Zed renders through Vulkan, which mesa here is not built with (see recipes/gui/zed).
+[flavor.iso-gui-zed]
+summary = "iso-gui plus the Zed code editor (needs a Vulkan driver, see recipes/gui/zed)"
+extends = ["iso-nogui"]
+include = ["@gui", "firefox", "zed"]
 
 # --- media (recipes/media): opt-in, on top of the images above ----------------------------
 # ffmpeg needs no GUI, so it comes on top of iso-nogui; mpv plays through Wayland/DRM and

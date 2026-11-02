@@ -10,6 +10,14 @@ management (no systemd/logind), supervised by runit. 52 packages (incl. `llvm`, 
 > from a test build. Expect to bump a version or fix an option here and there
 > on the first build — see "First build" below.
 
+## Zed (opt-in, needs Vulkan)
+
+`zed` is the upstream prebuilt Zed editor bundle. It is in `gui/` so stage2/stage3 skip it, but
+the standard `iso-gui` flavor excludes it; use `iso-gui-zed` (or `nawa install zed`). Zed renders
+only through Vulkan, and `mesa` here is built with no Vulkan driver and there is no vulkan-loader
+recipe, so it will not run on QEMU/software rendering until lavapipe (`-D vulkan-drivers=swrast`)
+and a loader are added.
+
 ## Opt-in
 
 `recipes/gui` is **not** built by `stage2`/`stage3` unless you ask:

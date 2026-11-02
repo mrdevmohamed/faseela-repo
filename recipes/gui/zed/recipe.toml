@@ -1,0 +1,47 @@
+# gui recipe: zed — Zed code editor (upstream prebuilt Linux x86_64 release bundle).
+# Pinned upstream binary release, not a source build (Zed's source build needs a very large
+# Rust/Vulkan toolchain). Opt-in: NOT part of iso-gui, see flavor `iso-gui-zed`.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r zed` pins it
+# (a 404 there means the asset name or version changed upstream: fix `source`/`version`, bump `rel`).
+#
+# RUNTIME NEEDS A VULKAN DRIVER. Zed renders through Vulkan only. mesa here is built with
+# `vulkan-drivers=` (empty) and there is no vulkan-loader recipe, so Zed starts only where an
+# external Vulkan loader + ICD exist. Enabling lavapipe (`-D vulkan-drivers=swrast`) plus a
+# vulkan-loader recipe is the follow-up that makes it usable on QEMU/software rendering.
+[package]
+name = "zed"
+version = "1.24.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Zed: fast, multiplayer code editor (Wayland; needs Vulkan)"
+license = ["GPL-3.0-or-later", "AGPL-3.0-or-later", "Apache-2.0"]
+source = "https://github.com/zed-industries/zed/releases/download/v%{version}/zed-linux-x86_64.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "zed.app"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "wayland", "libxkbcommon", "mesa", "fontconfig", "freetype", "libxcb", "alsa-lib", "openssl", "zlib"]
+
+[build]
+install = '''
+set -eu
+# The bundle is one self-contained tree (bin/zed finds ../libexec/zed-editor and its own lib/
+# relative to itself), so it is kept whole under /usr/lib/zed.app and only linked into PATH.
+install -d -m755 %{pkgdir}/usr/lib/zed.app
+cp -a . %{pkgdir}/usr/lib/zed.app/
+install -d -m755 %{pkgdir}/usr/bin
+ln -sf ../lib/zed.app/bin/zed %{pkgdir}/usr/bin/zed
+
+# desktop entry + icons: point Exec/Icon at the installed location
+if [ -f share/applications/dev.zed.Zed.desktop ]; then
+    install -Dm644 share/applications/dev.zed.Zed.desktop %{pkgdir}/usr/share/applications/dev.zed.Zed.desktop
+    sed -i 's|^Exec=zed|Exec=/usr/bin/zed|; s|^Icon=zed|Icon=dev.zed.Zed|' \
+        %{pkgdir}/usr/share/applications/dev.zed.Zed.desktop
+fi
+for icon in share/icons/hicolor/*/apps/*.png; do
+    [ -f "$icon" ] || continue
+    size="${icon#share/icons/hicolor/}"; size="${size%%/*}"
+    install -Dm644 "$icon" "%{pkgdir}/usr/share/icons/hicolor/$size/apps/dev.zed.Zed.png"
+done
+'''

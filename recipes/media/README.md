@@ -10,7 +10,7 @@ the **mpv** media player (with its on-screen controller), as an opt-in layer. 15
 | encoders | x264 (H.264) x265 (H.265/HEVC) libvpx (VP8/VP9) opus lame (MP3) |
 | hardware video | intel-media-driver gmmlib (Intel VA-API driver; libva and AMD's driver: see `gui/` libva, mesa) |
 | scripting | lua52 (mpv's on-screen controller, stats, console) |
-| build helpers (pure python) | python-jinja2 python-glad2 (libplacebo generates its GL loader with glad) |
+| build helpers | python-jinja2 python-glad2 (libplacebo generates its GL loader with glad), vulkan-headers (headers libplacebo includes even without vulkan) |
 
 Everything else comes from the existing categories: `freetype fribidi harfbuzz fontconfig`,
 `wayland libxkbcommon mesa libdrm libva` (gui/), `alsa-lib libarchive libjpeg-turbo nasm` (extra/).

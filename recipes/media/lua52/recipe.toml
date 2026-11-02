@@ -12,6 +12,8 @@ summary = "Lua 5.2 — static liblua5.2 + headers (for mpv), parallel to lua 5.4
 license = ["MIT"]
 source = "https://www.lua.org/ftp/lua-%{version}.tar.gz"
 sha256 = "b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b"
+# the tarball unpacks to lua-5.2.4, not lua52-5.2.4 (the default): without this make ran in the wrong dir
+source_dir = "lua-%{version}"
 
 [depends]
 build = ["readline", "ncurses"]

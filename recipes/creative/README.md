@@ -2,10 +2,10 @@
 
 This category packages the official Linux x86_64 FHS release archives from
 [Storytold](https://github.com/storytold). It currently contains 15 optional
-desktop applications. The Linux bundles expose an FHS-style `bin/` and `share/` payload. The recipes
-install these as owned files under `/usr/bin` and `/usr/share` (and also
-accept a conventional `usr/` payload); they do not run an application-specific
-installer and do not compile the upstream source.
+desktop applications. The Linux bundles expose an FHS-style `bin/` and
+`share/` payload. The recipes install these as owned files under `/usr/bin`
+and `/usr/share` (and also accept a conventional `usr/` payload); they do
+not run an application-specific installer or compile the upstream source.
 
 ## Supported applications
 

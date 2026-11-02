@@ -2,7 +2,7 @@
 
 A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
 **wlroots 0.18**, **foot** terminal, DejaVu fonts, **seatd** for seat
-management (no systemd/logind), supervised by runit. 43 packages (incl. `llvm`).
+management (no systemd/logind), supervised by runit. 51 packages (incl. `llvm` and the X11 client libraries).
 
 > **Status: written offline, not yet built.** These recipes were authored
 > without network access, so (a) every `sha256` is an all-zero placeholder and
@@ -45,6 +45,7 @@ done
 | group | packages |
 |---|---|
 | text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts |
+| X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links; no X server) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
 | graphics | mesa (+ python-mako python-markupsafe python-pyyaml python-packaging as build helpers) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
@@ -80,7 +81,7 @@ DRM (virtio-gpu, bochs, simpledrm) and evdev/HID input; to try it in QEMU use
   does this). Real GPUs (Intel `iris`, AMD `radeonsi`) still need more: extend the
   `llvm` recipe's `LLVM_TARGETS_TO_BUILD` (AMDGPU for radeonsi), add libclc/libpciaccess
   and extend `-D gallium-drivers`. The `llvm` recipe is the longest build in the tree.
-* No Xwayland/X11, no D-Bus, so no sway tray (`-D tray=disabled`) and no
+* No X server and no Xwayland (only the X11 *client* libraries, because cairo links them), no D-Bus, so no sway tray (`-D tray=disabled`) and no
   portals. The launcher is `wmenu` (`Super+D`, sway's default `wmenu-run`);
   there is no lock screen yet — add a `swaylock` recipe as needed.
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).

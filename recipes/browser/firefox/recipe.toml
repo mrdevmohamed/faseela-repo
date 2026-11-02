@@ -1,0 +1,95 @@
+# browser recipe: firefox — Mozilla Firefox ESR (official binary release)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r firefox` pins it
+# (compare it with the line for linux-x86_64/en-US/firefox-<version>esr.tar.xz in
+# https://ftp.mozilla.org/pub/firefox/releases/<version>esr/SHA256SUMS).
+#
+# Binary, not source — the same trust boundary as the `rust` recipe: an upstream
+# binary pinned by sha256. Firefox from source needs clang, nodejs, cbindgen and
+# 16+ GB of RAM / 30+ GB of disk for the link step, far beyond a hosted build
+# runner, and the `llvm` recipe here is X86-only shared libraries without clang.
+#
+# ESR, not the 4-weekly release: a distribution that rebuilds on demand wants a
+# branch that only gets security fixes. The directory and the file name carry the
+# "esr" suffix, the version here does not (153.6.0 -> .../153.6.0esr/...).
+# English (en-US) only; language packs are separate downloads.
+#
+# What this recipe adds to the tarball:
+#   * distribution/policies.json with DisableAppUpdate: updates come from nawa,
+#     not from Firefox's own updater (which could not write to /usr anyway)
+#   * /usr/bin/firefox, a desktop entry and the hicolor icons
+# A guard in `install` runs ldd on every shipped ELF file and fails the build if a
+# library is missing, so a dependency this recipe forgot shows up in the build log
+# of the first run, not as a crash on a user's machine.
+#
+# Needs from the kernel: user namespaces and seccomp (the content sandbox) — the
+# linux recipe enables both. Without them Firefox still starts, with a weaker sandbox.
+[package]
+name = "firefox"
+version = "153.6.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Mozilla Firefox web browser (ESR, official binary)"
+license = ["MPL-2.0"]
+source = "https://ftp.mozilla.org/pub/firefox/releases/%{version}esr/linux-x86_64/en-US/firefox-%{version}esr.tar.xz"
+sha256 = "31321cd9e2cef73df678417e810cdd1b5760aa5cc8063c8465669e5869cb8498"
+source_dir = "firefox"
+
+[depends]
+# the libraries are build dependencies too: the ldd guard resolves them
+build = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "mesa", "dbus", "dejavu-fonts"]
+run = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "mesa", "dbus", "dejavu-fonts", "gcc", "glibc"]
+
+[slim]
+# Never strip: libxul.so is PGO/BOLT-laid-out, like rust's librustc_driver (see the
+# `rust` recipe), and Mozilla ships it stripped already.
+strip = false
+
+[build]
+install = '''
+d=%{pkgdir}/usr/lib/firefox
+install -d "$d" %{pkgdir}/usr/bin %{pkgdir}/usr/share/applications
+cp -a ./. "$d"/
+
+# every shipped ELF file must resolve (the bundled libnss3/libxul/... live in $d)
+missing=$(for f in "$d"/firefox "$d"/firefox-bin "$d"/*.so; do
+    [ -f "$f" ] || continue
+    LD_LIBRARY_PATH="$d" ldd "$f" 2>&1 | sed "s#^#$(basename "$f"): #"
+done | grep 'not found' || true)
+if [ -n "$missing" ]; then
+    echo "firefox: libraries missing from [depends] (add the recipe for each):" >&2
+    echo "$missing" >&2
+    exit 1
+fi
+
+# updates come from nawa
+install -d "$d/distribution"
+cat > "$d/distribution/policies.json" <<'EOF'
+{
+  "policies": {
+    "DisableAppUpdate": true
+  }
+}
+EOF
+
+ln -s ../lib/firefox/firefox %{pkgdir}/usr/bin/firefox
+
+for s in 16 32 48 64 128; do
+    install -Dm644 "$d/browser/chrome/icons/default/default$s.png" \
+        %{pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/firefox.png
+done
+
+cat > %{pkgdir}/usr/share/applications/firefox.desktop <<'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Firefox
+GenericName=Web Browser
+Comment=Browse the World Wide Web
+Exec=firefox %u
+Icon=firefox
+Terminal=false
+StartupNotify=true
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+EOF
+'''

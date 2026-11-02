@@ -1,0 +1,23 @@
+# browser recipe: libepoxy — OpenGL function pointer management (GTK3 draws through it)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+#
+# EGL only: mesa here is built without GLX (see recipes/gui/mesa), and Wayland sessions
+# use EGL. libepoxy loads libEGL.so.1 from mesa at run time.
+[package]
+name = "libepoxy"
+version = "1.5.9"
+rel = 1
+arch = ["x86_64"]
+summary = "OpenGL function pointer management library (EGL, no GLX)"
+license = ["MIT"]
+source = "https://github.com/anholt/libepoxy/releases/download/%{version}/libepoxy-%{version}.tar.xz"
+sha256 = "d168a19a6edfdd9977fef1308ccf516079856a4275cf876de688fb7927e365e4"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "mesa", "libX11", "xorgproto"]
+run = ["mesa", "libX11"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D docs=false -D glx=no -D egl=yes -D x11=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

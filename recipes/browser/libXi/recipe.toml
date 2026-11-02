@@ -1,0 +1,20 @@
+# browser recipe: libXi — X Input extension client library
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+[package]
+name = "libXi"
+version = "1.8.1"
+rel = 1
+arch = ["x86_64"]
+summary = "X Input extension client library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXi-%{version}.tar.xz"
+sha256 = "89bfc0e814f288f784202e6e5f9b362b788ccecdeb078670145eacd8749656a7"
+
+[depends]
+build = ["pkgconf", "xorgproto", "libX11", "libXext", "libXfixes"]
+run = ["libX11", "libXext", "libXfixes"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -1,0 +1,20 @@
+# gui recipe: libX11 — Xlib: the X11 client library
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+[package]
+name = "libX11"
+version = "1.8.10"
+rel = 1
+arch = ["x86_64"]
+summary = "Xlib: the X11 client library"
+license = ["X11"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libX11-%{version}.tar.xz"
+sha256 = "2b3b3dad9347db41dca56beb7db5878f283bde1142f04d9f8e478af435dfdc53"
+
+[depends]
+build = ["pkgconf", "xorgproto", "xtrans", "libxcb"]
+run = ["libxcb"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

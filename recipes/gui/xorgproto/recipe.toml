@@ -1,0 +1,27 @@
+# gui recipe: xorgproto — X.Org protocol headers and pkg-config files
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+#
+# Why X11 client libraries at all: there is no X server in this distribution, but
+# cairo's xlib surface (libX11, libXext, libXrender) and GTK3's X11 backend (which
+# Mozilla's prebuilt Firefox links against, see recipes/browser) need them to LOAD,
+# even in a pure Wayland session. Only the client side is packaged. The ones only
+# GTK3/Firefox need (libXfixes, libXi, libXcursor, libXrandr, libXcomposite,
+# libXdamage) are in recipes/browser, so the GUI image gets just what cairo needs.
+[package]
+name = "xorgproto"
+version = "2024.1"
+rel = 1
+arch = ["x86_64"]
+summary = "X.Org protocol headers and pkg-config files"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/proto/xorgproto-%{version}.tar.xz"
+sha256 = "372225fd40815b8423547f5d890c5debc72e88b91088fbfb13158c20495ccb59"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

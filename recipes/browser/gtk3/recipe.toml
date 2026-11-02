@@ -1,0 +1,37 @@
+# browser recipe: gtk3 — GTK 3 toolkit, Wayland and X11 backends
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+#
+# Both backends on purpose. Mozilla's Firefox binary is a GTK3 build with X11 support
+# compiled in (it links libgdk-3 and the X11 client libraries); a Wayland-only GTK would
+# not provide the GDK X11 functions it was built against. In a sway session without
+# Xwayland, GDK picks Wayland by itself.
+#
+# Left out: introspection, printing (CUPS; only the file backend), colord, cloud
+# providers, tracker, the demos/tests/docs, and the broadway backend.
+#
+# meson skips the post-install steps under DESTDIR, so the GSettings schemas are
+# compiled by the hook on the target system.
+[package]
+name = "gtk3"
+version = "3.24.52"
+rel = 1
+arch = ["x86_64"]
+summary = "GTK 3 toolkit (Wayland + X11 backends)"
+license = ["LGPL-2.0-or-later"]
+source = "https://download.gnome.org/sources/gtk/3.24/gtk-%{version}.tar.xz"
+sha256 = "80931fa472a77b9a164f6740e3c0b444fac6770054632d35a7ff9d679e5e7b9f"
+source_dir = "gtk-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
+run = ["glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D x11_backend=true -D wayland_backend=true -D broadway_backend=false -D introspection=false -D demos=false -D examples=false -D tests=false -D installed_tests=false -D gtk_doc=false -D man=false -D colord=no -D print_backends=file -D cloudproviders=false -D tracker3=false -D profiler=false -D xinerama=no"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = '''glib-compile-schemas /usr/share/glib-2.0/schemas 2>/dev/null || true
+gtk-query-immodules-3.0 --update-cache 2>/dev/null || true
+'''

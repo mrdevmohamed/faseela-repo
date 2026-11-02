@@ -1,0 +1,25 @@
+# browser recipe: at-spi2-core — accessibility toolkit (libatk, libatk-bridge, libatspi)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+#
+# Since 2.45 this ONE source tree also provides what used to be the separate `atk` and
+# `at-spi2-atk` packages: GTK3 asks for `atk` and `atk-bridge-2.0`, both come from here.
+# `introspection`/`x11` are `feature` options in this release; if meson says
+# "Unknown option" or "not one of the choices", check meson_options.txt.
+[package]
+name = "at-spi2-core"
+version = "2.56.4"
+rel = 1
+arch = ["x86_64"]
+summary = "Accessibility toolkit: ATK, the AT-SPI bridge and libatspi"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/at-spi2-core/2.56/at-spi2-core-%{version}.tar.xz"
+sha256 = "dbe35b951499e1d6f1fb552c2e0a09cea7cba2adf6c2eba0b2c85b6c094a3a02"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "dbus", "libxml2", "gettext"]
+run = ["glib", "dbus", "libxml2"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D introspection=disabled -D x11=disabled -D docs=false -D gtk2_atk_adaptor=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,30 @@
+# browser recipe: dbus — message bus library and daemon
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+#
+# Why: at-spi2-core (hard dependency of GTK3) links libdbus, and Firefox uses a session
+# bus on Wayland for "open this URL in the running instance". Only the library, the
+# daemon and the tools are packaged; there is no system-bus service and no `messagebus`
+# user (nothing here needs the system bus). A session bus is started with
+#     dbus-run-session -- sway
+[package]
+name = "dbus"
+version = "1.16.0"
+rel = 1
+arch = ["x86_64"]
+summary = "D-Bus message bus: library, daemon and tools (no system-bus service)"
+license = ["AFL-2.1", "GPL-2.0-or-later"]
+source = "https://dbus.freedesktop.org/releases/dbus/dbus-%{version}.tar.xz"
+sha256 = "9f8ca5eb51cbe09951aec8624b86c292990ae2428b41b856e2bed17ec65c8849"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "expat"]
+run = ["expat"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D runtime_dir=/run -D systemd=disabled -D x11_autolaunch=disabled -D libaudit=disabled -D selinux=disabled -D apparmor=disabled -D xml_docs=disabled -D doxygen_docs=disabled -D ducktype_docs=disabled -D qt_help=disabled -D modular_tests=disabled -D installed_tests=false"
+compile = "ninja -C build"
+# /run is a tmpfs filled at boot: an archive must not carry it
+install = """
+DESTDIR=%{pkgdir} meson install -C build
+rm -rf %{pkgdir}/run
+"""

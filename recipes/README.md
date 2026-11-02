@@ -10,12 +10,14 @@ recipes/
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop: sway, foot, mesa, ... (opt-in)
+├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
 └── extra/       dev tools, editors, net utils, hw tools, misc libs
 ```
 
 Current set: 10 toolchain + 39 base + 31 system + 6 boot + 67 extra =
-**153 packages**, plus the optional `gui/` category (42 packages, see
-[gui/README.md](gui/README.md)); the recipe tree counts 195 recipes in total.
+**153 packages**, plus the optional `gui/` category (51 packages, see
+[gui/README.md](gui/README.md)) and the optional `browser/` category (12 packages,
+see [browser/README.md](browser/README.md)); the recipe tree counts 217 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1`.
 
 The first 47 `extra/` recipes are generated from a data table

@@ -56,3 +56,12 @@ exclude = ["linux-firmware", "linux-firmware-extra"]
 summary = "live ISO with the sway/Wayland stack"
 extends = ["iso-nogui"]
 include = ["@gui"]
+
+# iso-gui plus a browser. Firefox and the GTK3 stack it needs live in their own category
+# (recipes/browser), so iso-gui does not grow with them: its only new packages are the
+# X11 client libraries cairo now links (libX11, libxcb, libXau, libXext, libXrender and
+# the build helpers xorgproto, xtrans, xcb-proto).
+[flavor.iso-gui-firefox]
+summary = "iso-gui plus Firefox ESR (GTK3, official binary)"
+extends = ["iso-gui"]
+include = ["firefox"]

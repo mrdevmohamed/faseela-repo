@@ -1,0 +1,20 @@
+# gui recipe: libXrender — X Render extension client library
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+[package]
+name = "libXrender"
+version = "0.9.11"
+rel = 1
+arch = ["x86_64"]
+summary = "X Render extension client library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXrender-%{version}.tar.xz"
+sha256 = "bc53759a3a83d1ff702fb59641b3d2f7c56e05051fa0cfa93501166fa782dc24"
+
+[depends]
+build = ["pkgconf", "xorgproto", "libX11"]
+run = ["libX11"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -1,0 +1,30 @@
+# gui recipe: BlueZ Bluetooth host stack, daemon, client and audio profiles.
+[package]
+name = "bluez"
+version = "5.87"
+rel = 1
+arch = ["x86_64"]
+summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://www.kernel.org/pub/linux/bluetooth/bluez-%{version}.tar.xz"
+sha256 = "26bdcf2cebd7310c6f598850606b037ef0c515fe6608ebc54d22c50c4c32b35f"
+
+[depends]
+build = ["dbus", "glib", "eudev", "readline", "pkgconf"]
+run = ["dbus-system", "glib", "eudev"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --localstatedir=/var --with-dbusconfdir=/usr/share --enable-library --enable-client --enable-tools --enable-monitor --enable-udev --disable-systemd --enable-a2dp --enable-asha --enable-avrcp --enable-bap --enable-bass --enable-mcp --enable-vcp --disable-obex --disable-cups --disable-manpages --disable-asan --disable-lsan --disable-ubsan --disable-pie --disable-mesh --disable-midi --disable-network --disable-nfc --disable-sixaxis --disable-deprecated --disable-test --disable-hid2hci --disable-experimental"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+install -d -m755 %{pkgdir}/etc/sv/bluetoothd %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/bluetoothd/run <<'RUN'
+#!/bin/sh
+# Wait for the system bus before starting bluetoothd.
+while [ ! -S /run/dbus/system_bus_socket ]; do sleep 1; done
+exec /usr/libexec/bluetooth/bluetoothd --nodetach
+RUN
+chmod 755 %{pkgdir}/etc/sv/bluetoothd/run
+ln -s /etc/sv/bluetoothd %{pkgdir}/etc/runit/runsvdir/default/bluetoothd
+'''

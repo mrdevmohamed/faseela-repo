@@ -1,0 +1,21 @@
+# system recipe: Linux capabilities library and command-line tools.
+[package]
+name = "libcap"
+version = "2.78"
+rel = 1
+arch = ["x86_64"]
+summary = "POSIX capabilities library and tools (getcap, setcap, capsh)"
+license = ["GPL-2.0", "BSD-3-Clause"]
+source = "https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-%{version}.tar.xz"
+sha256 = "0d621e562fd932ccf67b9660fb018e468a683d7b827541df27813228c996bb11"
+
+[depends]
+build = ["gperf"]
+run = []
+
+[build]
+# Follow the upstream/LFS build: avoid installing static archives and keep
+# libraries under /usr/lib on x86_64 (Faseela uses merged-/usr).
+prepare = "sed -i '/install -m.*STA/d' libcap/Makefile"
+compile = "make -j%{jobs} prefix=/usr lib=lib"
+install = "make prefix=/usr lib=lib DESTDIR=%{pkgdir} install"

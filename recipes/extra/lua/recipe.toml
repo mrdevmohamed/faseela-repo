@@ -1,9 +1,9 @@
-# extra recipe: lua — static liblua.a plus the lua and luac interpreters.
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lua` pins it.
+# extra recipe: Lua 5.4 — interpreter, PIC static library, shared library and pkg-config metadata.
+# The versioned pkg-config modules let consumers (e.g. WirePlumber) find system Lua 5.4.
 [package]
 name = "lua"
 version = "5.4.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Lua — small embeddable scripting language"
 license = ["MIT"]
@@ -15,5 +15,27 @@ build = ["readline", "ncurses"]
 run = ["readline", "ncurses"]
 
 [build]
-compile = "make -j%{jobs} linux-readline"
-install = "make INSTALL_TOP=%{pkgdir}/usr INSTALL_MAN=%{pkgdir}/usr/share/man/man1 install"
+compile = "make -j%{jobs} MYCFLAGS=-fPIC linux-readline"
+install = '''
+set -eu
+make INSTALL_TOP=%{pkgdir}/usr INSTALL_MAN=%{pkgdir}/usr/share/man/man1 install
+
+install -d %{pkgdir}/usr/lib/pkgconfig
+cc -shared -Wl,-soname,liblua.so.5.4 -o %{pkgdir}/usr/lib/liblua.so.5.4.7 -Wl,--whole-archive src/liblua.a -Wl,--no-whole-archive -lm -ldl
+ln -sf liblua.so.5.4.7 %{pkgdir}/usr/lib/liblua.so.5.4
+ln -sf liblua.so.5.4 %{pkgdir}/usr/lib/liblua.so
+
+cat > %{pkgdir}/usr/lib/pkgconfig/lua-5.4.pc <<'PC'
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Lua
+Description: Lua 5.4 scripting language
+Version: %{version}
+Libs: -L${libdir} -llua -lm -ldl
+Cflags: -I${includedir}
+PC
+ln -sf lua-5.4.pc %{pkgdir}/usr/lib/pkgconfig/lua5.4.pc
+'''

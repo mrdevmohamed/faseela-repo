@@ -11,7 +11,7 @@ license = ["MIT"]
 
 [depends]
 build = []
-run = ["dbus", "runit", "base-files"]
+run = ["dbus", "runit", "base-files", "coreutils"]
 
 [build]
 install = '''

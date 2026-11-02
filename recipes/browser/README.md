@@ -1,7 +1,8 @@
 # recipes/browser — Firefox
 
-**Firefox ESR** (Mozilla's official binary) and the GTK3 stack it runs on, as an
-opt-in layer on top of [`gui/`](../gui/README.md). 12 packages:
+**Firefox ESR** (Mozilla's official binary) and the GTK3 stack it runs on. The
+browser recipes remain a separate category, but Firefox is included in the standard
+`iso-gui` image. 12 packages:
 
 | group | packages |
 |---|---|
@@ -17,18 +18,19 @@ opt-in layer on top of [`gui/`](../gui/README.md). 12 packages:
 
 ## Why a separate category
 
-`@gui` is every recipe in `gui/`, and `flavor:iso-gui` installs all of it. Putting the
-browser stack there would make the GUI ISO grow by ~12 packages and would let a
-build problem in GTK3 or Firefox break an image that works today. Here it is
-only built, and only installed, when asked for:
+The GTK3/browser recipes stay under `recipes/browser/`, keeping `@gui` limited to
+the desktop stack. The `iso-gui` flavor explicitly includes `firefox`, so its
+runtime dependency closure (GTK3 and the required X11 client libraries) is installed
+in the standard GUI ISO. The package workflow builds everything required by
+`flavor:iso-gui`; use `@browser` when you need to build just the browser category.
+
+For an already-installed system, Firefox can also be installed directly:
 
 ```
 nawa install firefox --repo https://github.com/mrdevmohamed/faseela-repo/releases/download/stable
 ```
 
-Build it with *Build packages* → `flavor:iso-gui-firefox` (everything the flavor
-needs) or just `firefox` (plus whatever of its dependencies is missing).
-`ALL` / `@all` does not include `@browser`, same as `@gui`.
+`ALL` / `@all` still does not include `@browser` or `@gui`.
 
 ## Why the official binary
 
@@ -83,8 +85,9 @@ firefox
 
 * English (en-US) only. Language packs are separate downloads from Mozilla
   (`.../linux-x86_64/xpi/<lang>.xpi`) and are not packaged.
-* No system D-Bus service, no `messagebus` user, no portals, no PulseAudio/PipeWire:
-  audio goes through ALSA (`alsa-lib`).
+* No system D-Bus service, no `messagebus` user or portals. The Sway session starts
+  PipeWire and WirePlumber per-user; `pipewire-pulse` provides the PulseAudio-compatible
+  socket used by Firefox through `libpulse`. There is no separate PulseAudio daemon.
 * No icon theme and no `shared-mime-info` (GTK dialogs show placeholder icons, file
   types are guessed by Firefox itself). `hicolor-icon-theme` and `adwaita-icon-theme`
   are the natural next recipes.

@@ -82,3 +82,14 @@ system or ISO automatically.
 
 These exclusions can be revisited when upstream publishes a suitable Linux
 bundle or a nawa-compatible integration.
+
+
+## Packaging fix: locating the FHS tree
+
+The `install` section searches recursively for `*/usr/bin` rather than
+assuming the current working directory is the package root. This handles both
+the normal upstream archive layout (`<release-name>/usr/bin`) and builds
+whose working directory is the archive extraction root. If the tree is truly
+missing, the error includes the working directory that was searched.
+
+The recipe release number is `rel = 2` for this packaging correction.

@@ -29,6 +29,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
+      - name: creative recipes install from both archive working-directory layouts
+        run: python3 -I scripts/test-creative-recipes.py
       - name: flavors.toml resolves (every flavor, every dependency)
         run: |
           python3 -I scripts/flavor.py check

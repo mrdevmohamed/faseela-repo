@@ -4,7 +4,7 @@
 [package]
 name = "vectorcraft"
 version = "0.20.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Native vector illustration and SVG editing application"
 license = ["MIT", "Apache-2.0"]
@@ -19,10 +19,15 @@ run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
 [build]
 install = """
 set -eu
-if [ ! -d usr/bin ]; then
-    echo "vectorcraft: upstream archive has no usr/bin directory" >&2
+
+# Upstream release archives may be opened at the package directory or at the
+# archive extraction root. Locate the FHS usr tree in either layout.
+upstream_usr_bin="$(find . -type d -path '*/usr/bin' -print -quit)"
+if [ -z "$upstream_usr_bin" ]; then
+    echo "vectorcraft: upstream archive has no usr/bin directory below $(pwd)" >&2
     exit 1
 fi
+upstream_usr="${upstream_usr_bin%/bin}"
 install -d -m755 "%{pkgdir}/usr"
-cp -a usr/. "%{pkgdir}/usr/"
+cp -a "$upstream_usr/." "%{pkgdir}/usr/"
 """

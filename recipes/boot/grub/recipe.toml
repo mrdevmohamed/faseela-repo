@@ -1,13 +1,17 @@
 # boot recipe: GRand Unified Bootloader
-# rel 2: BOTH platforms. Only the default (i386-pc) used to be built, so inside the live
-#        system `grub-install --target=x86_64-efi` (the disk installer on any UEFI
-#        machine, i.e. nearly all real hardware) failed with "x86_64-efi platform not
-#        available". The EFI platform is built out of tree and installed over the same
-#        prefix (the tools are identical; only /usr/lib/grub/x86_64-efi is new).
+# rel 3: BOTH platforms, each in its OWN build directory. rel 2 configured i386-pc in the
+#        source tree and x86_64-efi out of tree; the in-tree configure then created
+#        include/grub/cpu -> i386 INSIDE THE SOURCE, and the EFI compile (-I../../include
+#        comes before -I../include) picked up the 32-bit i386 headers: "cast from pointer to
+#        integer of different size", then COMPILE_TIME_ASSERT "duplicate case value" in
+#        mm_private.h (run 41353296341). GRUB's configure links include/grub/{cpu,machine}
+#        into whatever directory it runs in, so the source tree must stay untouched.
+# rel 2: BOTH platforms. Only i386-pc was built, so `grub-install --target=x86_64-efi` (the
+#        disk installer on any UEFI machine) failed with "x86_64-efi platform not available".
 [package]
 name = "grub"
 version = "2.14"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -19,21 +23,32 @@ build = ["bison", "flex"]
 run = []
 
 [build]
-# EFI first: autoconf refuses an out-of-tree configure once the source directory has been
-# configured in tree. --target=x86_64 with --with-platform=efi is the x86_64-efi platform
-# (the tools come from the host compiler; there is no x86_64- prefixed one).
+# --target=x86_64 with --with-platform=efi is the x86_64-efi platform (the tools come from
+# the host compiler; there is no x86_64- prefixed one). Never run ./configure in the source.
 configure = """
-mkdir build-efi
+mkdir build-pc build-efi
+(cd build-pc  && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
 (cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
-./configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls
+# the invariant this recipe depends on, checked where it breaks: nothing was linked into the source
+if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
+    echo "grub: the source tree was configured in tree (include/grub/cpu exists): the EFI build would use the wrong headers" >&2
+    exit 1
+fi
 """
 compile = """
-make -j%{jobs}
+make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
 """
+# BIOS: the full install (tools, modules, docs). EFI: a full install into a scratch directory,
+# of which only /usr/lib/grub/x86_64-efi is kept: the tools are the same host programs and
+# must not overwrite the ones just installed. Both platform directories are needed: the
+# installer wants i386-pc for BIOS and x86_64-efi for UEFI.
 install = """
-make DESTDIR=%{pkgdir} install
-make -C build-efi DESTDIR=%{pkgdir} install
-# both platforms must be there: the installer needs i386-pc for BIOS and x86_64-efi for UEFI
-test -d %{pkgdir}/usr/lib/grub/i386-pc && test -d %{pkgdir}/usr/lib/grub/x86_64-efi
+make -C build-pc DESTDIR=%{pkgdir} install
+efi_stage=$PWD/efi-stage
+make -C build-efi DESTDIR=$efi_stage install
+cp -a $efi_stage/usr/lib/grub/x86_64-efi %{pkgdir}/usr/lib/grub/
+rm -rf $efi_stage
+test -f %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh && test -f %{pkgdir}/usr/lib/grub/x86_64-efi/modinfo.sh
+test -f %{pkgdir}/usr/lib/grub/x86_64-efi/kernel.img
 """

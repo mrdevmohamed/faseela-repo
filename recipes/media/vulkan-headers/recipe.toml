@@ -11,7 +11,7 @@ arch = ["x86_64"]
 summary = "Vulkan C headers (header-only)"
 license = ["Apache-2.0", "MIT"]
 source = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "e204e0b3c19f622d197df945737f5db913d6621830999b8578d34e80a7c90585"
 source_dir = "Vulkan-Headers-%{version}"
 
 [depends]

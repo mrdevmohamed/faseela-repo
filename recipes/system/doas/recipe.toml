@@ -3,7 +3,7 @@
 [package]
 name = "doas"
 version = "6.8.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "OpenDoas: portable version of OpenBSD's doas (minimal sudo replacement)"
 license = ["ISC"]
@@ -13,7 +13,7 @@ source_dir = "opendoas-%{version}"
 
 [depends]
 build = ["bison", "libxcrypt", "shadow"]   # glibc >= 2.38 has no libcrypt: doas links -lcrypt
-run = ["shadow", "libxcrypt"]
+run = ["shadow", "libxcrypt", "base-files"]
 
 [build]
 # no PAM in this distro: authenticate against /etc/shadow
@@ -37,7 +37,7 @@ chmod 0644 %{pkgdir}/etc/doas.conf
 """
 
 [hooks]
-post_install = '''getent group wheel >/dev/null 2>&1 || groupadd -r wheel
+post_install = '''/usr/libexec/faseela/ensure-system-account group wheel
 # setuid bit is already set by the package; re-assert only when coreutils is present (stage2 chroot lacks it)
 chown root:root /usr/bin/doas 2>/dev/null && chmod 4755 /usr/bin/doas 2>/dev/null || true
 echo "doas: allow a user with:  usermod -aG wheel <user>   (policy: /etc/doas.conf)"

@@ -1,0 +1,33 @@
+# system recipe: IP networking utilities (ping, arping, clockdiff, tracepath).
+[package]
+name = "iputils"
+version = "20250605"
+rel = 1
+arch = ["x86_64"]
+summary = "IP networking utilities including ping, arping, clockdiff and tracepath"
+license = ["GPL-2.0-or-later", "BSD-3-Clause"]
+source = "https://github.com/iputils/iputils/releases/download/%{version}/iputils-%{version}.tar.gz"
+sha256 = "475c643e5f55b302286267b97d3ce0f47ca3489ced8aa0401b1eeb1e68228d6b"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libcap", "libidn2"]
+run = ["libcap", "libidn2"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D USE_CAP=true -D USE_IDN=true -D BUILD_PING=true -D BUILD_ARPING=true -D BUILD_CLOCKDIFF=true -D BUILD_TRACEPATH=true -D BUILD_MANS=false -D BUILD_HTML_MANS=false -D INSTALL_SYSTEMD_UNITS=false -D NO_SETCAP_OR_SUID=true -D USE_GETTEXT=false -D SKIP_TESTS=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+# The build happens in a staging tree where setting file capabilities is not
+# reliable. Apply CAP_NET_RAW on the installed system; fall back to setuid
+# when the filesystem or runtime does not support file capabilities.
+post_install = '''
+for binary in ping clockdiff; do
+    if command -v setcap >/dev/null 2>&1 && setcap cap_net_raw+ep "/usr/bin/$binary"; then
+        :
+    else
+        chmod 4755 "/usr/bin/$binary"
+    fi
+done
+'''

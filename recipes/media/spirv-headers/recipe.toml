@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "Khronos SPIR-V headers"
 license = ["MIT"]
 source = "https://github.com/KhronosGroup/SPIRV-Headers/archive/2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "1698e1373bd6e59a263acef821c4d955c561b991feb6db8199833ef19ffe8a37"
 source_dir = "SPIRV-Headers-2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801"
 
 [depends]

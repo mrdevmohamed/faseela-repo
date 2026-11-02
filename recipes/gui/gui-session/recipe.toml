@@ -116,7 +116,22 @@ export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=sway
 # Start per-user audio services; system services are supervised by runit.
 if command -v dbus-run-session >/dev/null 2>&1; then
-    exec dbus-run-session -- sh -c 'pipewire & pw=$!; wireplumber & wp=$!; trap "kill $wp $pw 2>/dev/null" EXIT INT TERM; sway "$@"' sh "$@"
+    exec dbus-run-session -- sh -c '
+        pipewire & pw=$!
+        wireplumber & wp=$!
+        pipewire-pulse & pp=$!
+        trap "kill $pp $wp $pw 2>/dev/null" EXIT INT TERM
+        # Do not start the desktop before the PulseAudio-compatible socket exists.
+        i=0
+        while [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && [ "$i" -lt 50 ]; do
+            sleep 0.1
+            i=$((i + 1))
+        done
+        if [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ]; then
+            echo "start-sway: pipewire-pulse did not create its native socket" >&2
+        fi
+        sway "$@"
+    ' sh "$@"
 fi
 export LIBSEAT_BACKEND=seatd
 # mesa here ships software rendering only (llvmpipe, softpipe) plus virgl; wlroots

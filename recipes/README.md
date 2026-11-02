@@ -15,11 +15,11 @@ recipes/
 └── extra/       dev tools, editors, net utils, hw tools, misc libs
 ```
 
-Current set: 10 toolchain + 39 base + 31 system + 6 boot + 67 extra =
-**153 packages**, plus the optional `gui/` category (52 packages, see
-[gui/README.md](gui/README.md)) and the optional `browser/` category (12 packages,
-see [browser/README.md](browser/README.md)) and the optional `media/` category (15 packages,
-see [media/README.md](media/README.md)); the recipe tree counts 233 recipes in total.
+Current set: 10 toolchain + 39 base + 36 system + 6 boot + 67 extra =
+**158 packages**, plus the optional `gui/` category (52 packages, see
+[gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
+see [browser/README.md](browser/README.md)), and the optional `media/` category (16 packages,
+see [media/README.md](media/README.md)); the recipe tree counts 238 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/` and `media/` are never part of them).
 
 The first 47 `extra/` recipes are generated from a data table
@@ -71,9 +71,10 @@ grep → gawk → sed → flex → bison → bc → diffutils → findutils →
 gettext → texinfo → util-linux → perl → python → openssl → sqlite →
 libunistring → libidn2 → less → rust → nawa (self-hosting)
 
-**system** — libpsl → curl → git → shadow → procps-ng → psmisc →
-e2fsprogs → eudev → kmod → libpipeline → groff → man-db → libmnl →
-iproute2 → dhcpcd → sysklogd → runit
+**system** — attr → acl (POSIX ACLs), libcap → iputils (ping, arping,
+clockdiff, tracepath), then libpsl → curl → git → shadow → procps-ng →
+psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
+libmnl → iproute2 → dhcpcd → sysklogd → runit
 
 **boot** — linux → grub → busybox
 
@@ -92,7 +93,9 @@ iproute2 → dhcpcd → sysklogd → runit
   alsa-lib, alsa-utils, zsh, nnn, fastfetch, pv, lua, nasm, libjpeg-turbo,
   valgrind, gdb
 
-**system, later additions** — tzdata (time zones), chrony (NTP, runit service
+**system, later additions** — attr/acl (extended attributes and POSIX ACLs),
+libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
+chrony (NTP, runit service
 `chronyd`), libnl → iw and wpa_supplicant (Wi-Fi, runit service
 `wpa_supplicant`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
 dmidecode, lm-sensors, iperf3. The two services are available but not enabled:
@@ -102,9 +105,11 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `flex` (base) pulls `m4` (toolchain) and `texinfo` (base);
 `linux` (boot) pulls `bison`, `flex`, `perl` (base);
 `wget` (extra) pulls `libpsl` (system) + `openssl`, `pcre2` (base);
-`kbd` (extra) pulls `meson`, `ninja` (extra).
+`kbd` (extra) pulls `meson`, `ninja` (extra);
+`iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
+(extra), and `pkgconf` (toolchain); `coreutils` and `tar` pull `acl` + `attr` (system).
 
-Verify any chain — or the whole 153-package graph at once — with:
+Verify any chain — or the whole 238-package graph at once — with:
 
 ```
 nawa --recipes recipes deps <name>

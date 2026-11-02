@@ -13,7 +13,7 @@ source_dir = "opendoas-%{version}"
 
 [depends]
 build = ["bison", "libxcrypt", "shadow"]   # glibc >= 2.38 has no libcrypt: doas links -lcrypt
-run = ["shadow", "libxcrypt", "base-files"]
+run = ["shadow", "libxcrypt", "base-files", "coreutils"]
 
 [build]
 # no PAM in this distro: authenticate against /etc/shadow

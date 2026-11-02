@@ -1,0 +1,24 @@
+# media recipe: x264 — H.264/AVC encoder library (libx264, for ffmpeg -c:v libx264)
+# x264 has no release tarballs: this is a pinned git snapshot of the `stable` branch (0.164.3108).
+# GPL-2.0-or-later: it makes the ffmpeg built against it GPL (see recipes/media/README.md).
+# Library only (no x264 CLI, no ffms/lavf/gpac input modules). 8 and 10 bit.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r x264` pins it.
+[package]
+name = "x264"
+version = "0.164.3108"
+rel = 1
+arch = ["x86_64"]
+summary = "x264 — H.264/AVC video encoder library (libx264)"
+license = ["GPL-2.0-or-later"]
+source = "https://code.videolan.org/videolan/x264/-/archive/31e19f92f00c7003fa115047ce50978bc98c3a0d/x264-31e19f92f00c7003fa115047ce50978bc98c3a0d.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "x264-31e19f92f00c7003fa115047ce50978bc98c3a0d"
+
+[depends]
+build = ["nasm"]
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --enable-shared --enable-pic --disable-cli --disable-avs --disable-swscale --disable-lavf --disable-ffms --disable-gpac --disable-lsmash --bit-depth=all"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

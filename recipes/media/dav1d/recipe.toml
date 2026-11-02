@@ -1,0 +1,20 @@
+# media recipe: dav1d — fast AV1 decoder (the software AV1 decoder ffmpeg and mpv use)
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r dav1d` pins it.
+[package]
+name = "dav1d"
+version = "1.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "dav1d — fast AV1 video decoder (libdav1d)"
+license = ["BSD-2-Clause"]
+source = "https://downloads.videolan.org/pub/videolan/dav1d/%{version}/dav1d-%{version}.tar.xz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "nasm"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D enable_tools=false -D enable_tests=false -D enable_examples=false -D enable_docs=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,24 @@
+# gui recipe: libva — VA-API, the Linux hardware video decode/encode interface
+# Only the loader + the DRM and Wayland backends (no X11/GLX). It finds its drivers in
+# /usr/lib/dri (libva driverdir with libdir=lib): a driver package provides
+# <name>_drv_video.so there: mesa (radeonsi_drv_video.so, AMD) and, in recipes/media,
+# intel-media-driver (iHD_drv_video.so, Intel gen8+). It lives in gui/ because mesa needs it.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r libva` pins it.
+[package]
+name = "libva"
+version = "2.22.0"
+rel = 1
+arch = ["x86_64"]
+summary = "libva — VA-API hardware video acceleration interface (DRM + Wayland)"
+license = ["MIT"]
+source = "https://github.com/intel/libva/releases/download/%{version}/libva-%{version}.tar.bz2"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libdrm", "wayland"]
+run = ["libdrm", "wayland"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D with_x11=no -D with_glx=no -D with_wayland=yes -D with_win32=no -D disable_drm=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,21 @@
+# media recipe: gmmlib — Intel Graphics Memory Management Library (libigdgmm), needed by intel-media-driver
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r gmmlib` pins it.
+[package]
+name = "gmmlib"
+version = "22.5.5"
+rel = 1
+arch = ["x86_64"]
+summary = "Intel Graphics Memory Management Library (libigdgmm)"
+license = ["MIT"]
+source = "https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "gmmlib-intel-gmmlib-%{version}"
+
+[depends]
+build = ["cmake"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DRUN_TEST_SUITE=OFF"
+compile = "cmake --build build -j %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

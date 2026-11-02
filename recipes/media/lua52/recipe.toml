@@ -1,0 +1,40 @@
+# media recipe: lua52 — Lua 5.2 (static library + headers), what mpv's scripting (OSC, stats) needs
+# mpv supports Lua 5.1/5.2/LuaJIT, not 5.4 (recipe `lua`). Everything is installed under a 5.2
+# name (lua5.2.pc, /usr/include/lua5.2, liblua5.2.a, lua5.2/luac5.2) so it never owns a file of
+# `lua` 5.4: nawa refuses file conflicts. liblua is static and built -fPIC: mpv links it in.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r lua52` pins it.
+[package]
+name = "lua52"
+version = "5.2.4"
+rel = 1
+arch = ["x86_64"]
+summary = "Lua 5.2 — static liblua5.2 + headers (for mpv), parallel to lua 5.4"
+license = ["MIT"]
+source = "https://www.lua.org/ftp/lua-%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[depends]
+build = ["readline", "ncurses"]
+run = ["readline", "ncurses"]
+
+[build]
+compile = "make -j%{jobs} linux MYCFLAGS=-fPIC"
+install = '''
+install -d %{pkgdir}/usr/include/lua5.2 %{pkgdir}/usr/lib/pkgconfig %{pkgdir}/usr/bin
+install -m644 src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/lua.hpp %{pkgdir}/usr/include/lua5.2/
+install -m644 src/liblua.a %{pkgdir}/usr/lib/liblua5.2.a
+install -m755 src/lua %{pkgdir}/usr/bin/lua5.2
+install -m755 src/luac %{pkgdir}/usr/bin/luac5.2
+cat > %{pkgdir}/usr/lib/pkgconfig/lua5.2.pc <<'PC'
+prefix=/usr
+libdir=${prefix}/lib
+includedir=${prefix}/include/lua5.2
+
+Name: Lua
+Description: An extensible extension language
+Version: %{version}
+Libs: -L${libdir} -llua5.2 -lm -ldl
+Cflags: -I${includedir}
+PC
+ln -s lua5.2.pc %{pkgdir}/usr/lib/pkgconfig/lua52.pc
+'''

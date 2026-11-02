@@ -1,0 +1,24 @@
+# media recipe: python-jinja2 — template engine (pure python); build helper of python-glad2/libplacebo
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r python-jinja2` pins it.
+[package]
+name = "python-jinja2"
+version = "3.1.6"
+rel = 1
+arch = ["x86_64"]
+summary = "Python template engine (pure python)"
+license = ["BSD-3-Clause"]
+source = "https://github.com/pallets/jinja/archive/refs/tags/%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "jinja-%{version}"
+
+[depends]
+build = ["python"]
+run = ["python", "python-markupsafe"]
+
+[build]
+install = '''
+site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+install -d "%{pkgdir}$site"
+cp -r src/jinja2 "%{pkgdir}$site/"
+find "%{pkgdir}$site/jinja2" -name __pycache__ -prune -exec rm -rf {} +
+'''

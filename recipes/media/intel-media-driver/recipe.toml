@@ -1,0 +1,29 @@
+# media recipe: intel-media-driver — VA-API driver "iHD" for Intel graphics (gen8 Broadwell and newer)
+# Installs iHD_drv_video.so into /usr/lib/dri, where libva finds it: hardware decode/encode
+# (h264, hevc, vp9, av1, ...) for ffmpeg (-hwaccel vaapi) and mpv (--hwdec=vaapi).
+# It needs the kernel's i915 (or xe) driver and its GuC/HuC firmware (linux-firmware-lite has them).
+# It does not draw anything: Intel *graphics* stay on mesa's llvmpipe (iris needs clang, see mesa).
+# With llvmpipe, mpv cannot import the decoded frames into GL: use --hwdec=vaapi-copy.
+# ENABLE_NONFREE_KERNELS=ON: the driver's media kernels for the newest encoders are prebuilt
+# binaries from Intel (redistributable); OFF builds only the open-source kernels.
+# INSTALL_DRIVER_SYSCONF=OFF: no /etc/profile.d script setting LIBVA_DRIVER_NAME.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r intel-media-driver` pins it.
+[package]
+name = "intel-media-driver"
+version = "24.4.4"
+rel = 1
+arch = ["x86_64"]
+summary = "Intel media driver for VA-API (iHD, gen8+): hardware video decode/encode"
+license = ["MIT", "BSD-3-Clause"]
+source = "https://github.com/intel/media-driver/archive/refs/tags/intel-media-%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "media-driver-intel-media-%{version}"
+
+[depends]
+build = ["cmake", "pkgconf", "libva", "gmmlib"]
+run = ["libva", "gmmlib"]
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DLIBVA_DRIVERS_PATH=/usr/lib/dri -DINSTALL_DRIVER_SYSCONF=OFF -DENABLE_KERNELS=ON -DENABLE_NONFREE_KERNELS=ON -DBUILD_CMRTLIB=OFF -DMEDIA_BUILD_FATAL_WARNINGS=OFF -DMEDIA_RUN_TEST_SUITE=OFF"
+compile = "cmake --build build -j %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

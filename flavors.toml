@@ -65,3 +65,16 @@ include = ["@gui"]
 summary = "iso-gui plus Firefox ESR (GTK3, official binary)"
 extends = ["iso-gui"]
 include = ["firefox"]
+
+# --- media (recipes/media): opt-in, on top of the images above ----------------------------
+# ffmpeg needs no GUI, so it comes on top of iso-nogui; mpv plays through Wayland/DRM and
+# comes on top of iso-gui. Neither grows the plain ISOs.
+[flavor.iso-nogui-ffmpeg]
+summary = "iso-nogui plus ffmpeg (libav*, x264/x265/vpx/opus/lame, VA-API with the Intel driver)"
+extends = ["iso-nogui"]
+include = ["ffmpeg", "intel-media-driver"]
+
+[flavor.iso-gui-mpv]
+summary = "iso-gui plus the mpv media player (+ ffmpeg, libass, libplacebo, Intel VA-API driver; AMD's is in mesa)"
+extends = ["iso-gui"]
+include = ["mpv", "intel-media-driver"]

@@ -1,0 +1,30 @@
+# media recipe: ffmpeg — ffmpeg / ffprobe and libav* (decode, encode, convert, stream)
+# --disable-autodetect: only what is listed below is linked, whatever happens to be installed.
+#   zlib bzlib lzma iconv  containers/subtitles   alsa  audio device (no sound server)
+#   openssl (+ version3)   https/tls inputs        libdav1d  software AV1 decoding
+#   libx264   H.264 encoder (GPL: with --enable-gpl --enable-version3 the result is GPL-3.0-or-later)
+#   libopus   Opus encoder/decoder      libmp3lame  MP3 encoder
+#   libx265   H.265/HEVC encoder        libvpx      VP8/VP9 encoder
+#   libass + freetype/fontconfig/fribidi/harfbuzz   the `subtitles` filter and `drawtext`
+#   vaapi + libdrm   hardware decode/encode through VA-API (needs a VA driver at run time, else
+#                    ffmpeg simply cannot open the device and software codecs stay in use)
+# Not built (no recipe yet): vdpau, vulkan, libaom/SVT-AV1 encoders, ffplay.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r ffmpeg` pins it.
+[package]
+name = "ffmpeg"
+version = "7.1.1"
+rel = 3
+arch = ["x86_64"]
+summary = "ffmpeg — record, convert and stream audio and video (ffmpeg, ffprobe, libav*)"
+license = ["GPL-3.0-or-later"]
+source = "https://ffmpeg.org/releases/ffmpeg-%{version}.tar.xz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[depends]
+build = ["pkgconf", "nasm", "zlib", "bzip2", "xz", "openssl", "alsa-lib", "dav1d", "x264", "opus", "lame", "x265", "libvpx", "libass", "freetype", "fontconfig", "fribidi", "harfbuzz", "libva", "libdrm"]
+run = ["zlib", "bzip2", "xz", "openssl", "alsa-lib", "dav1d", "x264", "opus", "lame", "x265", "libvpx", "libass", "freetype", "fontconfig", "fribidi", "harfbuzz", "libva", "libdrm"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --shlibdir=/usr/lib --disable-static --enable-shared --enable-pic --enable-runtime-cpudetect --disable-debug --disable-stripping --disable-doc --disable-ffplay --disable-autodetect --enable-gpl --enable-version3 --enable-zlib --enable-bzlib --enable-lzma --enable-iconv --enable-alsa --enable-openssl --enable-libdav1d --enable-libx264 --enable-libopus --enable-libmp3lame --enable-libx265 --enable-libvpx --enable-libass --enable-libfreetype --enable-libfontconfig --enable-libfribidi --enable-libharfbuzz --enable-vaapi --enable-libdrm"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

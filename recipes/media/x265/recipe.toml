@@ -1,0 +1,36 @@
+# media recipe: x265 — H.265/HEVC encoder library (libx265, for ffmpeg -c:v libx265)
+# Multilib build (the usual distro layout): 12-bit and 10-bit static libraries are built first and
+# linked INTO the 8-bit shared libx265, so one library encodes 8/10/12-bit. Library only (no CLI).
+# -DCMAKE_POLICY_VERSION_MINIMUM=3.5: x265's CMake files declare an old minimum, rejected by cmake 4.
+# GPL-2.0-or-later: ffmpeg built with it is GPL (it already is, through x264).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r x265` pins it.
+[package]
+name = "x265"
+version = "4.1"
+rel = 1
+arch = ["x86_64"]
+summary = "x265 — H.265/HEVC video encoder library (libx265, 8/10/12-bit)"
+license = ["GPL-2.0-or-later"]
+source = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "x265_%{version}"
+
+[depends]
+build = ["cmake", "nasm"]
+run = []
+
+[build]
+configure = '''
+common="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_CLI=OFF -DENABLE_LIBNUMA=OFF"
+cmake -S source -B 12bit $common -DHIGH_BIT_DEPTH=ON -DMAIN12=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF
+cmake -S source -B 10bit $common -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF
+cmake -S source -B 8bit $common -DENABLE_SHARED=ON -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+'''
+compile = '''
+cmake --build 12bit -j %{jobs}
+cmake --build 10bit -j %{jobs}
+ln -sf ../10bit/libx265.a 8bit/libx265_main10.a
+ln -sf ../12bit/libx265.a 8bit/libx265_main12.a
+cmake --build 8bit -j %{jobs}
+'''
+install = "DESTDIR=%{pkgdir} cmake --install 8bit"

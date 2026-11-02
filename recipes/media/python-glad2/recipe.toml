@@ -1,0 +1,27 @@
+# media recipe: python-glad2 — GL/EGL loader generator (pure python); build helper of libplacebo
+# libplacebo's OpenGL backend generates its loader with glad at build time. GitLab's source
+# archives carry no git submodules, so the vendored copy is missing: libplacebo's meson
+# falls back to an importable `glad` (>= 2) module, which is what this package is.
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r python-glad2` pins it.
+[package]
+name = "python-glad2"
+version = "2.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "glad2 — GL/GLES/EGL loader generator (pure python)"
+license = ["MIT"]
+source = "https://github.com/Dav1dde/glad/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "glad-%{version}"
+
+[depends]
+build = ["python"]
+run = ["python", "python-jinja2"]
+
+[build]
+install = '''
+site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+install -d "%{pkgdir}$site"
+cp -r ./glad "%{pkgdir}$site/"
+find "%{pkgdir}$site/glad" -name __pycache__ -prune -exec rm -rf {} +
+'''

@@ -11,6 +11,7 @@ summary = "PulseAudio client libraries for PipeWire compatibility"
 license = ["LGPL-2.1-or-later"]
 source = "https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%{version}.tar.xz"
 sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
+source_dir = "pulseaudio-%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf"]

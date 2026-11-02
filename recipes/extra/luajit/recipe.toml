@@ -9,7 +9,7 @@ arch = ["x86_64"]
 summary = "luajit — just-in-time compiler for Lua 5.1 (OpenResty fork)"
 license = ["MIT"]
 source = "https://github.com/openresty/luajit2/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "68ff3dc2cc97969f7385679da7c9ff96738aa9cc275fa6bab77316eb3340ea8e"
 source_dir = "luajit2-%{version}"
 
 [depends]

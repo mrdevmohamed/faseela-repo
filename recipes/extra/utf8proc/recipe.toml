@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "utf8proc — Unicode normalization and character-property library"
 license = ["MIT"]
 source = "https://github.com/JuliaStrings/utf8proc/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "6f4f1b639daa6dca9f80bc5db1233e9cbaa31a67790887106160b33ef743f136"
 source_dir = "utf8proc-%{version}"
 
 [depends]

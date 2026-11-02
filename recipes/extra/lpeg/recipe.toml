@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "lpeg — pattern-matching library for Lua (static liblpeg.a for Neovim)"
 license = ["MIT"]
 source = "https://www.inf.puc-rio.br/~roberto/lpeg/lpeg-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "4b155d67d2246c1ffa7ad7bc466c1ea899bbc40fef0257cc9c03cecbaed4352a"
 source_dir = "lpeg-%{version}"
 
 [depends]

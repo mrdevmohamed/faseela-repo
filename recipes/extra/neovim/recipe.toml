@@ -10,7 +10,7 @@ arch = ["x86_64"]
 summary = "neovim — Vim-based text editor focused on extensibility and usability"
 license = ["Apache-2.0", "Vim"]
 source = "https://github.com/neovim/neovim/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "83cf9543bedab8bec8c11cd50ccd9a4bf1570420a914b9a28f83ad100ca6d524"
 source_dir = "neovim-%{version}"
 
 [depends]

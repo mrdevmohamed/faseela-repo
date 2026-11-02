@@ -1,0 +1,19 @@
+# gui recipe: WirePlumber PipeWire session manager (system Lua, no systemd).
+[package]
+name = "wireplumber"
+version = "0.5.14"
+rel = 1
+arch = ["x86_64"]
+summary = "PipeWire session and policy manager"
+license = ["MIT"]
+source = "https://gitlab.freedesktop.org/pipewire/wireplumber/-/archive/%{version}/wireplumber-%{version}.tar.bz2"
+sha256 = "2807a9d1e97075ba10f8b7b8156e31175817d620fa7fc84442b5474123eff5db"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "pipewire", "glib", "lua"]
+run = ["pipewire", "glib", "lua", "dbus-system", "bluez"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Ddoc=disabled -Dtests=false -Ddbus-tests=false -Dintrospection=disabled -Dsystem-lua=true -Dsystem-lua-version=5.4 -Delogind=disabled -Dsystemd=disabled -Dsystemd-system-service=false -Dsystemd-user-service=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

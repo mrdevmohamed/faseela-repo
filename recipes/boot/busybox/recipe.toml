@@ -27,6 +27,7 @@ sed -i -e 's/^CONFIG_TC=y$/# CONFIG_TC is not set/' \
        -e 's/^# CONFIG_BLKID is not set$/CONFIG_BLKID=y/' \
        -e 's/^# CONFIG_FEATURE_BLKID_TYPE is not set$/CONFIG_FEATURE_BLKID_TYPE=y/' \
        -e 's/^# CONFIG_SWITCH_ROOT is not set$/CONFIG_SWITCH_ROOT=y/' \
+       -e 's/^# CONFIG_FEATURE_INSTALLER is not set$/CONFIG_FEATURE_INSTALLER=y/' \
        -e 's/^# CONFIG_MOUNT is not set$/CONFIG_MOUNT=y/' \
        -e 's/^# CONFIG_UMOUNT is not set$/CONFIG_UMOUNT=y/' \
        -e 's/^# CONFIG_MKNOD is not set$/CONFIG_MKNOD=y/' .config && \
@@ -35,7 +36,8 @@ grep -q '^CONFIG_STATIC=y$' .config && \
 grep -q '^CONFIG_MODPROBE=y$' .config && \
 grep -q '^# CONFIG_MODPROBE_SMALL is not set$' .config && \
 grep -q '^CONFIG_BLKID=y$' .config && \
-grep -q '^CONFIG_SWITCH_ROOT=y$' .config
+grep -q '^CONFIG_SWITCH_ROOT=y$' .config && \
+grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
 """
 compile = """
 make -j%{jobs}

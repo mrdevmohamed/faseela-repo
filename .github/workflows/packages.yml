@@ -217,16 +217,13 @@ jobs:
             fi
 
             if [[ "$base" =~ ^0+$ || -z "$base" ]]; then
-              # A repository's first push has no prior successful push to diff.
-              if git rev-parse "$GITHUB_SHA^" >/dev/null 2>&1; then
-                base="$(git rev-parse "$GITHUB_SHA^")"
-              else
-                echo "::notice::initial repository push; selecting the complete recipe tree"
-                python3 -I scripts/select-packages.py \
-                  --recipes recipes --flavors-file flavors.toml \
-                  --all --toolchain-all --output "$selection"
-                base=""
-              fi
+              # No successful push exists yet (or the event is the first push).
+              # Reconcile the complete tree instead of guessing at a partial base.
+              echo "::notice::no successful package push found; selecting the complete recipe tree"
+              python3 -I scripts/select-packages.py \
+                --recipes recipes --flavors-file flavors.toml \
+                --all --toolchain-all --output "$selection"
+              base=""
             fi
 
             if [[ -n "$base" ]]; then

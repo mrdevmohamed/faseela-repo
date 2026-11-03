@@ -129,5 +129,32 @@ class PackageSelectionTests(unittest.TestCase):
         self.assertEqual(select_packages.split_values("bash, curl\ngit"), ["bash", "curl", "git"])
 
 
+class RealRecipeTreeTests(unittest.TestCase):
+    def test_all_is_every_non_toolchain_recipe_in_this_repository(self):
+        root = Path(__file__).resolve().parent.parent
+        recipes = flavor.load_recipes(root / "recipes")
+        flavors = flavor.load_flavors(root / "flavors.toml")
+        plan = select_packages.resolve_selection(recipes, flavors, all_packages=True)
+        expected = {name for name, (category, _) in recipes.items() if category != "toolchain"}
+        self.assertEqual(set(plan["packages"]), expected)
+        for category in ("gui", "browser", "media", "creative"):
+            self.assertGreater(plan["category_counts"].get(category, 0), 0, category)
+
+    def test_core_is_exactly_base_system_boot_and_extra(self):
+        root = Path(__file__).resolve().parent.parent
+        recipes = flavor.load_recipes(root / "recipes")
+        flavors = flavor.load_flavors(root / "flavors.toml")
+        plan = select_packages.resolve_selection(recipes, flavors, core=True)
+        expected = {
+            name for name, (category, _) in recipes.items()
+            if category in ("base", "system", "boot", "extra")
+        }
+        self.assertEqual(set(plan["packages"]), expected)
+        self.assertNotIn("gui", plan["category_counts"])
+        self.assertNotIn("browser", plan["category_counts"])
+        self.assertNotIn("media", plan["category_counts"])
+        self.assertNotIn("creative", plan["category_counts"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

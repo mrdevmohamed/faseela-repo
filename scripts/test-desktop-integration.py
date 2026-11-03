@@ -53,7 +53,12 @@ for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
 gcr = recipe("gui", "gcr")
 assert {"glib", "libgcrypt", "p11-kit"} <= set(gcr["depends"]["run"])
 assert "-Dsystemd=disabled" in gcr["build"]["configure"]
-assert "-Dssh_agent=false" in gcr["build"]["configure"]
+assert gcr["package"]["rel"] >= 2, "Bump GCR rel for the optional ssh-agent Meson fix"
+gcr_configure = gcr["build"]["configure"]
+assert "-Dssh_agent=false" in gcr_configure
+assert "ssh_add_path = ''" in gcr_configure
+assert "ssh_agent_path = ''" in gcr_configure
+assert "find_program('ssh-add'" in gcr_configure
 
 p11 = recipe("system", "p11-kit")
 assert p11["package"]["version"] == "0.26.5"

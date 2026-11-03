@@ -41,6 +41,29 @@ assert "pgrep -u" in install_script
 assert "wireplumber" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
+# NetworkManager's dispatcher is D-Bus-activated, not a persistent runit
+# service. The package install step must validate all three staged artifacts
+# and ensure the activation descriptor points at the installed executable.
+nm = recipe("gui", "network-manager")
+assert nm["package"]["rel"] >= 4, "Bump NetworkManager rel for dispatcher packaging checks"
+assert "dbus-system" in nm["depends"]["run"]
+nm_install = nm["build"]["install"]
+for required in (
+    "usr/libexec/nm-dispatcher",
+    "usr/share/dbus-1/system-services/org.freedesktop.nm_dispatcher.service",
+    "usr/share/dbus-1/system.d/nm-dispatcher.conf",
+    "test -x \"$NM_DISPATCHER\"",
+    "test -s \"$NM_DISPATCHER_SERVICE\"",
+    "Name=org.freedesktop.nm_dispatcher",
+    "Exec=/usr/libexec/nm-dispatcher",
+    "User=root",
+    "test -s \"$NM_DISPATCHER_POLICY\"",
+):
+    assert required in nm_install, f"NetworkManager install validation is missing: {required}"
+assert "nm-dispatcher" not in nm.get("depends", {}).get("run", []), (
+    "nm-dispatcher is part of NetworkManager and must not be modeled as a separate service package"
+)
+
 xdg = recipe("gui", "xdg-utils")
 assert xdg["package"]["version"] == "1.2.1"
 assert re.fullmatch(r"[0-9a-f]{64}", xdg["package"]["sha256"])

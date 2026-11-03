@@ -15,10 +15,12 @@
 #        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
 # rel 12: SND_SOC must be built-in: SOF's bool menu options are nested under
 #         `if SND_SOC` and cannot be enabled when the parent is only a module
+# rel 14: enable the distro-required Kconfig options before validating them;
+#         x86_64_defconfig intentionally leaves many optional drivers unset
 [package]
 name = "linux"
 version = "6.10"
-rel = 13
+rel = 14
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -33,6 +35,74 @@ run = ["saq"]
 configure = """
 make mrproper
 make defconfig
+
+# defconfig is a conservative upstream baseline. Explicitly request the
+# drivers and filesystems Faseela promises, then let Kconfig resolve their
+# dependencies before checking the final values below.
+scripts/config \
+    --enable BLOCK \
+    --enable NET \
+    --enable INET \
+    --enable CRYPTO \
+    --enable PCI \
+    --enable ACPI \
+    --enable USB \
+    --enable TYPEC \
+    --enable TYPEC_UCSI \
+    --enable SCSI \
+    --enable ATA \
+    --enable SATA_PMP \
+    --enable MMC \
+    --enable MMC_SDHCI \
+    --enable WLAN \
+    --enable CFG80211 \
+    --enable MAC80211 \
+    --enable BT \
+    --enable INPUT \
+    --enable VIRTIO \
+    --enable DRM \
+    --enable SOUND \
+    --enable SND \
+    --enable SND_HDA \
+    --enable SQUASHFS \
+    --enable XZ_DEC \
+    --enable BLK_DEV_INITRD \
+    --enable RD_GZIP \
+    --enable MODULES \
+    --enable MODULE_UNLOAD \
+    --enable FW_LOADER \
+    --enable EFI_STUB \
+    --module WIREGUARD \
+    --module EXFAT_FS \
+    --enable BLK_DEV_DM \
+    --module DM_CRYPT \
+    --enable SQUASHFS_ZLIB \
+    --enable SQUASHFS_XZ \
+    --enable SQUASHFS_ZSTD \
+    --enable XZ_DEC_X86 \
+    --module DRM_XE \
+    --module USB4 \
+    --module UCSI_ACPI \
+    --enable SND_SOC \
+    --enable SND_SOC_SOF_TOPLEVEL \
+    --module SND_SOC_SOF_PCI \
+    --enable SND_SOC_SOF_INTEL_TOPLEVEL \
+    --module VMWARE_PVSCSI \
+    --enable BLK_DEV_NVME \
+    --enable SATA_AHCI \
+    --enable MMC_SDHCI_PCI \
+    --module IWLWIFI \
+    --module IWLMVM \
+    --module ATH9K \
+    --module RTW88 \
+    --module BT_HCIBTUSB \
+    --module DRM_I915 \
+    --module DRM_AMDGPU \
+    --module DRM_NOUVEAU \
+    --module SND_HDA_INTEL \
+    --module NTFS3_FS \
+    --enable VIRTIO_INPUT
+make olddefconfig
 # Validate each required option with an actionable error (Kconfig can
 # silently downgrade or unset symbols whose dependencies are not met).
 require_config() {

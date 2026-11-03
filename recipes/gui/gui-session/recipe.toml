@@ -3,25 +3,25 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 12
+rel = 13
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync"]
 
 [build]
 install = '''
 # --- DRM render-node permissions for Vulkan/OpenGL clients -------------------
-install -d -m755 ${pkgdir}/etc/udev/rules.d
-cat > ${pkgdir}/etc/udev/rules.d/70-faseela-drm.rules <<'DRM'
+install -d -m755 %{pkgdir}/etc/udev/rules.d
+cat > %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules <<'DRM'
 # Render nodes are safe for unprivileged GPU command submission; keep access
 # limited to members of the render group.
 SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"
 DRM
-chmod 644 ${pkgdir}/etc/udev/rules.d/70-faseela-drm.rules
+chmod 644 %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules
 
 # --- seatd supervised by runit (enabled by default) -------------------------
 install -d -m755 %{pkgdir}/etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default

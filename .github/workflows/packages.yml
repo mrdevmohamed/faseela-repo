@@ -380,7 +380,7 @@ jobs:
 
             # nawa install verifies the detached signature with the
             # Faseela key already trusted by the build root.
-            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install \
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install --yes \
               "/tmp/nawa-transition/$nawa_archive"
             sudo rm -rf "$T/tmp/nawa-transition"
             rm -rf "$transition_dir"

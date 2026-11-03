@@ -81,6 +81,7 @@ class PackageSelectionTests(unittest.TestCase):
         self.assertNotIn("gcc", plan["packages"])
         self.assertNotIn("binutils", plan["packages"])
         self.assertIn("docs", plan["category_counts"])
+        self.assertEqual(plan["toolchain_packages"], [])
 
     def test_core_keeps_the_legacy_base_system_boot_extra_scope(self):
         plan = self.resolve(core=True)
@@ -89,6 +90,7 @@ class PackageSelectionTests(unittest.TestCase):
         })
         self.assertNotIn("sway", plan["packages"])
         self.assertNotIn("docs-tool", plan["packages"])
+        self.assertEqual(plan["toolchain_packages"], [])
 
     def test_multiple_categories_and_exact_packages_are_combined(self):
         plan = self.resolve(categories=["gui", "media"], package_names=["bash", "sway"])
@@ -99,10 +101,35 @@ class PackageSelectionTests(unittest.TestCase):
         plan = self.resolve(flavor_names=["desktop", "media"])
         self.assertIn("firefox", plan["packages"])
         self.assertIn("mpv", plan["packages"])
-        self.assertIn("gcc", plan["packages"])
-        self.assertIn("rust", plan["packages"])
+        self.assertIn("gcc", plan["toolchain_packages"])
+        self.assertIn("rust", plan["toolchain_packages"])
+        self.assertNotIn("gcc", plan["packages"])
+        self.assertNotIn("rust", plan["packages"])
         self.assertNotIn("base-devel", plan["packages"])
         self.assertNotIn("nawa", plan["packages"])
+
+    def test_exact_toolchain_names_are_routed_away_from_ordinary_packages(self):
+        plan = self.resolve(package_names=["bash", "glibc", "gcc"])
+        self.assertEqual(set(plan["packages"]), {"bash"})
+        self.assertEqual(set(plan["toolchain_packages"]), {"glibc", "gcc"})
+        self.assertFalse(plan["toolchain_all"])
+
+    def test_explicit_toolchain_names_and_full_toolchain(self):
+        partial = self.resolve(toolchain_package_names=["glibc"])
+        self.assertEqual(partial["toolchain_packages"], ["glibc"])
+        self.assertEqual(partial["packages"], [])
+        full = self.resolve(all_toolchain=True)
+        self.assertEqual(set(full["toolchain_packages"]), {"binutils", "gcc", "rust"})
+        self.assertTrue(full["toolchain_all"])
+
+    def test_full_toolchain_with_exclusions_becomes_selective(self):
+        plan = self.resolve(all_toolchain=True, exclusions=["gcc"])
+        self.assertNotIn("gcc", plan["toolchain_packages"])
+        self.assertFalse(plan["toolchain_all"])
+
+    def test_toolchain_category_cannot_enter_ordinary_category_selector(self):
+        with self.assertRaisesRegex(select_packages.SelectionError, "Bootstrap"):
+            self.resolve(categories=["toolchain"])
 
     def test_allows_category_and_package_exclusions(self):
         plan = self.resolve(all_packages=True, exclusions=["@creative", "firefox"])
@@ -154,6 +181,7 @@ class RealRecipeTreeTests(unittest.TestCase):
         self.assertNotIn("browser", plan["category_counts"])
         self.assertNotIn("media", plan["category_counts"])
         self.assertNotIn("creative", plan["category_counts"])
+        self.assertEqual(plan["toolchain_packages"], [])
 
 
 if __name__ == "__main__":

@@ -25,8 +25,10 @@ name: Build packages
 # PACKAGE SELECTION (Actions > Build packages > Run workflow)
 #   all   all recipe categories except toolchain
 #   core           base + system + boot + extra
-#   category boxes select one or more categories, including the advanced toolchain group
-#   packages       multiple exact recipe names, separated by spaces, commas or newlines
+#   category boxes select one or more ordinary recipe categories
+#   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
+#   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
+#   packages       exact recipe names; Toolchain names are rerouted to Bootstrap
 #   flavors        multiple names from flavors.toml, separated by spaces or commas
 #   exclude        recipe names or @categories removed from selected targets
 # Selectors are additive. Pushes automatically select recipes changed by that push.
@@ -102,11 +104,15 @@ on:
         type: boolean
         default: false
       toolchain:
-        description: "Advanced: explicitly select toolchain recipes (normally built by Bootstrap)"
+        description: "Rebuild the FULL Toolchain through Bootstrap Stage 3 (safe self-hosting path)"
         type: boolean
         default: false
       packages:
-        description: "One or more exact package names, separated by spaces, commas or newlines"
+        description: "Exact recipe names; Toolchain names are automatically routed through Bootstrap"
+        type: string
+        default: ""
+      toolchain_packages:
+        description: "Selected Toolchain recipe names, e.g. glibc gcc (rebuilt with Bootstrap dependency ordering)"
         type: string
         default: ""
       flavors:
@@ -162,6 +168,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       pkgs: ${{ steps.s.outputs.pkgs }}
+      toolchain_pkgs: ${{ steps.s.outputs.toolchain_pkgs }}
+      toolchain_all: ${{ steps.s.outputs.toolchain_all }}
       rootfs: ${{ steps.s.outputs.rootfs }}
       dry_run: ${{ steps.s.outputs.dry_run }}
     steps:
@@ -181,6 +189,7 @@ jobs:
           INPUT_MEDIA: ${{ inputs.media }}
           INPUT_CREATIVE: ${{ inputs.creative }}
           INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
+          INPUT_TOOLCHAIN_PACKAGES: ${{ inputs.toolchain_packages }}
           INPUT_PACKAGES: ${{ inputs.packages }}
           INPUT_FLAVORS: ${{ inputs.flavors }}
           INPUT_EXCLUDE: ${{ inputs.exclude }}
@@ -208,23 +217,29 @@ jobs:
             [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
             [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
             [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
-            [[ "$INPUT_TOOLCHAIN" == true ]] && categories+=(toolchain)
 
             args=()
             [[ "$INPUT_ALL" == true ]] && args+=(--all)
             [[ "$INPUT_CORE" == true ]] && args+=(--core)
+            [[ "$INPUT_TOOLCHAIN" == true ]] && args+=(--toolchain-all)
             (( ${#categories[@]} == 0 )) || args+=(--categories "${categories[@]}")
-            args+=(--packages "$INPUT_PACKAGES" --flavors "$INPUT_FLAVORS" --exclude "$INPUT_EXCLUDE")
+            args+=(--packages "$INPUT_PACKAGES" --toolchain-packages "$INPUT_TOOLCHAIN_PACKAGES" \
+              --flavors "$INPUT_FLAVORS" --exclude "$INPUT_EXCLUDE")
             python3 -I scripts/select-packages.py \
               --recipes recipes --flavors-file flavors.toml "${args[@]}" \
               --output "$selection"
           fi
-          pkgs="$(python3 - "$selection" <<'PY'
+          mapfile -t selected < <(python3 - "$selection" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
           print(" ".join(data["packages"]))
+          print(" ".join(data["toolchain_packages"]))
+          print("true" if data["toolchain_all"] else "false")
           PY
-          )"
+          )
+          pkgs="${selected[0]:-}"
+          toolchain_pkgs="${selected[1]:-}"
+          toolchain_all="${selected[2]:-false}"
 
           # Build the current Nawa recipe whenever its standalone transition
           # release lacks the exact archive required by this recipe.
@@ -247,7 +262,19 @@ jobs:
           for p in $pkgs; do
             [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad package name '$p'"; exit 1; }
             compgen -G "recipes/*/$p/recipe.toml" >/dev/null || { echo "::error::no recipe named '$p'"; exit 1; }
+            [[ ! -f "recipes/toolchain/$p/recipe.toml" ]] || {
+              echo "::error::$p is a Toolchain recipe and cannot enter the ordinary package build"; exit 1;
+            }
           done
+          for p in $toolchain_pkgs; do
+            [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad Toolchain package name '$p'"; exit 1; }
+            [[ -f "recipes/toolchain/$p/recipe.toml" ]] || {
+              echo "::error::$p is not a recipe under recipes/toolchain"; exit 1;
+            }
+          done
+          [[ "$toolchain_all" == true || "$toolchain_all" == false ]] || {
+            echo "::error::invalid Toolchain selection mode"; exit 1;
+          }
 
           if (( transition_needed )); then
             if [[ "$INPUT_ROOTFS" == min ]]; then
@@ -266,30 +293,38 @@ jobs:
             done
           fi
           echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
+          echo "toolchain_pkgs=$toolchain_pkgs" >> "$GITHUB_OUTPUT"
+          echo "toolchain_all=$toolchain_all" >> "$GITHUB_OUTPUT"
           echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
           dry_run="${INPUT_DRY_RUN:-false}"
           echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
-          python3 - "$selection" "$pkgs" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          python3 - "$selection" "$pkgs" "$toolchain_pkgs" "$toolchain_all" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
-          final = sys.argv[2].split()
-          print(f"### Package selection: {len(final)} target package(s)")
+          regular = sys.argv[2].split()
+          toolchain = sys.argv[3].split()
+          print(f"### Package selection: {len(regular)} regular + {len(toolchain)} Toolchain target(s)")
           print(f"Source: `{data['source']}`")
           for category, count in data["category_counts"].items():
               print(f"- {category}: {count}")
           if data["excluded_count"]:
               print(f"- Excluded: {', '.join(data['excluded'])}")
-          print(f"- RootFS: `{sys.argv[3]}`")
-          print(f"- Mode: {'DRY RUN (no build started)' if sys.argv[4] == 'true' else 'Build'}")
+          mode = "FULL Bootstrap rebuild" if sys.argv[4] == "true" else ("Selective Bootstrap rebuild" if toolchain else "Not selected")
+          print(f"- Toolchain mode: {mode}")
+          print(f"- RootFS: `{sys.argv[5]}`")
+          print(f"- Mode: {'DRY RUN (no build started)' if sys.argv[6] == 'true' else 'Build'}")
           print()
-          print("Selected targets:")
-          print("`" + " ".join(final) + "`" if final else "`none`")
+          print("Regular package targets:")
+          print("`" + " ".join(regular) + "`" if regular else "`none`")
+          print()
+          print("Bootstrap Toolchain targets:")
+          print("`" + " ".join(toolchain) + "`" if toolchain else "`none`")
           PY
 
   build:
     name: build and publish
     needs: select
-    if: ${{ needs.select.outputs.pkgs != '' && needs.select.outputs.dry_run != 'true' }}
+    if: ${{ (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:
@@ -298,6 +333,9 @@ jobs:
     env:
       T: /mnt/pkgroot
       PKGS: ${{ needs.select.outputs.pkgs }}
+      TOOLCHAIN_PKGS: ${{ needs.select.outputs.toolchain_pkgs }}
+      TOOLCHAIN_ALL: ${{ needs.select.outputs.toolchain_all }}
+      BT: /mnt/faseela-bootstrap
       ISOLATION: ${{ inputs.isolation || 'sandbox' }}
       ROOTFS_KIND: ${{ needs.select.outputs.rootfs }}
       BUDGET_MIN: ${{ inputs.budget || '270' }}
@@ -327,6 +365,7 @@ jobs:
           set -euo pipefail
           rm -rf distro/recipes
           cp -a recipes distro/recipes
+          cp -a flavors.toml distro/flavors.toml
           # This repo's nawa pin wins over the tooling's bootstrap lock (see the script).
           python3 -I scripts/write-nawa-lock.py distro
           echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"

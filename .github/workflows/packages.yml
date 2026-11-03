@@ -210,28 +210,25 @@ jobs:
             # from the replaced run. Start at the last successful push run.
             last_successful_push="$(gh api \
               "repos/$GITHUB_REPOSITORY/actions/workflows/packages.yml/runs?branch=$GITHUB_REF_NAME&event=push&status=success&per_page=100" \
-              --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)"
-            base="$last_successful_push"
-            if [[ ! "$base" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$base" "$GITHUB_SHA"; then
-              base="${BEFORE:-}"
-            fi
+              --jq '.workflow_runs[0].head_sha // empty')"
 
-            if [[ "$base" =~ ^0+$ || -z "$base" ]]; then
-              # No successful push exists yet (or the event is the first push).
-              # Reconcile the complete tree instead of guessing at a partial base.
+            if [[ -z "$last_successful_push" ]]; then
+              # First package publication on this branch: reconcile the full
+              # recipe tree rather than assuming earlier pushes were processed.
               echo "::notice::no successful package push found; selecting the complete recipe tree"
               python3 -I scripts/select-packages.py \
                 --recipes recipes --flavors-file flavors.toml \
                 --all --toolchain-all --output "$selection"
-              base=""
-            fi
-
-            if [[ -n "$base" ]]; then
+            else
+              base="$last_successful_push"
+              [[ "$base" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::GitHub returned an invalid last successful package commit: $base"; exit 1;
+              }
               git cat-file -e "$base^{commit}" 2>/dev/null || {
-                echo "::error::cannot resolve the last published recipe commit $base"; exit 1;
+                echo "::error::cannot resolve the last successfully published recipe commit $base"; exit 1;
               }
               git merge-base --is-ancestor "$base" "$GITHUB_SHA" || {
-                echo "::error::no safe ancestor commit for package selection; refusing to silently skip recipe changes"; exit 1;
+                echo "::error::last successful package commit $base is not an ancestor of $GITHUB_SHA; refusing an unsafe partial selection"; exit 1;
               }
               echo "Selecting recipe changes from last successful push $base through $GITHUB_SHA."
               python3 -I scripts/select-packages.py \

@@ -37,6 +37,9 @@ assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 assert "pipewire-pulse" in install_script
 assert "pulse/native" in install_script
+assert "pgrep -u" in install_script
+assert "wireplumber" in install_script
+assert "exec /usr/bin/faseela-audio-session" in install_script
 
 xdg = recipe("gui", "xdg-utils")
 assert xdg["package"]["version"] == "1.2.1"

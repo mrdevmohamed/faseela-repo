@@ -13,10 +13,12 @@
 # rel 6: WIREGUARD and EXFAT_FS as modules (recipes wireguard-tools, exfatprogs)
 # rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
 #        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
+# rel 12: SND_SOC must be built-in: SOF's bool menu options are nested under
+#         `if SND_SOC` and cannot be enabled when the parent is only a module
 [package]
 name = "linux"
 version = "6.10"
-rel = 11
+rel = 12
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -74,7 +76,7 @@ scripts/config -m ATH5K -m RTL8XXXU -m MT7921U
 # Thunderbolt/USB4 and USB Type-C/UCSI laptop controllers.
 scripts/config -m USB4 -m TYPEC -m TYPEC_UCSI -m UCSI_ACPI
 # Intel Sound Open Firmware and SoundWire for newer laptop audio paths.
-scripts/config -m SND_SOC -e SND_SOC_SOF_TOPLEVEL -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
+scripts/config -e SND_SOC -e SND_SOC_SOF_TOPLEVEL -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
 scripts/config -e SOUNDWIRE -m SOUNDWIRE_INTEL -m SOUNDWIRE_CADENCE
 # Hardware monitoring, thermal sensors, and CPU temperature drivers.
 scripts/config -e HWMON -e THERMAL -m SENSORS_CORETEMP -m SENSORS_K10TEMP -m SENSORS_NCT6775 -m SENSORS_IT87

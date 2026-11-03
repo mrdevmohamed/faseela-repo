@@ -2,9 +2,9 @@
 [package]
 name = "busybox"
 version = "1.37.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
-summary = "Single-binary toolbox for initramfs and rescue"
+summary = "Static single-binary toolbox for initramfs, rescue and recovery"
 license = ["GPL-2.0"]
 source = "https://busybox.net/downloads/busybox-1.37.0.tar.bz2"
 sha256 = "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
@@ -20,10 +20,20 @@ run = []
 configure = """
 make defconfig && \
 sed -i -e 's/^CONFIG_TC=y$/# CONFIG_TC is not set/' \
-       -e 's/^CONFIG_FEATURE_TC_INGRESS=y$/# CONFIG_FEATURE_TC_INGRESS is not set/' .config && \
-make oldconfig < /dev/null > /dev/null
+       -e 's/^CONFIG_FEATURE_TC_INGRESS=y$/# CONFIG_FEATURE_TC_INGRESS is not set/' \
+       -e 's/^# CONFIG_STATIC is not set$/CONFIG_STATIC=y/' .config && \
+make oldconfig < /dev/null > /dev/null && \
+grep -q '^CONFIG_STATIC=y$' .config
 """
-compile = "make -j%{jobs}"
+compile = """
+make -j%{jobs}
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+    ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
+done
+ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {
+    echo "busybox: expected a statically linked binary" >&2; exit 1;
+}
+"""
 # Ship ONLY the binary. `make install` also plants ~400 applet symlinks
 # (/bin/tar, /bin/sh, /usr/bin/install, ...) that shadow the real GNU tools in
 # the build root from this point on: busybox's built-in xz decoder then fails

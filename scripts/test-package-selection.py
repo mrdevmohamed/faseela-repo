@@ -9,7 +9,12 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 import flavor  # noqa: E402
-import select_packages  # noqa: E402
+import importlib.util  # noqa: E402
+
+_selector_spec = importlib.util.spec_from_file_location("select_packages", SCRIPTS / "select-packages.py")
+select_packages = importlib.util.module_from_spec(_selector_spec)
+sys.modules[_selector_spec.name] = select_packages
+_selector_spec.loader.exec_module(select_packages)
 
 
 class PackageSelectionTests(unittest.TestCase):

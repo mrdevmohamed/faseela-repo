@@ -188,9 +188,9 @@ jobs:
           selection="$RUNNER_TEMP/package-selection.json"
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
             # Recipe pushes are always CHANGED; manual selection never falls back to a commit diff.
-            python3 -I scripts/select-packages.py \\
-              --recipes recipes --flavors-file flavors.toml \\
-              --changed-from "${BEFORE:-}" --changed-to "$GITHUB_SHA" \\
+            python3 -I scripts/select-packages.py \
+              --recipes recipes --flavors-file flavors.toml \
+              --changed-from "${BEFORE:-}" --changed-to "$GITHUB_SHA" \
               --output "$selection"
           else
             categories=()
@@ -209,8 +209,8 @@ jobs:
             [[ "$INPUT_CORE" == true ]] && args+=(--core)
             (( ${#categories[@]} == 0 )) || args+=(--categories "${categories[@]}")
             args+=(--packages "$INPUT_PACKAGES" --flavors "$INPUT_FLAVORS" --exclude "$INPUT_EXCLUDE")
-            python3 -I scripts/select-packages.py \\
-              --recipes recipes --flavors-file flavors.toml "${args[@]}" \\
+            python3 -I scripts/select-packages.py \
+              --recipes recipes --flavors-file flavors.toml "${args[@]}" \
               --output "$selection"
           fi
           pkgs="$(python3 - "$selection" <<'PY'

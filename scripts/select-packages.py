@@ -43,7 +43,7 @@ def changed_recipes(recipes_dir: Path, before: str, after: str) -> list[str]:
             raise SelectionError("cannot determine the previous commit for CHANGED selection")
         before = probe.stdout.strip()
     diff = subprocess.run(
-        ["git", "diff", "--name-only", f"{before}...{after}", "--", str(recipes_dir)],
+        ["git", "diff", "--name-only", before, after, "--", str(recipes_dir)],
         check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     if diff.returncode != 0:

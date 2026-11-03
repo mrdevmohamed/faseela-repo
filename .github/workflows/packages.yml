@@ -333,7 +333,7 @@ jobs:
           sudo mkdir -p "$T/build/out"
           sudo chown "$(id -u):$(id -g)" "$T/build/out"
           n=0
-          while IFS=$'\\t' read -r tag asset; do
+          while IFS=$'\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
             [[ "$tag" =~ ^(stable|packages-[0-9]{4,})$ ]] || {
               echo "::error::unexpected package storage release: $tag"; exit 1;
@@ -401,7 +401,7 @@ jobs:
           if [[ "$PRUNE" == 1 ]]; then
             mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
             for s in "${stale[@]}"; do rm -f "$repo/$s"; done
-            if (( ${#stale[@]} )); then printf 'superseded: %s\\n' "${stale[@]}"; fi
+            if (( ${#stale[@]} )); then printf 'superseded: %s\n' "${stale[@]}"; fi
           fi
 
           rev="${GITHUB_SHA}"
@@ -467,13 +467,13 @@ jobs:
           upload "$PKG_TAG" "$repo/index.toml" "$repo/index.toml.sig"
 
           # Remove stale assets only after the signed index points elsewhere.
-          while IFS=$'\\t' read -r tag asset; do
+          while IFS=$'\t' read -r tag asset; do
             [[ -n "$tag" && -n "$asset" ]] || continue
             gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
               echo "::warning::could not delete stale asset $tag/$asset"
             }
           done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
-          while IFS=$'\\t' read -r tag asset; do
+          while IFS=$'\t' read -r tag asset; do
             [[ -n "$tag" && -n "$asset" ]] || continue
             gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
               echo "::warning::could not delete legacy stable asset $asset"

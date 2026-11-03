@@ -8,13 +8,13 @@ rel = 1
 arch = ["x86_64"]
 summary = "Initramfs generator and kernel boot-image maintenance for Faseela"
 license = ["GPL-2.0"]
+source = "local:recipes/boot/faseela-initramfs/files/faseela-mkinitramfs"
 
 [depends]
 build = []
 run = ["busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "sed", "grep", "xz", "zstd"]
 
 [build]
-source = "local:recipes/boot/faseela-initramfs/files/faseela-mkinitramfs"
 check = "bash -n faseela-mkinitramfs"
 install = """
 install -Dm755 faseela-mkinitramfs %{pkgdir}/usr/sbin/faseela-mkinitramfs

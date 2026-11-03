@@ -9,7 +9,7 @@ arch = ["x86_64"]
 summary = "Khronos Vulkan tools (vulkaninfo)"
 license = ["Apache-2.0"]
 source = "https://github.com/KhronosGroup/Vulkan-Tools/archive/refs/tags/vulkan-sdk-%{version}.0.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "6f90bff4a908688cb6baf076933613a8ee8589e21c7dc3c3ba843afbd7dd84e3"
 source_dir = "Vulkan-Tools-vulkan-sdk-%{version}.0"
 
 [depends]

@@ -196,9 +196,9 @@ chmod 644 %{pkgdir}/etc/profile.d/gui-session.sh
 '''
 
 [hooks]
-post_install = '''for g in seat video input audio; do
+post_install = '''for g in seat video render input audio; do
     /usr/libexec/faseela/ensure-system-account group "$g"
 done
-echo "gui-session: add your user:  usermod -aG seat,video,input,audio <user>"
+echo "gui-session: add your user:  usermod -aG seat,video,render,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"
 '''

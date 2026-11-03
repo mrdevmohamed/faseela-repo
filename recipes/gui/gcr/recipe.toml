@@ -36,9 +36,7 @@ for old, new in replacements.items():
 path.write_text(source, encoding="utf-8")
 PY
 
-meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release \\
-  -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false \\
-  -Dsystemd=disabled -Dgpg_path=/usr/bin/false
+meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false -Dsystemd=disabled -Dgpg_path=/usr/bin/false
 '''
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

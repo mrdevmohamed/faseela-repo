@@ -12,7 +12,7 @@ source = "local:recipes/boot/faseela-initramfs/files/faseela-mkinitramfs"
 
 [depends]
 build = []
-run = ["busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "sed", "grep", "xz", "zstd"]
+run = ["bash", "busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "sed", "grep", "xz", "zstd"]
 
 [build]
 check = "bash -n faseela-mkinitramfs"

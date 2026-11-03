@@ -1,0 +1,23 @@
+# media recipe: python-ply — pure-Python parser used by Mesa's Intel Vulkan driver (ANV).
+[package]
+name = "python-ply"
+version = "3.11"
+rel = 1
+arch = ["x86_64"]
+summary = "Python Lex-Yacc parser used to build Mesa's Intel Vulkan driver"
+license = ["BSD-3-Clause"]
+source = "https://files.pythonhosted.org/packages/source/p/ply/ply-%{version}.tar.gz"
+sha256 = "00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3"
+source_dir = "ply-%{version}"
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[build]
+install = '''
+site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+install -d "%{pkgdir}$site"
+cp -r ./ply "%{pkgdir}$site/"
+find "%{pkgdir}$site/ply" -name __pycache__ -prune -exec rm -rf {} +
+'''

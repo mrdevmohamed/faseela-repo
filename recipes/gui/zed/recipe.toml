@@ -1,0 +1,36 @@
+# Upstream prebuilt Zed release bundle. Opt-in only: use flavor iso-gui-zed.
+# That flavor contains Mesa's lavapipe ICD and the Khronos Vulkan loader.
+[package]
+name = "zed"
+version = "1.26.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Zed: fast, multiplayer code editor (Wayland; Vulkan via Mesa lavapipe)"
+license = ["GPL-3.0-or-later", "AGPL-3.0-or-later", "Apache-2.0"]
+source = "https://github.com/zed-industries/zed/releases/download/v%{version}/zed-linux-x86_64.tar.gz"
+sha256 = "4d7b972019f25bd0a8cc6f4c56c81ab7ad9205f3461d00ac79259b34a03856d2"
+source_dir = "zed.app"
+
+[depends]
+build = []
+run = ["gcc", "glibc", "wayland", "libxkbcommon", "mesa", "vulkan-loader", "fontconfig", "freetype", "libxcb", "alsa-lib", "openssl", "zlib"]
+
+[build]
+install = '''
+set -eu
+# Keep the upstream app bundle intact; its launcher resolves libexec and private libs relatively.
+install -d -m755 %{pkgdir}/usr/lib/zed.app
+cp -a . %{pkgdir}/usr/lib/zed.app/
+install -d -m755 %{pkgdir}/usr/bin
+ln -sf ../lib/zed.app/bin/zed %{pkgdir}/usr/bin/zed
+
+if [ -f share/applications/dev.zed.Zed.desktop ]; then
+    install -Dm644 share/applications/dev.zed.Zed.desktop %{pkgdir}/usr/share/applications/dev.zed.Zed.desktop
+    sed -i 's|^Exec=zed|Exec=/usr/bin/zed|' %{pkgdir}/usr/share/applications/dev.zed.Zed.desktop
+fi
+for icon in share/icons/hicolor/*/apps/*.png; do
+    [ -f "$icon" ] || continue
+    relpath=$(printf '%s' "$icon" | sed 's|^share/icons/hicolor/||')
+    install -Dm644 "$icon" "%{pkgdir}/usr/share/icons/hicolor/$relpath"
+done
+'''

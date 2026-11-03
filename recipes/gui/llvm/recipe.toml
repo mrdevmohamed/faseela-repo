@@ -1,29 +1,16 @@
-# gui recipe: llvm — only what mesa's llvmpipe and radeonsi need (shared libLLVM, X86 + AMDGPU targets, llvm-config)
-# rel 3: LLVM_TARGETS_TO_BUILD=X86;AMDGPU, for mesa's radeonsi (AMD GPUs, and its VA-API video
-#        driver); it changes together with mesa rel 3. The build gets longer and libLLVM-18.so
-#        bigger (the AMDGPU backend is one of LLVM's largest).
-# rel 2: the build itself worked (48 min, run 41353296341) but the post-build lint refused the
-#        archive: usr/lib/cmake/llvm/LLVMConfig.cmake contains the sandbox path /build/src.
-#        The install step now lists every such line in the log and points them at /usr/src.
-#
-# Why: wlroots here is built `-D renderers=gles2` only, so every frame goes through
-# mesa's GL. Without LLVM mesa has only `softpipe`, a reference rasterizer that is
-# an order of magnitude slower than `llvmpipe` (a JIT-compiled, multithreaded one).
-# That is why the GUI crawled in QEMU (and on any machine without a GPU driver).
-#
-# Scope kept deliberately small — this is by far the longest build in the tree:
-#   * LLVM_TARGETS_TO_BUILD=X86;AMDGPU: llvmpipe JITs for the host CPU (X86), radeonsi
-#     compiles its shaders with the AMDGPU backend. No other targets.
-#   * one shared libLLVM-18.so (mesa links it with -D shared-llvm=enabled) instead of
-#     ~1 GB of static archives, which are removed again after the install.
-#   * no clang/lld/lldb, no tests, examples, docs or benchmarks.
-# Only /usr/bin/llvm-config is kept from the tools: mesa's meson asks it for flags.
+# LLVM libraries + Clang compiler for Mesa's llvmpipe, radeonsi and lavapipe.
+# rel 4 adds the Clang project: Mesa's Vulkan swrast (lavapipe) build needs clang,
+# while radeonsi/llvmpipe need the X86 + AMDGPU LLVM targets. Clang is kept in this
+# same package because it is built from the matching llvm-project source tree.
+# rel 3 added the AMDGPU target for Mesa's radeonsi driver.
+# The install step removes unneeded static libraries and tools but retains clang,
+# clang++, clang-cpp and llvm-config, plus the shared LLVM/Clang libraries.
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 3
+rel = 4
 arch = ["x86_64"]
-summary = "LLVM libraries (X86 + AMDGPU targets, shared libLLVM) for mesa's llvmpipe and radeonsi"
+summary = "LLVM libraries and Clang compiler (X86 + AMDGPU) for Mesa software and AMD drivers"
 license = ["Apache-2.0 WITH LLVM-exception"]
 source = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
 sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a"
@@ -34,16 +21,12 @@ build = ["cmake", "ninja", "python", "zlib", "zstd"]
 run = ["zlib", "zstd"]
 
 [build]
-# RTTI on: the mesa/LLVM combination every distro ships is built that way.
-# LLVM_PARALLEL_LINK_JOBS=1: linking libLLVM-18.so needs several GB of RAM per job.
-# The two sed lines below: llvm-config embeds LLVM_SRC_ROOT / LLVM_OBJ_ROOT (its
-# --src-root/--obj-root), i.e. the build directory, which the post-build lint
-# rejects (`/build/src` in a file). -ffile-prefix-map covers __FILE__ in the code.
 configure = """
 cmake -S llvm -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_C_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
     -DCMAKE_CXX_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
+    -DLLVM_ENABLE_PROJECTS=clang \
     -DLLVM_TARGETS_TO_BUILD='X86;AMDGPU' \
     -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON \
     -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_ASSERTIONS=OFF \
@@ -52,20 +35,21 @@ cmake -S llvm -B build -G Ninja \
     -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_DOCS=OFF \
     -DLLVM_OPTIMIZED_TABLEGEN=ON -DLLVM_PARALLEL_LINK_JOBS=1
 sed -i 's#/build/src#/usr/src#g' build/tools/llvm-config/BuildVariables.inc
-grep -rl '/build/src' build/tools/llvm-config 2>/dev/null | head -3 | while read f; do echo "llvm: build path left in $f" >&2; done
 """
 compile = "ninja -C build -j%{jobs}"
 install = """
 DESTDIR=%{pkgdir} cmake --install build --strip
-# cmake config files record the build tree (LLVMConfig.cmake): the lint rejects /build/src in any
-# text file. Show every occurrence (so a new kind of leak is readable in the log), then point them
-# at /usr/src, like llvm-config's BuildVariables.inc in `configure`.
+# CMake exports and llvm-config can record the sandbox build path; scrub it from
+# the installed metadata before the package path-leak check runs.
 { grep -rIn '/build/src' %{pkgdir} || true; } | cut -c1-300 | head -20
 { grep -rIl '/build/src' %{pkgdir} || true; } | while read -r f; do sed -i 's#/build/src#/usr/src#g' "$f"; done
-if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after the rewrite" >&2; exit 1; fi
-# static archives: unused with the shared libLLVM, and ~1 GB
-rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a
-# keep llvm-config only (the other tools are not needed to build or run mesa)
-find %{pkgdir}/usr/bin -mindepth 1 ! -name llvm-config -delete
+if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after rewrite" >&2; exit 1; fi
+rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a %{pkgdir}/usr/lib/libclang*.a
+# Keep only the compiler tools required to build Mesa's lavapipe and llvm-config.
+find %{pkgdir}/usr/bin -mindepth 1 \
+    ! -name llvm-config \
+    ! -name clang ! -name clang++ ! -name clang-cpp \
+    ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' \
+    -delete
 rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc
 """

@@ -20,10 +20,9 @@
 #                     packages can be BUILT (the bootstrap)
 
 # What stage 2 and stage 3 of faseela build with the seed toolchain, and the
-# only thing they build. `nawa` is written in Rust, so its build dependencies
-# (rust, cmake, ...) are in the closure; `curl` and `ca-certificates` let the finished root fetch from https (the
-# package repository). This is also
-# the seed of the next bootstrap (faseela-x86_64-rootfs.tar.zst).
+# only thing they build. nawa is written in Rust, so its build dependencies
+# (rust, cmake, ...) are in the closure; curl and ca-certificates let the finished root fetch from https (the
+# package repository). This is also the seed of the next bootstrap (faseela-x86_64-rootfs.tar.zst).
 [flavor.bootstrap]
 summary = "the self-hosting core: base-devel + nawa + curl + ca-certificates (and what builds them)"
 include = ["base-devel", "nawa", "curl", "ca-certificates"]
@@ -45,8 +44,7 @@ summary = "rootfs-min imported as a container image (ghcr.io/<owner>/faseela-bui
 extends = ["rootfs-min"]
 
 # The live ISO without a graphical session. Firmware is the bulk of an ISO:
-# linux-firmware-lite stays, the full set is installed on demand
-# (`nawa install linux-firmware`).
+# linux-firmware-lite stays, the full set is installed on demand (nawa install linux-firmware).
 [flavor.iso-nogui]
 summary = "live ISO, no GUI"
 include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
@@ -56,17 +54,24 @@ exclude = ["linux-firmware", "linux-firmware-extra"]
 summary = "live ISO with Sway, PipeWire audio, Firefox ESR, NetworkManager, Bluetooth and polkit"
 extends = ["iso-nogui"]
 # Browser recipes stay in their own category, but Firefox is part of the standard GUI ISO.
+# zed is in gui/ but remains opt-in through iso-gui-zed.
 include = ["@gui", "firefox"]
+exclude = ["zed"]
 
 # Backwards-compatible flavor name for existing build workflow invocations.
-# The standard iso-gui now already includes Firefox and its runtime dependency closure.
 [flavor.iso-gui-firefox]
 summary = "compatibility alias for iso-gui (includes Firefox ESR)"
 extends = ["iso-gui"]
 
+# Opt-in Zed desktop. Mesa builds lavapipe (Vulkan swrast); vulkan-loader supplies libvulkan.
+# Mesa's build closure compiles the SDK-matched SPIR-V/glslang helpers; the ISO only installs
+# runtime packages and does not include those build-only tools.
+[flavor.iso-gui-zed]
+summary = "iso-gui plus Zed with Vulkan through Mesa lavapipe (software Vulkan for QEMU)"
+extends = ["iso-nogui"]
+include = ["@gui", "firefox", "zed"]
+
 # --- media (recipes/media): opt-in, on top of the images above ----------------------------
-# ffmpeg needs no GUI, so it comes on top of iso-nogui; mpv plays through Wayland/DRM and
-# comes on top of iso-gui. Neither grows the plain ISOs.
 [flavor.iso-nogui-ffmpeg]
 summary = "iso-nogui plus ffmpeg (libav*, x264/x265/vpx/opus/lame, VA-API with the Intel driver)"
 extends = ["iso-nogui"]
@@ -78,9 +83,7 @@ extends = ["iso-gui"]
 include = ["mpv", "intel-media-driver"]
 
 
-# --- creative (recipes/creative): optional Storytold Craft desktop apps ------------------
-# Prebuilt upstream Linux x86_64 bundles for Faseela's Wayland session. Kept
-# separate from the standard ISO and ALL package set; build/install on demand.
+# --- creative: optional Storytold Craft desktop apps --------------------------------------
 [flavor.creative]
 summary = "15 optional Storytold Craft desktop applications for Wayland"
 include = ["@creative"]

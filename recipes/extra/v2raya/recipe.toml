@@ -1,0 +1,41 @@
+# v2rayA frontend. The matching v2raya-core binary and routing databases are
+# separate packages and are installed through this recipe's runtime closure.
+[package]
+name = "v2raya"
+version = "2.5.13"
+rel = 1
+arch = ["x86_64"]
+summary = "v2rayA web-managed proxy client (local UI on 127.0.0.1:2017)"
+license = ["AGPL-3.0-only"]
+source = "https://github.com/v2rayA/v2rayA/releases/download/v%{version}/v2raya_linux_x64_%{version}"
+sha256 = "8370f87eaf5ca177647eca16c8c44a94d5946324ca2d3ba636e1e0dd095b6355"
+
+[depends]
+build = []
+run = ["glibc", "base-files", "coreutils", "ca-certificates", "iptables", "iproute2", "v2raya-core", "v2raya-geoip", "v2raya-geosite"]
+
+[build]
+install = '''
+set -eu
+install -Dm755 v2raya_linux_x64_%{version} %{pkgdir}/usr/bin/v2raya
+install -d -m755 %{pkgdir}/etc/sv/v2raya
+cat > %{pkgdir}/etc/sv/v2raya/run <<'RUN'
+#!/bin/sh
+# Transparent proxy setup requires root. The admin UI is loopback-only by default;
+# change V2RAYA_ADDRESS here if remote browser access is intentionally required.
+export V2RAYA_ADDRESS=127.0.0.1:2017
+export V2RAYA_CONFIG=/etc/v2raya
+export V2RAYA_V2RAY_ASSETSDIR=/usr/share/v2raya
+export V2RAYA_LOG_FILE=/var/log/v2raya/v2raya.log
+mkdir -p /etc/v2raya /var/log/v2raya
+exec /usr/bin/v2raya --log-disable-timestamp
+RUN
+chmod 755 %{pkgdir}/etc/sv/v2raya/run
+'''
+
+[hooks]
+post_install = '''
+echo "v2raya: matching v2raya_core and GeoIP/GeoSite data were installed."
+echo "v2raya: service is not enabled automatically: nawa service enable v2raya"
+echo "v2raya: local web UI: http://127.0.0.1:2017"
+'''

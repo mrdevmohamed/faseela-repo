@@ -32,4 +32,7 @@ install = """
 install -Dm755 target/release/nawa %{pkgdir}/usr/bin/nawa
 # system-wide configuration: default repository + install mode
 install -Dm644 dist/nawa.toml %{pkgdir}/etc/nawa/nawa.toml
+# Faseela's active package endpoint uses the signed schema-v3 index.
+# Keep the old stable endpoint available for already-installed schema-v1 clients.
+sed -i 's|releases/download/stable"|releases/download/stable-v3"|' %{pkgdir}/etc/nawa/nawa.toml
 """

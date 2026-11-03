@@ -831,7 +831,8 @@ jobs:
             exit 0
           fi
           gh workflow run packages.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
-            -f packages="$PKGS" -f rootfs="$ROOTFS_KIND" -f isolation="$ISOLATION" \
+            -f packages="$PKGS" -f toolchain=false -f toolchain_packages="" \
+            -f rootfs="$ROOTFS_KIND" -f isolation="$ISOLATION" \
             -f budget="$BUDGET_MIN" -f keep_going="$([[ $KEEP_GOING == 1 ]] && echo true || echo false)" \
             -f prune="$([[ $PRUNE == 1 ]] && echo true || echo false)" -f auto_continue=true
           echo "### Time budget used up: started a continuation run for the rest" >> "$GITHUB_STEP_SUMMARY"
@@ -843,6 +844,10 @@ jobs:
           mkdir -p ci-logs
           sudo cp -r "$T"/build/logs ci-logs/ 2>/dev/null || true
           sudo cp "$T"/build/report.txt "$T"/build/status ci-logs/ 2>/dev/null || true
+          if [[ -d /mnt/.faseela-bootstrap.build/logs ]]; then
+            mkdir -p ci-logs/bootstrap
+            sudo cp -a /mnt/.faseela-bootstrap.build/logs/. ci-logs/bootstrap/
+          fi
 
           # Nawa writes per-package phase logs directly under build/<package-id>,
           # not under build/logs. Preserve them for failed packages so the

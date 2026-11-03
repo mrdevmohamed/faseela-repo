@@ -117,6 +117,10 @@ on:
         description: "Optional package names or @categories to remove from selected targets"
         type: string
         default: ""
+      dry_run:
+        description: "Resolve and display the package plan without downloading or building anything"
+        type: boolean
+        default: false
       rootfs:
         description: "Build environment"
         type: choice
@@ -159,6 +163,7 @@ jobs:
     outputs:
       pkgs: ${{ steps.s.outputs.pkgs }}
       rootfs: ${{ steps.s.outputs.rootfs }}
+      dry_run: ${{ steps.s.outputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -179,6 +184,7 @@ jobs:
           INPUT_PACKAGES: ${{ inputs.packages }}
           INPUT_FLAVORS: ${{ inputs.flavors }}
           INPUT_EXCLUDE: ${{ inputs.exclude }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
           INPUT_ROOTFS: ${{ inputs.rootfs || 'auto' }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
@@ -261,6 +267,8 @@ jobs:
           fi
           echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
           echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
+          dry_run="${INPUT_DRY_RUN:-false}"
+          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
           python3 - "$selection" "$pkgs" "$rootfs" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -280,7 +288,7 @@ jobs:
   build:
     name: build and publish
     needs: select
-    if: ${{ needs.select.outputs.pkgs != '' }}
+    if: ${{ needs.select.outputs.pkgs != '' && needs.select.outputs.dry_run != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:

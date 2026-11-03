@@ -1,13 +1,15 @@
-# Mesa: AMD hardware, software OpenGL and Vulkan lavapipe.
+# Mesa: AMD hardware (GL + Vulkan radv), software OpenGL and Vulkan lavapipe.
+# rel 5 adds the RADV Vulkan driver for AMD GPUs (GCN/Polaris and newer), so Vulkan apps
+# such as Zed use the real GPU instead of falling back to lavapipe on bare metal.
 # rel 4 adds the Vulkan swrast ICD. It needs glslang, Vulkan headers and Clang;
 # LLVM plus Gallium softpipe/llvmpipe are already enabled in this build.
 # rel 3 added radeonsi and the gallium VA-API driver for AMD GPUs.
 [package]
 name = "mesa"
 version = "24.3.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
-summary = "OpenGL/GLES/EGL/GBM + AMD, software GL and Vulkan lavapipe drivers"
+summary = "OpenGL/GLES/EGL/GBM + AMD (GL + Vulkan radv), software GL and Vulkan lavapipe drivers"
 license = ["MIT"]
 source = "https://archive.mesa3d.org/mesa-%{version}.tar.xz"
 sha256 = "97813fe65028ef21b4d4e54164563059e8408d8fee3489a2323468d198bf2efc"
@@ -17,6 +19,6 @@ build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "pytho
 run = ["libdrm", "wayland", "expat", "zlib", "zstd", "llvm", "elfutils", "libva"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D platforms=wayland -D gallium-drivers=radeonsi,softpipe,llvmpipe,virgl -D vulkan-drivers=swrast -D llvm=enabled -D shared-llvm=enabled -D glx=disabled -D egl=enabled -D gbm=enabled -D gles1=disabled -D gles2=enabled -D gallium-va=enabled -D video-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec,av1dec,av1enc,vp9dec -D glvnd=disabled -D valgrind=disabled -D libunwind=disabled -D lmsensors=disabled -D build-tests=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D platforms=wayland -D gallium-drivers=radeonsi,softpipe,llvmpipe,virgl -D vulkan-drivers=amd,swrast -D llvm=enabled -D shared-llvm=enabled -D glx=disabled -D egl=enabled -D gbm=enabled -D gles1=disabled -D gles2=enabled -D gallium-va=enabled -D video-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec,av1dec,av1enc,vp9dec -D glvnd=disabled -D valgrind=disabled -D libunwind=disabled -D lmsensors=disabled -D build-tests=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

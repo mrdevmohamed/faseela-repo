@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+# faseela-mkinitramfs — build versioned initramfs images for installed kernels.
+# The live ISO continues to use bootstrap/initramfs.sh.
+set -Eeuo pipefail
+ROOT="/"; ACTION="all"; KERNEL_VERSION=""; DO_PRUNE=0; UPDATE_DEFAULT=0; DRY_RUN=0; WORK=""
+
+die() { echo "faseela-mkinitramfs: $*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
+usage() {
+cat <<'USAGE'
+Usage: faseela-mkinitramfs [OPTIONS]
+  --all                  Build an image for every installed kernel (default).
+  --kernel VERSION       Build an image for one installed kernel.
+  --prune                Remove images whose kernel is no longer installed.
+  --update-default       Atomically update /boot/vmlinuz and initramfs.img.
+  --root DIR             Operate on another root filesystem (default: /).
+  --dry-run              Print planned actions without changing files.
+  -h, --help             Show this help.
+USAGE
+}
+explicit_action=0
+while (($#)); do
+ case "$1" in
+  --all) [[ "$explicit_action" == 0 ]] || die "choose only one of --all or --kernel"; ACTION=all; explicit_action=1; shift ;;
+  --kernel) [[ $# -ge 2 ]] || die "--kernel needs a version"; [[ "$explicit_action" == 0 ]] || die "choose only one of --all or --kernel"; ACTION=one; KERNEL_VERSION="$2"; explicit_action=1; shift 2 ;;
+  --prune) DO_PRUNE=1; shift ;;
+  --update-default) UPDATE_DEFAULT=1; shift ;;
+  --root) [[ $# -ge 2 ]] || die "--root needs a directory"; ROOT="$2"; shift 2 ;;
+  --dry-run) DRY_RUN=1; shift ;;
+  -h|--help) usage; exit 0 ;;
+  *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
+ esac
+done
+
+[[ -d "$ROOT" ]] || die "root does not exist: $ROOT"
+ROOT="$(cd "$ROOT" && pwd -P)"
+BOOT="$ROOT/boot"; MODULES="$ROOT/lib/modules"; BUSYBOX="$ROOT/usr/bin/busybox"
+mkdir -p "$BOOT"
+for tool in bash cpio gzip find sort depmod modinfo xz zstd cp mv ln mkdir rm; do need "$tool"; done
+[[ -x "$BUSYBOX" ]] || die "static BusyBox is missing: $BUSYBOX"
+APPLET_LIST="$("$BUSYBOX" --list)"
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+ grep -qx "$applet" <<<"$APPLET_LIST" || die "BusyBox is missing '$applet'; rebuild busybox"
+done
+if ! ldd "$BUSYBOX" 2>&1 | grep -qiE 'not a dynamic executable|statically linked'; then
+ die "$BUSYBOX is not static; initramfs must not depend on installed shared libraries"
+fi
+cleanup() { [[ -z "$WORK" ]] || rm -rf -- "$WORK"; }
+trap cleanup EXIT
+
+module_name() {
+ local n="${1##*/}"
+ n="${n%.xz}"; n="${n%.zst}"; n="${n%.gz}"; n="${n%.ko}"
+ n="${n//-/_}"
+ printf '%s' "$n"
+}
+
+build_one() {
+ local ver="$1" kernel="$BOOT/vmlinuz-$1" kmoddir="$MODULES/$1"
+ local out="$BOOT/initramfs-$1.img" tmpout="$BOOT/.initramfs-$1.img.tmp.$$"
+ local depfile="$kmoddir/modules.dep" deps_out line path name
+ local source_rel source_deps source_path output_rel output_path suffix
+ local child_path child_name child_dest firmware fw_base fw_candidate fw_dest fw_found modfile
+ local tree modules_tree
+ local -a child_outputs=() wanted_modules=(
+  ahci ata_piix nvme nvme_core sd_mod scsi_mod sr_mod cdrom sg
+  virtio virtio_ring virtio_pci virtio_blk virtio_scsi xen_blkfront xen_netfront vmw_pvscsi
+  usb_common usbcore usb_storage uas xhci_pci xhci_hcd ehci_pci ehci_hcd ohci_pci ohci_hcd uhci_hcd
+  mmc_core mmc_block sdhci sdhci_pci sdhci_acpi
+  iso9660 udf squashfs overlay loop ext4 btrfs xfs f2fs ntfs3 fat vfat
+  nls_cp437 nls_iso8859_1 nls_utf8 dm_mod dm_crypt dm_snapshot dm_mirror
+  dm_thin_pool dm_integrity md_mod raid0 raid1 raid10 raid456 virtio_fs
+ )
+ [[ "$ver" =~ ^[A-Za-z0-9._+-]+$ ]] || die "unsafe kernel version: $ver"
+ [[ -f "$kernel" ]] || die "kernel image not found: $kernel"
+ [[ -d "$kmoddir" ]] || die "module directory not found: $kmoddir"
+ if [[ "$DRY_RUN" == 1 ]]; then echo "would build $out from $kernel and $kmoddir"; return 0; fi
+
+ if [[ ! -s "$depfile" ]]; then
+  echo "== initramfs: generating module dependency metadata for $ver"
+  depmod -b "$ROOT" "$ver" || die "depmod failed for kernel $ver"
+ fi
+ [[ -s "$depfile" ]] || die "missing or empty module dependency file: $depfile"
+
+ WORK="$(mktemp -d "${TMPDIR:-/tmp}/faseela-initramfs.XXXXXX")"
+ tree="$WORK/tree"; modules_tree="$tree/lib/modules/$ver"; deps_out="$modules_tree/modules.dep"
+ mkdir -p "$tree/bin" "$tree/dev" "$tree/proc" "$tree/sys" "$tree/run" "$tree/newroot" "$modules_tree" "$tree/lib/firmware"
+ cp "$BUSYBOX" "$tree/bin/busybox"
+
+ declare -A MOD_LINE=() MOD_DEST=() STAGED=()
+ while IFS= read -r line; do
+  [[ "$line" == *:* ]] || continue
+  path="${line%%:*}"; name="$(module_name "$path")"
+  [[ -n "$name" ]] && MOD_LINE["$name"]="$line"
+ done < "$depfile"
+ : > "$deps_out"
+
+ stage_module() {
+  local requested="$1" key saved
+  local child child_name child_path child_dest
+  local -a child_outputs=()
+  key="${requested//-/_}"; saved="${MOD_LINE[$key]:-}"
+  [[ -n "$saved" ]] || return 0
+  [[ -n "${STAGED[$key]:-}" ]] && return 0
+  STAGED["$key"]=1
+  source_rel="${saved%%:*}"; source_deps="${saved#*:}"
+  for child_path in $source_deps; do
+   child_name="$(module_name "$child_path")"
+   stage_module "$child_name"
+   child_dest="${MOD_DEST[$child_name]:-}"
+   [[ -z "$child_dest" ]] || child_outputs+=("$child_dest")
+  done
+  source_path="$kmoddir/$source_rel"
+  [[ -f "$source_path" ]] || die "module listed in modules.dep is missing: $source_path"
+  case "$source_rel" in
+   *.ko.xz) output_rel="${source_rel%.xz}"; suffix=xz ;;
+   *.ko.zst) output_rel="${source_rel%.zst}"; suffix=zst ;;
+   *.ko.gz) output_rel="${source_rel%.gz}"; suffix=gz ;;
+   *.ko) output_rel="$source_rel"; suffix=raw ;;
+   *) echo "unsupported module filename: $source_rel" >&2; return 0 ;;
+  esac
+  output_path="$modules_tree/$output_rel"; mkdir -p "$(dirname "$output_path")"
+  case "$suffix" in
+   xz) xz -dc -- "$source_path" > "$output_path" ;;
+   zst) zstd -q -d -c -- "$source_path" > "$output_path" ;;
+   gz) gzip -dc -- "$source_path" > "$output_path" ;;
+   raw) cp -a -- "$source_path" "$output_path" ;;
+  esac
+  MOD_DEST["$key"]="$output_rel"
+  printf '%s:' "$output_rel" >> "$deps_out"
+  for child_dest in "${child_outputs[@]}"; do printf ' %s' "$child_dest" >> "$deps_out"; done
+  printf '\n' >> "$deps_out"
+ }
+
+ for name in "${wanted_modules[@]}"; do stage_module "$name"; done
+ for path in modules.builtin modules.builtin.modinfo modules.order modules.softdep modules.alias; do
+  [[ -f "$kmoddir/$path" ]] && cp -a "$kmoddir/$path" "$modules_tree/$path"
+ done
+
+ while IFS= read -r -d '' modfile; do
+  while IFS= read -r firmware; do
+   [[ -n "$firmware" ]] || continue
+   [[ "$firmware" != /* && "$firmware" != *".."* ]] || { echo "refusing unsafe firmware path: $firmware" >&2; continue; }
+   fw_found=0
+   for fw_base in "$ROOT/usr/lib/firmware" "$ROOT/lib/firmware"; do
+    for fw_candidate in "$fw_base/$firmware" "$fw_base/$firmware.xz" "$fw_base/$firmware.zst" "$fw_base/$firmware.gz"; do
+     [[ -f "$fw_candidate" ]] || continue
+     fw_dest="$tree/lib/firmware/$firmware"; mkdir -p "$(dirname "$fw_dest")"
+     cp -L "$fw_candidate" "$fw_dest"; fw_found=1; break 2
+    done
+   done
+   [[ "$fw_found" == 1 ]] || echo "firmware not installed for $ver: $firmware" >&2
+  done < <(modinfo -F firmware "$modfile" 2>/dev/null || true)
+ done < <(find "$modules_tree" -type f -name '*.ko' -print0)
+
+ cat > "$tree/init" <<'INIT_EOF'
+#!/bin/busybox sh
+export PATH=/bin:/sbin
+/bin/busybox --install -s /bin
+mkdir -p /dev /proc /sys /run /newroot
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || { [ -e /dev/console ] || mknod /dev/console c 5 1; }
+MODULES="ahci ata_piix nvme nvme_core sd_mod scsi_mod sr_mod cdrom sg
+virtio virtio_ring virtio_pci virtio_blk virtio_scsi xen_blkfront xen_netfront vmw_pvscsi
+usb_common usbcore usb_storage uas xhci_pci xhci_hcd ehci_pci ehci_hcd ohci_pci ohci_hcd uhci_hcd
+mmc_core mmc_block sdhci sdhci_pci sdhci_acpi
+iso9660 udf squashfs overlay loop ext4 btrfs xfs f2fs ntfs3 fat vfat
+nls_cp437 nls_iso8859_1 nls_utf8 dm_mod dm_crypt dm_snapshot dm_mirror dm_thin_pool
+dm_integrity md_mod raid0 raid1 raid10 raid456 virtio_fs"
+echo "faseela initramfs: loading storage modules"
+for module in $MODULES; do modprobe "$module" 2>/dev/null || true; done
+ROOT_SPEC=""; ROOT_FSTYPE=""; ROOT_FLAGS=""; WAIT_LIMIT=15; WAIT_FOREVER=0
+for arg in $(cat /proc/cmdline); do
+ case "$arg" in
+  root=*) ROOT_SPEC="${arg#root=}" ;;
+  rootfstype=*) ROOT_FSTYPE="${arg#rootfstype=}" ;;
+  rootflags=*) ROOT_FLAGS="${arg#rootflags=}" ;;
+  rootwait) WAIT_FOREVER=1 ;;
+  rootdelay=*) WAIT_LIMIT="${arg#rootdelay=}" ;;
+ esac
+done
+resolve_root() {
+ case "$ROOT_SPEC" in
+  /dev/*) echo "$ROOT_SPEC"; return 0 ;;
+  UUID=*|LABEL=*|PARTUUID=*)
+   tag="${ROOT_SPEC%%=*}"; wanted="${ROOT_SPEC#*=}"
+   for dev in /dev/sd* /dev/vd* /dev/xvd* /dev/nvme* /dev/mmcblk* /dev/md* /dev/mapper/*; do
+    [ -b "$dev" ] || continue
+    value="$(blkid -s "$tag" -o value "$dev" 2>/dev/null || true)"
+    [ "$value" = "$wanted" ] && { echo "$dev"; return 0; }
+   done ;;
+ esac
+ return 1
+}
+[ -n "$ROOT_SPEC" ] || { echo "missing root= on the kernel command line"; exec sh; }
+echo "faseela initramfs: waiting for root device ($ROOT_SPEC)"
+tries=0; mounted=0
+while :; do
+ rootdev="$(resolve_root || true)"
+ if [ -n "$rootdev" ]; then
+  if [ -n "$ROOT_FSTYPE" ] && [ -n "$ROOT_FLAGS" ]; then mount -t "$ROOT_FSTYPE" -o "$ROOT_FLAGS" "$rootdev" /newroot 2>/dev/null && mounted=1
+  elif [ -n "$ROOT_FSTYPE" ]; then mount -t "$ROOT_FSTYPE" "$rootdev" /newroot 2>/dev/null && mounted=1
+  elif [ -n "$ROOT_FLAGS" ]; then mount -o "$ROOT_FLAGS" "$rootdev" /newroot 2>/dev/null && mounted=1
+  else mount "$rootdev" /newroot 2>/dev/null && mounted=1
+  fi
+ fi
+ [ "$mounted" = 1 ] && break
+ tries=$((tries + 1))
+ if [ "$WAIT_FOREVER" != 1 ] && [ "$tries" -ge "$WAIT_LIMIT" ]; then break; fi
+ sleep 1
+done
+if [ "$mounted" != 1 ]; then
+ echo "could not mount root ($ROOT_SPEC)"; echo "Available block devices:"; cat /proc/partitions; exec sh
+fi
+mkdir -p /newroot/dev /newroot/proc /newroot/sys /newroot/run
+mount --move /dev /newroot/dev
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+echo "faseela initramfs: switching to /usr/bin/runit"
+exec switch_root /newroot /usr/bin/runit
+echo "faseela initramfs: switch_root failed"
+exec sh
+INIT_EOF
+ chmod 755 "$tree/init"
+ (
+  cd "$tree"
+  find . -print0 | sort -z | cpio --null -o -H newc
+ ) | gzip -n -9 > "$tmpout"
+ gzip -t "$tmpout" || die "generated initramfs is corrupt: $tmpout"
+ [[ -s "$tmpout" ]] || die "generated initramfs is empty: $tmpout"
+ mv -f -- "$tmpout" "$out"
+ echo "== initramfs: created $out ($(du -h "$out" | cut -f1))"
+ rm -rf -- "$WORK"; WORK=""
+}
+
+update_default() {
+ local ver="" candidate
+ while IFS= read -r candidate; do
+  [[ -n "$candidate" ]] || continue
+  if [[ -f "$BOOT/vmlinuz-$candidate" && -s "$BOOT/initramfs-$candidate.img" ]]; then ver="$candidate"; break; fi
+ done < <(find "$BOOT" -maxdepth 1 -type f -name 'vmlinuz-*' -printf '%f\n' | sed 's/^vmlinuz-//' | sort -Vr)
+ if [[ -z "$ver" ]]; then
+  if [[ ! -e "$BOOT/vmlinuz" || ! -e "$BOOT/initramfs.img" ]]; then rm -f "$BOOT/vmlinuz" "$BOOT/initramfs.img"; fi
+  echo "no complete kernel/initramfs pair; keeping any valid previous default" >&2
+  return 0
+ fi
+ if [[ "$DRY_RUN" == 1 ]]; then echo "would point /boot/vmlinuz and /boot/initramfs.img to version $ver"; return 0; fi
+ ln -sfn "vmlinuz-$ver" "$BOOT/.vmlinuz.new.$$"; mv -Tf "$BOOT/.vmlinuz.new.$$" "$BOOT/vmlinuz"
+ ln -sfn "initramfs-$ver.img" "$BOOT/.initramfs.new.$$"; mv -Tf "$BOOT/.initramfs.new.$$" "$BOOT/initramfs.img"
+ echo "faseela-mkinitramfs: default kernel is $ver"
+}
+
+if [[ "$ACTION" == "all" ]]; then
+ mapfile -t VERSIONS < <(find "$BOOT" -maxdepth 1 -type f -name 'vmlinuz-*' -printf '%f\n' | sed 's/^vmlinuz-//' | sort -V)
+ (("$@{#VERSIONS[@]}")) || die "no /boot/vmlinuz-* kernels found"
+ for version in "$@{VERSIONS[@]}"; do build_one "$version"; done
+elif [[ "$ACTION" == "one" ]]; then build_one "$KERNEL_VERSION"; fi
+
+if [[ "$DO_PRUNE" == 1 ]]; then
+ for image in "$BOOT"/initramfs-*.img; do
+  [[ -e "$image" ]] || continue
+  version="$@{image##*/initramfs-}"; version="$@{version%.img}"
+  if [[ ! -f "$BOOT/vmlinuz-$version" ]]; then
+   if [[ "$DRY_RUN" == 1 ]]; then echo "would remove stale image $image"
+   else rm -f -- "$image"; echo "faseela-mkinitramfs: removed stale image $image"; fi
+  fi
+ done
+fi
+[[ "$UPDATE_DEFAULT" == 1 ]] && update_default

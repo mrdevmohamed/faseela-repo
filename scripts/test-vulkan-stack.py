@@ -41,6 +41,7 @@ assert re.search(r"for g in [^\n]*\brender\b", post_install), (
 assert "seat,video,render,input,audio" in post_install, (
     "gui-session instructions must add desktop users to render"
 )
+assert session["package"]["rel"] >= 12, "Bump gui-session rel when changing DRM access rules"
 install_script = session["build"]["install"]
 assert "70-faseela-drm.rules" in install_script, (
     "gui-session must ship a udev rule for the DRM render group"

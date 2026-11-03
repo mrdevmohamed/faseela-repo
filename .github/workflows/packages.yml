@@ -156,8 +156,11 @@ on:
 
 permissions:
   contents: read
+  actions: read # select from the last successfully published push, not only the latest push event
 
-# two runs must not rewrite the same index.toml at the same time
+# Only one publisher may rewrite the signed index at a time. GitHub may replace
+# an older pending run; the selector below therefore diffs from the last
+# successful push run so the surviving run includes every unpublished recipe change.
 concurrency:
   group: packages-publish
   cancel-in-progress: false
@@ -202,11 +205,43 @@ jobs:
           set -euo pipefail
           selection="$RUNNER_TEMP/package-selection.json"
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
-            # Recipe pushes are always CHANGED; manual selection never falls back to a commit diff.
-            python3 -I scripts/select-packages.py \
-              --recipes recipes --flavors-file flavors.toml \
-              --changed-from "${BEFORE:-}" --changed-to "$GITHUB_SHA" \
-              --output "$selection"
+            # A pending concurrency run can be replaced by a newer push. Do not
+            # diff only github.event.before..github.sha: that would lose recipes
+            # from the replaced run. Start at the last successful push run.
+            last_successful_push="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/packages.yml/runs?branch=$GITHUB_REF_NAME&event=push&status=success&per_page=100" \
+              --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)"
+            base="$last_successful_push"
+            if [[ ! "$base" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$base" "$GITHUB_SHA"; then
+              base="${BEFORE:-}"
+            fi
+
+            if [[ "$base" =~ ^0+$ || -z "$base" ]]; then
+              # A repository's first push has no prior successful push to diff.
+              if git rev-parse "$GITHUB_SHA^" >/dev/null 2>&1; then
+                base="$(git rev-parse "$GITHUB_SHA^")"
+              else
+                echo "::notice::initial repository push; selecting the complete recipe tree"
+                python3 -I scripts/select-packages.py \
+                  --recipes recipes --flavors-file flavors.toml \
+                  --all --toolchain-all --output "$selection"
+                base=""
+              fi
+            fi
+
+            if [[ -n "$base" ]]; then
+              git cat-file -e "$base^{commit}" 2>/dev/null || {
+                echo "::error::cannot resolve the last published recipe commit $base"; exit 1;
+              }
+              git merge-base --is-ancestor "$base" "$GITHUB_SHA" || {
+                echo "::error::no safe ancestor commit for package selection; refusing to silently skip recipe changes"; exit 1;
+              }
+              echo "Selecting recipe changes from last successful push $base through $GITHUB_SHA."
+              python3 -I scripts/select-packages.py \
+                --recipes recipes --flavors-file flavors.toml \
+                --changed-from "$base" --changed-to "$GITHUB_SHA" \
+                --output "$selection"
+            fi
           else
             categories=()
             [[ "$INPUT_BASE" == true ]] && categories+=(base)

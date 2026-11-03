@@ -5,7 +5,7 @@
 [package]
 name = "wpa_supplicant"
 version = "2.12"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, no D-Bus)"
 license = ["BSD-3-Clause"]
@@ -22,7 +22,7 @@ cd wpa_supplicant
 cp defconfig .config
 # nl80211 through libnl3, wpa_cli with readline
 sed -i -e 's/^#CONFIG_LIBNL32=y/CONFIG_LIBNL32=y/' -e 's/^#CONFIG_READLINE=y/CONFIG_READLINE=y/' .config
-# no D-Bus here: switch its control interfaces off
+# D-Bus control interface ON: NetworkManager drives wpa_supplicant through it
 sed -i -e 's/^#CONFIG_CTRL_IFACE_DBUS_NEW=y/CONFIG_CTRL_IFACE_DBUS_NEW=y/' .config
 grep -q '^CONFIG_LIBNL32=y' .config
 grep -q '^CONFIG_DRIVER_NL80211=y' .config
@@ -55,6 +55,14 @@ install -d -m755 %{pkgdir}/etc/sv/wpa_supplicant
 cat > %{pkgdir}/etc/sv/wpa_supplicant/run <<'RUN'
 #!/bin/sh
 # first wireless interface; override with IFACE=... in /etc/default/wpa_supplicant
+# NetworkManager starts its own wpa_supplicant over D-Bus (the activation file
+# below). Running this service as well would put two instances on one
+# interface, so stay down while NetworkManager is enabled.
+if [ -L /etc/runit/runsvdir/default/NetworkManager ]; then
+    echo "wpa_supplicant: NetworkManager is enabled and starts wpa_supplicant itself; staying down" >&2
+    sv down /etc/runit/runsvdir/default/wpa_supplicant
+    exit 0
+fi
 IFACE=
 for d in /sys/class/net/*/wireless; do
     [ -d "$d" ] || continue

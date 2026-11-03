@@ -56,7 +56,7 @@ def render(node):
     for child in node:
         child_text = render(child)
         if local_name(child.tag) in BLOCKS:
-            parts.extend(("\n\n", child_text.strip(), "\n\n"))
+            parts.extend(("\\n\\n", child_text.strip(), "\\n\\n"))
         else:
             parts.append(child_text)
         parts.append(child.tail or "")
@@ -65,11 +65,11 @@ def render(node):
 
 def normalize(text):
     paragraphs = []
-    for paragraph in text.split("\n\n"):
+    for paragraph in text.split("\\n\\n"):
         value = " ".join(paragraph.split())
         if value:
             paragraphs.append(value)
-    return "\n\n".join(paragraphs)
+    return "\\n\\n".join(paragraphs)
 
 
 required = {
@@ -115,7 +115,7 @@ for xml_path in sorted(xml_dir.glob("xdg-*.xml")):
             sections.append(section)
 
     output = Path("scripts") / f"{xml_path.stem}.txt"
-    output.write_text("\n\n".join(sections) + "\n", encoding="utf-8")
+    output.write_text("\\n\\n".join(sections) + "\\n", encoding="utf-8")
     print(f"Generated embedded help: {output}")
 PY
 make -C scripts -j%{jobs} scripts"""

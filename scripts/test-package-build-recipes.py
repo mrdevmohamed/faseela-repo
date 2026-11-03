@@ -30,6 +30,7 @@ assert "def synopsis_text(node):" in xdg_compile
 assert "return synopsis_text(node)" in xdg_compile
 assert 'Path("scripts/desc")' in xdg_compile
 assert "Generated embedded help" in xdg_compile
+assert r"\n" in xdg_compile
 assert xdg_compile.index("python3 - <<'PY'") < xdg_compile.index("make -C scripts -j%{jobs} scripts")
 assert "xmlto" not in xdg_compile
 

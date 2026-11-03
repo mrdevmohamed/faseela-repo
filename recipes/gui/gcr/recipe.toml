@@ -4,7 +4,7 @@
 [package]
 name = "gcr"
 version = "3.41.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNOME crypto and PKCS#11 base libraries"
 license = ["LGPL-2.1-or-later"]
@@ -20,10 +20,21 @@ configure = '''
 # GCR 3.41.2 calls .path() on find_program(..., required: false) even when
 # ssh_agent is disabled. Meson then fails if ssh-add/ssh-agent are absent.
 # The paths are unused unless ssh_agent=true, so use empty values here.
-sed -i \\
-  -e "s|ssh_add_path = find_program('ssh-add', required: get_option('ssh_agent')).path()|ssh_add_path = ''|" \\
-  -e "s|ssh_agent_path = find_program('ssh-agent', required: get_option('ssh_agent')).path()|ssh_agent_path = ''|" \\
-  meson.build
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("meson.build")
+source = path.read_text(encoding="utf-8")
+replacements = {
+    "ssh_add_path = find_program('ssh-add', required: get_option('ssh_agent')).path()": "ssh_add_path = ''",
+    "ssh_agent_path = find_program('ssh-agent', required: get_option('ssh_agent')).path()": "ssh_agent_path = ''",
+}
+for old, new in replacements.items():
+    if source.count(old) != 1:
+        raise SystemExit(f"expected exactly one occurrence of {old!r}")
+    source = source.replace(old, new, 1)
+path.write_text(source, encoding="utf-8")
+PY
 
 meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release \\
   -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false \\

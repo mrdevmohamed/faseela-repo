@@ -1,0 +1,26 @@
+# extra recipe: alsa-ucm-conf — ALSA Use Case Manager profiles.
+# PipeWire/WirePlumber and alsa-utils read these to learn which jack, speaker,
+# headset and microphone a card has. Without them every modern laptop codec
+# (SOF, SoundWire, Chromebook, many HDA ones) shows up as one unusable "pro
+# audio" device or not at all. Data only: nothing is compiled.
+# Version kept in step with alsa-lib (UCM syntax versions are tied to the library).
+# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r alsa-ucm-conf` pins it.
+[package]
+name = "alsa-ucm-conf"
+version = "1.2.13"
+rel = 1
+arch = ["x86_64"]
+summary = "ALSA Use Case Manager configuration (audio profiles for laptops and SoCs)"
+license = ["BSD-3-Clause"]
+source = "https://www.alsa-project.org/files/pub/lib/alsa-ucm-conf-%{version}.tar.bz2"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[depends]
+build = []
+run = []
+
+[build]
+install = '''
+install -d -m755 %{pkgdir}/usr/share/alsa
+cp -a ucm ucm2 %{pkgdir}/usr/share/alsa/
+'''

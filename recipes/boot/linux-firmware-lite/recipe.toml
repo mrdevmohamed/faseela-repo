@@ -9,9 +9,9 @@
 [package]
 name = "linux-firmware-lite"
 version = "20260910"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "Curated subset of the Linux kernel firmware (GPU, wifi, bluetooth, NICs)"
+summary = "Curated subset of the Linux kernel firmware (GPU, wifi, bluetooth, NICs, audio DSP)"
 license = ["Redistributable-firmware"]
 source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
 sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
@@ -32,6 +32,7 @@ i915 xe
 iwlwifi-* rtw88 rtw89 rtlwifi ath9k_htc ath10k ath11k brcm cypress mediatek regulatory.db regulatory.db.p7s
 rtl_nic rtl_bt bnx2 qca
 intel/ibt-* intel/iwlwifi
+intel/sof* amd/sof amd/sof-tplg cirrus ti/tas2781*
 '
 stage=$PWD/.fw-stage
 rm -rf "$stage"

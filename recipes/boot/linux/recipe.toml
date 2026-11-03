@@ -43,10 +43,24 @@
 #         fails loudly instead of leaving a half-updated /boot unnoticed.
 # rel 18: provide explicit TUN, policy-routing, iptables TPROXY/REDIRECT and
 #         native nftables TPROXY/REDIRECT/FIB support for transparent proxies.
+# rel 19: no sound on real hardware. x86_64_defconfig only enables the HD-audio
+#         *controller* (SND_HDA_INTEL); every codec driver is an unselected,
+#         default-less option, so the controller bound but no codec did and no
+#         ALSA card appeared. Also, with SOF platform drivers on by default
+#         (they default to SND_SOC_SOF_PCI) but SND_SOC_SOF_HDA_LINK /
+#         _AUDIO_CODEC and the HDA machine driver left off, snd-intel-dspcfg
+#         handed Tiger/Alder/Meteor/Lunar Lake laptops (DMIC present) to SOF,
+#         which then had nothing to drive. Now: every HDA codec + speaker-amp
+#         companion, SOF with HDA links, SoundWire and the Intel machine
+#         drivers, AMD ACP DMIC, USB audio; and the generic-laptop glue that
+#         those and the touchpads need (LPSS I2C/SPI, Intel/AMD pinctrl, ISH/SFH
+#         sensor hubs), Wi-Fi/Ethernet/Bluetooth chip drivers and platform
+#         (Fn key/backlight) drivers. Needs the SOF/Cirrus/TI firmware in
+#         linux-firmware-lite rel 2 and the UCM profiles in alsa-ucm-conf.
 [package]
 name = "linux"
 version = "6.10"
-rel = 18
+rel = 19
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -105,6 +119,12 @@ scripts/config \
 # Identify the build: uname -r is 6.10.0-faseela, not a bare 6.10.0.
 scripts/config --set-str LOCALVERSION "-faseela" --disable LOCALVERSION_AUTO
 
+# x86_64_defconfig is a developer config and sets CONFIG_WERROR=y. With the much
+# wider driver set below (rel 19) one new-compiler warning in a driver nobody here
+# uses would fail the whole kernel build; a distro kernel does not turn warnings
+# into errors.
+scripts/config --disable WERROR
+
 # No debug info (see rel 5). DEBUG_INFO_NONE is the "none" choice of a
 # Kconfig choice group, the DWARF entries are its siblings.
 scripts/config \
@@ -161,14 +181,134 @@ scripts/config \
     --enable KEYBOARD_ATKBD --enable VIRTIO_INPUT \
     --module I2C_HID_ACPI
 
-# Everything else: wireless, bluetooth, audio, Type-C/USB4.
+# Everything else: audio, wireless, bluetooth, Type-C/USB4 and laptop glue. All
+# modules: they load through udev coldplug, and a module this machine does not
+# need costs disk space only.
+
+# --- audio (see rel 19) --------------------------------------------------------
+# 1. HD-audio: the controller AND the codec drivers. Without a codec driver the
+#    controller binds and nothing else happens (defconfig has no codec at all).
+#    SND_HDA_GENERIC is what QEMU's hda-duplex and many unknown codecs use.
 scripts/config \
-    --enable WLAN --enable CFG80211 --enable MAC80211 --enable BT \
-    --module IWLWIFI --module IWLMVM --module ATH9K --module RTW88 \
-    --module BT_HCIBTUSB \
-    --enable SOUND --enable SND --enable SND_HDA --module SND_HDA_INTEL \
+    --enable SOUND --enable SND --enable SND_PCI --enable SND_HDA \
+    --module SND_HDA_INTEL \
+    --module SND_HDA_GENERIC --module SND_HDA_CODEC_REALTEK \
+    --module SND_HDA_CODEC_ANALOG --module SND_HDA_CODEC_SIGMATEL \
+    --module SND_HDA_CODEC_VIA --module SND_HDA_CODEC_HDMI \
+    --module SND_HDA_CODEC_CIRRUS --module SND_HDA_CODEC_CS8409 \
+    --module SND_HDA_CODEC_CONEXANT --module SND_HDA_CODEC_CA0110 \
+    --module SND_HDA_CODEC_CA0132 --module SND_HDA_CODEC_CMEDIA \
+    --module SND_HDA_CODEC_SI3054 \
+    --module SND_HDA_SCODEC_CS35L41_I2C --module SND_HDA_SCODEC_CS35L41_SPI \
+    --module SND_HDA_SCODEC_CS35L56_I2C --module SND_HDA_SCODEC_CS35L56_SPI \
+    --module SND_HDA_SCODEC_TAS2781_I2C \
+    --enable SND_USB --module SND_USB_AUDIO
+
+# 2. Intel DSP (SOF): Skylake and newer laptops with a digital microphone are
+#    sent to SOF by snd-intel-dspcfg, so SOF must be able to drive the HDA codec
+#    (HDA link + HDAudio codec + the "Skylake+ with HDA codecs" machine driver)
+#    and SoundWire codecs. The per-platform SOF drivers (TGL, ADL, MTL, LNL, ...)
+#    default to SND_SOC_SOF_PCI and so become modules by themselves. Needs the
+#    intel/sof* firmware and topologies from linux-firmware-lite.
+scripts/config \
     --enable SND_SOC --enable SND_SOC_SOF_TOPLEVEL --module SND_SOC_SOF_PCI \
-    --enable SND_SOC_SOF_INTEL_TOPLEVEL \
+    --enable SND_SOC_SOF_INTEL_TOPLEVEL --enable SND_SOC_INTEL_MACH \
+    --enable SND_SOC_SOF_HDA_LINK --enable SND_SOC_SOF_HDA_AUDIO_CODEC \
+    --enable I2C --enable SPI --enable X86_INTEL_LPSS \
+    --module SOUNDWIRE --module SOUNDWIRE_INTEL --module SND_SOC_SOF_INTEL_SOUNDWIRE \
+    --enable SND_SOC_INTEL_USER_FRIENDLY_LONG_NAMES \
+    --module SND_SOC_INTEL_SKL_HDA_DSP_GENERIC_MACH \
+    --module SND_SOC_INTEL_SOUNDWIRE_SOF_MACH \
+    --module SND_SOC_INTEL_SOF_RT5682_MACH --module SND_SOC_INTEL_SOF_CS42L42_MACH \
+    --module SND_SOC_INTEL_SOF_SSP_AMP_MACH --module SND_SOC_INTEL_SOF_ES8336_MACH \
+    --module SND_SOC_INTEL_SOF_NAU8825_MACH --module SND_SOC_INTEL_SOF_DA7219_MACH
+
+# 3. AMD: analog audio is plain HD-audio (above); the ACP is the digital
+#    microphone path of Ryzen laptops.
+scripts/config \
+    --module SND_SOC_AMD_RENOIR --module SND_SOC_AMD_RENOIR_MACH \
+    --module SND_SOC_AMD_ACP6x --module SND_SOC_AMD_YC_MACH \
+    --module SND_SOC_AMD_PS --module SND_SOC_AMD_PS_MACH
+
+# --- laptop glue: what touchpads, keyboards and amplifiers hang off ------------
+# Intel LPSS I2C/SPI controllers and the Intel/AMD GPIO (pinctrl) drivers: an
+# I2C-HID touchpad and the SPI/I2C speaker amplifiers above do not exist without
+# them. Sensor hubs, Fn-key/WMI platform drivers, card readers and webcams.
+scripts/config \
+    --module MFD_INTEL_LPSS_PCI --module MFD_INTEL_LPSS_ACPI \
+    --module I2C_DESIGNWARE_PLATFORM --module I2C_DESIGNWARE_PCI \
+    --module SPI_PXA2XX --enable PINCTRL_AMD \
+    --module PINCTRL_ALDERLAKE --module PINCTRL_TIGERLAKE \
+    --module PINCTRL_METEORLAKE --module PINCTRL_ICELAKE \
+    --module PINCTRL_CANNONLAKE --module PINCTRL_JASPERLAKE \
+    --module PINCTRL_ELKHARTLAKE --module PINCTRL_GEMINILAKE \
+    --module PINCTRL_BROXTON --module PINCTRL_SUNRISEPOINT \
+    --module PINCTRL_CHERRYVIEW --module PINCTRL_BAYTRAIL \
+    --module HID_MULTITOUCH --module HID_APPLE --module HID_RMI \
+    --module HID_LOGITECH_DJ --module HID_LOGITECH_HIDPP \
+    --module MOUSE_ELAN_I2C --module HID_SENSOR_HUB \
+    --module INTEL_ISH_HID --module AMD_SFH_HID \
+    --module UHID --module INPUT_UINPUT \
+    --enable X86_PLATFORM_DEVICES --module ACPI_WMI \
+    --enable X86_PLATFORM_DRIVERS_DELL --enable X86_PLATFORM_DRIVERS_HP \
+    --module THINKPAD_ACPI --module DELL_LAPTOP --module DELL_WMI \
+    --module HP_WMI --module ASUS_WMI --module ASUS_NB_WMI \
+    --module IDEAPAD_LAPTOP --module ACER_WMI --module MSI_WMI \
+    --module MSI_LAPTOP --module LG_LAPTOP --module SAMSUNG_LAPTOP \
+    --module SONY_LAPTOP --module FUJITSU_LAPTOP \
+    --module INTEL_HID_EVENT --module INTEL_VBTN \
+    --module INTEL_PMC_CORE --module AMD_PMC --enable X86_AMD_PSTATE \
+    --module MISC_RTSX_PCI --module MISC_RTSX_USB \
+    --module MMC_REALTEK_PCI --module MMC_REALTEK_USB \
+    --module MEDIA_SUPPORT --enable MEDIA_SUPPORT_FILTER \
+    --enable MEDIA_CAMERA_SUPPORT --enable MEDIA_USB_SUPPORT \
+    --module USB_VIDEO_CLASS
+
+# --- network ---------------------------------------------------------------------
+# Wi-Fi: every chip family with an in-tree PCIe driver, plus the USB ones that
+# are common as dongles. Each RTW88/RTW89 chip is its own option and defaults to
+# off, so naming only RTW88 built a driver for no chip at all. Firmware for
+# these is in linux-firmware-lite (rtw88, rtw89, ath1xk, mediatek, brcm, ...).
+scripts/config \
+    --enable WLAN --enable CFG80211 --enable MAC80211 \
+    --enable WLAN_VENDOR_INTEL --enable WLAN_VENDOR_REALTEK \
+    --enable WLAN_VENDOR_ATH --enable WLAN_VENDOR_MEDIATEK \
+    --enable WLAN_VENDOR_BROADCOM --enable WLAN_VENDOR_RALINK \
+    --module IWLWIFI --module IWLMVM --module IWLDVM \
+    --module ATH9K --module ATH10K_PCI --module ATH11K_PCI --module ATH12K \
+    --module RTW88 --module RTW88_PCI \
+    --module RTW88_8822BE --module RTW88_8822CE \
+    --module RTW88_8723DE --module RTW88_8821CE \
+    --module RTW88_USB --module RTW88_8822BU --module RTW88_8822CU \
+    --module RTW88_8821CU --module RTW88_8723DU \
+    --module RTW89 --module RTW89_PCI \
+    --module RTW89_8851BE --module RTW89_8852AE --module RTW89_8852BE \
+    --module RTW89_8852CE --module RTW89_8922AE \
+    --module RTLWIFI --module RTL8821AE --module RTL8192CE --module RTL8192CU \
+    --module RTL8XXXU \
+    --module MT7921E --module MT7925E --module MT7915E \
+    --module BRCMFMAC --enable BRCMFMAC_PCIE --enable BRCMFMAC_USB \
+    --module RT2800PCI --module RT2800USB
+
+# Ethernet beyond what defconfig builds in (e1000e, r8169, tg3, sky2, ...):
+# Intel I210/I225, Atheros, and USB dongles / phone tethering.
+scripts/config \
+    --module IGB --module IGC --module ATL1C --module ALX \
+    --module USB_USBNET --module USB_RTL8152 \
+    --module USB_NET_AX8817X --module USB_NET_AX88179_178A \
+    --module USB_NET_CDCETHER --module USB_NET_CDC_NCM \
+    --module USB_NET_RNDIS_HOST --module USB_IPHETH
+
+# Bluetooth: the USB controller driver with its vendor helpers, and the protocol
+# layers BlueZ needs (HID mice/keyboards, serial profiles, tethering).
+scripts/config \
+    --enable BT --enable BT_BREDR --enable BT_LE \
+    --module BT_HCIBTUSB \
+    --enable BT_HCIBTUSB_BCM --enable BT_HCIBTUSB_MTK --enable BT_HCIBTUSB_RTL \
+    --module BT_RFCOMM --module BT_BNEP --module BT_HIDP
+
+# --- Type-C / USB4 -----------------------------------------------------------------
+scripts/config \
     --enable TYPEC --enable TYPEC_UCSI --module UCSI_ACPI --module USB4
 
 make olddefconfig
@@ -317,7 +457,41 @@ require_config CONFIG_RTW88 m
 require_config CONFIG_BT_HCIBTUSB m
 require_config CONFIG_SND_HDA_INTEL m
 
+# Sound on real hardware (rel 19). "A card exists" needs ALL of these: a codec
+# driver bound to the HD-audio controller, or SOF able to drive the HDA codec
+# and its machine driver. Each of them is an option nothing selects by itself,
+# which is how the kernel shipped with a sound controller and no sound.
+require_config CONFIG_SND_HDA_GENERIC m
+require_config CONFIG_SND_HDA_CODEC_REALTEK m
+require_config CONFIG_SND_HDA_CODEC_HDMI m
+require_config CONFIG_SND_SOC_SOF_HDA_LINK y
+require_config CONFIG_SND_SOC_SOF_HDA_AUDIO_CODEC y
+require_config CONFIG_SND_SOC_INTEL_SKL_HDA_DSP_GENERIC_MACH m
+require_config CONFIG_SND_USB_AUDIO m
+# The Wi-Fi/touchpad pieces that were silently off before (RTW88 alone has no chip).
+require_config CONFIG_RTW88_8822CE m
+require_config CONFIG_RTW89_8852AE m
+require_config CONFIG_I2C_DESIGNWARE_PLATFORM m
+require_config CONFIG_MFD_INTEL_LPSS_PCI m
+require_config CONFIG_BT_HIDP m
+
 # Worth having; a missing one is reported but does not stop the build.
+want_config CONFIG_SND_SOC_SOF_TIGERLAKE m
+want_config CONFIG_SND_SOC_SOF_ALDERLAKE m
+want_config CONFIG_SND_SOC_SOF_METEORLAKE m
+want_config CONFIG_SND_SOC_SOF_INTEL_SOUNDWIRE m
+want_config CONFIG_SND_SOC_INTEL_SOUNDWIRE_SOF_MACH m
+want_config CONFIG_SND_HDA_CODEC_CONEXANT m
+want_config CONFIG_SND_HDA_SCODEC_CS35L41_I2C m
+want_config CONFIG_SND_HDA_SCODEC_TAS2781_I2C m
+want_config CONFIG_SND_SOC_AMD_YC_MACH m
+want_config CONFIG_SND_SOC_AMD_PS_MACH m
+want_config CONFIG_PINCTRL_ALDERLAKE m
+want_config CONFIG_PINCTRL_AMD y
+want_config CONFIG_USB_VIDEO_CLASS m
+want_config CONFIG_THINKPAD_ACPI m
+want_config CONFIG_MT7921E m
+want_config CONFIG_ATH11K_PCI m
 want_config CONFIG_VMD y
 want_config CONFIG_DRM_VIRTIO_GPU y
 want_config CONFIG_DRM_BOCHS m

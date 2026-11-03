@@ -3,7 +3,7 @@
 [package]
 name = "alsa-lib"
 version = "1.2.13"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ALSA sound library and configuration files"
 license = ["LGPL-2.1-or-later"]
@@ -12,7 +12,9 @@ sha256 = "8c4ff37553cbe89618e187e4c779f71a9bb2a8b27b91f87ed40987cc9233d8f6"
 
 [depends]
 build = []
-run = []
+# the profiles/topologies alsa-lib's UCM and topology code load at run time
+# (rel 2: without alsa-ucm-conf most laptop sound cards have no usable profile)
+run = ["alsa-ucm-conf", "alsa-topology-conf"]
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

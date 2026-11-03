@@ -1,12 +1,9 @@
-# boot recipe: Linux kernel (x86_64 defconfig base image)
-# rel 9: real hardware. defconfig is a server/VM config: no wifi/bluetooth stack worth
-#        the name, no GPU drivers, no HDA audio, no laptop platform drivers, no
-#        touchpad (i2c-hid), no SD-card readers. Root-capable storage (NVMe, AHCI,
-#        eMMC/SD) is BUILT IN (the initramfs only stages a fixed module list);
-#        everything that needs firmware or is only useful after boot is a module,
-#        autoloaded by udev from its modalias (blobs: linux-firmware-lite). Also
-#        virtio-input for QEMU's keyboard/mouse. Not covered yet: Intel SOF audio
-#        (newer laptops' internal microphones/speakers), Thunderbolt/USB4.
+# boot recipe: Generic x86_64 Linux kernel for installed desktops, laptops and guests.
+# defconfig is the starting point, not the final hardware policy: Faseela adds
+# broad PCI, storage, graphics, network, wireless, Bluetooth, audio, laptop,
+# Type-C/USB4, sensor and hypervisor coverage below. Root-critical storage stays
+# built in where practical; optional device drivers are modules and use firmware
+# from linux-firmware-lite / linux-firmware-extra.
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
 # rel 7: device-mapper + dm-crypt/XTS (recipes lvm2, cryptsetup)
@@ -153,6 +150,6 @@ rm -f %{pkgdir}/lib/modules/%{version}/build %{pkgdir}/lib/modules/%{version}/so
 # Nawa runs post_install after both a fresh install and an upgrade. The tool
 # keeps versioned images and only switches the stable GRUB aliases after a
 # complete image has been written and validated.
-post_install = "/usr/sbin/faseela-mkinitramfs --all --update-default"
+post_install = "/usr/sbin/faseela-mkinitramfs --all --prune --update-default"
 # Nawa runs post_remove after the kernel payload is removed from the target.
 post_remove = "/usr/sbin/faseela-mkinitramfs --prune --update-default"

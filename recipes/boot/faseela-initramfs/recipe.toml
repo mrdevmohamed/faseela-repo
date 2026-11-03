@@ -11,7 +11,7 @@ license = ["GPL-2.0"]
 
 [depends]
 build = []
-run = ["busybox", "kmod", "cpio", "gzip", "findutils", "xz", "zstd"]
+run = ["busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "sed", "grep", "xz", "zstd"]
 
 [build]
 source = "local:recipes/boot/faseela-initramfs/files/faseela-mkinitramfs"

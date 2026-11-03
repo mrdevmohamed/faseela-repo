@@ -2,7 +2,7 @@
 [package]
 name = "gmp"
 version = "6.3.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU multiple-precision arithmetic library"
 license = ["LGPL-3.0", "GPL-2.0"]
@@ -15,9 +15,12 @@ build = ["m4"]
 run = []
 
 [build]
+# Build a fat x86 binary so GMP selects optimized routines at runtime.
+# This keeps the package compatible across different x86_64 CPUs.
 configure = """
 ./configure --prefix=/usr      \
     --enable-cxx               \
+    --enable-fat               \
     --disable-static           \
     --docdir=/usr/share/doc/gmp-%{version}
 """

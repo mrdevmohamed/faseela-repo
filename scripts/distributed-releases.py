@@ -68,7 +68,10 @@ def list_published(releases: list[dict], stable_tag: str) -> list[tuple[str, str
             current = found.get(name)
             if current is None or priority < current[0]:
                 found[name] = (priority, tag)
-    return sorted((tag, name) for name, (_, tag) in found.items(), key=lambda x: x[1])
+    return sorted(
+        ((tag, name) for name, (_, tag) in found.items()),
+        key=lambda item: item[1],
+    )
 
 
 def quote_toml(value: str) -> str:

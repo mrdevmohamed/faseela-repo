@@ -233,7 +233,7 @@ jobs:
           [[ "$BUDGET_MIN" =~ ^[0-9]+$ ]] || { echo "::error::budget must be a number of minutes"; exit 1; }
           if ! gh release view "$PKG_TAG" --repo "$PKG_REPO" > /dev/null 2>&1; then
             gh release create "$PKG_TAG" --repo "$PKG_REPO" --title "nawa package repository" \
-              --notes "Flat nawa repository: *.nawa.tar.zst plus a signed index.toml. Written by CI, do not edit."
+              --notes "Nawa schema-v3 repository: this release holds the signed index only; package and recipe archives live in packages-NNNN storage releases. Written by CI, do not edit."
           fi
 
       - name: Download the build rootfs from the newest release
@@ -287,11 +287,10 @@ jobs:
             exit 1
           fi
 
-          # Distributed release publishing requires the schema-v3 locations CLI.
           repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
           for option in --index-version --locations --recipes-rev; do
             grep -q -- "$option" <<< "$repo_help" || {
-              echo "::error::the selected rootfs carries an old Nawa without $option. Publish a new Faseela core/rootfs from the independent Bootstrap Nawa v3 pin before building packages."
+              echo "::error::the selected rootfs carries an old Nawa without $option. Publish a fresh Faseela core/rootfs with the independent Bootstrap Nawa v3 pin before building packages."
               exit 1
             }
           done
@@ -331,205 +330,7 @@ jobs:
           sudo mkdir -p "$T/build/out"
           sudo chown "$(id -u):$(id -g)" "$T/build/out"
           n=0
-          while IFS=      - name: Build
-        id: build
-        timeout-minutes: 320 # leaves ~35 min of the 355 for publishing and logs
-        run: |
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env -i \
-            HOME=/root TERM=dumb NAWA_JOBS="$(nproc)" PKGS="$PKGS" ISOLATION="$ISOLATION" \
-            BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
-            bash /faseela/bootstrap/build-packages-inner.sh
-
-      # nawa refuses to install a package that ships a file another one owns, and
-      # an image build only finds out one package at a time. Look at the archives
-      # (the ones just built AND the ones fetched from the release) for every
-      # flavor now. Publishing is not held back (the other packages are fine and
-      # the build took hours), but the run turns red and names the files.
-      - name: No two packages of a flavor may ship the same file
-        if: ${{ always() && steps.published.conclusion == 'success' }}
-        run: python3 -I scripts/check-file-conflicts.py "$T/build/out"
-
-      # Publish package and recipe archives to immutable storage shards, then
-      # atomically switch the signed stable index to their per-package URLs.
-      # The shard limit is deliberately below GitHub's 1,000-asset release cap.
-      - name: Publish to the distributed package repository
-        id: publish
-        if: ${{ always() && steps.published.conclusion == 'success' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          out="$T/build/out"
-          new=()
-          while IFS= read -r -d '' f; do new+=("$f"); done \
-            < <(find "$out" -maxdepth 1 -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
-          echo "new archives: ${#new[@]}"
-          echo "built=${#new[@]}" >> "$GITHUB_OUTPUT"
-
-          # The new Nawa binary is mandatory: schema v3 needs per-archive URLs
-          # and a locations manifest. Refuse BEFORE replacing the stable index
-          # when the rootfs still carries an older package manager.
-          help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
-          for option in --index-version --locations --recipes-rev; do
-            grep -q -- "$option" <<< "$help" || {
-              echo "::error::the build root's Nawa lacks $option. Build and publish a fresh Faseela core/rootfs with the Bootstrap Nawa v3 pin, then retry."; exit 1;
-            }
-          done
-
-          repo="$T/repo"
-          sudo rm -rf "$repo"; sudo mkdir -p "$repo"
-          sudo cp -al "$out"/*.nawa.tar.zst "$repo/"
-          sudo chown -R "$(id -u):$(id -g)" "$repo"
-          stale=()
-          if [[ "$PRUNE" == 1 ]]; then
-            mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
-            for s in "${stale[@]}"; do rm -f "$repo/$s"; done
-            if (( ${#stale[@]} )); then printf 'superseded: %s\\n' "${stale[@]}"; fi
-          fi
-
-          rev="${GITHUB_SHA}"
-          rfile="recipes-${rev}.recipes.tar.zst"
-
-          # Allocate every package archive and the recipe snapshot to a release
-          # with <=900 assets. Existing shard locations remain stable between
-          # runs; only new/legacy assets are uploaded to a shard.
-          plan="$RUNNER_TEMP/distributed-release-plan.json"
-          locations="$repo/locations.toml"
-          python3 -I scripts/distributed-releases.py plan \
-            --releases-json "$RUNNER_TEMP/package-releases.json" \
-            --repo-dir "$repo" --repository "$PKG_REPO" --stable-tag "$PKG_TAG" \
-            --recipe-file "$rfile" --max-assets 900 \
-            --output "$plan" --manifest "$locations"
-
-          while IFS= read -r tag; do
-            [[ -n "$tag" ]] || continue
-            if ! gh release view "$tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
-              gh release create "$tag" --repo "$PKG_REPO" --title "Faseela package storage $tag" \
-                --notes "Immutable storage shard for the signed Nawa schema-v3 repository. Do not edit."
-            fi
-          done < <(python3 -I scripts/distributed-releases.py create --plan "$plan")
-
-          printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
-            --out index.toml --index-version 3 --locations /repo/locations.toml \
-            --sign --key /root/nawa.sec \
-            --recipes /faseela/recipes --recipes-rev "$rev"
-          sudo chown -R "$(id -u):$(id -g)" "$repo"
-          [[ -s "$repo/$rfile" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
-            || { echo "::error::repo-create did not produce the recipe snapshot and signed schema-v3 index"; exit 1; }
-
-          upload() {
-            local tag="$1"; shift
-            local n
-            for n in 1 2 3; do
-              gh release upload "$tag" --repo "$PKG_REPO" --clobber "$@" && return 0
-              echo "upload to $tag attempt $n failed" >&2; sleep $((n * 20))
-            done
-            return 1
-          }
-
-          # Upload shard assets before publishing a new index that references them.
-          while IFS= read -r tag; do
-            [[ -n "$tag" ]] || continue
-            mapfile -t files < <(python3 -I scripts/distributed-releases.py uploads \
-              --plan "$plan" --repo-dir "$repo" --tag "$tag")
-            (( ${#files[@]} )) || continue
-            for f in "${files[@]}"; do
-              [[ -s "$f" ]] || { echo "::error::missing planned archive $f"; exit 1; }
-            done
-            echo "Uploading ${#files[@]} asset(s) to $tag"
-            upload "$tag" "${files[@]}"
-          done < <(python3 -I scripts/distributed-releases.py create --plan "$plan"; python3 -I - "$plan" <<'PY'
-          import json, sys
-          p = json.load(open(sys.argv[1]))
-          for tag in p["uploads"]:
-              print(tag)
-          PY
-          )
-
-          # The single stable release is now only the signed index. Upload it
-          # last: clients never see URLs before all their target assets exist.
-          upload "$PKG_TAG" "$repo/index.toml" "$repo/index.toml.sig"
-
-          # Prune old package versions and old recipe snapshots only AFTER the
-          # signed index has switched to the new archive locations.
           while IFS=$'\\t' read -r tag asset; do
-            [[ -n "$tag" && -n "$asset" ]] || continue
-            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
-              echo "::warning::could not delete stale asset $tag/$asset"
-            }
-          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
-          while IFS=$'\\t' read -r tag asset; do
-            [[ -n "$tag" && -n "$asset" ]] || continue
-            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
-              echo "::warning::could not delete legacy stable asset $asset"
-            }
-          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind legacy)
-
-          {
-            echo "### Published schema-v3 index to $PKG_REPO ($PKG_TAG)"
-            echo
-            echo "Package archives: ${#packages[@]:-0}"
-            echo "New this run: ${#new[@]}"
-            echo "Storage shards: $(python3 -I scripts/distributed-releases.py create --plan "$plan" | wc -l)"
-            echo "Each archive URL is authenticated by the signed index and its SHA-256."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Report
-        if: ${{ always() && steps.published.conclusion == 'success' }}
-        run: |
-          {
-            echo "### Build report"
-            echo '```'
-            sudo cat "$T/build/report.txt" 2>/dev/null || echo "(no report: the build did not get that far)"
-            sudo cat "$T/build/status" 2>/dev/null || true
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      # Time ran out with packages left: run the workflow again - what was
-      # published now counts as done, so it continues with the rest. Only when
-      # this run made progress, otherwise two runs would loop forever.
-      - name: Continue with the remaining packages
-        if: ${{ always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          sudo grep -qx 'INCOMPLETE=1' "$T/build/status" 2>/dev/null || { echo "nothing left over"; exit 0; }
-          if [[ "$AUTO_CONTINUE" != 1 ]]; then
-            echo "::notice::packages are left over - run the workflow again with the same list to continue"
-            exit 0
-          fi
-          gh workflow run packages.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
-            -f packages="$PKGS" -f rootfs="$ROOTFS_KIND" -f isolation="$ISOLATION" \
-            -f budget="$BUDGET_MIN" -f keep_going="$([[ $KEEP_GOING == 1 ]] && echo true || echo false)" \
-            -f prune="$([[ $PRUNE == 1 ]] && echo true || echo false)" -f auto_continue=true
-          echo "### Time budget used up: started a continuation run for the rest" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Collect build logs
-        if: always()
-        run: |
-          mkdir -p ci-logs
-          sudo cp -r "$T"/build/logs ci-logs/ 2>/dev/null || true
-          sudo cp "$T"/build/report.txt "$T"/build/status ci-logs/ 2>/dev/null || true
-          sudo chown -R "$(id -u):$(id -g)" ci-logs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: package-build-logs
-          path: ci-logs
-          if-no-files-found: ignore
-          retention-days: 14
-
-      # Publishing already happened above; this just makes the run red.
-      - name: Fail the run if a package failed
-        if: ${{ steps.build.outcome == 'failure' }}
-        run: |
-          echo "::error::some packages failed - see 'Build report' in the run summary. The packages that did build were published."
-          exit 1
-\\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
             [[ "$tag" =~ ^(stable|packages-[0-9]{4,})$ ]] || {
               echo "::error::unexpected package storage release: $tag"; exit 1;
@@ -570,9 +371,10 @@ jobs:
         if: ${{ always() && steps.published.conclusion == 'success' }}
         run: python3 -I scripts/check-file-conflicts.py "$T/build/out"
 
-      # `always()`: the build step exits red when ANY package failed, and a
-      # timeout kills it - the archives built until then must still be published.
-      - name: Publish to the package repository
+      # Publish package and recipe archives to immutable storage shards, then
+      # atomically switch the signed stable index to their per-package URLs.
+      # The shard limit is deliberately below GitHub's 1,000-asset release cap.
+      - name: Publish to the distributed package repository
         id: publish
         if: ${{ always() && steps.published.conclusion == 'success' }}
         env:
@@ -587,35 +389,16 @@ jobs:
             < <(find "$out" -maxdepth 1 -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
           echo "new archives: ${#new[@]}"
           echo "built=${#new[@]}" >> "$GITHUB_OUTPUT"
-          # names of the assets the release holds right now
-          have="$(gh release view "$PKG_TAG" --repo "$PKG_REPO" --json assets --jq '.assets[].name')"
-          # archives published earlier WITHOUT a detached .sig must still get one
-          missing=0
-          for f in "$out"/*.nawa.tar.zst; do
-            grep -qxF "$(basename "$f").sig" <<< "$have" || missing=1
-          done
-          # the recipe tree rides in the signed index (`nawa sync`). The nawa in
-          # the build root comes from the PREVIOUS release, so it may predate
-          # `repo-create --recipes`: then publish without it (and say so).
-          rev="${GITHUB_SHA}"
-          rfile="recipes-${rev}.recipes.tar.zst"
-          withrecipes=0
-          if sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help 2>/dev/null \
-               | grep -q -- '--recipes-rev'; then
-            withrecipes=1
-          else
-            echo "::warning::the nawa in the build root has no 'repo-create --recipes' - publishing without the recipe tree (release a new nawa first: push a v* tag)"
-          fi
-          rmissing=0
-          if (( withrecipes )) && ! grep -qxF "$rfile" <<< "$have"; then rmissing=1; fi
-          if (( ${#new[@]} == 0 && missing == 0 && rmissing == 0 )); then
-            echo "### Nothing new to publish" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
 
-          # the repository directory = published + new, WITHOUT superseded
-          # versions. It lives under $T (= /repo inside the root) so the
-          # archives can be hardlinked instead of copied (same filesystem).
+          # Require the schema-v3 CLI before publishing any distributed index.
+          help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
+          for option in --index-version --locations --recipes-rev; do
+            grep -q -- "$option" <<< "$help" || {
+              echo "::error::the build root's Nawa lacks $option. Build and publish a fresh Faseela core/rootfs with the Bootstrap Nawa v3 pin, then retry."
+              exit 1
+            }
+          done
+
           repo="$T/repo"
           sudo rm -rf "$repo"; sudo mkdir -p "$repo"
           sudo cp -al "$out"/*.nawa.tar.zst "$repo/"
@@ -624,77 +407,103 @@ jobs:
           if [[ "$PRUNE" == 1 ]]; then
             mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
             for s in "${stale[@]}"; do rm -f "$repo/$s"; done
-            if (( ${#stale[@]} )); then printf 'superseded: %s\n' "${stale[@]}"; fi
+            if (( ${#stale[@]} )); then printf 'superseded: %s\\n' "${stale[@]}"; fi
           fi
 
-          # sign the index inside the root (nawa links against the distro's libc)
-          printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
-          rargs=()
-          if (( withrecipes )); then rargs=(--recipes /faseela/recipes --recipes-rev "$rev"); fi
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
-            --out index.toml --sign --key /root/nawa.sec "${rargs[@]}"
-          # nawa refuses an archive without a detached <archive>.sig when the
-          # client has a trusted key, so every archive is signed as well
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env bash -c '
-            set -e
-            for f in /repo/*.nawa.tar.zst; do
-              /usr/bin/nawa sign "$f" --key /root/nawa.sec
-            done'
-          sudo shred -u "$T/root/nawa.sec" || sudo rm -f "$T/root/nawa.sec"
-          sudo chown -R "$(id -u):$(id -g)" "$repo"
-          [[ -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
-            || { echo "::error::repo-create left no signed index.toml"; exit 1; }
+          rev="${GITHUB_SHA}"
+          rfile="recipes-${rev}.recipes.tar.zst"
+          plan="$RUNNER_TEMP/distributed-release-plan.json"
+          locations="$repo/locations.toml"
+          python3 -I scripts/distributed-releases.py plan \
+            --releases-json "$RUNNER_TEMP/package-releases.json" \
+            --repo-dir "$repo" --repository "$PKG_REPO" --stable-tag "$PKG_TAG" \
+            --recipe-file "$rfile" --max-assets 900 \
+            --output "$plan" --manifest "$locations"
 
-          # `gh release upload` can fail half way on a flaky network: retry, and
-          # upload the ARCHIVES first, the index LAST, so a client never reads
-          # an index that lists an archive which is not there yet.
+          # Create any shard tags before uploading assets to them.
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            if ! gh release view "$tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$PKG_REPO" --title "Faseela package storage $tag" \
+                --notes "Storage shard for the signed Nawa schema-v3 package repository. Do not edit."
+            fi
+          done < <(python3 -I scripts/distributed-releases.py create --plan "$plan")
+
+          printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
+            --out index.toml --index-version 3 --locations /repo/locations.toml \
+            --sign --key /root/nawa.sec \
+            --recipes /faseela/recipes --recipes-rev "$rev"
+          sudo chown -R "$(id -u):$(id -g)" "$repo"
+          [[ -s "$repo/$rfile" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
+            || { echo "::error::repo-create did not produce the recipe snapshot and signed schema-v3 index"; exit 1; }
+
           upload() {
+            local tag="$1"; shift
             local n
             for n in 1 2 3; do
-              gh release upload "$PKG_TAG" --repo "$PKG_REPO" --clobber "$@" && return 0
-              echo "upload attempt $n failed" >&2; sleep $((n * 20))
+              gh release upload "$tag" --repo "$PKG_REPO" --clobber "$@" && return 0
+              echo "upload to $tag attempt $n failed" >&2; sleep $((n * 20))
             done
             return 1
           }
-          for f in "${new[@]}"; do upload "$repo/$(basename "$f")"; done
-          if (( withrecipes )); then
-            [[ -s "$repo/$rfile" ]] || { echo "::error::repo-create wrote no $rfile"; exit 1; }
-            upload "$repo/$rfile"
-          fi
-          # signatures: for new archives, and for old ones that have none yet
-          declare -A isnew=()
-          for f in "${new[@]}"; do isnew[$(basename "$f")]=1; done
-          sigs=()
-          for a in "$repo"/*.nawa.tar.zst; do
-            b="$(basename "$a")"
-            [[ -s "$a.sig" ]] || { echo "::error::no signature was written for $b"; exit 1; }
-            if [[ -n "${isnew[$b]:-}" ]] || ! grep -qxF "$b.sig" <<< "$have"; then
-              sigs+=("$a.sig")
-            fi
-          done
-          echo "signatures to upload: ${#sigs[@]}"
-          if (( ${#sigs[@]} )); then upload "${sigs[@]}"; fi
-          upload "$repo/index.toml" "$repo/index.toml.sig"
 
-          # only now remove superseded archives (and older recipe trees)
-          if (( withrecipes )); then
-            while IFS= read -r a; do
-              [[ "$a" == "$rfile" ]] && continue
-              gh release delete-asset "$PKG_TAG" "$a" --repo "$PKG_REPO" --yes || true
-            done < <(grep -E '^recipes-.*\.recipes\.tar\.zst$' <<< "$have" || true)
-          fi
-          for s in "${stale[@]}"; do
-            gh release delete-asset "$PKG_TAG" "$s" --repo "$PKG_REPO" --yes || true
-            gh release delete-asset "$PKG_TAG" "$s.sig" --repo "$PKG_REPO" --yes || true
-          done
+          # Upload every newly assigned archive before publishing its index URL.
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            mapfile -t files < <(python3 -I scripts/distributed-releases.py uploads \
+              --plan "$plan" --repo-dir "$repo" --tag "$tag")
+            (( ${#files[@]} )) || continue
+            for f in "${files[@]}"; do
+              [[ -s "$f" ]] || { echo "::error::missing planned archive $f"; exit 1; }
+            done
+            echo "Uploading ${#files[@]} asset(s) to $tag"
+            upload "$tag" "${files[@]}"
+          done < <(python3 -I - "$plan" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding="utf-8"))
+          tags = set(plan["create_releases"]) | set(plan["uploads"])
+          for tag in sorted(tags):
+              print(tag)
+          PY
+          )
 
+          # The stable release is now only the signed index. Upload it last:
+          # clients never see a new URL before its target asset exists.
+          upload "$PKG_TAG" "$repo/index.toml" "$repo/index.toml.sig"
+
+          # Remove stale assets only after the signed index points elsewhere.
+          while IFS=$'\\t' read -r tag asset; do
+            [[ -n "$tag" && -n "$asset" ]] || continue
+            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
+              echo "::warning::could not delete stale asset $tag/$asset"
+            }
+          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
+          while IFS=$'\\t' read -r tag asset; do
+            [[ -n "$tag" && -n "$asset" ]] || continue
+            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
+              echo "::warning::could not delete legacy stable asset $asset"
+            }
+          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind legacy)
+
+          archive_count="$(python3 -I - "$plan" <<'PY'
+          import json, sys
+          print(json.load(open(sys.argv[1], encoding="utf-8"))["archive_count"])
+          PY
+          )"
+          shard_count="$(python3 -I - "$plan" <<'PY'
+          import json, sys
+          p = json.load(open(sys.argv[1], encoding="utf-8"))
+          print(len(set(p["assignments"].values())))
+          PY
+          )"
           {
-            echo "### Published ${#new[@]} archive(s) to $PKG_REPO ($PKG_TAG)"
+            echo "### Published schema-v3 index to $PKG_REPO ($PKG_TAG)"
             echo
-            echo '```'
-            echo "nawa upgrade --repo https://github.com/$PKG_REPO/releases/download/$PKG_TAG"
-            echo '```'
-            if (( ${#stale[@]} )); then echo "Removed ${#stale[@]} superseded archive(s)."; fi
+            echo "Package archives: $archive_count"
+            echo "New this run: ${#new[@]}"
+            echo "Storage shards used: $shard_count (maximum 900 assets per shard)"
+            echo "Each archive URL is authenticated by the signed index and its SHA-256."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report

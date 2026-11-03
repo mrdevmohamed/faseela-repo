@@ -37,7 +37,7 @@ make defconfig
 # silently downgrade or unset symbols whose dependencies are not met).
 require_config() {
     local symbol="$1" expected="$2" actual
-    actual="$(sed -n "s/^\${symbol}=//p" .config | head -n1)"
+    actual="$(awk -F= -v key="$symbol" '$1 == key { print substr($0, index($0, "=") + 1); exit }' .config)"
     if [[ "$actual" != "$expected" ]]; then
         printf 'error: expected %s=%s in .config, found %s\\n' "$symbol" "$expected" "${actual:-unset}" >&2
         return 1

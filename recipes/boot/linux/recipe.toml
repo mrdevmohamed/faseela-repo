@@ -19,16 +19,16 @@
 [package]
 name = "linux"
 version = "6.10"
-rel = 9
+rel = 10
 arch = ["x86_64"]
-summary = "Linux kernel (x86_64 defconfig base image)"
+summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
 source = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz"
 sha256 = "774698422ee54c5f1e704456f37c65c06b51b4e9a8b0866f34580d86fef8e226"
 
 [depends]
 build = ["bison", "flex", "perl", "bc", "openssl", "elfutils", "kmod"]
-run = []
+run = ["faseela-initramfs"]
 
 [build]
 configure = """
@@ -55,6 +55,35 @@ scripts/config -e DEBUG_INFO_NONE -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG
 scripts/config -m WIREGUARD -m EXFAT_FS
 # lvm2 and cryptsetup: device-mapper built in, dm-crypt and its default cipher mode (aes-xts) as modules
 scripts/config -e MD -e BLK_DEV_DM -m DM_CRYPT -m CRYPTO_XTS
+
+# ---- generic platform coverage (rel 10) ----
+# Keep the x86_64 defconfig baseline, but enable common desktop, workstation,
+# laptop and guest platforms instead of relying on the server-oriented defaults.
+scripts/config -e PCI -e PCIEPORTBUS -e HOTPLUG_PCI -e HOTPLUG_PCI_PCIE
+scripts/config -e IOMMU_SUPPORT -e INTEL_IOMMU -e AMD_IOMMU
+# Intel Xe (newer integrated/discrete graphics) alongside i915; keep the
+# existing AMDGPU/Radeon/Nouveau modules and the simple framebuffer fallback.
+scripts/config -e DRM_ACCEL -m DRM_XE
+# Additional wired NICs and common USB Ethernet adapters.
+scripts/config -e NET_VENDOR_REALTEK -e NET_VENDOR_MARVELL -e NET_VENDOR_ATHEROS -e NET_VENDOR_AMD -e NET_VENDOR_MICROSOFT -e NET_VENDOR_NVIDIA
+scripts/config -m R8169 -m ATL1C -m ALX -m SKY2 -m E1000E -m IGB -m IXGBE -m I40E -m ICE
+scripts/config -m TG3 -m BNX2 -m BNX2X -m AX88179_178A -m USB_NET_CDCETHER -m USB_NET_CDC_NCM -m USB_NET_RNDIS_HOST
+# More common WLAN families: Atheros legacy, Realtek USB, and MediaTek USB.
+scripts/config -m ATH5K -m RTL8XXXU -m MT7921U
+# Thunderbolt/USB4 and USB Type-C/UCSI laptop controllers.
+scripts/config -e THUNDERBOLT -e USB4 -e TYPEC -e TYPEC_UCSI -m UCSI_ACPI
+# Intel Sound Open Firmware and SoundWire for newer laptop audio paths.
+scripts/config -m SND_SOC_SOF_PCI -m SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
+scripts/config -e SOUNDWIRE -m SOUNDWIRE_INTEL -m SOUNDWIRE_CADENCE
+# Hardware monitoring, thermal sensors, and CPU temperature drivers.
+scripts/config -e HWMON -e THERMAL -m SENSORS_CORETEMP -m SENSORS_K10TEMP -m SENSORS_NCT6775 -m SENSORS_IT87
+# TPM 2.0, common security chips and IOMMU support.
+scripts/config -e TCG_TPM -m TCG_TIS -m TCG_CRB
+# Guest drivers: KVM, VMware, Hyper-V and Xen, in addition to virtio.
+scripts/config -m KVM -m KVM_INTEL -m KVM_AMD
+scripts/config -e HYPERV -m HYPERV_STORAGE -m HYPERV_NET
+scripts/config -e XEN -m XEN_BLKDEV_FRONTEND -m XEN_NETDEV_FRONTEND
+scripts/config -m VMXNET3 -m VMW_PVSCSI -m VMWARE_BALLOON
 # ---- real hardware (rel 9) ----
 # boot-critical storage built in: NVMe, SATA/AHCI, eMMC + SD readers (a laptop's
 # root can be on any of them and the initramfs does not load them from a list)
@@ -119,3 +148,11 @@ install -Dm644 System.map %{pkgdir}/boot/System.map-%{version}
 install -Dm644 .config %{pkgdir}/boot/config-%{version}
 rm -f %{pkgdir}/lib/modules/%{version}/build %{pkgdir}/lib/modules/%{version}/source
 """
+
+[hooks]
+# Nawa runs post_install after both a fresh install and an upgrade. The tool
+# keeps versioned images and only switches the stable GRUB aliases after a
+# complete image has been written and validated.
+post_install = "/usr/sbin/faseela-mkinitramfs --all --update-default"
+# Nawa runs post_remove after the kernel payload is removed from the target.
+post_remove = "/usr/sbin/faseela-mkinitramfs --prune --update-default"

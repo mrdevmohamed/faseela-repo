@@ -4,7 +4,7 @@
 [package]
 name = "gcr"
 version = "3.41.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNOME crypto and PKCS#11 base libraries"
 license = ["LGPL-2.1-or-later"]
@@ -16,6 +16,18 @@ build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit"]
 run = ["glib", "libgcrypt", "p11-kit"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false -Dsystemd=disabled -Dgpg_path=/usr/bin/false"
+configure = '''
+# GCR 3.41.2 calls .path() on find_program(..., required: false) even when
+# ssh_agent is disabled. Meson then fails if ssh-add/ssh-agent are absent.
+# The paths are unused unless ssh_agent=true, so use empty values here.
+sed -i \\
+  -e "s|ssh_add_path = find_program('ssh-add', required: get_option('ssh_agent')).path()|ssh_add_path = ''|" \\
+  -e "s|ssh_agent_path = find_program('ssh-agent', required: get_option('ssh_agent')).path()|ssh_agent_path = ''|" \\
+  meson.build
+
+meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release \\
+  -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false \\
+  -Dsystemd=disabled -Dgpg_path=/usr/bin/false
+'''
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

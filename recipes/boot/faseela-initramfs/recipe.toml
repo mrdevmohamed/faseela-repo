@@ -1,0 +1,26 @@
+# boot recipe: installed-system initramfs generator
+# The live ISO remains built by Faseela's bootstrap/initramfs.sh. This package
+# owns disk-boot initramfs images and is called by the Linux package hooks.
+[package]
+name = "faseela-initramfs"
+version = "1.0.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Initramfs generator and kernel boot-image maintenance for Faseela"
+license = ["GPL-2.0"]
+
+[depends]
+build = []
+run = ["busybox", "kmod", "cpio", "gzip", "findutils", "xz", "zstd"]
+
+[build]
+source = "local:recipes/boot/faseela-initramfs/files/faseela-mkinitramfs"
+check = "bash -n faseela-mkinitramfs"
+install = """
+install -Dm755 faseela-mkinitramfs %{pkgdir}/usr/sbin/faseela-mkinitramfs
+bash -n %{pkgdir}/usr/sbin/faseela-mkinitramfs
+"""
+
+[hooks]
+post_install = "/usr/sbin/faseela-mkinitramfs --all --update-default"
+post_remove = "/usr/sbin/faseela-mkinitramfs --prune --update-default"

@@ -5,7 +5,7 @@
 [package]
 name = "wpa_supplicant"
 version = "2.12"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, no D-Bus)"
 license = ["BSD-3-Clause"]
@@ -64,7 +64,8 @@ done
 [ -r /etc/default/wpa_supplicant ] && . /etc/default/wpa_supplicant
 if [ -z "$IFACE" ]; then
     echo "wpa_supplicant: no wireless interface found" >&2
-    exec sleep 300
+    sleep 10
+    exit 1
 fi
 exec wpa_supplicant -i "$IFACE" -c /etc/wpa_supplicant/wpa_supplicant.conf
 RUN

@@ -333,17 +333,13 @@ jobs:
       - name: Prepare the build root
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}
-          ROOTFS_REQUESTED: ${{ inputs.rootfs || 'auto' }}
         run: |
           set -euo pipefail
-          prepare_root() {
-            # network for the source downloads inside the root
-            sudo rm -f "$T/etc/resolv.conf"
-            sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
-            sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
-            sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
-          }
+          # network for source downloads inside the root
+          sudo rm -f "$T/etc/resolv.conf"
+          sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
+          sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
+          sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
 
           supports_schema_v3() {
             local repo_help
@@ -353,51 +349,47 @@ jobs:
             done
           }
 
-          prepare_root
-
-          # A min rootfs can exist in an older release while newer core-only
-          # releases carry a compatible seed. Do not mistake "asset exists"
-          # for "rootfs is new enough": auto must fall back on capability.
+          # Older rootfs releases can carry Nawa 1.0.0-10 even though the
+          # current, signed transition package already contains Nawa 1.0.0-11.
+          # Upgrade locally before attempting to write the schema-v3 index.
           if ! supports_schema_v3; then
-            if [[ "$ROOTFS_KIND" != min || "$ROOTFS_REQUESTED" != auto ]]; then
-              echo "::error::the selected rootfs carries an old Nawa without the schema-v3 repo-create options (--index-version, --locations, --recipes-rev). Choose rootfs=seed or publish a fresh rootfs-min."
+            nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+            transition_dir="$RUNNER_TEMP/nawa-transition"
+            rm -rf "$transition_dir"
+            mkdir -p "$transition_dir"
+            if ! gh release download "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
+                 --pattern "$nawa_archive" --pattern "$nawa_archive.sig" \
+                 --dir "$transition_dir"; then
+              echo "::error::the rootfs has an old Nawa and $NAWA_TRANSITION_TAG does not provide the signed $nawa_archive transition package. Run the Nawa transition build first."
               exit 1
             fi
-
-            echo "::notice::the newest rootfs-min has an old Nawa; retrying with the newest seed rootfs"
-            sudo bash distro/bootstrap/umount-chroot.sh "$T"
-            sudo rm -rf "$T"
-
-            dir="$RUNNER_TEMP/rootfs-fallback"
-            rm -rf "$dir"
-            mkdir -p "$dir"
-            seed_asset="faseela-x86_64-rootfs.tar.zst"
-            legacy_seed_asset="mydistro-x86_64-rootfs.tar.zst"
-            rc=0
-            ROOTFS_ASSET="$seed_asset" ROOTFS_LEGACY_ASSET="$legacy_seed_asset" \
-              bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
-            if (( rc != 0 )); then
-              echo "::error::could not fetch a fallback seed rootfs (fetch-rootfs-seed.sh exit $rc)"
-              exit "$rc"
-            fi
-            if [[ ! -s "$dir/$seed_asset" && -s "$dir/$legacy_seed_asset" ]]; then
-              seed_asset="$legacy_seed_asset"
-            fi
-            [[ -s "$dir/$seed_asset" ]] || {
-              echo "::error::the seed rootfs download completed but its archive was not found"
+            [[ -s "$transition_dir/$nawa_archive" && -s "$transition_dir/$nawa_archive.sig" ]] || {
+              echo "::error::the Nawa transition release is missing $nawa_archive or its detached signature"
               exit 1
             }
 
-            sudo mkdir -p "$T"
-            sudo tar -I zstd -xpf "$dir/$seed_asset" -C "$T" --numeric-owner
-            rm -rf "$dir"
+            sudo install -d -m 0755 "$T/tmp/nawa-transition"
+            sudo install -m 0644 "$transition_dir/$nawa_archive" "$T/tmp/nawa-transition/$nawa_archive"
+            sudo install -m 0644 "$transition_dir/$nawa_archive.sig" "$T/tmp/nawa-transition/$nawa_archive.sig"
 
-            prepare_root
+            # nawa install verifies the detached signature with the
+            # Faseela key already trusted by the build root.
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install \
+              "/tmp/nawa-transition/$nawa_archive"
+            sudo rm -rf "$T/tmp/nawa-transition"
+            rm -rf "$transition_dir"
+
             supports_schema_v3 || {
-              echo "::error::the newest seed rootfs also has an old Nawa. Publish a fresh Faseela core/rootfs with the independent Bootstrap Nawa v3 pin, then retry."
+              echo "::error::installing the signed Nawa transition package did not enable --index-version, --locations and --recipes-rev"
               exit 1
             }
-            echo "Build rootfs fallback: seed (newest rootfs with schema-v3 Nawa)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Nawa upgraded from the signed $NAWA_TRANSITION_TAG transition package before the build." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # Keep one small metadata request; archive bytes are fetched from the

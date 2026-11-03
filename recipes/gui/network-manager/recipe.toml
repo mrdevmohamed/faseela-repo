@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -20,6 +20,39 @@ configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
+
+# nm-dispatcher is activated by the system D-Bus daemon. Fail the package
+# build if Meson's install layout does not include its executable, activation
+# descriptor, and D-Bus policy in the paths expected by the runtime.
+NM_STAGE=%{pkgdir}
+NM_DISPATCHER="$NM_STAGE/usr/libexec/nm-dispatcher"
+NM_DISPATCHER_SERVICE="$NM_STAGE/usr/share/dbus-1/system-services/org.freedesktop.nm_dispatcher.service"
+NM_DISPATCHER_POLICY="$NM_STAGE/usr/share/dbus-1/system.d/nm-dispatcher.conf"
+
+test -x "$NM_DISPATCHER" || {
+    echo "NetworkManager: missing executable nm-dispatcher: $NM_DISPATCHER" >&2
+    exit 1
+}
+test -s "$NM_DISPATCHER_SERVICE" || {
+    echo "NetworkManager: missing D-Bus activation service: $NM_DISPATCHER_SERVICE" >&2
+    exit 1
+}
+grep -Fqx 'Name=org.freedesktop.nm_dispatcher' "$NM_DISPATCHER_SERVICE" || {
+    echo "NetworkManager: D-Bus activation service has the wrong Name" >&2
+    exit 1
+}
+grep -Fqx 'Exec=/usr/libexec/nm-dispatcher' "$NM_DISPATCHER_SERVICE" || {
+    echo "NetworkManager: D-Bus activation Exec does not match the installed binary" >&2
+    exit 1
+}
+grep -Fqx 'User=root' "$NM_DISPATCHER_SERVICE" || {
+    echo "NetworkManager: D-Bus activation service must run as root" >&2
+    exit 1
+}
+test -s "$NM_DISPATCHER_POLICY" || {
+    echo "NetworkManager: missing D-Bus system policy: $NM_DISPATCHER_POLICY" >&2
+    exit 1
+}
 install -d -m755 %{pkgdir}/etc/NetworkManager %{pkgdir}/etc/sv/NetworkManager %{pkgdir}/etc/runit/runsvdir/default
 cat > %{pkgdir}/etc/NetworkManager/NetworkManager.conf <<'CONF'
 [main]

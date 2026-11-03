@@ -1,9 +1,11 @@
 # Upstream prebuilt Zed release bundle. Opt-in only: use flavor iso-gui-zed.
 # That flavor contains Mesa's lavapipe ICD and the Khronos Vulkan loader.
+# rel 2: /usr/bin/zed is a wrapper that sets ZED_ALLOW_EMULATED_GPU=1 (lavapipe is the
+# only Vulkan device in QEMU, and Zed otherwise warns about "awful performance").
 [package]
 name = "zed"
 version = "1.26.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Zed: fast, multiplayer code editor (Wayland; Vulkan via Mesa lavapipe)"
 license = ["GPL-3.0-or-later", "AGPL-3.0-or-later", "Apache-2.0"]
@@ -22,7 +24,15 @@ set -eu
 install -d -m755 %{pkgdir}/usr/lib/zed.app
 cp -a . %{pkgdir}/usr/lib/zed.app/
 install -d -m755 %{pkgdir}/usr/bin
-ln -sf ../lib/zed.app/bin/zed %{pkgdir}/usr/bin/zed
+# Wrapper instead of a plain symlink: default to allowing the software (lavapipe) Vulkan
+# device. Harmless on real GPUs, and users can still override it from their environment.
+cat > %{pkgdir}/usr/bin/zed <<'WRAP'
+#!/bin/sh
+: "${ZED_ALLOW_EMULATED_GPU:=1}"
+export ZED_ALLOW_EMULATED_GPU
+exec /usr/lib/zed.app/bin/zed "$@"
+WRAP
+chmod 755 %{pkgdir}/usr/bin/zed
 
 if [ -f share/applications/dev.zed.Zed.desktop ]; then
     install -Dm644 share/applications/dev.zed.Zed.desktop %{pkgdir}/usr/share/applications/dev.zed.Zed.desktop

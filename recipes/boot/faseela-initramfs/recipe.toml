@@ -20,7 +20,3 @@ install = """
 install -Dm755 faseela-mkinitramfs %{pkgdir}/usr/sbin/faseela-mkinitramfs
 bash -n %{pkgdir}/usr/sbin/faseela-mkinitramfs
 """
-
-[hooks]
-post_install = "/usr/sbin/faseela-mkinitramfs --all --update-default"
-post_remove = "/usr/sbin/faseela-mkinitramfs --prune --update-default"

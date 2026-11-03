@@ -86,6 +86,9 @@ build_one() {
  tree="$WORK/tree"; modules_tree="$tree/lib/modules/$ver"; deps_out="$modules_tree/modules.dep"
  mkdir -p "$tree/bin" "$tree/dev" "$tree/proc" "$tree/sys" "$tree/run" "$tree/newroot" "$modules_tree" "$tree/lib/firmware"
  cp "$BUSYBOX" "$tree/bin/busybox"
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+    ln -s busybox "$tree/bin/$applet"
+done
 
  declare -A MOD_LINE=() MOD_DEST=() STAGED=()
  while IFS= read -r line; do
@@ -163,7 +166,6 @@ build_one() {
  cat > "$tree/init" <<'INIT_EOF'
 #!/bin/busybox sh
 export PATH=/bin:/sbin
-/bin/busybox --install -s /bin
 mkdir -p /dev /proc /sys /run /newroot
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys

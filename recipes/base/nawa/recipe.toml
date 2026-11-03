@@ -14,13 +14,13 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
-source = "https://github.com/mrdevmohamed/nawa/archive/84975a9a2db8a0d97dc1f2d9e4cf8de50c6a4edb.tar.gz"
-sha256 = "755d14e79f597b7b5648e5a15d1d960983c758437ad657f200a1613d52d5ca49"
-source_dir = "nawa-84975a9a2db8a0d97dc1f2d9e4cf8de50c6a4edb"
+source = "https://github.com/mrdevmohamed/nawa/archive/c9261d12c89402fdeb5200a3bb0a0fa8f3be252b.tar.gz"
+sha256 = "084de9f0345a04dc09c8bdbc725f8bb764a2c9a991d2391253422c82c45d8614"
+source_dir = "nawa-c9261d12c89402fdeb5200a3bb0a0fa8f3be252b"
 
 [depends]
 build = ["rust"]
@@ -32,4 +32,7 @@ install = """
 install -Dm755 target/release/nawa %{pkgdir}/usr/bin/nawa
 # system-wide configuration: default repository + install mode
 install -Dm644 dist/nawa.toml %{pkgdir}/etc/nawa/nawa.toml
+# Faseela's active package endpoint uses the signed schema-v3 index.
+# Keep the old stable endpoint available for already-installed schema-v1 clients.
+sed -i 's|releases/download/stable"|releases/download/stable-v3"|' %{pkgdir}/etc/nawa/nawa.toml
 """

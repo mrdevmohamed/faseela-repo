@@ -1,0 +1,21 @@
+# gui recipe: GCR/GCK — GNOME crypto and PKCS#11 base libraries
+# GTK UI, introspection, SSH agent and systemd integration are disabled. The
+# base/GCK libraries are the interfaces needed by gnome-keyring's Secret Service.
+[package]
+name = "gcr"
+version = "3.41.2"
+rel = 1
+arch = ["x86_64"]
+summary = "GNOME crypto and PKCS#11 base libraries"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gcr/3.41/gcr-%{version}.tar.xz"
+sha256 = "bad10f3c553a0e1854649ab59c5b2434da22ca1a54ae6138f1f53961567e1ab7"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit"]
+run = ["glib", "libgcrypt", "p11-kit"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false -Dsystemd=disabled -Dgpg_path=/usr/bin/false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

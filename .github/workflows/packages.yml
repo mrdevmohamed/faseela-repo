@@ -163,12 +163,22 @@ jobs:
           pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
           pkgs="$(echo $pkgs)"   # trim
 
-          # The first v3 publication also builds a stand-alone Nawa package
-          # so an existing schema-v1 client can upgrade without parsing v3.
-          if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          # Build the current Nawa recipe whenever its standalone transition
+          # release lacks the exact archive required by this recipe.
+          nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
+          transition_needed=0
+          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
             pkgs+=" nawa"
             pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
             pkgs="$(echo $pkgs)"
+            transition_needed=1
             echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
           fi
           for p in $pkgs; do
@@ -176,6 +186,12 @@ jobs:
             compgen -G "recipes/*/$p/recipe.toml" >/dev/null || { echo "::error::no recipe named '$p'"; exit 1; }
           done
 
+          if (( transition_needed )); then
+            if [[ "$INPUT_ROOTFS" == min ]]; then
+              echo "::error::the Nawa transition requires the seed rootfs (Rust is installed there); choose rootfs=auto or seed"
+              exit 1
+            fi
+          fi
           rootfs="$INPUT_ROOTFS"
           if [[ "$rootfs" == auto ]]; then
             rootfs=min

@@ -1,5 +1,5 @@
 # Mesa: AMD hardware (GL + Vulkan radv), software OpenGL and Vulkan lavapipe.
-# rel 5 adds the RADV Vulkan driver for AMD GPUs (GCN/Polaris and newer), so Vulkan apps
+# rel 6 adds the RADV Vulkan driver for AMD GPUs (GCN/Polaris and newer), so Vulkan apps
 # such as Zed use the real GPU instead of falling back to lavapipe on bare metal.
 # rel 4 adds the Vulkan swrast ICD. It needs glslang, Vulkan headers and Clang;
 # LLVM plus Gallium softpipe/llvmpipe are already enabled in this build.
@@ -7,7 +7,7 @@
 [package]
 name = "mesa"
 version = "24.3.0"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "OpenGL/GLES/EGL/GBM + AMD (GL + Vulkan radv), software GL and Vulkan lavapipe drivers"
 license = ["MIT"]

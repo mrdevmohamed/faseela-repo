@@ -185,13 +185,13 @@ class PackageSelectionTests(unittest.TestCase):
                 ["git", "rev-parse", "HEAD"], text=True,
             ).strip()
 
-            bash_file = self.recipes_dir / "bash" / "recipe.toml"
+            bash_file = self.recipes_dir / "base" / "bash" / "recipe.toml"
             bash_file.parent.mkdir(parents=True, exist_ok=True)
             bash_file.write_text('[package]\\nname = "bash"\\n', encoding="utf-8")
             subprocess.run(["git", "add", "recipes"], check=True)
             subprocess.run(["git", "commit", "-qm", "push B"], check=True)
 
-            runit_file = self.recipes_dir / "runit" / "recipe.toml"
+            runit_file = self.recipes_dir / "system" / "runit" / "recipe.toml"
             runit_file.parent.mkdir(parents=True, exist_ok=True)
             runit_file.write_text('[package]\\nname = "runit"\\n', encoding="utf-8")
             subprocess.run(["git", "add", "recipes"], check=True)

@@ -63,8 +63,11 @@ def main():
             "list", "--releases-json", metadata, "--stable-tag", "stable"
         ).splitlines()
         assert listed == [
-            f"packages-0001\t{names[0]}",
-            f"stable\t{names[1]}",
+            f"packages-0001\\t{names[0]}",
+            f"stable\\t{names[1]}",
+            "packages-0002\\told-1.nawa.tar.zst",
+            "packages-0002\\told-2.nawa.tar.zst",
+            "packages-0002\\told-3.nawa.tar.zst",
         ], listed
 
         plan_path = root / "plan.json"

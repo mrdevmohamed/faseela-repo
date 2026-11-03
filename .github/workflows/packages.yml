@@ -1,9 +1,10 @@
 name: Build packages
 
 # Builds the packages described by the recipes of THIS repository and publishes
-# them as a flat GitHub Release of this same repository (one fixed tag,
-# default `stable`): every archive is an asset, next to a signed index.toml
-# and the recipe tree. Clients use it with
+# them across GitHub Releases: the fixed `stable` tag (the repository URL)
+# carries the signed schema-v3 index only, while package and recipe archives
+# live in `packages-NNNN` storage shards. The index authenticates every
+# per-archive HTTPS URL and SHA-256. Clients use it with
 #
 #   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable
 #
@@ -37,8 +38,8 @@ name: Build packages
 # running nawa. The toolchain is built by the ISO workflow (stage 2 / stage 3).
 #
 # BUILDING EVERYTHING TAKES LONGER THAN ONE RUN. So the workflow is resumable:
-#   * a package whose archive (name-version-rel) is already in the package
-#     repository is up to date and is skipped; a recipe bump rebuilds it;
+#   * a package whose archive (name-version-rel) is already in the distributed
+#     package repository is up to date and is skipped; a recipe bump rebuilds it;
 #   * published archives a build needs are installed, not compiled again;
 #   * after `budget` minutes no new package is started, everything built so
 #     far is published, and (auto_continue) the workflow starts itself again

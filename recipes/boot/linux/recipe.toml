@@ -33,125 +33,59 @@ run = ["saq"]
 configure = """
 make mrproper
 make defconfig
-# Required by Faseela's installed-system initramfs and automatic module loading.
-scripts/config -e BLK_DEV_INITRD -e RD_GZIP -e MODULES -e MODULE_UNLOAD -e KMOD -e FW_LOADER
-# Keep both legacy BIOS and UEFI boot paths available.
-scripts/config -e EFI -e EFI_STUB
-# live-boot prerequisites: overlay root from squashfs on iso9660/usb
-scripts/config -e OVERLAY_FS -e ISO9660_FS -e SQUASHFS -e BLK_DEV_LOOP -e DEVTMPFS -e DEVTMPFS_MOUNT
-# the kernel must read every compression mkiso.sh can write (SQUASH_COMP=xz|zstd|gzip);
-# zlib is already on in defconfig
-scripts/config -e SQUASHFS_XZ -e SQUASHFS_ZSTD
-# build-isolation.md §9: the sandbox's user/pid/net/ipc/uts namespaces
-# (USER_NS defaults to n on x86_64 defconfig — without it nawa's `sandbox`
-# and `closure` isolation levels cannot work on this distro's own kernel)
-scripts/config -e USER_NS -e PID_NS -e NET_NS -e IPC_NS -e UTS_NS
-# fresh /proc and /dev/pts for sandboxed builds; loopback for test suites
-scripts/config -e TMPFS -e UNIX98_PTYS -e DEVTMPFS
-# graphical session prerequisites (recipes/gui): DRM/KMS for QEMU + virtio-gpu,
-# simple framebuffer DRM, and evdev/HID input for libinput
-scripts/config -e DRM -e DRM_FBDEV_EMULATION -e DRM_VIRTIO_GPU -e DRM_BOCHS -e DRM_SIMPLEDRM -e INPUT_EVDEV -e HID_GENERIC -e USB_HID
-# size: no DWARF / BTF (the live ISO is not a kernel-debugging image); the
-# modules are stripped again at install time as a second line
-scripts/config -e DEBUG_INFO_NONE -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG_INFO_BTF -d DEBUG_INFO_BTF_MODULES
-# wireguard-tools and exfatprogs need their kernel side (modules, autoloaded on use)
-scripts/config -m WIREGUARD -m EXFAT_FS
-# lvm2 and cryptsetup: device-mapper built in, dm-crypt and its default cipher mode (aes-xts) as modules
-scripts/config -e MD -e BLK_DEV_DM -m DM_CRYPT -m CRYPTO_XTS
+# Validate each required option with an actionable error (Kconfig can
+# silently downgrade or unset symbols whose dependencies are not met).
+require_config() {
+    local symbol="$1" expected="$2" actual
+    actual="$(sed -n "s/^\${symbol}=//p" .config | head -n1)"
+    if [[ "$actual" != "$expected" ]]; then
+        printf 'error: expected %s=%s in .config, found %s\\n' "$symbol" "$expected" "${actual:-unset}" >&2
+        return 1
+    fi
+}
 
-# ---- generic platform coverage (rel 10) ----
-# Keep the x86_64 defconfig baseline, but enable common desktop, workstation,
-# laptop and guest platforms instead of relying on the server-oriented defaults.
-scripts/config -e PCI -e PCIEPORTBUS -e HOTPLUG_PCI -e HOTPLUG_PCI_PCIE
-scripts/config -e IOMMU_SUPPORT -e INTEL_IOMMU -e AMD_IOMMU
-# Intel Xe (newer integrated/discrete graphics) alongside i915; keep the
-# existing AMDGPU/Radeon/Nouveau modules and the simple framebuffer fallback.
-scripts/config -e DRM_ACCEL -m DRM_XE
-# Additional wired NICs and common USB Ethernet adapters.
-scripts/config -e NET_VENDOR_REALTEK -e NET_VENDOR_MARVELL -e NET_VENDOR_ATHEROS -e NET_VENDOR_AMD -e NET_VENDOR_MICROSOFT -e NET_VENDOR_MELLANOX
-scripts/config -m R8169 -m ATL1C -m ALX -m SKY2 -m E1000E -m IGB -m IXGBE -m I40E -m ICE -m MLX4_CORE -m MLX4_EN -m MLX5_CORE -m MLX5_CORE_EN
-scripts/config -m TG3 -m BNX2 -m BNX2X -m AX88179_178A -m USB_NET_CDCETHER -m USB_NET_CDC_NCM -m USB_NET_RNDIS_HOST
-# More common WLAN families: Atheros legacy, Realtek USB, and MediaTek USB.
-scripts/config -m ATH5K -m RTL8XXXU -m MT7921U
-# Thunderbolt/USB4 and USB Type-C/UCSI laptop controllers.
-scripts/config -m USB4 -m TYPEC -m TYPEC_UCSI -m UCSI_ACPI
-# Intel Sound Open Firmware and SoundWire for newer laptop audio paths.
-scripts/config -e SND_SOC -e SND_SOC_SOF_TOPLEVEL -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
-scripts/config -e SOUNDWIRE -m SOUNDWIRE_INTEL -m SOUNDWIRE_CADENCE
-# Hardware monitoring, thermal sensors, and CPU temperature drivers.
-scripts/config -e HWMON -e THERMAL -m SENSORS_CORETEMP -m SENSORS_K10TEMP -m SENSORS_NCT6775 -m SENSORS_IT87
-# TPM 2.0, common security chips and IOMMU support.
-scripts/config -e TCG_TPM -m TCG_TIS -m TCG_CRB
-# Guest drivers: KVM, VMware, Hyper-V and Xen, in addition to virtio.
-scripts/config -m KVM -m KVM_INTEL -m KVM_AMD
-scripts/config -e HYPERV -m HYPERV_STORAGE -m HYPERV_NET
-scripts/config -e XEN -m XEN_BLKDEV_FRONTEND -m XEN_NETDEV_FRONTEND
-scripts/config -m VMXNET3 -m VMWARE_PVSCSI -m VMWARE_BALLOON
-# ---- real hardware baseline (rel 9) ----
-# boot-critical storage built in: NVMe, SATA/AHCI, eMMC + SD readers (a laptop's
-# root can be on any of them and the initramfs does not load them from a list)
-scripts/config -e BLK_DEV_NVME -e SATA_AHCI -e MMC -e MMC_BLOCK -e MMC_SDHCI -e MMC_SDHCI_PCI -e MMC_SDHCI_ACPI
-# filesystems on removable media and other disks; vfat needs its NLS tables to mount without warnings
-scripts/config -e EXT4_FS -e FAT_FS -e VFAT_FS -e NLS_CODEPAGE_437 -e NLS_ISO8859_1 -e NLS_UTF8
-scripts/config -m BTRFS_FS -m XFS_FS -m F2FS_FS -m NTFS3_FS -m FUSE_FS
-# wired NICs defconfig lacks (e1000e/igb/r8169 are already built in) and USB ethernet dongles
-scripts/config -e NET_VENDOR_INTEL -e NET_VENDOR_BROADCOM -e USB_NETDEVICES
-scripts/config -m IGC -m TIGON3 -m USB_RTL8152
-# wifi: stack built in, drivers as modules (they load firmware: not before the root is mounted)
-scripts/config -e WIRELESS -e CFG80211 -e MAC80211 -e RFKILL -e WLAN
-scripts/config -e WLAN_VENDOR_INTEL -e WLAN_VENDOR_ATH -e WLAN_VENDOR_REALTEK -e WLAN_VENDOR_MEDIATEK -e WLAN_VENDOR_BROADCOM
-scripts/config -m IWLWIFI -m IWLDVM -m IWLMVM
-scripts/config -m ATH9K -m ATH10K -m ATH10K_PCI -m ATH11K -m ATH11K_PCI -m ATH12K
-scripts/config -m RTW88 -m RTW88_8822BE -m RTW88_8822CE -m RTW88_8723DE -m RTW88_8821CE
-scripts/config -m RTW89 -m RTW89_8852AE -m RTW89_8852BE -m RTW89_8852CE
-scripts/config -m MT7921E -m BRCMFMAC -e BRCMFMAC_PCIE -e BRCMFMAC_USB
-# bluetooth (the kernel side; a userspace daemon is not packaged yet)
-scripts/config -m BT -e BT_BREDR -e BT_LE -m BT_RFCOMM -m BT_BNEP -m BT_HIDP -m BT_HCIBTUSB
-scripts/config -e BT_HCIBTUSB_BCM -e BT_HCIBTUSB_RTL -e BT_HCIBTUSB_MTK
-# GPUs: modules (firmware: amdgpu/i915/radeon blobs are in linux-firmware-lite); simpledrm
-# on the UEFI framebuffer covers the time before they load
-scripts/config -e SYSFB_SIMPLEFB
-scripts/config -m DRM_I915 -m DRM_AMDGPU -e DRM_AMDGPU_SI -e DRM_AMDGPU_CIK -e DRM_AMD_DC -m DRM_NOUVEAU -m DRM_RADEON -m DRM_QXL
-# touchpads/keyboards behind i2c-hid (nearly every laptop since ~2015), multitouch, Intel LPSS i2c
-scripts/config -m I2C_HID_ACPI -m HID_MULTITOUCH -m I2C_DESIGNWARE_PLATFORM -e MFD_INTEL_LPSS_PCI -e MFD_INTEL_LPSS_ACPI
-# audio: HDA controller + the common codecs, USB audio (alsa-utils is in the ISO)
-scripts/config -e SOUND -e SND -e SND_PCI
-scripts/config -m SND_HDA_INTEL -m SND_HDA_CODEC_REALTEK -m SND_HDA_CODEC_HDMI -m SND_HDA_CODEC_CONEXANT -m SND_HDA_CODEC_SIGMATEL -m SND_HDA_CODEC_VIA -m SND_HDA_CODEC_ANALOG -m SND_USB_AUDIO
-# webcams (UVC)
-scripts/config -e MEDIA_SUPPORT -e MEDIA_CAMERA_SUPPORT -e MEDIA_USB_SUPPORT -m USB_VIDEO_CLASS
-# laptop platform: battery/AC/lid/backlight, vendor hotkeys + WMI, cpufreq (schedutil, not performance), suspend/hibernate
-scripts/config -e ACPI -e ACPI_BATTERY -e ACPI_AC -e ACPI_BUTTON -e ACPI_VIDEO -e ACPI_THERMAL -e X86_PLATFORM_DEVICES
-scripts/config -e BACKLIGHT_CLASS_DEVICE -e LEDS_CLASS -e INTEL_IDLE
-scripts/config -m THINKPAD_ACPI -m ASUS_WMI -m ASUS_NB_WMI -m IDEAPAD_LAPTOP -m ACER_WMI -m DELL_LAPTOP -m DELL_WMI -m HP_WMI
-scripts/config -e CPU_FREQ -e X86_INTEL_PSTATE -e X86_AMD_PSTATE -e X86_ACPI_CPUFREQ -e CPU_FREQ_GOV_SCHEDUTIL
-scripts/config -d CPU_FREQ_DEFAULT_GOV_PERFORMANCE -e CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
-scripts/config -e SUSPEND -e HIBERNATION
-# QEMU guests: virtio keyboard/mouse (-device virtio-keyboard-pci/virtio-mouse-pci), ballooning, entropy
-scripts/config -e VIRTIO_INPUT -e VIRTIO_BALLOON -e HW_RANDOM_VIRTIO
-make olddefconfig
-# Required by the installed-system initramfs and module auto-loading.
-grep -q '^CONFIG_BLK_DEV_INITRD=y$' .config
-grep -q '^CONFIG_RD_GZIP=y$' .config
-grep -q '^CONFIG_MODULES=y$' .config
-grep -q '^CONFIG_MODULE_UNLOAD=y$' .config
-grep -q '^CONFIG_KMOD=y$' .config
-grep -q '^CONFIG_FW_LOADER=y$' .config
-grep -q '^CONFIG_EFI_STUB=y$' .config
-# Keep repository/live-media and build-isolation requirements intact.
-grep -q '^CONFIG_WIREGUARD=m$' .config && grep -q '^CONFIG_EXFAT_FS=m$' .config
-grep -q '^CONFIG_BLK_DEV_DM=y$' .config && grep -q '^CONFIG_DM_CRYPT=m$' .config
-grep -q '^CONFIG_SQUASHFS_ZLIB=y$' .config && grep -q '^CONFIG_SQUASHFS_XZ=y$' .config && grep -q '^CONFIG_SQUASHFS_ZSTD=y$' .config
-grep -q '^CONFIG_XZ_DEC_X86=y$' .config
+# Installed-system initramfs and automatic module loading.
+require_config CONFIG_BLK_DEV_INITRD y
+require_config CONFIG_RD_GZIP y
+require_config CONFIG_MODULES y
+require_config CONFIG_MODULE_UNLOAD y
+require_config CONFIG_KMOD y
+require_config CONFIG_FW_LOADER y
+require_config CONFIG_EFI_STUB y
+
+# Repository/live-media and build-isolation requirements.
+require_config CONFIG_WIREGUARD m
+require_config CONFIG_EXFAT_FS m
+require_config CONFIG_BLK_DEV_DM y
+require_config CONFIG_DM_CRYPT m
+require_config CONFIG_SQUASHFS_ZLIB y
+require_config CONFIG_SQUASHFS_XZ y
+require_config CONFIG_SQUASHFS_ZSTD y
+require_config CONFIG_XZ_DEC_X86 y
+
 # Generic x86_64 coverage: required drivers must survive olddefconfig.
-grep -q '^CONFIG_DRM_XE=m$' .config
-grep -q '^CONFIG_USB4=m$' .config && grep -q '^CONFIG_UCSI_ACPI=m$'
-grep -q '^CONFIG_SND_SOC_SOF_TOPLEVEL=y$' .config && grep -q '^CONFIG_SND_SOC_SOF_PCI=m$' .config
-grep -q '^CONFIG_VMWARE_PVSCSI=m$'
-grep -q '^CONFIG_BLK_DEV_NVME=y$' .config && grep -q '^CONFIG_SATA_AHCI=y$' .config && grep -q '^CONFIG_MMC_SDHCI_PCI=y$' .config
-grep -q '^CONFIG_IWLWIFI=m$' .config && grep -q '^CONFIG_IWLMVM=m$' .config && grep -q '^CONFIG_ATH9K=m$' .config && grep -q '^CONFIG_RTW88=m$' .config
-grep -q '^CONFIG_BT_HCIBTUSB=m$' .config
-grep -q '^CONFIG_DRM_I915=m$' .config && grep -q '^CONFIG_DRM_AMDGPU=m$' .config && grep -q '^CONFIG_DRM_NOUVEAU=m$' .config
-grep -q '^CONFIG_SND_HDA_INTEL=m$' .config && grep -q '^CONFIG_NTFS3_FS=m$' .config && grep -q '^CONFIG_VIRTIO_INPUT=y$'
+require_config CONFIG_DRM_XE m
+require_config CONFIG_USB4 m
+require_config CONFIG_UCSI_ACPI m
+require_config CONFIG_SND_SOC y
+require_config CONFIG_SND_SOC_SOF_TOPLEVEL y
+require_config CONFIG_SND_SOC_SOF_PCI m
+require_config CONFIG_SND_SOC_SOF_INTEL_TOPLEVEL y
+require_config CONFIG_VMWARE_PVSCSI m
+require_config CONFIG_BLK_DEV_NVME y
+require_config CONFIG_SATA_AHCI y
+require_config CONFIG_MMC_SDHCI_PCI y
+require_config CONFIG_IWLWIFI m
+require_config CONFIG_IWLMVM m
+require_config CONFIG_ATH9K m
+require_config CONFIG_RTW88 m
+require_config CONFIG_BT_HCIBTUSB m
+require_config CONFIG_DRM_I915 m
+require_config CONFIG_DRM_AMDGPU m
+require_config CONFIG_DRM_NOUVEAU m
+require_config CONFIG_SND_HDA_INTEL m
+require_config CONFIG_NTFS3_FS m
+require_config CONFIG_VIRTIO_INPUT y
 """
 compile = "make -j%{jobs}"
 install = """

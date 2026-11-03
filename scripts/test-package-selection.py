@@ -109,14 +109,14 @@ class PackageSelectionTests(unittest.TestCase):
         self.assertNotIn("nawa", plan["packages"])
 
     def test_exact_toolchain_names_are_routed_away_from_ordinary_packages(self):
-        plan = self.resolve(package_names=["bash", "glibc", "gcc"])
+        plan = self.resolve(package_names=["bash", "binutils", "gcc"])
         self.assertEqual(set(plan["packages"]), {"bash"})
-        self.assertEqual(set(plan["toolchain_packages"]), {"glibc", "gcc"})
+        self.assertEqual(set(plan["toolchain_packages"]), {"binutils", "gcc"})
         self.assertFalse(plan["toolchain_all"])
 
     def test_explicit_toolchain_names_and_full_toolchain(self):
-        partial = self.resolve(toolchain_package_names=["glibc"])
-        self.assertEqual(partial["toolchain_packages"], ["glibc"])
+        partial = self.resolve(toolchain_package_names=["binutils"])
+        self.assertEqual(partial["toolchain_packages"], ["binutils"])
         self.assertEqual(partial["packages"], [])
         full = self.resolve(all_toolchain=True)
         self.assertEqual(set(full["toolchain_packages"]), {"binutils", "gcc", "rust"})

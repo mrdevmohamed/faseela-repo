@@ -2,7 +2,7 @@
 [package]
 name = "xdg-utils"
 version = "1.2.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Desktop integration helpers including xdg-open and xdg-mime"
 license = ["MIT"]
@@ -11,12 +11,112 @@ sha256 = "f6b648c064464c2636884c05746e80428110a576f8daacf46ef2e554dcfdae75"
 source_dir = "xdg-utils-v%{version}"
 
 [depends]
-build = ["make"]
+build = ["make", "python"]
 run = ["bash", "coreutils", "dbus", "file", "glib", "gawk", "grep", "sed"]
 
 [build]
 configure = "./configure --prefix=/usr --mandir=/usr/share/man"
-# Build the runtime helper scripts only. The default target also builds the
-# optional HTML/man reference docs, which require xmlto and xsltproc.
-compile = "make -C scripts -j%{jobs} scripts"
+# Generate the text help embedded in the runtime scripts directly from the
+# DocBook XML. This avoids host-only xmlto detection leaking into the sandbox;
+# HTML and man-page rendering remain intentionally out of scope.
+compile = """make -C scripts clean
+python3 - <<'PY'
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+BLOCKS = {
+    "cmdsynopsis", "example", "formalpara", "itemizedlist", "listitem",
+    "note", "orderedlist", "para", "programlisting", "refsect1",
+    "refsect2", "refsect3", "screen", "simpara", "term", "title",
+    "variablelist", "varlistentry", "warning",
+}
+
+
+def local_name(tag):
+    return tag.rsplit("}", 1)[-1]
+
+
+def synopsis_text(node):
+    parts = []
+    if node.text and node.text.strip():
+        parts.append(" ".join(node.text.split()))
+    for child in node:
+        value = synopsis_text(child)
+        if value:
+            parts.append(value)
+        if child.tail and child.tail.strip():
+            parts.append(" ".join(child.tail.split()))
+    return " ".join(parts)
+
+
+def render(node):
+    if local_name(node.tag) == "cmdsynopsis":
+        return synopsis_text(node)
+    parts = [node.text or ""]
+    for child in node:
+        child_text = render(child)
+        if local_name(child.tag) in BLOCKS:
+            parts.extend(("\n\n", child_text.strip(), "\n\n"))
+        else:
+            parts.append(child_text)
+        parts.append(child.tail or "")
+    return "".join(parts)
+
+
+def normalize(text):
+    paragraphs = []
+    for paragraph in text.split("\n\n"):
+        value = " ".join(paragraph.split())
+        if value:
+            paragraphs.append(value)
+    return "\n\n".join(paragraphs)
+
+
+required = {
+    "xdg-desktop-menu", "xdg-desktop-icon", "xdg-mime",
+    "xdg-icon-resource", "xdg-open", "xdg-email",
+    "xdg-screensaver", "xdg-settings",
+}
+xml_dir = Path("scripts/desc")
+found = {path.stem for path in xml_dir.glob("xdg-*.xml")}
+missing = sorted(required - found)
+if missing:
+    raise SystemExit("xdg-utils: missing DocBook help source(s): " + ", ".join(missing))
+
+for xml_path in sorted(xml_dir.glob("xdg-*.xml")):
+    root = ET.parse(xml_path).getroot()
+
+    def first_text(tag):
+        element = next((item for item in root.iter() if local_name(item.tag) == tag), None)
+        if element is None:
+            raise SystemExit(f"xdg-utils: {xml_path} has no <{tag}> element")
+        return " ".join("".join(element.itertext()).split())
+
+    refname = first_text("refname")
+    purpose = first_text("refpurpose")
+    synopsis = next(
+        (item for item in root.iter() if local_name(item.tag) == "refsynopsisdiv"),
+        None,
+    )
+    if synopsis is None:
+        raise SystemExit(f"xdg-utils: {xml_path} has no <refsynopsisdiv>")
+
+    sections = [
+        "Name",
+        f"{refname} - {purpose}",
+        "Synopsis",
+        normalize(render(synopsis)),
+    ]
+    for child in root:
+        if local_name(child.tag) in {"refentryinfo", "refmeta", "refnamediv", "refsynopsisdiv"}:
+            continue
+        section = normalize(render(child))
+        if section:
+            sections.append(section)
+
+    output = Path("scripts") / f"{xml_path.stem}.txt"
+    output.write_text("\n\n".join(sections) + "\n", encoding="utf-8")
+    print(f"Generated embedded help: {output}")
+PY
+make -C scripts -j%{jobs} scripts"""
 install = "make DESTDIR=%{pkgdir} install"

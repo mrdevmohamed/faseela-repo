@@ -22,20 +22,18 @@ name: Build packages
 #   variable DISTRO_REF          distribution tooling ref (default master)
 #
 
-# WHICH PACKAGES  (Actions > Build packages > Run workflow > packages)
-#   (push)        the recipes changed by the push
-#   names         `curl git jq`            exactly those (+ missing dependencies)
-#   @category     `@extra` `@system` `@base` `@boot` `@gui` `@browser` `@media` `@creative` `@toolchain`
-#   flavor:NAME   everything flavor NAME (flavors.toml) needs beyond the bootstrap
-#                 core, plus the core's @toolchain packages (they must be published
-#                 for the flavor jobs to install them), e.g. `flavor:iso-gui`
-#   ALL / @all    base + system + boot + extra  (NOT gui, browser, media, creative or toolchain)
-#   mix them      `@all @gui @creative`   `@extra vim`
-#
-# `@toolchain` is left out of ALL on purpose: rebuilding glibc/gcc/binutils
-# inside the very root that is running the build replaces the libc under the
-# running nawa. The toolchain is built by the ISO workflow (stage 2 / stage 3).
-#
+# PACKAGE SELECTION (Actions > Build packages > Run workflow)
+#   all_packages   all recipe categories except toolchain
+#   core           base + system + boot + extra
+#   category boxes select one or more categories, including the advanced toolchain group
+#   packages       multiple exact recipe names, separated by spaces, commas or newlines
+#   flavors        multiple names from flavors.toml, separated by spaces or commas
+#   exclude        recipe names or @categories removed from selected targets
+# Selectors are additive. Pushes automatically select recipes changed by that push.
+# ALL discovers categories from recipes, so new non-toolchain categories join automatically.
+# GitHub Actions has no dynamic multi-select input: checkboxes select categories,
+# while the packages/flavors text fields accept any number of names.
+
 # BUILDING EVERYTHING TAKES LONGER THAN ONE RUN. So the workflow is resumable:
 #   * a package whose archive (name-version-rel) is already in the distributed
 #     package repository is up to date and is skipped; a recipe bump rebuilds it;
@@ -63,8 +61,60 @@ on:
     paths: ["recipes/**"]
   workflow_dispatch:
     inputs:
+      all_packages:
+        description: "Select all non-toolchain packages across every recipe category"
+        type: boolean
+        default: false
+      core:
+        description: "Select the core set: base + system + boot + extra"
+        type: boolean
+        default: false
+      base:
+        description: "Select every package in the base category"
+        type: boolean
+        default: false
+      system:
+        description: "Select every package in the system category"
+        type: boolean
+        default: false
+      boot:
+        description: "Select every package in the boot category"
+        type: boolean
+        default: false
+      extra:
+        description: "Select every package in the extra category"
+        type: boolean
+        default: false
+      gui:
+        description: "Select every package in the GUI category"
+        type: boolean
+        default: false
+      browser:
+        description: "Select every package in the browser category"
+        type: boolean
+        default: false
+      media:
+        description: "Select every package in the media category"
+        type: boolean
+        default: false
+      creative:
+        description: "Select every package in the creative category"
+        type: boolean
+        default: false
+      toolchain:
+        description: "Advanced: explicitly select toolchain recipes (normally built by Bootstrap)"
+        type: boolean
+        default: false
       packages:
-        description: "Names, @category, flavor:NAME or ALL, space separated (empty = recipes changed by this push). Firefox is included in `flavor:iso-gui`; `@browser` builds the browser category. mpv: `@media`. ALL does NOT include @gui, @browser, @media, @creative or @toolchain. e.g. `flavor:iso-gui` or `@browser @media`"
+        description: "One or more exact package names, separated by spaces, commas or newlines"
+        type: string
+        default: ""
+      flavors:
+        description: "One or more flavor names from flavors.toml, separated by spaces or commas"
+        type: string
+        default: ""
+      exclude:
+        description: "Optional package names or @categories to remove from selected targets"
         type: string
         default: ""
       rootfs:
@@ -115,53 +165,60 @@ jobs:
           fetch-depth: 0
       - id: s
         env:
-          INPUT_PKGS: ${{ inputs.packages }}
+          INPUT_ALL_PACKAGES: ${{ inputs.all_packages }}
+          INPUT_CORE: ${{ inputs.core }}
+          INPUT_BASE: ${{ inputs.base }}
+          INPUT_SYSTEM: ${{ inputs.system }}
+          INPUT_BOOT: ${{ inputs.boot }}
+          INPUT_EXTRA: ${{ inputs.extra }}
+          INPUT_GUI: ${{ inputs.gui }}
+          INPUT_BROWSER: ${{ inputs.browser }}
+          INPUT_MEDIA: ${{ inputs.media }}
+          INPUT_CREATIVE: ${{ inputs.creative }}
+          INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
+          INPUT_PACKAGES: ${{ inputs.packages }}
+          INPUT_FLAVORS: ${{ inputs.flavors }}
+          INPUT_EXCLUDE: ${{ inputs.exclude }}
           INPUT_ROOTFS: ${{ inputs.rootfs || 'auto' }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
           NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
         run: |
           set -euo pipefail
-          python3 scripts/recipe-ids.py recipes > "$RUNNER_TEMP/ids.txt"
-          pkgs=""
-          if [[ -n "${INPUT_PKGS// /}" ]]; then
-            for tok in $INPUT_PKGS; do
-              case "$tok" in
-                ALL|@all)
-                  pkgs+=" $(awk '$1 != "gui" && $1 != "browser" && $1 != "media" && $1 != "creative" && $1 != "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")" ;;
-                flavor:*)
-                  # what the flavor needs beyond the bootstrap core, PLUS the
-                  # toolchain packages of that core (glibc, gcc, binutils ...):
-                  # ALL never builds @toolchain, so without this nothing ever
-                  # publishes them and every flavor install dies on `binutils`.
-                  names="$(python3 scripts/flavor.py resolve "${tok#flavor:}" --without bootstrap)" \
-                    || { echo "::error::cannot resolve flavor '${tok#flavor:}'"; exit 1; }
-                  tc="$(awk '$1 == "toolchain" {print $2}' "$RUNNER_TEMP/ids.txt")"
-                  boot="$(python3 scripts/flavor.py resolve bootstrap)"
-                  full="$(python3 scripts/flavor.py resolve "${tok#flavor:}")"
-                  keep="$(for t in $tc; do grep -qxF "$t" <<< "$boot" && grep -qxF "$t" <<< "$full" && echo "$t"; done || true)"
-                  pkgs+=" $names $keep" ;;
-                @*)
-                  names="$(awk -v c="${tok#@}" '$1 == c {print $2}' "$RUNNER_TEMP/ids.txt")"
-                  [[ -n "$names" ]] || { echo "::error::no recipe category '${tok#@}' (have: $(awk '{print $1}' "$RUNNER_TEMP/ids.txt" | sort -u | tr '\n' ' '))"; exit 1; }
-                  pkgs+=" $names" ;;
-                *) pkgs+=" $tok" ;;
-              esac
-            done
+          selection="$RUNNER_TEMP/package-selection.json"
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            # Recipe pushes are always CHANGED; manual selection never falls back to a commit diff.
+            python3 -I scripts/select-packages.py \\
+              --recipes recipes --flavors-file flavors.toml \\
+              --changed-from "${BEFORE:-}" --changed-to "$GITHUB_SHA" \\
+              --output "$selection"
           else
-            base="${BEFORE:-}"
-            if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
-              base="$(git rev-parse HEAD~1 2>/dev/null || true)"
-            fi
-            [[ -n "$base" ]] || { echo "::error::no commit to diff against - run it manually with 'packages'"; exit 1; }
-            # recipes/<category>/<name>/...  ->  <name>, if its recipe still exists
-            while IFS= read -r p; do
-              [[ -n "$p" ]] || continue
-              compgen -G "recipes/*/$p/recipe.toml" >/dev/null && pkgs+=" $p"
-            done < <(git diff --name-only "$base" "$GITHUB_SHA" -- recipes | awk -F/ 'NF >= 4 {print $3}' | sort -u)
+            categories=()
+            [[ "$INPUT_BASE" == true ]] && categories+=(base)
+            [[ "$INPUT_SYSTEM" == true ]] && categories+=(system)
+            [[ "$INPUT_BOOT" == true ]] && categories+=(boot)
+            [[ "$INPUT_EXTRA" == true ]] && categories+=(extra)
+            [[ "$INPUT_GUI" == true ]] && categories+=(gui)
+            [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
+            [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
+            [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
+            [[ "$INPUT_TOOLCHAIN" == true ]] && categories+=(toolchain)
+
+            args=()
+            [[ "$INPUT_ALL_PACKAGES" == true ]] && args+=(--all)
+            [[ "$INPUT_CORE" == true ]] && args+=(--core)
+            (( ${#categories[@]} == 0 )) || args+=(--categories "${categories[@]}")
+            args+=(--packages "$INPUT_PACKAGES" --flavors "$INPUT_FLAVORS" --exclude "$INPUT_EXCLUDE")
+            python3 -I scripts/select-packages.py \\
+              --recipes recipes --flavors-file flavors.toml "${args[@]}" \\
+              --output "$selection"
           fi
-          pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
-          pkgs="$(echo $pkgs)"   # trim
+          pkgs="$(python3 - "$selection" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          print(" ".join(data["packages"]))
+          PY
+          )"
 
           # Build the current Nawa recipe whenever its standalone transition
           # release lacks the exact archive required by this recipe.
@@ -204,10 +261,21 @@ jobs:
           fi
           echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
           echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
-          {
-            echo "### Packages ($(wc -w <<< "$pkgs")): ${pkgs:-none}"
-            echo "Build environment: \`$rootfs\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          python3 - "$selection" "$pkgs" "$rootfs" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          final = sys.argv[2].split()
+          print(f"### Package selection: {len(final)} target package(s)")
+          print(f"Source: `{data['source']}`")
+          for category, count in data["category_counts"].items():
+              print(f"- {category}: {count}")
+          if data["excluded_count"]:
+              print(f"- Excluded: {', '.join(data['excluded'])}")
+          print(f"- RootFS: `{sys.argv[3]}`")
+          print()
+          print("Selected targets:")
+          print("`" + " ".join(final) + "`" if final else "`none`")
+          PY
 
   build:
     name: build and publish

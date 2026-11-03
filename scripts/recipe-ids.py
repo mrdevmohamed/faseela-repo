@@ -14,8 +14,8 @@
         longer have a recipe are NOT reported (removing a package is a
         decision for a human).
 
-Used by .github/workflows/packages.yml to expand "@extra" / "@all" into
-package names and to prune superseded archives from the package repository.
+Used by scripts/select-packages.py to enumerate package names/categories and by
+the package publisher to prune superseded archives from the package repository.
 """
 import re
 import sys

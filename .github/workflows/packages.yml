@@ -250,6 +250,8 @@ jobs:
           set -euo pipefail
           rm -rf distro/recipes
           cp -a recipes distro/recipes
+          # This repo's nawa pin wins over the tooling's bootstrap lock (see the script).
+          python3 -I scripts/write-nawa-lock.py distro
           echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check the publishing setup before spending hours building

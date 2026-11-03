@@ -287,13 +287,6 @@ jobs:
             exit 1
           fi
 
-          repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
-          for option in --index-version --locations --recipes-rev; do
-            grep -q -- "$option" <<< "$repo_help" || {
-              echo "::error::the selected rootfs carries an old Nawa without $option. Publish a fresh Faseela core/rootfs with the independent Bootstrap Nawa v3 pin before building packages."
-              exit 1
-            }
-          done
 
       - name: Allow unprivileged user namespaces
         run: |
@@ -308,6 +301,16 @@ jobs:
           sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
           sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
           sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
+
+          # Fail before the package build if the selected rootfs still has a
+          # Nawa binary that cannot write a schema-v3 distributed index.
+          repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
+          for option in --index-version --locations --recipes-rev; do
+            grep -q -- "$option" <<< "$repo_help" || {
+              echo "::error::the selected rootfs carries an old Nawa without $option. Publish a fresh Faseela core/rootfs with the independent Bootstrap Nawa v3 pin before building packages."
+              exit 1
+            }
+          done
 
       # Keep one small metadata request; archive bytes are fetched from the
       # public browser URLs, not the per-asset API endpoint (which burns the
@@ -389,15 +392,6 @@ jobs:
             < <(find "$out" -maxdepth 1 -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
           echo "new archives: ${#new[@]}"
           echo "built=${#new[@]}" >> "$GITHUB_OUTPUT"
-
-          # Require the schema-v3 CLI before publishing any distributed index.
-          help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)"
-          for option in --index-version --locations --recipes-rev; do
-            grep -q -- "$option" <<< "$help" || {
-              echo "::error::the build root's Nawa lacks $option. Build and publish a fresh Faseela core/rootfs with the Bootstrap Nawa v3 pin, then retry."
-              exit 1
-            }
-          done
 
           repo="$T/repo"
           sudo rm -rf "$repo"; sudo mkdir -p "$repo"

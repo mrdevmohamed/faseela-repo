@@ -52,7 +52,7 @@ def main():
             {
                 "tag_name": "packages-0002",
                 "assets": [
-                    {"name": "old-1"}, {"name": "old-2"}, {"name": "old-3"},
+                    {"name": "old-1.nawa.tar.zst"}, {"name": "old-2.nawa.tar.zst"}, {"name": "old-3.nawa.tar.zst"},
                 ],
             },
         ]
@@ -90,7 +90,7 @@ def main():
         assert plan["create_releases"] == ["packages-0003"]
         assert set(plan["uploads"]["packages-0001"]) == {names[1]}
         assert set(plan["uploads"]["packages-0003"]) == {names[2], recipe}
-        assert {"tag": "packages-0002", "name": "old-1"} in plan["cleanup"]
+        assert {"tag": "packages-0002", "name": "old-1.nawa.tar.zst"} in plan["cleanup"]
         assert names[1] in plan["legacy_cleanup"]
         assert names[1] + ".sig" in plan["legacy_cleanup"]
         assert names[0] in plan["legacy_cleanup"]

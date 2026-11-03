@@ -1,0 +1,33 @@
+# boot recipe: saq — initramfs generator for the installed system
+#
+# The source lives in its own repository (github.com/mrdevmohamed/saq) and is
+# pinned here to ONE commit by sha256. The live ISO keeps its own initramfs
+# (bootstrap/initramfs.sh); saq builds the disk-boot images and is called by
+# the linux package's hooks. Needs a static busybox with findfs/modprobe.
+[package]
+name = "saq"
+version = "1.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Initramfs generator and kernel boot-image maintenance for Faseela"
+license = ["GPL-2.0"]
+source = "https://github.com/mrdevmohamed/saq/archive/b381e200069d0ede8d7e133008ee92530054500b.tar.gz"
+sha256 = "780ee6885e7bb85369dc3405ad04a7c27bbbaa321d902d1164b2848c03497f5d"
+source_dir = "saq-b381e200069d0ede8d7e133008ee92530054500b"
+
+[depends]
+build = []
+run = ["bash", "busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "util-linux", "sed", "grep", "xz", "zstd"]
+
+[build]
+check = """
+bash -n src/saq
+sh -n share/saq/init
+"""
+install = """
+install -Dm755 src/saq %{pkgdir}/usr/sbin/saq
+install -Dm755 share/saq/init %{pkgdir}/usr/share/saq/init
+install -Dm644 share/saq/modules.list %{pkgdir}/usr/share/saq/modules.list
+bash -n %{pkgdir}/usr/sbin/saq
+%{pkgdir}/usr/sbin/saq --version >/dev/null
+"""

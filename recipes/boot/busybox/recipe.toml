@@ -2,9 +2,9 @@
 [package]
 name = "busybox"
 version = "1.37.0"
-rel = 2
+rel = 4
 arch = ["x86_64"]
-summary = "Single-binary toolbox for initramfs and rescue"
+summary = "Static single-binary toolbox for initramfs, rescue and recovery"
 license = ["GPL-2.0"]
 source = "https://busybox.net/downloads/busybox-1.37.0.tar.bz2"
 sha256 = "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
@@ -14,20 +14,41 @@ build = []
 run = []
 
 [build]
-# `tc` is disabled: busybox 1.37's tc.c still uses the CBQ structs that the
-# kernel removed from pkt_sched.h in 6.8 (headers here are 6.10), so it no
-# longer compiles. Same workaround bootstrap/initramfs.sh already applies.
+# Keep BusyBox static: it runs before the real root filesystem is mounted.
 configure = """
 make defconfig && \
 sed -i -e 's/^CONFIG_TC=y$/# CONFIG_TC is not set/' \
-       -e 's/^CONFIG_FEATURE_TC_INGRESS=y$/# CONFIG_FEATURE_TC_INGRESS is not set/' .config && \
-make oldconfig < /dev/null > /dev/null
+       -e 's/^CONFIG_FEATURE_TC_INGRESS=y$/# CONFIG_FEATURE_TC_INGRESS is not set/' \
+       -e 's/^# CONFIG_STATIC is not set$/CONFIG_STATIC=y/' \
+       -e 's/^# CONFIG_MODPROBE is not set$/CONFIG_MODPROBE=y/' \
+       -e 's/^CONFIG_MODPROBE_SMALL=y$/# CONFIG_MODPROBE_SMALL is not set/' \
+       -e 's/^# CONFIG_BLKID is not set$/CONFIG_BLKID=y/' \
+       -e 's/^# CONFIG_FEATURE_BLKID_TYPE is not set$/CONFIG_FEATURE_BLKID_TYPE=y/' \
+       -e 's/^# CONFIG_SWITCH_ROOT is not set$/CONFIG_SWITCH_ROOT=y/' \
+       -e 's/^# CONFIG_FINDFS is not set$/CONFIG_FINDFS=y/' \
+       -e 's/^# CONFIG_FEATURE_INSTALLER is not set$/CONFIG_FEATURE_INSTALLER=y/' \
+       -e 's/^# CONFIG_MOUNT is not set$/CONFIG_MOUNT=y/' \
+       -e 's/^# CONFIG_UMOUNT is not set$/CONFIG_UMOUNT=y/' \
+       -e 's/^# CONFIG_MKNOD is not set$/CONFIG_MKNOD=y/' .config && \
+make oldconfig < /dev/null > /dev/null && \
+grep -q '^CONFIG_STATIC=y$' .config && \
+grep -q '^CONFIG_MODPROBE=y$' .config && \
+grep -q '^# CONFIG_MODPROBE_SMALL is not set$' .config && \
+grep -q '^CONFIG_BLKID=y$' .config && \
+grep -q '^CONFIG_FEATURE_BLKID_TYPE=y$' .config && \
+grep -q '^CONFIG_SWITCH_ROOT=y$' .config && \
+grep -q '^CONFIG_FINDFS=y$' .config && \
+grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
 """
-compile = "make -j%{jobs}"
-# Ship ONLY the binary. `make install` also plants ~400 applet symlinks
-# (/bin/tar, /bin/sh, /usr/bin/install, ...) that shadow the real GNU tools in
-# the build root from this point on: busybox's built-in xz decoder then fails
-# on large archives ("tar: corrupted data") and nawa silently stages them as
-# single files (seen with the rust tarball). Rescue users get the applets with
-# `busybox --install -s <dir>`; the initramfs builds its own static busybox.
+compile = """
+make -j%{jobs}
+for applet in sh mount umount mkdir mknod switch_root modprobe findfs blkid sleep cat; do
+    ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
+done
+ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {
+    echo "busybox: expected a statically linked binary" >&2; exit 1;
+}
+"""
+# Ship only the binary. make install creates many applet symlinks that can
+# shadow GNU tools in the build root; the Live ISO can use --install itself.
 install = "install -Dm755 busybox %{pkgdir}/usr/bin/busybox"

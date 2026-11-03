@@ -11,17 +11,17 @@ recipes/
 ├── boot/        linux kernel, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
 ├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
-├── media/       optional ffmpeg and the mpv player with their codec/subtitle/render libs (opt-in)
+├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 └── extra/       dev tools, editors, net utils, hw tools, misc libs
 ```
 
-Current set: 10 toolchain + 39 base + 37 system + 6 boot + 69 extra =
-**161 packages**, plus the optional `gui/` category (58 packages, see
+Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
+**180 packages**, plus the optional `gui/` category (62 packages, see
 [gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
-see [browser/README.md](browser/README.md)), the optional `media/` category (16 packages, see [media/README.md](media/README.md)),
+see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md));
-the recipe tree counts 262 recipes in total.
+the recipe tree counts 292 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/` and `creative/` are never part of them).
 
 The first 47 `extra/` recipes are generated from a data table
@@ -115,7 +115,7 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;
 PipeWire and WirePlumber start in the user's Sway session.
 
-Verify any chain — or the whole 262-package graph at once — with:
+Verify any chain — or the whole 292-package graph at once — with:
 
 ```
 nawa --recipes recipes deps <name>

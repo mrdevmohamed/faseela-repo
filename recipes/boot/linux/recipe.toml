@@ -17,10 +17,11 @@
 #         `if SND_SOC` and cannot be enabled when the parent is only a module
 # rel 14: enable the distro-required Kconfig options before validating them;
 #         x86_64_defconfig intentionally leaves many optional drivers unset
+# rel 15: tolerate staging installs where the runtime saq dependency is absent
 [package]
 name = "linux"
 version = "6.10"
-rel = 14
+rel = 15
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -168,6 +169,18 @@ rm -f %{pkgdir}/lib/modules/%{version}/build %{pkgdir}/lib/modules/%{version}/so
 
 [hooks]
 # Nawa runs post_install after both a fresh install and an upgrade.
-post_install = "/usr/sbin/saq --all --prune --update-default"
+post_install = """
+if [ -x /usr/sbin/saq ]; then
+    /usr/sbin/saq --all --prune --update-default
+else
+    echo "linux: saq is not present in this root; skipping initramfs refresh"
+fi
+"""
 # Remove stale images after the kernel package payload has been removed.
-post_remove = "/usr/sbin/saq --prune --update-default"
+post_remove = """
+if [ -x /usr/sbin/saq ]; then
+    /usr/sbin/saq --prune --update-default
+else
+    echo "linux: saq is not present in this root; skipping initramfs cleanup"
+fi
+"""

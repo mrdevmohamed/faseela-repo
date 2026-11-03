@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "Desktop integration helpers including xdg-open and xdg-mime"
 license = ["MIT"]
 source = "https://gitlab.freedesktop.org/xdg/xdg-utils/-/archive/v%{version}/xdg-utils-v%{version}.tar.gz"
-sha256 = "e7c1256eb56593ed770d43834841c13dc0c3b7d1fe2ae79ef11cfd088728cb42"
+sha256 = "f6b648c064464c2636884c05746e80428110a576f8daacf46ef2e554dcfdae75"
 source_dir = "xdg-utils-v%{version}"
 
 [depends]

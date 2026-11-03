@@ -2,7 +2,7 @@
 [package]
 name = "xdg-utils"
 version = "1.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Desktop integration helpers including xdg-open and xdg-mime"
 license = ["MIT"]
@@ -16,5 +16,7 @@ run = ["bash", "coreutils", "dbus", "file", "glib", "gawk", "grep", "sed"]
 
 [build]
 configure = "./configure --prefix=/usr --mandir=/usr/share/man"
-compile = "make -j%{jobs}"
+# Build the runtime helper scripts only. The default target also builds the
+# optional HTML/man reference docs, which require xmlto and xsltproc.
+compile = "make -C scripts -j%{jobs} scripts"
 install = "make DESTDIR=%{pkgdir} install"

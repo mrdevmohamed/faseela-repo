@@ -167,7 +167,7 @@ jobs:
           # so an existing schema-v1 client can upgrade without parsing v3.
           if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             pkgs+=" nawa"
-            pkgs="$(tr ' ' '\\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\\n' ' ')"
+            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
             pkgs="$(echo $pkgs)"
             echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
           fi
@@ -394,7 +394,7 @@ jobs:
         run: python3 -I scripts/check-file-conflicts.py "$T/build/out"
 
       # Publish package and recipe archives to immutable storage shards, then
-      # atomically switch the signed stable index to their per-package URLs.
+      # Upload shard archives first; keep the old schema-v1 stable index untouched.
       # The shard limit is deliberately below GitHub's 1,000-asset release cap.
       - name: Publish to the distributed package repository
         id: publish
@@ -504,6 +504,15 @@ jobs:
               --notes "Standalone signed Nawa package for clients that still use the legacy schema-v1 stable index. Download both assets and install the archive locally with: sudo nawa install ./<archive>.nawa.tar.zst. The updated package defaults to stable-v3."
           fi
           upload "$NAWA_TRANSITION_TAG" "$repo/$nawa_archive" "$repo/$nawa_archive.sig"
+
+          # Keep only the current Nawa pair in this small transition release.
+          gh api "repos/$PKG_REPO/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' |
+            while IFS= read -r old; do
+              [[ "$old" == "$nawa_archive" || "$old" == "$nawa_archive.sig" ]] && continue
+              gh release delete-asset "$NAWA_TRANSITION_TAG" "$old" --repo "$PKG_REPO" --yes || {
+                echo "::warning::could not remove old transition asset $old"
+              }
+            done
 
           # Publish the v3 index only after all referenced shard assets exist.
           upload "$PKG_V3_TAG" "$repo/index.toml" "$repo/index.toml.sig"

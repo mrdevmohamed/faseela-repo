@@ -18,7 +18,7 @@
 [package]
 name = "linux"
 version = "6.10"
-rel = 12
+rel = 13
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -44,12 +44,12 @@ require_config() {
     fi
 }
 
+# Linux 6.10 gates module loading and userspace autoloading through CONFIG_MODULES.
 # Installed-system initramfs and automatic module loading.
 require_config CONFIG_BLK_DEV_INITRD y
 require_config CONFIG_RD_GZIP y
 require_config CONFIG_MODULES y
 require_config CONFIG_MODULE_UNLOAD y
-require_config CONFIG_KMOD y
 require_config CONFIG_FW_LOADER y
 require_config CONFIG_EFI_STUB y
 

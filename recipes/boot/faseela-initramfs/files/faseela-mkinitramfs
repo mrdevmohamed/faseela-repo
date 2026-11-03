@@ -2,7 +2,7 @@
 # faseela-mkinitramfs — build versioned initramfs images for installed kernels.
 # The live ISO continues to use bootstrap/initramfs.sh.
 set -Eeuo pipefail
-ROOT="/"; ACTION="all"; KERNEL_VERSION=""; DO_PRUNE=0; UPDATE_DEFAULT=0; DRY_RUN=0; WORK=""
+ROOT="/"; ACTION="none"; KERNEL_VERSION=""; DO_PRUNE=0; UPDATE_DEFAULT=0; DRY_RUN=0; WORK=""
 
 die() { echo "faseela-mkinitramfs: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
@@ -31,6 +31,9 @@ while (($#)); do
   *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
  esac
 done
+
+# No explicit build action means build all, except --prune-only lifecycle calls.
+if [[ "$explicit_action" == 0 && "$DO_PRUNE" == 0 ]]; then ACTION="all"; fi
 
 [[ -d "$ROOT" ]] || die "root does not exist: $ROOT"
 ROOT="$(cd "$ROOT" && pwd -P)"

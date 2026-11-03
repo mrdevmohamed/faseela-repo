@@ -41,6 +41,13 @@ assert re.search(r"for g in [^\n]*\brender\b", post_install), (
 assert "seat,video,render,input,audio" in post_install, (
     "gui-session instructions must add desktop users to render"
 )
+install_script = session["build"]["install"]
+assert "70-faseela-drm.rules" in install_script, (
+    "gui-session must ship a udev rule for the DRM render group"
+)
+assert 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"' in install_script, (
+    "the udev rule must assign render nodes to the render group"
+)
 
 flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))
 zed_flavor = flavors["flavor"]["iso-gui-zed"]

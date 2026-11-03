@@ -2,7 +2,7 @@
 [package]
 name = "busybox"
 version = "1.37.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Static single-binary toolbox for initramfs, rescue and recovery"
 license = ["GPL-2.0"]
@@ -25,6 +25,7 @@ sed -i -e 's/^CONFIG_TC=y$/# CONFIG_TC is not set/' \
        -e 's/^# CONFIG_BLKID is not set$/CONFIG_BLKID=y/' \
        -e 's/^# CONFIG_FEATURE_BLKID_TYPE is not set$/CONFIG_FEATURE_BLKID_TYPE=y/' \
        -e 's/^# CONFIG_SWITCH_ROOT is not set$/CONFIG_SWITCH_ROOT=y/' \
+       -e 's/^# CONFIG_FINDFS is not set$/CONFIG_FINDFS=y/' \
        -e 's/^# CONFIG_FEATURE_INSTALLER is not set$/CONFIG_FEATURE_INSTALLER=y/' \
        -e 's/^# CONFIG_MOUNT is not set$/CONFIG_MOUNT=y/' \
        -e 's/^# CONFIG_UMOUNT is not set$/CONFIG_UMOUNT=y/' \
@@ -36,11 +37,12 @@ grep -q '^# CONFIG_MODPROBE_SMALL is not set$' .config && \
 grep -q '^CONFIG_BLKID=y$' .config && \
 grep -q '^CONFIG_FEATURE_BLKID_TYPE=y$' .config && \
 grep -q '^CONFIG_SWITCH_ROOT=y$' .config && \
+grep -q '^CONFIG_FINDFS=y$' .config && \
 grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
 """
 compile = """
 make -j%{jobs}
-for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+for applet in sh mount umount mkdir mknod switch_root modprobe findfs blkid sleep cat; do
     ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
 done
 ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {

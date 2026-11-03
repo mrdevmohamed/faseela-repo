@@ -1,0 +1,19 @@
+# system recipe: libgcrypt — general-purpose cryptographic library
+[package]
+name = "libgcrypt"
+version = "1.12.4"
+rel = 1
+arch = ["x86_64"]
+summary = "General-purpose cryptographic library"
+license = ["LGPL-2.1-or-later"]
+source = "https://www.gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-%{version}.tar.bz2"
+sha256 = "d77f68f48879510e79a2f65977ccc68981781ea0923e5bdffac2a193ea3d660e"
+
+[depends]
+build = ["libgpg-error"]
+run = ["libgpg-error"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --with-libgpg-error-prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

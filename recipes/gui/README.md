@@ -1,9 +1,9 @@
 # recipes/gui — Wayland desktop (sway)
 
 A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
-**wlroots 0.18**, **foot** terminal, DejaVu fonts, **seatd** for seat
-management (no systemd/logind), supervised by runit. 52 packages (incl. `llvm`,
-`libva` and the X11 client libraries).
+**wlroots 0.18**, **foot** terminal, DejaVu fonts, and **seatd** for seat
+management. System services are supervised by runit; user applications use a
+per-session D-Bus session bus.
 
 > **Build status:** these recipes have not all been exercised in one clean
 > end-to-end build yet. A few upstream source archives still need their hashes
@@ -16,23 +16,27 @@ management (no systemd/logind), supervised by runit. 52 packages (incl. `llvm`,
 excluded from the standard `iso-gui` flavor. Use `iso-gui-zed` or install
 `zed` on a system that already has the Vulkan stack.
 
-The Zed flavor now contains a complete software-capable Vulkan path:
+The Zed flavor now contains a hardware-capable Vulkan path, with a software fallback:
 
 - `vulkan-loader` provides the Khronos `libvulkan.so.1` loader with Wayland WSI.
-- Mesa is built with `-D vulkan-drivers=swrast`, which installs the lavapipe ICD
-  (`lvp_icd.x86_64.json`) and `libvulkan_lvp.so`.
-- Lavapipe uses LLVM/Clang; the `llvm` recipe now builds and retains Clang as
-  well as the X86/AMDGPU LLVM targets. Gallium `softpipe` stays enabled.
+- Mesa is built with `-D vulkan-drivers=amd,intel,intel_hasvk,swrast`: RADV for AMD,
+  ANV for modern Intel, HasVK for older Intel (Ivy Bridge through Broadwell), and
+  lavapipe (`lvp_icd.x86_64.json` / `libvulkan_lvp.so`) as the software fallback.
+- The Intel ANV build uses the `python-ply` helper. RADV, ANV and HasVK are
+  hardware ICDs; lavapipe remains available for systems without a Vulkan GPU.
+- Lavapipe uses LLVM/Clang; the `llvm` recipe builds and retains Clang as well
+  as the X86/AMDGPU LLVM targets. Gallium `softpipe` stays enabled.
 - The Vulkan SDK helper recipes are pinned as a compatible set: Vulkan-Headers
   and Vulkan-Loader 1.3.296, plus the SPIR-V commits listed by glslang's
   `vulkan-sdk-1.3.296.0/known_good.json`.
 
-This allows Vulkan rendering on QEMU guests without a passed-through Vulkan
-GPU. Lavapipe is CPU-rendered, so performance depends on the guest's available
-CPU resources. It does not accelerate the desktop's OpenGL path; sway continues
-to use Mesa's llvmpipe/virgl drivers as available.
+On a machine with a supported AMD or Intel GPU and its kernel driver loaded,
+Zed can use the matching hardware Vulkan ICD. QEMU guests without a working GPU
+passthrough still use lavapipe, which renders on the CPU and is not accelerated.
+This does not change the desktop OpenGL path: sway continues to use Mesa's
+llvmpipe/virgl drivers as available.
 
-To force the lavapipe ICD for a diagnostic launch:
+To force the lavapipe ICD for a diagnostic launch only (this disables hardware selection):
 
 ```sh
 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json zed
@@ -86,15 +90,16 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
+| desktop integration | xdg-utils (`xdg-open`), rsync (Zed auto-update), gnome-keyring (Secret Service), GCR/GCK, p11-kit and libgcrypt |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
 
-`gui-session` creates the `seat`, `video` and `input` groups (hook) and enables
-the `seatd` service. Then:
+`gui-session` creates the `seat`, `video`, `render`, `input` and `audio` groups (hook),
+installs the DRM render-node udev rule, and enables the `seatd` service. Then:
 
 ```
-usermod -aG seat,video,input,audio <user>     # log out and in again
+usermod -aG seat,video,render,input,audio <user> # log out and in again
 start-sway                                    # from a text console
 ```
 
@@ -105,23 +110,40 @@ exported for every login shell by `/etc/profile.d/gui-session.sh`, so a plain
 and evdev/HID input; to try it in QEMU use `-device virtio-vga` (or `-vga std`)
 and a USB/PS2 keyboard and mouse.
 
+## Desktop integration
+
+`gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
+`gnome-keyring`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
+user D-Bus session with `dbus-run-session`; GNOME Keyring installs
+`/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
+Service daemon is activated on demand by D-Bus. This does not require systemd
+or a system-wide runit service.
+
+The keyring daemon is built without PAM integration, so this supplies the
+`org.freedesktop.secrets` service but does not automatically unlock a login
+keyring during a tty login.
+
 ## Limitations / next steps
 
-* **Mesa: AMD hardware + software + virgl, with software Vulkan.** Drivers:
-  `radeonsi` (AMD GCN/RDNA GPUs; the `llvm` recipe builds the X86 and AMDGPU
-  targets), `llvmpipe` (JIT, multithreaded), `softpipe`, `virgl`, and Vulkan
-  `swrast` (lavapipe). The Vulkan swrast build uses Clang from the `llvm`
-  package. QEMU without a working Vulkan GPU can use lavapipe through the
-  Khronos loader. wlroots is built `renderers=gles2` only, so the desktop GL
-  path remains llvmpipe/virgl. The kernel has `amdgpu` and `i915` as modules
-  and the firmware is in `linux-firmware-lite`. **Intel graphics are still
-  llvmpipe**: mesa's `iris` needs `mesa_clc` (clang + libclc), which the
-  `llvm` recipe does not build. Hardware **video** decode/encode (VA-API):
-  mesa provides `radeonsi_drv_video.so` for AMD (`-D gallium-va`), and
-  `recipes/media/intel-media-driver` provides `iHD_drv_video.so` for Intel.
+* **Mesa graphics**: Gallium provides AMD `radeonsi`, CPU `llvmpipe`/`softpipe`,
+  and QEMU `virgl`. Vulkan provides AMD `RADV` (`amd`) and Intel `ANV` (`intel`)
+  plus legacy `HasVK` (`intel_hasvk`), with lavapipe (`swrast`) as a CPU fallback.
+  The kernel has `amdgpu` and `i915` as modules and firmware is in
+  `linux-firmware-lite`. Users need membership in `render` to access DRM render
+  nodes such as `/dev/dri/renderD128` (and `video` where the primary node requires it).
+* **Intel OpenGL remains software-rendered for now**: Mesa's `iris` Gallium driver
+  needs `mesa_clc`/libclc, which this LLVM package does not yet build. This does
+  not prevent Intel ANV Vulkan from providing hardware rendering in Zed.
+* **NVIDIA Vulkan is not enabled yet**: this Mesa build does not include NVK
+  (`nouveau`), which needs additional Rust/bindgen build dependencies. NVIDIA
+  users need a separately packaged compatible driver before Zed can use the GPU.
+* Hardware **video** decode/encode (VA-API): mesa provides `radeonsi_drv_video.so`
+  for AMD (`-D gallium-va`), and `recipes/media/intel-media-driver` provides
+  `iHD_drv_video.so` for Intel.
 * No X server and no Xwayland (only the X11 *client* libraries, because cairo
-  links them), no D-Bus, so no sway tray (`-D tray=disabled`) and no portals.
-  The launcher is `wmenu` (`Super+D`, sway's default `wmenu-run`).
+  links them). D-Bus system and per-user session buses are available, but
+  desktop portals are not packaged yet. The launcher is `wmenu` (`Super+D`,
+  sway's default `wmenu-run`).
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).
   sway's stock `output * bg ...` line is commented out by the sway recipe;
   `gui-session` installs `/usr/share/backgrounds/faseela/default.png` and the

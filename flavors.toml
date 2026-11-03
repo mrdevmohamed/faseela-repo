@@ -63,9 +63,9 @@ exclude = ["zed"]
 summary = "compatibility alias for iso-gui (includes Firefox ESR)"
 extends = ["iso-gui"]
 
-# Opt-in Zed desktop. Mesa builds lavapipe (Vulkan swrast); vulkan-loader supplies libvulkan.
-# Mesa's build closure compiles the SDK-matched SPIR-V/glslang helpers; the ISO only installs
-# runtime packages and does not include those build-only tools.
+# Opt-in Zed desktop. Mesa builds AMD RADV and Intel ANV/HasVK Vulkan ICDs, plus lavapipe
+# (swrast) as a CPU fallback; vulkan-loader supplies libvulkan. Mesa's build closure compiles
+# the SDK-matched SPIR-V/glslang helpers and python-ply; the ISO installs runtime packages only.
 [flavor.iso-gui-zed]
 summary = "iso-gui plus Zed with Vulkan through Mesa lavapipe (software Vulkan for QEMU)"
 extends = ["iso-nogui"]

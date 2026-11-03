@@ -1,7 +1,7 @@
 # recipes/media — ffmpeg, mpv and Vulkan support
 
 **ffmpeg** (convert / probe / stream audio and video), the **mpv** media player
-and the Vulkan SDK runtime/build helpers are opt-in packages. 20 packages:
+and the Vulkan SDK runtime/build helpers are opt-in packages. 21 packages:
 
 | group | packages |
 |---|---|
@@ -11,7 +11,7 @@ and the Vulkan SDK runtime/build helpers are opt-in packages. 20 packages:
 | hardware video | intel-media-driver gmmlib (Intel VA-API driver; libva and AMD's driver: see gui/ libva, mesa) |
 | scripting | lua52 (mpv's on-screen controller, stats, console) |
 | Vulkan runtime | vulkan-loader (libvulkan.so.1; Wayland WSI) |
-| Vulkan build helpers | vulkan-headers, spirv-headers, spirv-tools, glslang |
+| Vulkan / Mesa build helpers | vulkan-headers, spirv-headers, spirv-tools, glslang, python-ply |
 | other build helpers | python-jinja2 python-glad2 (libplacebo generates its GL loader with glad) |
 
 Vulkan-Headers and Vulkan-Loader are pinned to SDK 1.3.296. The SPIR-V headers
@@ -46,9 +46,10 @@ stack (Wayland, Mesa), ffmpeg does not.
 1. `python3 scripts/fill-sha256.py --dry-run` — lists every URL with a
    placeholder hash.
 2. Pin the new SDK source archives as noted above; review the resulting hashes.
-3. Build order for the software Vulkan chain is
+3. Build order for Mesa's Vulkan support is
    `spirv-headers → spirv-tools → glslang → mesa`, plus
-   `vulkan-headers → vulkan-loader`.
+   `vulkan-headers → vulkan-loader`; `python-ply` is also pulled into Mesa's
+   build closure for Intel ANV. The installed Zed flavor keeps only runtime packages.
 4. `python3 scripts/check-recipes.py mpv` prints the mpv build order.
 5. Things most likely to need attention on the first build:
    * **Mesa / Lavapipe**: the Clang project is built as part of the `llvm`

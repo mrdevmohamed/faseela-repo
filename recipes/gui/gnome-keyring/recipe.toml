@@ -1,0 +1,25 @@
+# gui recipe: GNOME Keyring — D-Bus Secret Service for desktop applications
+# This is a per-user session daemon, activated on demand by the session D-Bus
+# service file org.freedesktop.secrets.service. It is not a systemd/runit
+# system service. PAM and SSH-agent integration are intentionally disabled.
+[package]
+name = "gnome-keyring"
+version = "51.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Session keyring and org.freedesktop.secrets D-Bus service"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gnome-keyring/51/gnome-keyring-%{version}.tar.xz"
+sha256 = "dfe7adc5876ef0670e7eba2907799bdbb8875ce58bb4208e1a52169bd16a47ca"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gcr", "libgcrypt", "p11-kit"]
+run = ["dbus", "glib", "gcr", "libgcrypt", "p11-kit"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dsystemd=disabled -Dselinux=disabled -Dlibcap-ng=disabled -Dssh-agent=false -Dpam=false -Dmanpage=false -Ddebug-mode=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = '''glib-compile-schemas /usr/share/glib-2.0/schemas 2>/dev/null || true'''

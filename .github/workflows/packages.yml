@@ -1,28 +1,27 @@
 name: Build packages
 
-# Builds the packages described by the recipes of THIS repository and publishes
-# them across GitHub Releases: the fixed `stable` tag (the repository URL)
-# carries the signed schema-v3 index only, while package and recipe archives
-# live in `packages-NNNN` storage shards. The index authenticates every
-# per-archive HTTPS URL and SHA-256. Clients use it with
+# Builds packages from this repository's recipes. The old `stable` endpoint
+# remains a frozen schema-v1 compatibility endpoint for existing clients.
+# New clients use `stable-v3`: its signed schema-v3 index points to package
+# and recipe archives distributed across `packages-NNNN` Releases.
 #
-#   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable
+#   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable-v3
 #
-# (this repository must be PUBLIC for that URL to work without a token)
+# Existing installations can upgrade Nawa from the standalone signed
+# `nawa-transition` release before switching to stable-v3.
+# This repository must be PUBLIC for the URLs to work without a token.
 #
-# The packages are published with the workflow's own GITHUB_TOKEN
-# (contents: write on this repository): no personal access token is needed.
+# Publishing uses this workflow's GITHUB_TOKEN (contents: write); no PAT needed.
 #
-# One-time setup in THIS repository (Settings > Secrets and variables > Actions):
-#   secret   NAWA_SIGN_KEY_B64   base64 of nawa.sec   (nawa keygen --out <dir>; base64 -w0 nawa.sec)
-#   variable PKG_TAG         release tag used as the repo (optional, default stable)
-#   variable DISTRO_REPO     owner/name of the distribution repository: its releases
-#                            carry the build rootfs, its bootstrap/ + profiles/ are
-#                            the build tooling (optional, default mrdevmohamed/faseela)
-#   variable DISTRO_REF      branch or tag of DISTRO_REPO to take that tooling from
-#                            (optional, default master)
-# The matching nawa.pub is what the distribution trusts (`nawa trust nawa.pub`).
+# One-time setup (Settings > Secrets and variables > Actions):
+#   secret   NAWA_SIGN_KEY_B64   base64 of nawa.sec
+#   variable PKG_TAG             old schema-v1 release tag (default stable)
+#   variable PKG_V3_TAG          schema-v3 index release tag (default stable-v3)
+#   variable NAWA_TRANSITION_TAG standalone signed Nawa upgrade (default nawa-transition)
+#   variable DISTRO_REPO         distribution repository (default mrdevmohamed/faseela)
+#   variable DISTRO_REF          distribution tooling ref (default master)
 #
+
 # WHICH PACKAGES  (Actions > Build packages > Run workflow > packages)
 #   (push)        the recipes changed by the push
 #   names         `curl git jq`            exactly those (+ missing dependencies)
@@ -119,6 +118,8 @@ jobs:
           INPUT_PKGS: ${{ inputs.packages }}
           INPUT_ROOTFS: ${{ inputs.rootfs || 'auto' }}
           BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+          NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
         run: |
           set -euo pipefail
           python3 scripts/recipe-ids.py recipes > "$RUNNER_TEMP/ids.txt"
@@ -161,6 +162,15 @@ jobs:
           fi
           pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
           pkgs="$(echo $pkgs)"   # trim
+
+          # The first v3 publication also builds a stand-alone Nawa package
+          # so an existing schema-v1 client can upgrade without parsing v3.
+          if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            pkgs+=" nawa"
+            pkgs="$(tr ' ' '\\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\\n' ' ')"
+            pkgs="$(echo $pkgs)"
+            echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
+          fi
           for p in $pkgs; do
             [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad package name '$p'"; exit 1; }
             compgen -G "recipes/*/$p/recipe.toml" >/dev/null || { echo "::error::no recipe named '$p'"; exit 1; }
@@ -203,6 +213,8 @@ jobs:
       PRUNE: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
       PKG_REPO: ${{ github.repository }}
       PKG_TAG: ${{ vars.PKG_TAG || 'stable' }}
+      PKG_V3_TAG: ${{ vars.PKG_V3_TAG || 'stable-v3' }}
+      NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -232,9 +244,15 @@ jobs:
           set -euo pipefail
           [[ "$HAVE_KEY" == true ]]     || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
           [[ "$BUDGET_MIN" =~ ^[0-9]+$ ]] || { echo "::error::budget must be a number of minutes"; exit 1; }
-          if ! gh release view "$PKG_TAG" --repo "$PKG_REPO" > /dev/null 2>&1; then
-            gh release create "$PKG_TAG" --repo "$PKG_REPO" --title "nawa package repository" \
-              --notes "Nawa schema-v3 repository: this release holds the signed index only; package and recipe archives live in packages-NNNN storage releases. Written by CI, do not edit."
+          [[ "$PKG_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid PKG_TAG"; exit 1; }
+          [[ "$PKG_V3_TAG" =~ ^[A-Za-z0-9._-]+$ && "$PKG_V3_TAG" != "$PKG_TAG" ]] || {
+            echo "::error::PKG_V3_TAG must be a safe, distinct release tag"; exit 1;
+          }
+          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
+          if ! gh release view "$PKG_V3_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
+            gh release create "$PKG_V3_TAG" --repo "$PKG_REPO" \
+              --title "Nawa schema-v3 repository" \
+              --notes "Signed schema-v3 index only. Package and recipe archives are stored in packages-NNNN releases. Written by CI, do not edit."
           fi
 
       - name: Download the build rootfs from the newest release
@@ -336,7 +354,7 @@ jobs:
           n=0
           while IFS=$'\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
-            [[ "$tag" =~ ^(stable|packages-[0-9]{4,})$ ]] || {
+            [[ "$tag" == "$PKG_TAG" || "$tag" =~ ^packages-[0-9]{4,}$ ]] || {
               echo "::error::unexpected package storage release: $tag"; exit 1;
             }
             [[ "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || {
@@ -463,23 +481,42 @@ jobs:
           PY
           )
 
-          # The stable release is now only the signed index. Upload it last:
-          # clients never see a new URL before its target asset exists.
-          upload "$PKG_TAG" "$repo/index.toml" "$repo/index.toml.sig"
+          # Keep the Nawa client itself installable by old schema-v1 clients.
+          # This separate signed archive can be installed locally without
+          # asking the old client to parse either remote repository index.
+          nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+          [[ -s "$repo/$nawa_archive" ]] || {
+            echo "::error::missing $nawa_archive; the first transition run must build the nawa recipe from the seed rootfs"
+            exit 1
+          }
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa sign \
+            "/repo/$nawa_archive" --key /root/nawa.sec
+          sudo chown "$(id -u):$(id -g)" "$repo/$nawa_archive.sig"
+          if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
+            gh release create "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
+              --title "Nawa client transition package" \
+              --notes "Standalone signed Nawa package for clients that still use the legacy schema-v1 stable index. Download both assets and install the archive locally with: sudo nawa install ./<archive>.nawa.tar.zst. The updated package defaults to stable-v3."
+          fi
+          upload "$NAWA_TRANSITION_TAG" "$repo/$nawa_archive" "$repo/$nawa_archive.sig"
 
-          # Remove stale assets only after the signed index points elsewhere.
+          # Publish the v3 index only after all referenced shard assets exist.
+          upload "$PKG_V3_TAG" "$repo/index.toml" "$repo/index.toml.sig"
+
+          # Remove stale shard assets only after the v3 index points elsewhere.
           while IFS=$'\t' read -r tag asset; do
             [[ -n "$tag" && -n "$asset" ]] || continue
             gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
               echo "::warning::could not delete stale asset $tag/$asset"
             }
           done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
-          while IFS=$'\t' read -r tag asset; do
-            [[ -n "$tag" && -n "$asset" ]] || continue
-            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
-              echo "::warning::could not delete legacy stable asset $asset"
-            }
-          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind legacy)
+          # The old $PKG_TAG release is frozen. Keep its archives, index and
+          # detached signatures intact for already-installed schema-v1 clients.
 
           archive_count="$(python3 -I - "$plan" <<'PY'
           import json, sys
@@ -493,7 +530,8 @@ jobs:
           PY
           )"
           {
-            echo "### Published schema-v3 index to $PKG_REPO ($PKG_TAG)"
+            echo "### Published schema-v3 index to $PKG_REPO ($PKG_V3_TAG)"
+            echo "Legacy schema-v1 endpoint retained at $PKG_TAG; transition package: $NAWA_TRANSITION_TAG."
             echo
             echo "Package archives: $archive_count"
             echo "New this run: ${#new[@]}"

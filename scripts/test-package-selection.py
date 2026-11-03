@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for the packages.yml multi-select resolver."""
+import os
+import subprocess
 import sys
 import tempfile
 import textwrap
@@ -154,6 +156,54 @@ class PackageSelectionTests(unittest.TestCase):
 
     def test_selector_text_supports_commas_spaces_and_newlines(self):
         self.assertEqual(select_packages.split_values("bash, curl\ngit"), ["bash", "curl", "git"])
+
+    def test_deleted_recipe_forces_reconciliation_of_current_packages(self):
+        plan = select_packages.resolve_changed_selection(
+            self.recipes, self.flavors, ["removed-package"],
+        )
+        expected = {
+            name for name, (category, _) in self.recipes.items()
+            if category != "toolchain"
+        }
+        self.assertEqual(set(plan["packages"]), expected)
+        self.assertEqual(plan["deleted_recipe_names"], ["removed-package"])
+        self.assertEqual(plan["source"], "CHANGED")
+
+    def test_multiple_pushes_are_collected_from_last_successful_commit(self):
+        previous_cwd = Path.cwd()
+        try:
+            os.chdir(self.root)
+            subprocess.run(["git", "init", "-q"], check=True)
+            subprocess.run(["git", "config", "user.email", "ci@example.invalid"], check=True)
+            subprocess.run(["git", "config", "user.name", "CI Test"], check=True)
+            base_file = self.recipes_dir / "base-files" / "recipe.toml"
+            base_file.parent.mkdir(parents=True, exist_ok=True)
+            base_file.write_text('[package]\\nname = "base-files"\\n', encoding="utf-8")
+            subprocess.run(["git", "add", "recipes"], check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], check=True)
+            last_successful = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], text=True,
+            ).strip()
+
+            bash_file = self.recipes_dir / "base" / "bash" / "recipe.toml"
+            bash_file.parent.mkdir(parents=True, exist_ok=True)
+            bash_file.write_text('[package]\\nname = "bash"\\n', encoding="utf-8")
+            subprocess.run(["git", "add", "recipes"], check=True)
+            subprocess.run(["git", "commit", "-qm", "push B"], check=True)
+
+            runit_file = self.recipes_dir / "system" / "runit" / "recipe.toml"
+            runit_file.parent.mkdir(parents=True, exist_ok=True)
+            runit_file.write_text('[package]\\nname = "runit"\\n', encoding="utf-8")
+            subprocess.run(["git", "add", "recipes"], check=True)
+            subprocess.run(["git", "commit", "-qm", "push C"], check=True)
+            head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+
+            changed = select_packages.changed_recipes(
+                Path("recipes"), last_successful, head, cwd=self.root,
+            )
+            self.assertEqual(changed, ["bash", "runit"])
+        finally:
+            os.chdir(previous_cwd)
 
 
 class RealRecipeTreeTests(unittest.TestCase):

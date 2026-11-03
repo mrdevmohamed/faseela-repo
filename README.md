@@ -52,7 +52,12 @@ Download both the `.nawa.tar.zst` archive and its `.sig` sidecar, then install
 the local archive with the existing package manager:
 
 ```sh
-sudo nawa install ./nawa-1.0.0-10.nawa.tar.zst
+gh release download nawa-transition \
+  --repo mrdevmohamed/faseela-repo \
+  --pattern '*.nawa.tar.zst' --pattern '*.nawa.tar.zst.sig'
+archive="$(find . -maxdepth 1 -type f -name '*.nawa.tar.zst' -print -quit)"
+test -n "$archive"
+sudo nawa install "./$archive"
 ```
 
 The upgraded package defaults to the `stable-v3` repository. If

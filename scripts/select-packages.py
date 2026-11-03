@@ -30,30 +30,54 @@ def split_values(value: str | list[str] | None) -> list[str]:
     return [part for part in re.split(r"[\s,]+", raw.strip()) if part]
 
 
-def changed_recipes(recipes_dir: Path, before: str, after: str) -> list[str]:
-    """Return still-existing recipe names changed between two Git revisions."""
+def changed_recipes(
+    recipes_dir: Path, before: str, after: str, *, cwd: Path | None = None,
+) -> list[str]:
+    """Return recipe names (including deletions) changed between two Git revisions."""
     if not after:
         raise SelectionError("the push event did not provide a target commit")
+    worktree = (cwd or ROOT).resolve()
+    recipe_path = recipes_dir if recipes_dir.is_absolute() else worktree / recipes_dir
+    try:
+        pathspec = recipe_path.resolve().relative_to(worktree).as_posix()
+    except ValueError as exc:
+        raise SelectionError("recipes directory must be inside the Git worktree") from exc
     if not before or set(before) == {"0"}:
         probe = subprocess.run(
-            ["git", "rev-parse", "HEAD^"], check=False, text=True,
+            ["git", "rev-parse", "HEAD^"], cwd=worktree, check=False, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         if probe.returncode != 0:
             raise SelectionError("cannot determine the previous commit for CHANGED selection")
         before = probe.stdout.strip()
     diff = subprocess.run(
-        ["git", "diff", "--name-only", before, after, "--", str(recipes_dir)],
-        check=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ["git", "diff", "--name-only", before, after, "--", pathspec],
+        cwd=worktree, check=False, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     if diff.returncode != 0:
         raise SelectionError(f"git diff failed: {diff.stderr.strip()}")
     names: set[str] = set()
     for raw in diff.stdout.splitlines():
         parts = Path(raw).parts
-        if len(parts) >= 4 and parts[0] == recipes_dir.name:
+        if len(parts) >= 4 and parts[0] == pathspec:
             names.add(parts[2])
     return sorted(names)
+
+
+def resolve_changed_selection(
+    recipes: dict[str, tuple[str, dict]], flavors: dict, changed_names: list[str],
+) -> dict:
+    """Resolve changed recipes and force a reconciliation build after deletions."""
+    current_names = [name for name in changed_names if name in recipes]
+    deleted_names = [name for name in changed_names if name not in recipes]
+    plan = resolve_selection(
+        recipes, flavors, all_packages=bool(deleted_names),
+        package_names=current_names, allow_empty=True, source="CHANGED",
+    )
+    plan["changed_recipe_names"] = current_names
+    plan["deleted_recipe_names"] = deleted_names
+    return plan
 
 
 def resolve_selection(
@@ -245,12 +269,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.changed_from is None or args.changed_to is None:
                 raise SelectionError("both --changed-from and --changed-to are required")
             names = changed_recipes(args.recipes, args.changed_from, args.changed_to)
-            current_names = [name for name in names if name in recipes]
-            plan = resolve_selection(
-                recipes, flavors, package_names=current_names,
-                allow_empty=True, source="CHANGED",
-            )
-            plan["changed_recipe_names"] = current_names
+            plan = resolve_changed_selection(recipes, flavors, names)
         else:
             plan = resolve_selection(
                 recipes, flavors,

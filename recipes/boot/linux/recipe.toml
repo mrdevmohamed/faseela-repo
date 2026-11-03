@@ -41,10 +41,12 @@
 #         validation reports every problem at once, uses POSIX sh, and its
 #         error message no longer prints a literal "\n"; the saq hook now
 #         fails loudly instead of leaving a half-updated /boot unnoticed.
+# rel 18: provide explicit TUN, policy-routing, iptables TPROXY/REDIRECT and
+#         native nftables TPROXY/REDIRECT/FIB support for transparent proxies.
 [package]
 name = "linux"
 version = "6.10"
-rel = 17
+rel = 18
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -70,6 +72,35 @@ scripts/config \
     --enable ACPI --enable USB --enable SCSI --enable ATA --enable SATA_PMP \
     --enable INPUT --enable VIRTIO --enable MODULES --enable MODULE_UNLOAD \
     --enable FW_LOADER --enable EFI --enable EFI_STUB
+
+# Transparent proxy support (v2rayA and other TUN/TPROXY/REDIRECT clients).
+#
+# TUN is built in so /dev/net/tun is available without relying on a module
+# load race when a proxy service starts. Policy routing is required by the
+# fwmark/table-100 rules used by both the iptables and nftables TPROXY paths.
+scripts/config \
+    --enable IPV6 \
+    --enable IP_ADVANCED_ROUTER --enable IP_MULTIPLE_TABLES \
+    --enable IPV6_MULTIPLE_TABLES \
+    --enable NETFILTER --enable NETFILTER_ADVANCED \
+    --enable TUN \
+    --module NETFILTER_XTABLES \
+    --module NF_CONNTRACK --module NF_NAT \
+    --module IP_NF_IPTABLES --module IP_NF_MANGLE --module IP_NF_NAT \
+    --module IP6_NF_IPTABLES --module IP6_NF_MANGLE --module IP6_NF_NAT \
+    --module NETFILTER_XT_MATCH_SOCKET \
+    --module NETFILTER_XT_MATCH_ADDRTYPE \
+    --module NETFILTER_XT_MATCH_CONNTRACK \
+    --module NETFILTER_XT_MATCH_MARK \
+    --module NETFILTER_XT_TARGET_MARK \
+    --module NETFILTER_XT_TARGET_CONNMARK \
+    --module NETFILTER_XT_TARGET_TPROXY \
+    --module NETFILTER_XT_TARGET_REDIRECT \
+    --enable NF_TABLES --enable NF_TABLES_INET \
+    --module NFT_CT \
+    --module NFT_FIB_IPV4 --module NFT_FIB_IPV6 --module NFT_FIB_INET \
+    --module NFT_SOCKET --module NFT_TPROXY \
+    --module NFT_REDIR --module NFT_NAT
 
 # Identify the build: uname -r is 6.10.0-faseela, not a bare 6.10.0.
 scripts/config --set-str LOCALVERSION "-faseela" --disable LOCALVERSION_AUTO
@@ -164,6 +195,50 @@ want_config() {
         echo "warning: wanted $1=$2 in .config, found ${actual:-unset}" >&2
     fi
 }
+
+# Transparent proxy support: fail the kernel build rather than shipping
+# a kernel that silently lacks one of v2rayA's interception backends.
+require_config CONFIG_IPV6 y
+require_config CONFIG_TUN y
+require_config CONFIG_IP_ADVANCED_ROUTER y
+require_config CONFIG_IP_MULTIPLE_TABLES y
+require_config CONFIG_IPV6_MULTIPLE_TABLES y
+
+# Common Netfilter, conntrack and NAT infrastructure.
+require_config CONFIG_NETFILTER y
+require_config CONFIG_NETFILTER_ADVANCED y
+require_config CONFIG_NETFILTER_XTABLES m
+require_config CONFIG_NF_CONNTRACK m
+require_config CONFIG_NF_NAT m
+
+# iptables legacy backend: mangle/policy marking for TPROXY and NAT REDIRECT.
+require_config CONFIG_IP_NF_IPTABLES m
+require_config CONFIG_IP_NF_MANGLE m
+require_config CONFIG_IP_NF_NAT m
+require_config CONFIG_IP6_NF_IPTABLES m
+require_config CONFIG_IP6_NF_MANGLE m
+require_config CONFIG_IP6_NF_NAT m
+require_config CONFIG_NETFILTER_XT_MATCH_SOCKET m
+require_config CONFIG_NETFILTER_XT_MATCH_ADDRTYPE m
+require_config CONFIG_NETFILTER_XT_MATCH_CONNTRACK m
+require_config CONFIG_NETFILTER_XT_MATCH_MARK m
+require_config CONFIG_NETFILTER_XT_TARGET_MARK m
+require_config CONFIG_NETFILTER_XT_TARGET_CONNMARK m
+require_config CONFIG_NETFILTER_XT_TARGET_TPROXY m
+require_config CONFIG_NETFILTER_XT_TARGET_REDIRECT m
+
+# Native nftables backend: V2RayA uses inet tables, ct marks, FIB lookup,
+# socket matching, TPROXY and REDIRECT expressions.
+require_config CONFIG_NF_TABLES y
+require_config CONFIG_NF_TABLES_INET y
+require_config CONFIG_NFT_CT m
+require_config CONFIG_NFT_FIB_IPV4 m
+require_config CONFIG_NFT_FIB_IPV6 m
+require_config CONFIG_NFT_FIB_INET m
+require_config CONFIG_NFT_SOCKET m
+require_config CONFIG_NFT_TPROXY m
+require_config CONFIG_NFT_REDIR m
+require_config CONFIG_NFT_NAT m
 
 # Initramfs and early userspace.
 require_config CONFIG_BLK_DEV_INITRD y

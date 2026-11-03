@@ -1,9 +1,9 @@
 # recipes/gui — Wayland desktop (sway)
 
 A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
-**wlroots 0.18**, **foot** terminal, DejaVu fonts, **seatd** for seat
-management (no systemd/logind), supervised by runit. 52 packages (incl. `llvm`,
-`libva` and the X11 client libraries).
+**wlroots 0.18**, **foot** terminal, DejaVu fonts, and **seatd** for seat
+management. System services are supervised by runit; user applications use a
+per-session D-Bus session bus.
 
 > **Build status:** these recipes have not all been exercised in one clean
 > end-to-end build yet. A few upstream source archives still need their hashes
@@ -90,6 +90,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
+| desktop integration | xdg-utils (`xdg-open`), rsync (Zed auto-update), gnome-keyring (Secret Service), GCR/GCK, p11-kit and libgcrypt |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
@@ -109,6 +110,19 @@ exported for every login shell by `/etc/profile.d/gui-session.sh`, so a plain
 and evdev/HID input; to try it in QEMU use `-device virtio-vga` (or `-vga std`)
 and a USB/PS2 keyboard and mouse.
 
+## Desktop integration
+
+`gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
+`gnome-keyring`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
+user D-Bus session with `dbus-run-session`; GNOME Keyring installs
+`/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
+Service daemon is activated on demand by D-Bus. This does not require systemd
+or a system-wide runit service.
+
+The keyring daemon is built without PAM integration, so this supplies the
+`org.freedesktop.secrets` service but does not automatically unlock a login
+keyring during a tty login.
+
 ## Limitations / next steps
 
 * **Mesa graphics**: Gallium provides AMD `radeonsi`, CPU `llvmpipe`/`softpipe`,
@@ -127,8 +141,9 @@ and a USB/PS2 keyboard and mouse.
   for AMD (`-D gallium-va`), and `recipes/media/intel-media-driver` provides
   `iHD_drv_video.so` for Intel.
 * No X server and no Xwayland (only the X11 *client* libraries, because cairo
-  links them), no D-Bus, so no sway tray (`-D tray=disabled`) and no portals.
-  The launcher is `wmenu` (`Super+D`, sway's default `wmenu-run`).
+  links them). D-Bus system and per-user session buses are available, but
+  desktop portals are not packaged yet. The launcher is `wmenu` (`Super+D`,
+  sway's default `wmenu-run`).
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).
   sway's stock `output * bg ...` line is commented out by the sway recipe;
   `gui-session` installs `/usr/share/backgrounds/faseela/default.png` and the

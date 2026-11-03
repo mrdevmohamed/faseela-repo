@@ -3,7 +3,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 11
+rel = 12
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]

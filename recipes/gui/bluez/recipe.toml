@@ -2,7 +2,7 @@
 [package]
 name = "bluez"
 version = "5.87"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -26,7 +26,9 @@ install -d -m755 %{pkgdir}/etc/sv/bluetoothd %{pkgdir}/etc/runit/runsvdir/defaul
 cat > %{pkgdir}/etc/sv/bluetoothd/run <<'RUN'
 #!/bin/sh
 # Wait for the system bus before starting bluetoothd.
-while [ ! -S /run/dbus/system_bus_socket ]; do sleep 1; done
+# no D-Bus yet: exit so runsv retries and `sv status` shows the flapping,
+# instead of hanging in a loop that still reports "run"
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 exec /usr/libexec/bluetooth/bluetoothd --nodetach
 RUN
 chmod 755 %{pkgdir}/etc/sv/bluetoothd/run

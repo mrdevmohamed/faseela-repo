@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -66,6 +66,7 @@ wifi.backend=wpa_supplicant
 CONF
 cat > %{pkgdir}/etc/sv/NetworkManager/run <<'RUN'
 #!/bin/sh
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 install -d -m755 /run/NetworkManager
 exec /usr/sbin/NetworkManager --no-daemon --pid-file=/run/NetworkManager/NetworkManager.pid
 RUN

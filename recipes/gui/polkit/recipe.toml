@@ -2,7 +2,7 @@
 [package]
 name = "polkit"
 version = "126"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "PolicyKit authorization framework and privileged action helper"
 license = ["GPL-2.0-or-later"]
@@ -21,7 +21,9 @@ DESTDIR=%{pkgdir} meson install -C build
 install -d -m755 %{pkgdir}/etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default
 cat > %{pkgdir}/etc/sv/polkitd/run <<'RUN'
 #!/bin/sh
-while [ ! -S /run/dbus/system_bus_socket ]; do sleep 1; done
+# no D-Bus yet: exit so runsv retries and `sv status` shows the flapping,
+# instead of hanging in a loop that still reports "run"
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 exec /usr/lib/polkit-1/polkitd --no-debug
 RUN
 chmod 755 %{pkgdir}/etc/sv/polkitd/run

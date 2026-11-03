@@ -598,9 +598,28 @@ jobs:
       - name: Collect build logs
         if: always()
         run: |
+          set -euo pipefail
           mkdir -p ci-logs
           sudo cp -r "$T"/build/logs ci-logs/ 2>/dev/null || true
           sudo cp "$T"/build/report.txt "$T"/build/status ci-logs/ 2>/dev/null || true
+
+          # Nawa writes per-package phase logs directly under build/<package-id>,
+          # not under build/logs. Preserve them for failed packages so the
+          # artifact contains the configure/compile/install error, not only
+          # the short summary.
+          if [[ -s "$T/build/report.txt" ]]; then
+            while IFS= read -r package_id; do
+              [[ -n "$package_id" ]] || continue
+              source_dir="$T/build/$package_id"
+              [[ -d "$source_dir" ]] || continue
+              destination="ci-logs/failed/$package_id"
+              mkdir -p "$destination"
+              while IFS= read -r -d '' log_file; do
+                sudo cp -a "$log_file" "$destination/"
+              done < <(sudo find "$source_dir" -maxdepth 2 -type f -name '*.log' -print0)
+            done < <(awk '$1 == "FAILED" { print $2 }' "$T/build/report.txt")
+          fi
+
           sudo chown -R "$(id -u):$(id -g)" ci-logs
       - uses: actions/upload-artifact@v4
         if: always()

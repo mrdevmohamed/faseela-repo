@@ -74,7 +74,7 @@ scripts/config -m ATH5K -m RTL8XXXU -m MT7921U
 # Thunderbolt/USB4 and USB Type-C/UCSI laptop controllers.
 scripts/config -m USB4 -m TYPEC -m TYPEC_UCSI -m UCSI_ACPI
 # Intel Sound Open Firmware and SoundWire for newer laptop audio paths.
-scripts/config -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
+scripts/config -m SND_SOC -e SND_SOC_SOF_TOPLEVEL -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
 scripts/config -e SOUNDWIRE -m SOUNDWIRE_INTEL -m SOUNDWIRE_CADENCE
 # Hardware monitoring, thermal sensors, and CPU temperature drivers.
 scripts/config -e HWMON -e THERMAL -m SENSORS_CORETEMP -m SENSORS_K10TEMP -m SENSORS_NCT6775 -m SENSORS_IT87
@@ -143,7 +143,7 @@ grep -q '^CONFIG_XZ_DEC_X86=y$' .config
 # Generic x86_64 coverage: required drivers must survive olddefconfig.
 grep -q '^CONFIG_DRM_XE=m$' .config
 grep -q '^CONFIG_USB4=m$' .config && grep -q '^CONFIG_UCSI_ACPI=m$'
-grep -q '^CONFIG_SND_SOC_SOF_PCI=m$'
+grep -q '^CONFIG_SND_SOC_SOF_TOPLEVEL=y$' .config && grep -q '^CONFIG_SND_SOC_SOF_PCI=m$' .config
 grep -q '^CONFIG_VMWARE_PVSCSI=m$'
 grep -q '^CONFIG_BLK_DEV_NVME=y$' .config && grep -q '^CONFIG_SATA_AHCI=y$' .config && grep -q '^CONFIG_MMC_SDHCI_PCI=y$' .config
 grep -q '^CONFIG_IWLWIFI=m$' .config && grep -q '^CONFIG_IWLMVM=m$' .config && grep -q '^CONFIG_ATH9K=m$' .config && grep -q '^CONFIG_RTW88=m$' .config

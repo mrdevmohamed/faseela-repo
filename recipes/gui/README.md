@@ -94,8 +94,8 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 
 ## Using it
 
-`gui-session` creates the `seat`, `video` and `input` groups (hook) and enables
-the `seatd` service. Then:
+`gui-session` creates the `seat`, `video`, `render`, `input` and `audio` groups (hook),
+installs the DRM render-node udev rule, and enables the `seatd` service. Then:
 
 ```
 usermod -aG seat,video,render,input,audio <user> # log out and in again

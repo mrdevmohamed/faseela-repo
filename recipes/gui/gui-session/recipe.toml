@@ -208,6 +208,10 @@ chmod 644 %{pkgdir}/etc/profile.d/gui-session.sh
 post_install = '''for g in seat video render input audio; do
     /usr/libexec/faseela/ensure-system-account group "$g"
 done
+# Apply the DRM node rule immediately when installing into a running system.
+udevadm control --reload-rules 2>/dev/null || true
+udevadm trigger --subsystem-match=drm 2>/dev/null || true
+udevadm settle 2>/dev/null || true
 echo "gui-session: add your user:  usermod -aG seat,video,render,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"
 '''

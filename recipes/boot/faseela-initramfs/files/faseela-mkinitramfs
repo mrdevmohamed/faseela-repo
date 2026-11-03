@@ -36,7 +36,7 @@ done
 ROOT="$(cd "$ROOT" && pwd -P)"
 BOOT="$ROOT/boot"; MODULES="$ROOT/lib/modules"; BUSYBOX="$ROOT/usr/bin/busybox"
 mkdir -p "$BOOT"
-for tool in bash cpio gzip find sort depmod modinfo xz zstd cp mv ln mkdir rm; do need "$tool"; done
+for tool in bash cpio gzip find sort depmod modinfo xz zstd cp mv ln mkdir rm sed grep du; do need "$tool"; done
 [[ -x "$BUSYBOX" ]] || die "static BusyBox is missing: $BUSYBOX"
 APPLET_LIST="$("$BUSYBOX" --list)"
 for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
@@ -145,7 +145,13 @@ build_one() {
    for fw_base in "$ROOT/usr/lib/firmware" "$ROOT/lib/firmware"; do
     for fw_candidate in "$fw_base/$firmware" "$fw_base/$firmware.xz" "$fw_base/$firmware.zst" "$fw_base/$firmware.gz"; do
      [[ -f "$fw_candidate" ]] || continue
-     fw_dest="$tree/lib/firmware/$firmware"; mkdir -p "$(dirname "$fw_dest")"
+     fw_dest="$tree/lib/firmware/$firmware"
+     case "$fw_candidate" in
+      "$fw_base/$firmware.xz") fw_dest="$fw_dest.xz" ;;
+      "$fw_base/$firmware.zst") fw_dest="$fw_dest.zst" ;;
+      "$fw_base/$firmware.gz") fw_dest="$fw_dest.gz" ;;
+     esac
+     mkdir -p "$(dirname "$fw_dest")"
      cp -L "$fw_candidate" "$fw_dest"; fw_found=1; break 2
     done
    done

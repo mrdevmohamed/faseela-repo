@@ -65,15 +65,15 @@ scripts/config -e IOMMU_SUPPORT -e INTEL_IOMMU -e AMD_IOMMU
 # existing AMDGPU/Radeon/Nouveau modules and the simple framebuffer fallback.
 scripts/config -e DRM_ACCEL -m DRM_XE
 # Additional wired NICs and common USB Ethernet adapters.
-scripts/config -e NET_VENDOR_REALTEK -e NET_VENDOR_MARVELL -e NET_VENDOR_ATHEROS -e NET_VENDOR_AMD -e NET_VENDOR_MICROSOFT -e NET_VENDOR_NVIDIA
-scripts/config -m R8169 -m ATL1C -m ALX -m SKY2 -m E1000E -m IGB -m IXGBE -m I40E -m ICE
+scripts/config -e NET_VENDOR_REALTEK -e NET_VENDOR_MARVELL -e NET_VENDOR_ATHEROS -e NET_VENDOR_AMD -e NET_VENDOR_MICROSOFT -e NET_VENDOR_MELLANOX
+scripts/config -m R8169 -m ATL1C -m ALX -m SKY2 -m E1000E -m IGB -m IXGBE -m I40E -m ICE -m MLX4_CORE -m MLX4_EN -m MLX5_CORE -m MLX5_CORE_EN
 scripts/config -m TG3 -m BNX2 -m BNX2X -m AX88179_178A -m USB_NET_CDCETHER -m USB_NET_CDC_NCM -m USB_NET_RNDIS_HOST
 # More common WLAN families: Atheros legacy, Realtek USB, and MediaTek USB.
 scripts/config -m ATH5K -m RTL8XXXU -m MT7921U
 # Thunderbolt/USB4 and USB Type-C/UCSI laptop controllers.
-scripts/config -e THUNDERBOLT -e USB4 -e TYPEC -e TYPEC_UCSI -m UCSI_ACPI
+scripts/config -m USB4 -m TYPEC -m TYPEC_UCSI -m UCSI_ACPI
 # Intel Sound Open Firmware and SoundWire for newer laptop audio paths.
-scripts/config -m SND_SOC_SOF_PCI -m SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
+scripts/config -m SND_SOC_SOF_PCI -e SND_SOC_SOF_INTEL_TOPLEVEL -m SND_SOC_SOF_AMD_TOPLEVEL
 scripts/config -e SOUNDWIRE -m SOUNDWIRE_INTEL -m SOUNDWIRE_CADENCE
 # Hardware monitoring, thermal sensors, and CPU temperature drivers.
 scripts/config -e HWMON -e THERMAL -m SENSORS_CORETEMP -m SENSORS_K10TEMP -m SENSORS_NCT6775 -m SENSORS_IT87
@@ -83,8 +83,8 @@ scripts/config -e TCG_TPM -m TCG_TIS -m TCG_CRB
 scripts/config -m KVM -m KVM_INTEL -m KVM_AMD
 scripts/config -e HYPERV -m HYPERV_STORAGE -m HYPERV_NET
 scripts/config -e XEN -m XEN_BLKDEV_FRONTEND -m XEN_NETDEV_FRONTEND
-scripts/config -m VMXNET3 -m VMW_PVSCSI -m VMWARE_BALLOON
-# ---- real hardware (rel 9) ----
+scripts/config -m VMXNET3 -m VMWARE_PVSCSI -m VMWARE_BALLOON
+# ---- real hardware baseline (rel 9) ----
 # boot-critical storage built in: NVMe, SATA/AHCI, eMMC + SD readers (a laptop's
 # root can be on any of them and the initramfs does not load them from a list)
 scripts/config -e BLK_DEV_NVME -e SATA_AHCI -e MMC -e MMC_BLOCK -e MMC_SDHCI -e MMC_SDHCI_PCI -e MMC_SDHCI_ACPI

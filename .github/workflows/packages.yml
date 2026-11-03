@@ -408,10 +408,19 @@ jobs:
 
       - name: Fetch the packages already published
         id: published
+        env:
+          PACKAGE_DOWNLOAD_JOBS: ${{ vars.PACKAGE_DOWNLOAD_JOBS || '12' }}
         run: |
           set -euo pipefail
           sudo mkdir -p "$T/build/out"
           sudo chown "$(id -u):$(id -g)" "$T/build/out"
+
+          # Validate the complete release manifest before starting any download.
+          # The complete set is required by repo-create and the cross-flavor
+          # file-conflict check; fetching only the selected package closure
+          # would silently publish an incomplete repository index.
+          manifest="$RUNNER_TEMP/package-downloads.nul"
+          : > "$manifest"
           n=0
           while IFS=$'\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
@@ -421,20 +430,42 @@ jobs:
             [[ "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || {
               echo "::error::unexpected package archive name: $asset"; exit 1;
             }
+            printf '%s\0%s\0' "$tag" "$asset" >> "$manifest"
             n=$((n + 1))
-            url="https://github.com/$PKG_REPO/releases/download/$tag/$asset"
-            part="$T/build/out/$asset.part"
-            echo "Downloading $asset ($tag)"
-            curl --fail --location --silent --show-error \
-              --retry 3 --retry-all-errors --retry-delay 2 \
-              --connect-timeout 30 --output "$part" "$url"
-            [[ -s "$part" ]] || { echo "::error::downloaded asset is empty: $asset"; exit 1; }
-            mv -f "$part" "$T/build/out/$asset"
           done < "$RUNNER_TEMP/published.tsv"
+
+          workers="${PACKAGE_DOWNLOAD_JOBS:-12}"
+          [[ "$workers" =~ ^[0-9]+$ ]] && (( workers >= 1 && workers <= 32 )) || {
+            echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
+          }
+
+          if (( n > 0 )); then
+            xargs -0 -r -n 2 -P "$workers" bash -euo pipefail -c '
+              tag="$1"
+              asset="$2"
+              url="https://github.com/$PKG_REPO/releases/download/$tag/$asset"
+              part="$T/build/out/$asset.part"
+              trap '\''rm -f "$part"'\'' EXIT
+
+              echo "Downloading $asset ($tag)"
+              curl --fail --location --silent --show-error \
+                --retry 3 --retry-all-errors --retry-delay 2 \
+                --connect-timeout 30 --output "$part" "$url"
+              [[ -s "$part" ]] || {
+                echo "::error::downloaded asset is empty: $asset" >&2
+                exit 1
+              }
+              mv -f "$part" "$T/build/out/$asset"
+              trap - EXIT
+            ' _ < "$manifest"
+          fi
+
           echo "published=$n" >> "$GITHUB_OUTPUT"
           echo "$n archive(s) already published across $PKG_REPO releases"
-          # everything newer than this file was built by THIS run
-          sleep 2; sudo touch "$T/build/.run-start"
+          echo "Fetched $n package archives with $workers parallel workers." >> "$GITHUB_STEP_SUMMARY"
+          # Everything newer than this file was built by THIS run.
+          sleep 2
+          sudo touch "$T/build/.run-start"
 
       - name: Build
         id: build

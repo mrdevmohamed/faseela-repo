@@ -35,8 +35,66 @@ make oldconfig < /dev/null > /dev/null && \
 grep -q '^CONFIG_STATIC=y$' .config && \
 grep -q '^CONFIG_MODPROBE=y$' .config && \
 grep -q '^# CONFIG_MODPROBE_SMALL is not set$' .config && \
-grep -q '^CONFIG_BLKID=y$' .config && \
-grep -q '^CONFIG_SWITCH_ROOT=y$' .config && \
+grep -q '^CONFIG_BLKID=y .config && \
+grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
+"""
+compile = """
+make -j%{jobs}
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+    ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
+done
+ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {
+    echo "busybox: expected a statically linked binary" >&2; exit 1;
+}
+"""
+# Ship ONLY the binary. `make install` also plants ~400 applet symlinks
+# (/bin/tar, /bin/sh, /usr/bin/install, ...) that shadow the real GNU tools in
+# the build root from this point on: busybox's built-in xz decoder then fails
+# on large archives ("tar: corrupted data") and nawa silently stages them as
+# single files (seen with the rust tarball). Rescue users get the applets with
+# `busybox --install -s <dir>`; the initramfs builds its own static busybox.
+install = "install -Dm755 busybox %{pkgdir}/usr/bin/busybox"
+ .config && \
+grep -q '^CONFIG_FEATURE_BLKID_TYPE=y .config && \
+grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
+"""
+compile = """
+make -j%{jobs}
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+    ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
+done
+ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {
+    echo "busybox: expected a statically linked binary" >&2; exit 1;
+}
+"""
+# Ship ONLY the binary. `make install` also plants ~400 applet symlinks
+# (/bin/tar, /bin/sh, /usr/bin/install, ...) that shadow the real GNU tools in
+# the build root from this point on: busybox's built-in xz decoder then fails
+# on large archives ("tar: corrupted data") and nawa silently stages them as
+# single files (seen with the rust tarball). Rescue users get the applets with
+# `busybox --install -s <dir>`; the initramfs builds its own static busybox.
+install = "install -Dm755 busybox %{pkgdir}/usr/bin/busybox"
+ .config && \
+grep -q '^CONFIG_SWITCH_ROOT=y .config && \
+grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
+"""
+compile = """
+make -j%{jobs}
+for applet in sh mount umount mkdir mknod switch_root modprobe blkid sleep cat grep sed; do
+    ./busybox --list | grep -qx "$applet" || { echo "busybox: required initramfs applet missing: $applet" >&2; exit 1; }
+done
+ldd ./busybox 2>&1 | grep -qiE 'not a dynamic executable|statically linked' || {
+    echo "busybox: expected a statically linked binary" >&2; exit 1;
+}
+"""
+# Ship ONLY the binary. `make install` also plants ~400 applet symlinks
+# (/bin/tar, /bin/sh, /usr/bin/install, ...) that shadow the real GNU tools in
+# the build root from this point on: busybox's built-in xz decoder then fails
+# on large archives ("tar: corrupted data") and nawa silently stages them as
+# single files (seen with the rust tarball). Rescue users get the applets with
+# `busybox --install -s <dir>`; the initramfs builds its own static busybox.
+install = "install -Dm755 busybox %{pkgdir}/usr/bin/busybox"
+ .config && \
 grep -q '^CONFIG_FEATURE_INSTALLER=y$' .config
 """
 compile = """

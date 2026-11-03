@@ -22,6 +22,15 @@ FILES = [  # (path, symlink target or None)
     ("rtl_nic/rtl8168.fw", None), ("brcm/brcmfmac.bin", None), ("regulatory.db", None),
     ("ath10k/WCN3990/hw1.0/wlanmdsp.mbn", None), ("nvidia/ga102/gsp.bin", None),
     ("qcom/adreno/a630.fw", None), ("yamaha/dsp.bin", None), ("WHENCE", None),
+    # audio DSP / speaker-amplifier firmware (kernel rel 19): the sof* directories,
+    # cirrus and ti/tas2781 go to lite; the rest of intel/, amd/ and ti/ to extra
+    ("intel/sof/v2.2/sof-tgl.ri", None), ("intel/sof/sof-tgl.ri", "v2.2/sof-tgl.ri"),
+    ("intel/sof-tplg/sof-hda-generic.tplg", None), ("intel/sof-ipc4/tgl/sof-tgl.ri", None),
+    ("intel/sof-ace-tplg/sof-hda-generic.tplg", None),
+    ("amd/sof/sof-rmb.ri", None), ("amd/sof-tplg/sof-acp.tplg", None),
+    ("amd/amd_sev_fam17h_model0xh.sbin", None),
+    ("cirrus/cs35l41-dsp1-spk-prot.wmfw", None), ("ti/tas2781/TAS2XXX.bin", None),
+    ("ti/ti-connectivity/wl18xx.bin", None),
 ]
 
 

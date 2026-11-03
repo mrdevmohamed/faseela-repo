@@ -18,10 +18,12 @@
 # rel 14: enable the distro-required Kconfig options before validating them;
 #         x86_64_defconfig intentionally leaves many optional drivers unset
 # rel 15: tolerate staging installs where the runtime saq dependency is absent
+# rel 16: use KERNELRELEASE for /boot names and /lib/modules; the recipe
+#         package version (6.10) is not necessarily the kernel release (6.10.0)
 [package]
 name = "linux"
 version = "6.10"
-rel = 15
+rel = 16
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -160,11 +162,30 @@ require_config CONFIG_VIRTIO_INPUT y
 """
 compile = "make -j%{jobs}"
 install = """
+# The package version is a source-version label, not the installed kernel
+# release. Use the exact KERNELRELEASE chosen by Kbuild for every installed path.
+KVER="$(make -s kernelrelease)"
+test -n "$KVER" || {
+    echo "linux: could not determine kernel release" >&2
+    exit 1
+}
+
 make INSTALL_MOD_PATH=%{pkgdir} INSTALL_MOD_STRIP=1 modules_install
-install -Dm644 arch/x86/boot/bzImage %{pkgdir}/boot/vmlinuz-%{version}
-install -Dm644 System.map %{pkgdir}/boot/System.map-%{version}
-install -Dm644 .config %{pkgdir}/boot/config-%{version}
-rm -f %{pkgdir}/lib/modules/%{version}/build %{pkgdir}/lib/modules/%{version}/source
+
+# Keep the boot image and module tree on the same release string. saq discovers
+# /boot/vmlinuz-* and expects the matching /lib/modules/<release> directory.
+test -d "%{pkgdir}/lib/modules/$KVER" || {
+    echo "linux: modules_install did not create lib/modules/$KVER" >&2
+    exit 1
+}
+install -Dm644 arch/x86/boot/bzImage \
+    "%{pkgdir}/boot/vmlinuz-$KVER"
+install -Dm644 System.map \
+    "%{pkgdir}/boot/System.map-$KVER"
+install -Dm644 .config \
+    "%{pkgdir}/boot/config-$KVER"
+rm -f "%{pkgdir}/lib/modules/$KVER/build" \
+      "%{pkgdir}/lib/modules/$KVER/source"
 """
 
 [hooks]

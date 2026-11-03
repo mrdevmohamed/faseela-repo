@@ -26,6 +26,7 @@ xdg = recipe("recipes/gui/xdg-utils/recipe.toml")
 xdg_compile = xdg["build"]["compile"]
 assert "python" in xdg["depends"]["build"]
 assert "xml.etree.ElementTree" in xdg_compile
+assert 'local_name(node.tag) == "cmdsynopsis"' in xdg_compile
 assert 'Path("scripts/desc")' in xdg_compile
 assert "Generated embedded help" in xdg_compile
 assert xdg_compile.index("python3 - <<'PY'") < xdg_compile.index("make -C scripts -j%{jobs} scripts")

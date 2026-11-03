@@ -37,6 +37,8 @@ def local_name(tag):
 
 
 def render(node):
+    if local_name(node.tag) == "cmdsynopsis":
+        return " ".join("".join(node.itertext()).split())
     parts = [node.text or ""]
     for child in node:
         child_text = render(child)

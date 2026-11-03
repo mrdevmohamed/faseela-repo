@@ -1,0 +1,25 @@
+# Volk — Vulkan API meta-loader and CMake headers target for Vulkan-Tools.
+[package]
+name = "volk"
+version = "1.3.296"
+rel = 1
+arch = ["x86_64"]
+summary = "Vulkan API meta-loader"
+license = ["MIT"]
+source = "https://github.com/zeux/volk/archive/refs/tags/vulkan-sdk-%{version}.0.tar.gz"
+sha256 = "8ffd0e81e29688f4abaa39e598937160b098228f37503903b10d481d4862ab85"
+
+[depends]
+build = ["cmake", "ninja", "vulkan-headers"]
+
+[build]
+configure = '''
+cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DVOLK_INSTALL=ON \
+    -DVULKAN_HEADERS_INSTALL_DIR=/usr
+'''
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

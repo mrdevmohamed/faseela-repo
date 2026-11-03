@@ -106,7 +106,10 @@ start-sway                                    # from a text console
 `start-sway` sets `XDG_RUNTIME_DIR`, `LIBSEAT_BACKEND=seatd` and
 `WLR_RENDERER_ALLOW_SOFTWARE=1` (see limitations). The same variables are
 exported for every login shell by `/etc/profile.d/gui-session.sh`, so a plain
-`sway` works too. The kernel recipe enables DRM (virtio-gpu, bochs, simpledrm)
+`sway` works too. The Sway session drop-in also starts
+`faseela-audio-session`, which brings up PipeWire, WirePlumber and
+`pipewire-pulse` for the logged-in user even when Sway is launched directly.
+It checks the native and Pulse sockets and avoids starting duplicate daemons. The kernel recipe enables DRM (virtio-gpu, bochs, simpledrm)
 and evdev/HID input; to try it in QEMU use `-device virtio-vga` (or `-vga std`)
 and a USB/PS2 keyboard and mouse.
 

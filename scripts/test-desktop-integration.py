@@ -31,6 +31,15 @@ assert (chr(36) + "{pkgdir}") not in install_script, (
 assert "exec dbus-run-session -- sh -c" in install_script, (
     "Sway must run inside a user D-Bus session for Secret Service activation"
 )
+assert session["package"]["rel"] >= 14, "Bump gui-session rel for PipeWire session autostart"
+assert "procps-ng" in session["depends"]["run"], "Audio session helper requires pgrep"
+assert "faseela-audio-session" in install_script
+assert "exec /usr/bin/faseela-audio-session" in install_script
+assert "pipewire-pulse" in install_script
+assert "pulse/native" in install_script
+assert "pgrep -u" in install_script
+assert "wireplumber" in install_script
+assert "exec /usr/bin/faseela-audio-session" in install_script
 
 xdg = recipe("gui", "xdg-utils")
 assert xdg["package"]["version"] == "1.2.1"

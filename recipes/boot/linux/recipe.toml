@@ -1,18 +1,28 @@
 # boot recipe: Generic x86_64 Linux kernel for installed desktops, laptops and guests.
-# defconfig is the starting point, not the final hardware policy: Faseela adds
-# broad PCI, storage, graphics, network, wireless, Bluetooth, audio, laptop,
-# Type-C/USB4, sensor and hypervisor coverage below. Root-critical storage stays
-# built in where practical; optional device drivers are modules and use firmware
-# from linux-firmware-lite / linux-firmware-extra.
+#
+# Policy (what decides =y vs =m here):
+#   =y  everything needed to see a console, find the root device and mount it
+#       before any module can be loaded: initrd, devtmpfs, root storage
+#       (AHCI, NVMe, VMD, USB, MMC, virtio), root filesystems, and a
+#       firmware-framebuffer console (simpledrm) so that boot messages and the
+#       saq rescue shell are visible even if no GPU driver has loaded yet.
+#   =m  everything else: native GPU drivers (i915, xe, amdgpu, nouveau), wifi,
+#       bluetooth, audio, Type-C/USB4. They load later through udev coldplug,
+#       and take over from simpledrm when they do.
+#
+# defconfig is only the starting point. Anything the system cannot boot
+# without is asserted below (require_config) and fails the build; nice-to-have
+# options only warn (want_config).
+#
 # rel 2: force the filesystem/devtmpfs options the live ISO depends on
 # rel 3: libelf (objtool/ORC), bc, openssl, kmod (depmod) declared as build deps
+# rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
+#        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
+# rel 6: WIREGUARD and EXFAT_FS as modules (recipes wireguard-tools, exfatprogs)
 # rel 7: device-mapper + dm-crypt/XTS (recipes lvm2, cryptsetup)
 # rel 8: squashfs xz + zstd decompressors. bootstrap/mkiso.sh compresses the live
 #        rootfs with xz (-Xbcj x86) by default and defconfig only has zlib:
 #        "Filesystem uses "xz" compression. This is not supported"
-# rel 6: WIREGUARD and EXFAT_FS as modules (recipes wireguard-tools, exfatprogs)
-# rel 5: no debug info (defconfig turns DWARF on: every .ko carried it) and
-#        INSTALL_MOD_STRIP=1, so /lib/modules is a fraction of its size
 # rel 12: SND_SOC must be built-in: SOF's bool menu options are nested under
 #         `if SND_SOC` and cannot be enabled when the parent is only a module
 # rel 14: enable the distro-required Kconfig options before validating them;
@@ -20,10 +30,21 @@
 # rel 15: tolerate staging installs where the runtime saq dependency is absent
 # rel 16: use KERNELRELEASE for /boot names and /lib/modules; the recipe
 #         package version (6.10) is not necessarily the kernel release (6.10.0)
+# rel 17: black screen on real hardware after native GPU drivers became modules:
+#         there was no built-in display driver, so nothing was drawn (not even
+#         the initramfs rescue shell) until udev loaded i915/amdgpu. Now
+#         SYSFB_SIMPLEFB + DRM_SIMPLEDRM + fbcon + VT console are built in and
+#         asserted. Also: the rel 2 / rel 5 / "simpledrm" claims of earlier
+#         revisions were no longer enforced by the script and are again; root
+#         storage/filesystems are asserted =y instead of trusting defconfig;
+#         Intel VMD (NVMe hidden behind RAID mode) and eMMC added; the
+#         validation reports every problem at once, uses POSIX sh, and its
+#         error message no longer prints a literal "\n"; the saq hook now
+#         fails loudly instead of leaving a half-updated /boot unnoticed.
 [package]
 name = "linux"
 version = "6.10"
-rel = 16
+rel = 17
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -35,109 +56,178 @@ build = ["bison", "flex", "perl", "bc", "openssl", "elfutils", "kmod"]
 run = ["saq"]
 
 [build]
-configure = """
+configure = '''
 make mrproper
 make defconfig
 
-# defconfig is a conservative upstream baseline. Explicitly request the
-# drivers and filesystems Faseela promises, then let Kconfig resolve their
-# dependencies before checking the final values below.
+# ---- 1. what we ask for ------------------------------------------------------
+# Kconfig resolves dependencies afterwards (olddefconfig) and may silently drop
+# an option whose dependencies are not met, so section 2 re-checks the result.
+
+# Subsystems the rest depends on.
 scripts/config \
-    --enable BLOCK \
-    --enable NET \
-    --enable INET \
-    --enable CRYPTO \
-    --enable PCI \
-    --enable ACPI \
-    --enable USB \
-    --enable TYPEC \
-    --enable TYPEC_UCSI \
-    --enable SCSI \
-    --enable ATA \
-    --enable SATA_PMP \
-    --enable MMC \
-    --enable MMC_SDHCI \
-    --enable WLAN \
-    --enable CFG80211 \
-    --enable MAC80211 \
-    --enable BT \
-    --enable INPUT \
-    --enable VIRTIO \
-    --enable DRM \
-    --enable SOUND \
-    --enable SND \
-    --enable SND_HDA \
-    --enable SQUASHFS \
-    --enable XZ_DEC \
-    --enable BLK_DEV_INITRD \
-    --enable RD_GZIP \
-    --enable MODULES \
-    --enable MODULE_UNLOAD \
-    --enable FW_LOADER \
-    --enable EFI_STUB \
-    --module WIREGUARD \
-    --module EXFAT_FS \
+    --enable BLOCK --enable NET --enable INET --enable CRYPTO --enable PCI \
+    --enable ACPI --enable USB --enable SCSI --enable ATA --enable SATA_PMP \
+    --enable INPUT --enable VIRTIO --enable MODULES --enable MODULE_UNLOAD \
+    --enable FW_LOADER --enable EFI --enable EFI_STUB
+
+# Identify the build: uname -r is 6.10.0-faseela, not a bare 6.10.0.
+scripts/config --set-str LOCALVERSION "-faseela" --disable LOCALVERSION_AUTO
+
+# No debug info (see rel 5). DEBUG_INFO_NONE is the "none" choice of a
+# Kconfig choice group, the DWARF entries are its siblings.
+scripts/config \
+    --enable DEBUG_INFO_NONE \
+    --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \
+    --disable DEBUG_INFO_DWARF4 --disable DEBUG_INFO_DWARF5 \
+    --disable DEBUG_INFO_BTF
+
+# Initramfs: saq writes a gzip-compressed newc cpio archive.
+scripts/config \
+    --enable BLK_DEV_INITRD --enable RD_GZIP \
+    --enable DEVTMPFS --enable TMPFS --enable PROC_FS --enable SYSFS \
+    --enable BINFMT_ELF --enable BINFMT_SCRIPT
+
+# Root storage, built in: the initramfs may not have the module, and the root
+# device has to exist before /init can mount it.
+scripts/config \
+    --enable BLK_DEV_SD --enable BLK_DEV_SR \
+    --enable SATA_AHCI --enable ATA_PIIX \
+    --enable BLK_DEV_NVME --enable VMD \
+    --enable USB_XHCI_HCD --enable USB_XHCI_PCI \
+    --enable USB_EHCI_HCD --enable USB_EHCI_PCI \
+    --enable USB_STORAGE --enable USB_UAS \
+    --enable MMC --enable MMC_BLOCK --enable MMC_SDHCI --enable MMC_SDHCI_PCI \
+    --enable VIRTIO_PCI --enable VIRTIO_BLK --enable SCSI_VIRTIO \
+    --module VMWARE_PVSCSI
+
+# Root and live-media filesystems, built in.
+scripts/config \
+    --enable EXT4_FS --enable VFAT_FS --enable FAT_FS \
+    --enable NLS_CODEPAGE_437 --enable NLS_ISO8859_1 \
+    --enable ISO9660_FS --enable OVERLAY_FS --enable BLK_DEV_LOOP \
+    --enable SQUASHFS --enable SQUASHFS_ZLIB --enable SQUASHFS_XZ \
+    --enable SQUASHFS_ZSTD --enable XZ_DEC --enable XZ_DEC_X86 \
     --enable BLK_DEV_DM \
-    --module DM_CRYPT \
-    --enable SQUASHFS_ZLIB \
-    --enable SQUASHFS_XZ \
-    --enable SQUASHFS_ZSTD \
-    --enable XZ_DEC_X86 \
-    --module DRM_XE \
-    --module USB4 \
-    --module UCSI_ACPI \
-    --enable SND_SOC \
-    --enable SND_SOC_SOF_TOPLEVEL \
-    --module SND_SOC_SOF_PCI \
-    --enable SND_SOC_SOF_INTEL_TOPLEVEL \
-    --module VMWARE_PVSCSI \
-    --enable BLK_DEV_NVME \
-    --enable SATA_AHCI \
-    --enable MMC_SDHCI_PCI \
-    --module IWLWIFI \
-    --module IWLMVM \
-    --module ATH9K \
-    --module RTW88 \
+    --module DM_CRYPT --module WIREGUARD --module EXFAT_FS --module NTFS3_FS
+
+# Something must draw on the screen without any module (see rel 17):
+# the firmware framebuffer (UEFI GOP / VBE) exposed as simpledrm, plus the
+# VT/fbcon console on top of it. Native drivers below replace it when loaded.
+scripts/config \
+    --enable DRM --enable DRM_KMS_HELPER --enable DRM_FBDEV_EMULATION \
+    --enable SYSFB_SIMPLEFB --enable DRM_SIMPLEDRM \
+    --enable VT --enable VT_CONSOLE --enable FRAMEBUFFER_CONSOLE \
+    --enable DRM_VIRTIO_GPU --module DRM_BOCHS
+
+# Native GPU drivers, modules.
+scripts/config \
+    --module DRM_I915 --module DRM_XE --module DRM_AMDGPU --module DRM_NOUVEAU
+
+# Input needed to type into the saq rescue shell and to log in.
+scripts/config \
+    --enable HID --enable HID_GENERIC --enable USB_HID \
+    --enable KEYBOARD_ATKBD --enable VIRTIO_INPUT \
+    --module I2C_HID_ACPI
+
+# Everything else: wireless, bluetooth, audio, Type-C/USB4.
+scripts/config \
+    --enable WLAN --enable CFG80211 --enable MAC80211 --enable BT \
+    --module IWLWIFI --module IWLMVM --module ATH9K --module RTW88 \
     --module BT_HCIBTUSB \
-    --module DRM_I915 \
-    --module DRM_AMDGPU \
-    --module DRM_NOUVEAU \
-    --module SND_HDA_INTEL \
-    --module NTFS3_FS \
-    --enable VIRTIO_INPUT
+    --enable SOUND --enable SND --enable SND_HDA --module SND_HDA_INTEL \
+    --enable SND_SOC --enable SND_SOC_SOF_TOPLEVEL --module SND_SOC_SOF_PCI \
+    --enable SND_SOC_SOF_INTEL_TOPLEVEL \
+    --enable TYPEC --enable TYPEC_UCSI --module UCSI_ACPI --module USB4
+
 make olddefconfig
-# Validate each required option with an actionable error (Kconfig can
-# silently downgrade or unset symbols whose dependencies are not met).
+
+# ---- 2. what we verify -------------------------------------------------------
+# require_config: the system cannot boot (or the distro's promises break)
+#                 without it -> the build fails.
+# want_config:    useful, but not worth failing the build -> a warning.
+# All problems are collected and reported together. POSIX sh only.
+fail=0
+cfg_value() {
+    awk -F= -v key="$1" '$1 == key { print substr($0, index($0, "=") + 1); exit }' .config
+}
 require_config() {
-    local symbol="$1" expected="$2" actual
-    actual="$(awk -F= -v key="$symbol" '$1 == key { print substr($0, index($0, "=") + 1); exit }' .config)"
-    if [[ "$actual" != "$expected" ]]; then
-        printf 'error: expected %s=%s in .config, found %s\\n' "$symbol" "$expected" "${actual:-unset}" >&2
-        return 1
+    actual="$(cfg_value "$1")"
+    if [ "$actual" != "$2" ]; then
+        echo "error: expected $1=$2 in .config, found ${actual:-unset}" >&2
+        fail=1
+    fi
+}
+want_config() {
+    actual="$(cfg_value "$1")"
+    if [ "$actual" != "$2" ]; then
+        echo "warning: wanted $1=$2 in .config, found ${actual:-unset}" >&2
     fi
 }
 
-# Linux 6.10 gates module loading and userspace autoloading through CONFIG_MODULES.
-# Installed-system initramfs and automatic module loading.
+# Initramfs and early userspace.
 require_config CONFIG_BLK_DEV_INITRD y
 require_config CONFIG_RD_GZIP y
+require_config CONFIG_DEVTMPFS y
+require_config CONFIG_TMPFS y
+require_config CONFIG_PROC_FS y
+require_config CONFIG_SYSFS y
+require_config CONFIG_BINFMT_ELF y
+require_config CONFIG_BINFMT_SCRIPT y
 require_config CONFIG_MODULES y
 require_config CONFIG_MODULE_UNLOAD y
 require_config CONFIG_FW_LOADER y
+require_config CONFIG_EFI y
 require_config CONFIG_EFI_STUB y
 
-# Repository/live-media and build-isolation requirements.
-require_config CONFIG_WIREGUARD m
-require_config CONFIG_EXFAT_FS m
-require_config CONFIG_BLK_DEV_DM y
-require_config CONFIG_DM_CRYPT m
+# A console that works without loading any module.
+require_config CONFIG_VT y
+require_config CONFIG_VT_CONSOLE y
+require_config CONFIG_DRM y
+require_config CONFIG_DRM_FBDEV_EMULATION y
+require_config CONFIG_SYSFB_SIMPLEFB y
+require_config CONFIG_DRM_SIMPLEDRM y
+require_config CONFIG_FRAMEBUFFER_CONSOLE y
+
+# Root storage and root filesystems.
+require_config CONFIG_BLK_DEV_SD y
+require_config CONFIG_SATA_AHCI y
+require_config CONFIG_BLK_DEV_NVME y
+require_config CONFIG_USB_XHCI_HCD y
+require_config CONFIG_USB_XHCI_PCI y
+require_config CONFIG_USB_EHCI_HCD y
+require_config CONFIG_USB_STORAGE y
+require_config CONFIG_MMC_BLOCK y
+require_config CONFIG_MMC_SDHCI_PCI y
+require_config CONFIG_VIRTIO_BLK y
+require_config CONFIG_EXT4_FS y
+require_config CONFIG_VFAT_FS y
+require_config CONFIG_ISO9660_FS y
+require_config CONFIG_OVERLAY_FS y
+require_config CONFIG_SQUASHFS y
 require_config CONFIG_SQUASHFS_ZLIB y
 require_config CONFIG_SQUASHFS_XZ y
 require_config CONFIG_SQUASHFS_ZSTD y
 require_config CONFIG_XZ_DEC_X86 y
+require_config CONFIG_BLK_DEV_DM y
 
-# Generic x86_64 coverage: required drivers must survive olddefconfig.
+# Input: a keyboard for the rescue shell and for login.
+require_config CONFIG_HID_GENERIC y
+require_config CONFIG_USB_HID y
+require_config CONFIG_KEYBOARD_ATKBD y
+require_config CONFIG_VIRTIO_INPUT y
+
+# Distro promises: recipes that need these as modules.
+require_config CONFIG_WIREGUARD m
+require_config CONFIG_EXFAT_FS m
+require_config CONFIG_DM_CRYPT m
+require_config CONFIG_NTFS3_FS m
+
+# Generic x86_64 hardware coverage.
+require_config CONFIG_DRM_I915 m
 require_config CONFIG_DRM_XE m
+require_config CONFIG_DRM_AMDGPU m
+require_config CONFIG_DRM_NOUVEAU m
 require_config CONFIG_USB4 m
 require_config CONFIG_UCSI_ACPI m
 require_config CONFIG_SND_SOC y
@@ -145,23 +235,27 @@ require_config CONFIG_SND_SOC_SOF_TOPLEVEL y
 require_config CONFIG_SND_SOC_SOF_PCI m
 require_config CONFIG_SND_SOC_SOF_INTEL_TOPLEVEL y
 require_config CONFIG_VMWARE_PVSCSI m
-require_config CONFIG_BLK_DEV_NVME y
-require_config CONFIG_SATA_AHCI y
-require_config CONFIG_MMC_SDHCI_PCI y
 require_config CONFIG_IWLWIFI m
 require_config CONFIG_IWLMVM m
 require_config CONFIG_ATH9K m
 require_config CONFIG_RTW88 m
 require_config CONFIG_BT_HCIBTUSB m
-require_config CONFIG_DRM_I915 m
-require_config CONFIG_DRM_AMDGPU m
-require_config CONFIG_DRM_NOUVEAU m
 require_config CONFIG_SND_HDA_INTEL m
-require_config CONFIG_NTFS3_FS m
-require_config CONFIG_VIRTIO_INPUT y
-"""
+
+# Worth having; a missing one is reported but does not stop the build.
+want_config CONFIG_VMD y
+want_config CONFIG_DRM_VIRTIO_GPU y
+want_config CONFIG_DRM_BOCHS m
+want_config CONFIG_I2C_HID_ACPI m
+want_config CONFIG_DEBUG_INFO_NONE y
+
+if [ "$fail" != 0 ]; then
+    echo "linux: the final .config does not meet the boot requirements above" >&2
+    exit 1
+fi
+'''
 compile = "make -j%{jobs}"
-install = """
+install = '''
 # The package version is a source-version label, not the installed kernel
 # release. Use the exact KERNELRELEASE chosen by Kbuild for every installed path.
 KVER="$(make -s kernelrelease)"
@@ -178,30 +272,40 @@ test -d "%{pkgdir}/lib/modules/$KVER" || {
     echo "linux: modules_install did not create lib/modules/$KVER" >&2
     exit 1
 }
-install -Dm644 arch/x86/boot/bzImage \
-    "%{pkgdir}/boot/vmlinuz-$KVER"
-install -Dm644 System.map \
-    "%{pkgdir}/boot/System.map-$KVER"
-install -Dm644 .config \
-    "%{pkgdir}/boot/config-$KVER"
 rm -f "%{pkgdir}/lib/modules/$KVER/build" \
       "%{pkgdir}/lib/modules/$KVER/source"
-"""
+
+# modules_install already runs depmod when it is available; make sure, because
+# saq trusts modules.dep to resolve the storage modules' dependencies.
+depmod -b "%{pkgdir}" "$KVER"
+test -s "%{pkgdir}/lib/modules/$KVER/modules.dep" || {
+    echo "linux: empty modules.dep for $KVER" >&2
+    exit 1
+}
+
+install -Dm644 arch/x86/boot/bzImage "%{pkgdir}/boot/vmlinuz-$KVER"
+install -Dm644 System.map "%{pkgdir}/boot/System.map-$KVER"
+install -Dm644 .config "%{pkgdir}/boot/config-$KVER"
+'''
 
 [hooks]
 # Nawa runs post_install after both a fresh install and an upgrade.
-post_install = """
+post_install = '''
 if [ -x /usr/sbin/saq ]; then
-    /usr/sbin/saq --all --prune --update-default
+    if ! /usr/sbin/saq --all --prune --update-default; then
+        echo "linux: WARNING: saq failed. /boot may hold a kernel without a" >&2
+        echo "linux: matching initramfs. Check /boot and re-run saq BEFORE rebooting." >&2
+        exit 1
+    fi
 else
     echo "linux: saq is not present in this root; skipping initramfs refresh"
 fi
-"""
+'''
 # Remove stale images after the kernel package payload has been removed.
-post_remove = """
+post_remove = '''
 if [ -x /usr/sbin/saq ]; then
     /usr/sbin/saq --prune --update-default
 else
     echo "linux: saq is not present in this root; skipping initramfs cleanup"
 fi
-"""
+'''

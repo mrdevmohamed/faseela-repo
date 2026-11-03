@@ -36,9 +36,22 @@ def local_name(tag):
     return tag.rsplit("}", 1)[-1]
 
 
+def synopsis_text(node):
+    parts = []
+    if node.text and node.text.strip():
+        parts.append(" ".join(node.text.split()))
+    for child in node:
+        value = synopsis_text(child)
+        if value:
+            parts.append(value)
+        if child.tail and child.tail.strip():
+            parts.append(" ".join(child.tail.split()))
+    return " ".join(parts)
+
+
 def render(node):
     if local_name(node.tag) == "cmdsynopsis":
-        return " ".join("".join(node.itertext()).split())
+        return synopsis_text(node)
     parts = [node.text or ""]
     for child in node:
         child_text = render(child)

@@ -116,6 +116,13 @@ cat > %{pkgdir}/usr/bin/faseela-audio-session <<'AUDIOSESSION'
 #!/bin/sh
 # Start PipeWire, WirePlumber and the PulseAudio compatibility server as user.
 uid=$(id -u)
+pw_pid= wp_pid= pp_pid=
+cleanup() {
+    [ -z "$pp_pid" ] || kill "$pp_pid" 2>/dev/null
+    [ -z "$wp_pid" ] || kill "$wp_pid" 2>/dev/null
+    [ -z "$pw_pid" ] || kill "$pw_pid" 2>/dev/null
+}
+trap cleanup EXIT INT TERM
 if [ -z "$XDG_RUNTIME_DIR" ]; then
     XDG_RUNTIME_DIR="/run/user/$uid"
     [ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
@@ -131,7 +138,7 @@ fi
 
 # Start each daemon only when its endpoint/process is not already present.
 if [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && ! pgrep -u "$uid" -x pipewire >/dev/null 2>&1; then
-    pipewire >/dev/null 2>&1 &
+    pipewire >/dev/null 2>&1 & pw_pid=$!
 fi
 i=0
 while [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && [ "$i" -lt 50 ]; do
@@ -144,10 +151,10 @@ done
 }
 
 if ! pgrep -u "$uid" -x wireplumber >/dev/null 2>&1; then
-    wireplumber >/dev/null 2>&1 &
+    wireplumber >/dev/null 2>&1 & wp_pid=$!
 fi
 if [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && ! pgrep -u "$uid" -x pipewire-pulse >/dev/null 2>&1; then
-    pipewire-pulse >/dev/null 2>&1 &
+    pipewire-pulse >/dev/null 2>&1 & pp_pid=$!
 fi
 i=0
 while [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && [ "$i" -lt 50 ]; do
@@ -158,6 +165,12 @@ done
     echo "faseela-audio-session: PulseAudio-compatible socket did not appear" >&2
     exit 1
 }
+
+# Keep the daemons scoped to a directly launched Sway session. When invoked
+# through start-sway, that launcher owns cleanup and this helper owns no PIDs.
+while pgrep -u "$uid" -x sway >/dev/null 2>&1; do
+    sleep 1
+done
 exit 0
 AUDIOSESSION
 chmod 755 %{pkgdir}/usr/bin/faseela-audio-session

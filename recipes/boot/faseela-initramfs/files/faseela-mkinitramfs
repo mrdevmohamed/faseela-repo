@@ -153,13 +153,14 @@ done
     for fw_candidate in "$fw_base/$firmware" "$fw_base/$firmware.xz" "$fw_base/$firmware.zst" "$fw_base/$firmware.gz"; do
      [[ -f "$fw_candidate" ]] || continue
      fw_dest="$tree/lib/firmware/$firmware"
-     case "$fw_candidate" in
-      "$fw_base/$firmware.xz") fw_dest="$fw_dest.xz" ;;
-      "$fw_base/$firmware.zst") fw_dest="$fw_dest.zst" ;;
-      "$fw_base/$firmware.gz") fw_dest="$fw_dest.gz" ;;
-     esac
      mkdir -p "$(dirname "$fw_dest")"
-     cp -L "$fw_candidate" "$fw_dest"; fw_found=1; break 2
+     case "$fw_candidate" in
+      "$fw_base/$firmware.xz") xz -dc -- "$fw_candidate" > "$fw_dest" ;;
+      "$fw_base/$firmware.zst") zstd -q -d -c -- "$fw_candidate" > "$fw_dest" ;;
+      "$fw_base/$firmware.gz") gzip -dc -- "$fw_candidate" > "$fw_dest" ;;
+      *) cp -L "$fw_candidate" "$fw_dest" ;;
+     esac
+     fw_found=1; break 2
     done
    done
    [[ "$fw_found" == 1 ]] || echo "firmware not installed for $ver: $firmware" >&2

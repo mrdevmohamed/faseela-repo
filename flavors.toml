@@ -67,9 +67,9 @@ extends = ["iso-gui"]
 # (swrast) as a CPU fallback; vulkan-loader supplies libvulkan. Mesa's build closure compiles
 # the SDK-matched SPIR-V/glslang helpers and python-ply; the ISO installs runtime packages only.
 [flavor.iso-gui-zed]
-summary = "iso-gui plus Zed with Vulkan through Mesa lavapipe (software Vulkan for QEMU)"
+summary = "iso-gui plus Zed and vulkaninfo, with Vulkan through Mesa (lavapipe, radv on AMD)"
 extends = ["iso-nogui"]
-include = ["@gui", "firefox", "zed"]
+include = ["@gui", "firefox", "zed", "vulkan-tools"]
 
 # --- media (recipes/media): opt-in, on top of the images above ----------------------------
 [flavor.iso-nogui-ffmpeg]

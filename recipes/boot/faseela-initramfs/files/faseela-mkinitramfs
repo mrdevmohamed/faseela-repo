@@ -97,7 +97,8 @@ build_one() {
 
  stage_module() {
   local requested="$1" key saved
-  local child child_name child_path child_dest
+  local child_path child_name child_dest
+  local source_rel source_deps source_path output_rel output_path suffix
   local -a child_outputs=()
   key="${requested//-/_}"; saved="${MOD_LINE[$key]:-}"
   [[ -n "$saved" ]] || return 0

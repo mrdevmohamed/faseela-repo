@@ -127,7 +127,7 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
             if not installed.is_file():
                 raise AssertionError(f"{recipe.name}: {label} did not install {installed}")
         if upstream_binary.read_bytes() != binary.read_bytes():
-            raise AssertionError(f"{recipe.name}: upstream binary changed in {label}")
+            raise AssertionError(f"{name}: upstream binary changed in {label} (source={binary}, installed={upstream_binary})")
         for executable in (upstream_binary, installed_binary):
             if executable.stat().st_mode & 0o111 == 0:
                 raise AssertionError(f"{recipe.name}: executable bit lost in {label}")

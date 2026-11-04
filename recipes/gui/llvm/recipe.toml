@@ -1,16 +1,13 @@
-# LLVM libraries + Clang compiler for Mesa's llvmpipe, radeonsi and lavapipe.
-# rel 4 adds the Clang project: Mesa's Vulkan swrast (lavapipe) build needs clang,
-# while radeonsi/llvmpipe need the X86 + AMDGPU LLVM targets. Clang is kept in this
-# same package because it is built from the matching llvm-project source tree.
-# rel 3 added the AMDGPU target for Mesa's radeonsi driver.
-# The install step removes unneeded static libraries and tools but retains clang,
-# clang++, clang-cpp and llvm-config, plus the shared LLVM/Clang libraries.
+# LLVM libraries, Clang compiler and clangd language server.
+# clangd is built from clang-tools-extra in the same llvm-project release so its
+# compiler interfaces, headers and libraries match the shipped Clang.
+# The package retains clang, clang++, clang-cpp, clangd and llvm-config.
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 4
+rel = 5
 arch = ["x86_64"]
-summary = "LLVM libraries and Clang compiler (X86 + AMDGPU) for Mesa software and AMD drivers"
+summary = "LLVM, Clang compiler and clangd language server (X86 + AMDGPU)"
 license = ["Apache-2.0 WITH LLVM-exception"]
 source = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
 sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a"
@@ -26,7 +23,7 @@ cmake -S llvm -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_C_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
     -DCMAKE_CXX_FLAGS='-ffile-prefix-map=/build/src=/usr/src' \
-    -DLLVM_ENABLE_PROJECTS=clang \
+    -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra' \
     -DLLVM_TARGETS_TO_BUILD='X86;AMDGPU' \
     -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON \
     -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_ASSERTIONS=OFF \
@@ -48,8 +45,8 @@ rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib
 # Keep only the compiler tools required to build Mesa's lavapipe and llvm-config.
 find %{pkgdir}/usr/bin -mindepth 1 \
     ! -name llvm-config \
-    ! -name clang ! -name clang++ ! -name clang-cpp \
-    ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' \
+    ! -name clang ! -name clang++ ! -name clang-cpp ! -name clangd \
+    ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' ! -name 'clangd-18' \
     -delete
 rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc
 """

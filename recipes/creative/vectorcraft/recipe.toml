@@ -120,6 +120,7 @@ if [ "$wayland_active" -eq 1 ]; then
     vectorcraft) VECTORCRAFT_NATIVE_WAYLAND=1; export VECTORCRAFT_NATIVE_WAYLAND ;;
     esac
 fi
+unset DISPLAY
 exec "$upstream" "$@"
 LAUNCHER
 chmod 755 "$upstream_bin"

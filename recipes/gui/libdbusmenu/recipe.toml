@@ -1,39 +1,41 @@
 # gui recipe: libdbusmenu — D-Bus menu transport used by Waybar's StatusNotifier tray
 # Build the GLib and GTK 3 libraries from the same upstream source tree.
 # GTK 2, the dumper, tests, introspection, Vala bindings and gtk-doc are not
-# needed by the Faseela desktop. intltool is not packaged, so configure gets
-# the same source-local stand-ins used by pavucontrol; translations stay off.
+# needed by the Faseela desktop. Debian's repacked source omits generated
+# Autotools files, so regenerate them locally without GNOME-only docs/NLS tools.
 [package]
 name = "libdbusmenu"
 version = "18.10.20180917"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "D-Bus menu transport library (GLib and GTK 3)"
 license = ["LGPL-2.1-or-later", "LGPL-3.0-or-later"]
 source = "https://deb.debian.org/debian/pool/main/libd/libdbusmenu/libdbusmenu_%{version}~bzr492+repack1.orig.tar.xz"
 sha256 = "41298b926573419f21864205317461750b833c596af6ab0bd206e13336f8cee3"
-source_dir = "libdbusmenu-%{version}~bzr492+repack1"
+source_dir = "libdbusmenu-%{version}~bzr492"
 
 [depends]
-build = ["pkgconf", "glib", "gtk3"]
+build = ["pkgconf", "glib", "gtk3", "autoconf", "automake", "libtool", "gettext"]
 run = ["glib", "gtk3"]
 
 [build]
-configure = '''
-# intltool is not packaged. The configure check is only needed for translated
-# templates; keep the helper local to the source tree and disable NLS.
-stub=$PWD/.intltool-stub
-mkdir -p "$stub/XML"
-printf '#!/bin/sh\necho "intltool-update (intltool) 0.51.0"\n' > "$stub/intltool-update"
-printf '#!/bin/sh\nexit 0\n' > "$stub/intltool-merge"
-printf '#!/bin/sh\nexit 0\n' > "$stub/intltool-extract"
-chmod 755 "$stub/intltool-update" "$stub/intltool-merge" "$stub/intltool-extract"
-printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > "$stub/XML/Parser.pm"
-PATH="$stub:$PATH" PERL5LIB="$stub" ./configure \
-    --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static \
-    --with-gtk=3 --disable-dumper --disable-tests \
-    --disable-introspection --disable-vala --disable-gtk-doc
+prepare = '''
+# The Debian repack intentionally excludes generated configure/Makefile.in.
+# Recreate them with packaged Autotools instead of gnome-autogen.sh, which
+# requires gnome-common and gtk-doc (neither is part of Faseela).
+#
+# The recipe ships no translations or API docs. Remove the GNOME-only
+# configure macros and docs subdirectory; keep the in-tree introspection
+# macro available but disable that feature during configure.
+sed -i \
+    -e '/^[[:space:]]*IT_PROG_INTLTOOL(/d' \
+    -e '/^[[:space:]]*GTK_DOC_CHECK(/d' \
+    -e '/^[[:space:]]*docs/d' \
+    configure.ac
+sed -i '/^[[:space:]]*docs[[:space:]]/d' Makefile.am
+autoreconf -fi
 '''
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static --with-gtk=3 --disable-dumper --disable-tests --disable-introspection --disable-vala"
 compile = "make -j%{jobs}"
 install = '''
 make DESTDIR=%{pkgdir} install

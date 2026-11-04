@@ -85,6 +85,10 @@ Faseela fetches recipes from `main` at build time
 (`bootstrap/fetch-recipes.sh`) and, on a `v*` tag, records the commit it used,
 so a release can be rebuilt from the same recipes.
 
+## Developer Edition
+
+See [DEVELOPER-EDITION.md](DEVELOPER-EDITION.md) for the opt-in developer package groups, full package inventory, recipe requirements and implementation order. Developer tools are intentionally kept out of the default ISO and bootstrap.
+
 ## Working on a recipe
 
 ```sh

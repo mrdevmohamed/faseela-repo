@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "Desktop-agnostic portal frontend for D-Bus applications"
 license = ["LGPL-2.1-or-later"]
 source = "https://github.com/flatpak/xdg-desktop-portal/releases/download/%{version}/xdg-desktop-portal-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "b858aa1e74e80c862790dbb912906e6eab8b1e4db9339cd759473af62b461e65"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "dbus", "pipewire", "fuse3", "json-glib", "gdk-pixbuf"]

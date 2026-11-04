@@ -66,7 +66,7 @@ upstream="$script_dir/$app_name.real"
 
 if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
     [ -n "${DISPLAY:-}" ] || { echo "$app_name: XWayland mode requires DISPLAY." >&2; exit 1; }
-    unset WINIT_UNIX_BACKEND
+    export WINIT_UNIX_BACKEND=x11
     :
     exec "$upstream" "$@"
 fi

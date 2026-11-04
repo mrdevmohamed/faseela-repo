@@ -21,7 +21,31 @@ drivers = set(match.group(1).split(","))
 required = {"amd", "intel", "intel_hasvk", "swrast"}
 assert required <= drivers, f"Mesa Vulkan ICDs missing: {sorted(required - drivers)}"
 assert "python-ply" in mesa_build, "Intel ANV requires the python-ply build dependency"
-assert mesa["package"]["rel"] >= 6, "Bump Mesa rel when changing the shipped graphics ABI"
+
+assert "libclc" in mesa_build, "Intel ANV's intel_clc build requires the Mesa libclc runtime"
+assert "spirv-llvm-translator" in mesa_build, "libclc requires the LLVM-matched llvm-spirv tool"
+
+llvm = recipe("recipes/gui/llvm/recipe.toml")
+assert llvm["package"]["version"] == "18.1.8"
+for tool in ("llvm-as", "llvm-link", "opt"):
+    assert f"! -name {tool}" in llvm["build"]["install"], (
+        f"LLVM must retain {tool} so libclc can build Mesa's SPIR-V builtins"
+    )
+
+translator = recipe("recipes/gui/spirv-llvm-translator/recipe.toml")
+assert translator["package"]["version"] == "18.1.3"
+assert {"llvm", "spirv-headers", "spirv-tools"} <= set(translator["depends"]["build"])
+assert "llvm-spirv" in translator["build"]["compile"]
+
+libclc = recipe("recipes/gui/libclc/recipe.toml")
+assert libclc["package"]["version"] == llvm["package"]["version"], (
+    "libclc must be built from the same LLVM release as the installed toolchain"
+)
+assert {"llvm", "spirv-llvm-translator"} <= set(libclc["depends"]["build"])
+assert 'LIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-"' in libclc["build"]["configure"], (
+    "libclc must ship the 32-bit and 64-bit Mesa SPIR-V builtin files"
+)
+assert mesa["package"]["rel"] >= 7, "Bump Mesa rel when changing the shipped graphics ABI"
 assert "-D platforms=wayland,x11" in configure, "Mesa must keep Wayland and enable the X11 platform"
 assert "-D glx=dri" in configure, "Mesa must build DRI-based GLX and provide libGL.so.1"
 assert "-D glx=disabled" not in configure, "Mesa must not drop the legacy libGL.so.1 ABI"

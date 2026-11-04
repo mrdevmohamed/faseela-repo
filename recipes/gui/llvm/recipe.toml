@@ -1,11 +1,11 @@
 # LLVM libraries, Clang compiler and clangd language server.
 # clangd is built from clang-tools-extra in the same llvm-project release so its
 # compiler interfaces, headers and libraries match the shipped Clang.
-# The package retains clang, clang++, clang-cpp, clangd and llvm-config.
+# Keep the LLVM tools required by libclc's SPIR-V builtin build alongside the Clang tools.
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "LLVM, Clang compiler and clangd language server (X86 + AMDGPU)"
 license = ["Apache-2.0 WITH LLVM-exception"]
@@ -44,7 +44,10 @@ if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present a
 rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a %{pkgdir}/usr/lib/libclang*.a
 # Keep only the compiler tools required to build Mesa's lavapipe and llvm-config.
 find %{pkgdir}/usr/bin -mindepth 1 \
-    ! -name llvm-config \
+    ! -name llvm-config ! -name 'llvm-config-18' \
+    ! -name llvm-as ! -name 'llvm-as-18' \
+    ! -name llvm-link ! -name 'llvm-link-18' \
+    ! -name opt ! -name 'opt-18' \
     ! -name clang ! -name clang++ ! -name clang-cpp ! -name clangd \
     ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' ! -name 'clangd-18' \
     -delete

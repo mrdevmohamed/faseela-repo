@@ -41,5 +41,4 @@ DESTDIR=%{pkgdir} cmake --install build --strip
 { grep -rIn '/build/src' %{pkgdir} || true; } | cut -c1-300 | head -20
 { grep -rIl '/build/src' %{pkgdir} || true; } | while read -r f; do sed -i 's#/build/src#/usr/src#g' "$f"; done
 if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after rewrite" >&2; exit 1; fi
-rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc
 """

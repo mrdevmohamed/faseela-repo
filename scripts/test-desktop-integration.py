@@ -38,7 +38,7 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 
 assert "sway-portals.conf" in install_script
 assert "default=gtk" in install_script
-assert "dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE" in install_script
+assert "dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE" in install_script
 
 # The frontend must own org.freedesktop.portal.Desktop, and the GTK backend
 # must provide the general interfaces without depending on systemd.

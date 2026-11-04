@@ -85,7 +85,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 
 | group | packages |
 |---|---|
-| text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic noto-color-emoji |
+| text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic, noto-naskh-arabic noto-color-emoji |
 | X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links) |
 | Xwayland server | libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |

@@ -21,7 +21,7 @@ def require_deps(category: str, name: str, kind: str, required: set[str]) -> Non
 
 session = recipe("gui", "gui-session")
 assert session["package"]["rel"] >= 13, "Bump gui-session rel for desktop integration changes"
-require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "rsync"})
+require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
 assert "%{pkgdir}/etc/udev/rules.d" in install_script
@@ -31,10 +31,48 @@ assert (chr(36) + "{pkgdir}") not in install_script, (
 assert "exec dbus-run-session -- sh -c" in install_script, (
     "Sway must run inside a user D-Bus session for Secret Service activation"
 )
-assert session["package"]["rel"] >= 14, "Bump gui-session rel for PipeWire session autostart"
+assert session["package"]["rel"] >= 15, "Bump gui-session rel for XDG portal integration"
 assert "procps-ng" in session["depends"]["run"], "Audio session helper requires pgrep"
 assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
+
+assert "sway-portals.conf" in install_script
+assert "default=gtk" in install_script
+assert "dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE" in install_script
+
+# The frontend must own org.freedesktop.portal.Desktop, and the GTK backend
+# must provide the general interfaces without depending on systemd.
+portal = recipe("gui", "xdg-desktop-portal")
+assert portal["package"]["version"] == "1.18.4"
+assert portal["package"]["rel"] >= 2, "Bump portal rel for the PipeWire 1.6 API compatibility patch"
+assert {"fuse3", "json-glib", "gdk-pixbuf", "pipewire", "bubblewrap"} <= set(portal["depends"]["run"])
+assert "bubblewrap" in portal["depends"]["build"], "sandboxed image validation needs bwrap at build time"
+assert "-D systemd=disabled" in portal["build"]["configure"]
+assert "-D sandboxed-image-validation=true" in portal["build"]["configure"]
+assert "pw_registry_add_listener ((struct pw_registry*)remote->registry," in portal["build"]["configure"], (
+    "xdg-desktop-portal 1.18.4 must cast its registry proxy for PipeWire 1.6 headers"
+)
+
+gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
+assert gtk_portal["package"]["version"] == "1.15.3"
+assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
+assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
+assert "-D settings=disabled" in gtk_portal["build"]["configure"]
+
+fuse = recipe("gui", "fuse3")
+assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"
+fuse_configure = fuse["build"]["configure"]
+assert "install_helper.sh" in fuse_configure and "mknod" in fuse_configure, (
+    "fuse3 must not try to create /dev/fuse inside the unprivileged package staging root"
+)
+assert "-D useroot=true" in fuse_configure, (
+    "Keep fusermount3 ownership/mode and udev rule installation enabled"
+)
+
+for name in ("fuse3", "json-glib", "bubblewrap"):
+    assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
+        r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
+    ), f"{name} must have a SHA-256 field"
 assert "pipewire-pulse" in install_script
 assert "pulse/native" in install_script
 assert "pgrep -u" in install_script
@@ -108,5 +146,17 @@ readme = (ROOT / "recipes" / "gui" / "README.md").read_text(encoding="utf-8")
 assert "org.freedesktop.secrets.service" in readme
 assert "does not automatically unlock" in readme
 assert "no D-Bus" not in readme
+
+
+kernel = recipe("boot", "linux")
+assert kernel["package"]["rel"] >= 21, "Bump linux rel when changing portal sandbox requirements"
+kernel_config = kernel["build"]["configure"]
+assert "--enable NAMESPACES --enable USER_NS --enable FUSE_FS" in kernel_config
+first_config_line = next(line for line in kernel_config.splitlines() if "--enable FW_LOADER" in line)
+assert first_config_line.endswith("\\\\") is False and first_config_line.endswith("\\"), (
+    "Kernel scripts/config command must end with exactly one shell continuation backslash"
+)
+for option in ("CONFIG_NAMESPACES", "CONFIG_USER_NS", "CONFIG_FUSE_FS"):
+    assert f"require_config {option} y" in kernel_config
 
 print("DESKTOP INTEGRATION VALIDATION PASSED")

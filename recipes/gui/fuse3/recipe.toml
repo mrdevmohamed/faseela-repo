@@ -1,0 +1,20 @@
+# gui recipe: fuse3 — Filesystem in Userspace library and helper.
+[package]
+name = "fuse3"
+version = "3.18.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Filesystem in Userspace library and mount helper"
+license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+source = "https://github.com/libfuse/libfuse/releases/download/fuse-%{version}/fuse-%{version}.tar.gz"
+sha256 = "bcd19582c5e30f7fe45dd86a5540e998590aa01903afc7ebcbeea6c8ac5421ee"
+source_dir = "fuse-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "sed -i '/mknod .*dev\\/fuse/d' util/install_helper.sh && meson setup build --prefix=/usr --libdir=lib --buildtype=release -D utils=true -D examples=false -D tests=false -D udevrulesdir=/usr/lib/udev/rules.d -D initscriptdir= -D useroot=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

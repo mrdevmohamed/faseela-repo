@@ -1,0 +1,19 @@
+# gui recipe: bubblewrap — unprivileged namespace sandbox used by portal validation.
+[package]
+name = "bubblewrap"
+version = "0.13.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Unprivileged user-namespace sandbox"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/containers/bubblewrap/releases/download/v%{version}/bubblewrap-%{version}.tar.xz"
+sha256 = "0e85c8702248b8dd64144f594147553650cdd0e4c951690345faace79c217c4d"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libcap"]
+run = ["libcap"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D man=disabled -D selinux=disabled -D bash_completion=disabled -D zsh_completion=disabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

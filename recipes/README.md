@@ -17,11 +17,11 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
-**180 packages**, plus the optional `gui/` category (62 packages, see
+**180 packages**, plus the optional `gui/` category (67 packages, see
 [gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md));
-the recipe tree counts 292 recipes in total.
+the recipe tree counts 297 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/` and `creative/` are never part of them).
 
 The first 47 `extra/` recipes are generated from a data table

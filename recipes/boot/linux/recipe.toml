@@ -57,10 +57,14 @@
 #         sensor hubs), Wi-Fi/Ethernet/Bluetooth chip drivers and platform
 #         (Fn key/backlight) drivers. Needs the SOF/Cirrus/TI firmware in
 #         linux-firmware-lite rel 2 and the UCM profiles in alsa-ucm-conf.
+# rel 20: enable user namespaces and built-in FUSE for Bubblewrap and XDG
+#         document-portal sandbox/mount support.
+# rel 21: fix the EFI_STUB command continuation; the extra backslash was
+#         passed literally to scripts/config and aborted kernel configuration.
 [package]
 name = "linux"
 version = "6.10"
-rel = 19
+rel = 21
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -85,7 +89,8 @@ scripts/config \
     --enable BLOCK --enable NET --enable INET --enable CRYPTO --enable PCI \
     --enable ACPI --enable USB --enable SCSI --enable ATA --enable SATA_PMP \
     --enable INPUT --enable VIRTIO --enable MODULES --enable MODULE_UNLOAD \
-    --enable FW_LOADER --enable EFI --enable EFI_STUB
+    --enable FW_LOADER --enable EFI --enable EFI_STUB \
+    --enable NAMESPACES --enable USER_NS --enable FUSE_FS
 
 # Transparent proxy support (v2rayA and other TUN/TPROXY/REDIRECT clients).
 #
@@ -335,6 +340,11 @@ want_config() {
         echo "warning: wanted $1=$2 in .config, found ${actual:-unset}" >&2
     fi
 }
+
+# XDG Desktop Portal document mounts and Bubblewrap's unprivileged sandbox.
+require_config CONFIG_NAMESPACES y
+require_config CONFIG_USER_NS y
+require_config CONFIG_FUSE_FS y
 
 # Transparent proxy support: fail the kernel build rather than shipping
 # a kernel that silently lacks one of v2rayA's interception backends.

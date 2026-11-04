@@ -110,6 +110,12 @@ assert "-D enable-x11=true" in xkbcommon["build"]["configure"], (
 )
 assert "libxcb" in set(xkbcommon["depends"]["build"])
 assert "libxcb" in set(xkbcommon["depends"]["run"])
+assert nekoray["package"]["rel"] >= 5, (
+    "Bump Nekoray rel when changing the extracted application runtime"
+)
+assert "export QT_QPA_PLATFORM=xcb" in nekoray["build"]["install"], (
+    "Nekoray must select its bundled XCB QPA plugin under Wayland/XWayland sessions"
+)
 
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"

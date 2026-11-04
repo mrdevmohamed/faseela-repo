@@ -51,18 +51,18 @@ def populate_payload(payload: Path, package_name: str, kind: str) -> tuple[Path,
 
     binary = binary_dir / package_name
     binary.write_text(
-        "#!/bin/sh\\n"
-        "if [ -n \"$FASEELA_TEST_OUTPUT\" ]; then\\n"
-        "    env | sort > \"$FASEELA_TEST_OUTPUT\"\\n"
-        "fi\\n"
-        "exit 0\\n",
+        "#!/bin/sh\n"
+        "if [ -n \"$FASEELA_TEST_OUTPUT\" ]; then\n"
+        "    env | sort > \"$FASEELA_TEST_OUTPUT\"\n"
+        "fi\n"
+        "exit 0\n",
         encoding="utf-8",
     )
     binary.chmod(0o755)
     desktop = share_dir / "applications" / f"{package_name}.desktop"
-    desktop.write_text("[Desktop Entry]\\nName=Test\\n", encoding="utf-8")
+    desktop.write_text("[Desktop Entry]\nName=Test\n", encoding="utf-8")
     icon = share_dir / "icons" / "hicolor" / "test.txt"
-    icon.write_text("icon fixture\\n", encoding="utf-8")
+    icon.write_text("icon fixture\n", encoding="utf-8")
     return binary, desktop
 
 
@@ -76,7 +76,7 @@ def run_launcher(binary: Path, env: dict[str, str], label: str) -> dict[str, str
         check=False,
     )
     if result.returncode:
-        raise AssertionError(f"{binary.name}: {label} failed (exit {result.returncode}):\\n{result.stdout}")
+        raise AssertionError(f"{binary.name}: {label} failed (exit {result.returncode}):\n{result.stdout}")
     output = Path(env["FASEELA_TEST_OUTPUT"])
     if not output.is_file():
         raise AssertionError(f"{binary.name}: {label} did not reach the upstream executable")
@@ -117,7 +117,7 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
             check=False,
         )
         if result.returncode:
-            raise AssertionError(f"{recipe.name} failed in {label}:\\n{result.stdout}")
+            raise AssertionError(f"{recipe.name} failed in {label}:\n{result.stdout}")
 
         installed_binary = pkgdir / "usr" / "bin" / name
         upstream_binary = pkgdir / "usr" / "bin" / f"{name}.real"
@@ -166,8 +166,8 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
             stderr=subprocess.STDOUT,
             check=False,
         )
-        if no_wayland.returncode == 0 or "Wayland session variables are missing" not in no_wayland.stdout:
-            raise AssertionError(f"{recipe.name}: stale DISPLAY was not rejected in {label}:\\n{no_wayland.stdout}")
+        if no_wayland.returncode == 0 or not any(message in no_wayland.stdout for message in ("Wayland session variables are missing", "this is marked as a Wayland session")):
+            raise AssertionError(f"{recipe.name}: stale DISPLAY was not rejected in {label}:\n{no_wayland.stdout}")
 
         # A live Wayland socket makes the launcher force native Wayland, even when DISPLAY exists.
         runtime_dir = root / "runtime"

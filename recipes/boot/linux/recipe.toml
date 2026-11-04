@@ -59,10 +59,12 @@
 #         linux-firmware-lite rel 2 and the UCM profiles in alsa-ucm-conf.
 # rel 20: enable user namespaces and built-in FUSE for Bubblewrap and XDG
 #         document-portal sandbox/mount support.
+# rel 21: fix the EFI_STUB command continuation; the extra backslash was
+#         passed literally to scripts/config and aborted kernel configuration.
 [package]
 name = "linux"
 version = "6.10"
-rel = 20
+rel = 21
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -87,7 +89,7 @@ scripts/config \
     --enable BLOCK --enable NET --enable INET --enable CRYPTO --enable PCI \
     --enable ACPI --enable USB --enable SCSI --enable ATA --enable SATA_PMP \
     --enable INPUT --enable VIRTIO --enable MODULES --enable MODULE_UNLOAD \
-    --enable FW_LOADER --enable EFI --enable EFI_STUB \\
+    --enable FW_LOADER --enable EFI --enable EFI_STUB \
     --enable NAMESPACES --enable USER_NS --enable FUSE_FS
 
 # Transparent proxy support (v2rayA and other TUN/TPROXY/REDIRECT clients).

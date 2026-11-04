@@ -103,10 +103,12 @@ libmnl → iproute2 → dhcpcd → sysklogd → runit
 **system, later additions** — attr/acl (extended attributes and POSIX ACLs),
 libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
 chrony (NTP, runit service
-`chronyd`), libnl → iw and wpa_supplicant (Wi-Fi, runit service
+`chronyd`, enabled by default), libnl → iw and wpa_supplicant (Wi-Fi, runit service
 `wpa_supplicant`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
-dmidecode, lm-sensors, iperf3. The two services are available but not enabled:
-`nawa service enable chronyd` / `nawa service enable wpa_supplicant`.
+dmidecode, lm-sensors, iperf3. `tzdata` defaults to `Africa/Cairo` while preserving
+an administrator's existing `/etc/localtime`; choose another zone by linking it
+from `/usr/share/zoneinfo`. `wpa_supplicant` remains opt-in:
+`nawa service enable wpa_supplicant`.
 
 Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `flex` (base) pulls `m4` (toolchain) and `texinfo` (base);

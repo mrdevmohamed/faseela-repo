@@ -2,7 +2,7 @@
 [package]
 name = "xdg-desktop-portal-gtk"
 version = "1.15.3"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GTK backend for XDG Desktop Portal"
 license = ["LGPL-2.1-or-later"]
@@ -10,10 +10,10 @@ source = "https://github.com/flatpak/xdg-desktop-portal-gtk/releases/download/%{
 sha256 = "47a3743d2419a8601e691db37e85bb5fac5ae4b26842177065cd5f22ada23b37"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gtk3", "xdg-desktop-portal"]
-run = ["gtk3", "xdg-desktop-portal", "gsettings-desktop-schemas"]
+build = ["meson", "ninja", "pkgconf", "gtk3", "xdg-desktop-portal", "fontconfig", "gsettings-desktop-schemas"]
+run = ["gtk3", "xdg-desktop-portal", "fontconfig", "gsettings-desktop-schemas"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D wallpaper=disabled -D settings=disabled -D appchooser=enabled -D lockdown=enabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D wallpaper=disabled -D settings=enabled -D appchooser=enabled -D lockdown=enabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

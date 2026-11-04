@@ -56,7 +56,11 @@ gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"
 assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
 assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
-assert "-D settings=disabled" in gtk_portal["build"]["configure"]
+assert "-D settings=enabled" in gtk_portal["build"]["configure"], (
+    "GTK portal must implement org.freedesktop.portal.Settings for Qt toolkits"
+)
+assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["build"])
+assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["run"])
 
 fuse = recipe("gui", "fuse3")
 assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"
@@ -113,6 +117,15 @@ assert re.fullmatch(r"[0-9a-f]{64}", waybar["package"]["sha256"])
 for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled"):
     assert flag in waybar["build"]["configure"], f"waybar must not need systemd: {flag}"
 require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
+
+# Telegram and other Qt tray clients look up org.kde.StatusNotifierWatcher.
+# Waybar's tray module normally owns it; the D-Bus service is the activation
+# fallback when the bar has not yet started.
+assert '"tray"' in waybar["build"]["install"], "Waybar's packaged config must enable its tray module"
+assert "org.kde.StatusNotifierWatcher.service" in install_script
+assert "Name=org.kde.StatusNotifierWatcher" in install_script
+assert "Exec=/usr/bin/waybar" in install_script
+assert session["package"]["rel"] >= 20, "Bump gui-session rel for StatusNotifierWatcher activation"
 
 # --- regression coverage for package build failures seen in CI ------------
 # These assertions cover build-time requirements, not just the final session

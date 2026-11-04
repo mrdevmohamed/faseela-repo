@@ -125,7 +125,7 @@ and a USB/PS2 keyboard and mouse.
 `gnome-keyring`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
 user D-Bus session with `dbus-run-session`. The `xdg-desktop-portal` frontend
 owns `org.freedesktop.portal.Desktop` and activates its backends through
-D-Bus. `sway-portals.conf` selects GTK for general interfaces with the wlr
+D-Bus. The GTK backend is built with its Settings portal enabled and declares the required Fontconfig and GSettings schemas, so Qt/GTK clients can read standard appearance settings instead of receiving `UnknownMethod`. `sway-portals.conf` selects GTK for general interfaces with the wlr
 backend as the ScreenCast provider. The Sway
 session drop-in runs `dbus-update-activation-environment` after the compositor
 starts, so the activated backend receives `WAYLAND_DISPLAY` and
@@ -134,6 +134,8 @@ included for the document portal's sandbox and document mounts. GNOME Keyring in
 `/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
 Service daemon is activated on demand by D-Bus. This does not require systemd
 or a system-wide runit service.
+
+Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. A session D-Bus activation descriptor starts Waybar on demand if the watcher is not already running.
 
 The wlr portal backend (ScreenCast through PipeWire), the notification daemon
 and the bar all speak D-Bus through **basu**'s sd-bus — no systemd or elogind

@@ -18,6 +18,9 @@
 #   -D glamor=true        hardware GLX through GBM+EGL (Mesa)
 #   -D xwayland_ei=false  no libei input emulation stack
 #   -D sha1=libcrypto     SHA1 from OpenSSL's libcrypto (packaged)
+#   -D glx=false          GLX needs gl.pc; this tree's mesa is built glx=disabled
+#                         (wayland platform only), so X11 clients get no GLX;
+#                         glamor/EGL acceleration is unaffected
 #   -D xselinux=false -D xace=false  no SELinux, no audit library
 # The Xwayland meson.build falls back gracefully when audit/selinux are off.
 [package]
@@ -36,6 +39,6 @@ build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libxshmfence", "li
 run = ["libxshmfence", "libxkbfile", "libXfont2", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "libxcb", "libX11", "openssl"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xdmcp=false -D xdm-auth-1=false -D secure-rpc=false -D xvfb=false -D systemd_notify=false -D docs=false -D devel-docs=false -D dri3=true -D glamor=true -D xwayland_ei=false -D sha1=libcrypto -D xselinux=false -D xace=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xdmcp=false -D xdm-auth-1=false -D secure-rpc=false -D xvfb=false -D systemd_notify=false -D docs=false -D devel-docs=false -D dri3=true -D glamor=true -D xwayland_ei=false -D sha1=libcrypto -D xselinux=false -D xace=false -D glx=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

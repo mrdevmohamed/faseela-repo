@@ -121,7 +121,7 @@ require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsonc
 # Meson cannot silently publish a bar without StatusNotifier support.
 dbusmenu = recipe("gui", "libdbusmenu")
 assert dbusmenu["package"]["version"] == "18.10.20180917"
-assert dbusmenu["package"]["rel"] >= 2
+assert dbusmenu["package"]["rel"] >= 3
 assert re.fullmatch(r"[0-9a-f]{64}", dbusmenu["package"]["sha256"])
 assert dbusmenu["package"]["source_dir"] == "libdbusmenu-%{version}~bzr492", (
     "Debian's repacked orig archive extracts under the bzr revision name without +repack1"
@@ -134,7 +134,9 @@ assert "autoreconf -fi" in dbusmenu["build"]["prepare"], (
     "The Debian orig archive omits generated configure; regenerate it before configure"
 )
 assert "IT_PROG_INTLTOOL" in dbusmenu["build"]["prepare"]
-assert "GTK_DOC_CHECK" in dbusmenu["build"]["prepare"]
+assert "AM_CONDITIONAL([ENABLE_GTK_DOC], [false])" in dbusmenu["build"]["prepare"], (
+    "Keep the disabled gtk-doc conditional defined because tests/Makefile.am references it"
+)
 require_deps("gui", "waybar", "build", {"libdbusmenu"})
 require_deps("gui", "waybar", "run", {"libdbusmenu"})
 assert "-D dbusmenu-gtk=enabled" in waybar["build"]["configure"], (

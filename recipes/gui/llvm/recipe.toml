@@ -41,16 +41,5 @@ DESTDIR=%{pkgdir} cmake --install build --strip
 { grep -rIn '/build/src' %{pkgdir} || true; } | cut -c1-300 | head -20
 { grep -rIl '/build/src' %{pkgdir} || true; } | while read -r f; do sed -i 's#/build/src#/usr/src#g' "$f"; done
 if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after rewrite" >&2; exit 1; fi
-# Keep LLVM's static component archives: LLVMExports.cmake imports these targets
-# even when consumers link the shared LLVM dylib. Removing them breaks find_package(LLVM).
-find %{pkgdir}/usr/bin -mindepth 1 \
-    ! -name llvm-config ! -name 'llvm-config-18' \
-    ! -name llvm-as ! -name 'llvm-as-18' \
-    ! -name llvm-link ! -name 'llvm-link-18' \
-    ! -name llvm-tblgen ! -name 'llvm-tblgen-18' \
-    ! -name opt ! -name 'opt-18' \
-    ! -name clang ! -name clang++ ! -name clang-cpp ! -name clangd \
-    ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' ! -name 'clangd-18' \
-    -delete
 rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc
 """

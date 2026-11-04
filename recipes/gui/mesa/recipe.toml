@@ -1,11 +1,12 @@
 # Mesa: AMD RADV and Intel ANV Vulkan, plus lavapipe software fallback.
 # rel 6 enables the real AMD/Intel Vulkan ICDs and restores the DRI-based GLX ABI
 # required by legacy Qt/AppImage clients, while keeping Wayland as a native platform.
-# The Intel ANV build uses python-ply; RadeonSI/llvmpipe retain the LLVM dependency.
+# Intel ANV compiles its internal kernels with intel_clc, which needs libclc's
+# Mesa SPIR-V builtins and the matching LLVM/SPIR-V translator.
 [package]
 name = "mesa"
 version = "24.3.0"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "OpenGL/GLES/EGL/GBM + AMD/Intel Vulkan and lavapipe fallback"
 license = ["MIT"]
@@ -13,7 +14,7 @@ source = "https://archive.mesa3d.org/mesa-%{version}.tar.xz"
 sha256 = "97813fe65028ef21b4d4e54164563059e8408d8fee3489a2323468d198bf2efc"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "python-pyyaml", "python-packaging", "python-ply", "libdrm", "xorgproto", "libX11", "libXext", "libXfixes", "libxcb", "libxshmfence", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "bison", "flex", "llvm", "elfutils", "libva", "vulkan-headers", "glslang"]
+build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "python-pyyaml", "python-packaging", "python-ply", "libdrm", "xorgproto", "libX11", "libXext", "libXfixes", "libxcb", "libxshmfence", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "bison", "flex", "llvm", "spirv-llvm-translator", "libclc", "elfutils", "libva", "vulkan-headers", "glslang"]
 run = ["libdrm", "libX11", "libXext", "libXfixes", "libxcb", "libxshmfence", "wayland", "expat", "zlib", "zstd", "llvm", "elfutils", "libva"]
 
 [build]

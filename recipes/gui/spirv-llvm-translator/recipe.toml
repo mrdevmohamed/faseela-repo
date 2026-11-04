@@ -1,0 +1,32 @@
+# SPIR-V/LLVM translator paired with the LLVM 18.1 toolchain used by Mesa.
+# It supplies llvm-spirv for building Mesa's Intel ANV OpenCL-C builtins.
+[package]
+name = "spirv-llvm-translator"
+version = "18.1.3"
+rel = 1
+arch = ["x86_64"]
+summary = "Khronos SPIR-V to LLVM IR translator tool and library"
+license = ["NCSA"]
+source = "https://codeload.github.com/KhronosGroup/SPIRV-LLVM-Translator/tar.gz/refs/tags/v%{version}"
+sha256 = "d896f35102c3ba9e16ead7b4db53b75e6131982cdb36a3324f17c68a43598759"
+source_dir = "SPIRV-LLVM-Translator-%{version}"
+
+[depends]
+build = ["cmake", "ninja", "llvm", "spirv-headers", "spirv-tools"]
+run = ["llvm", "spirv-tools"]
+
+[build]
+configure = """
+cmake -S . -B build -G Ninja \\
+    -DCMAKE_BUILD_TYPE=Release \\
+    -DCMAKE_INSTALL_PREFIX=/usr \\
+    -DCMAKE_INSTALL_LIBDIR=lib \\
+    -DBUILD_SHARED_LIBS=ON \\
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \\
+    -DLLVM_DIR="$(llvm-config --cmakedir)" \\
+    -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr \\
+    -DLLVM_SPIRV_BUILD_EXTERNAL=ON \\
+    -DLLVM_SPIRV_INCLUDE_TESTS=OFF
+"""
+compile = "cmake --build build --target llvm-spirv --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

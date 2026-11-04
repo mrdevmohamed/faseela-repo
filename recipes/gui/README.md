@@ -33,8 +33,11 @@ The Zed flavor now contains a hardware-capable Vulkan path, with a software fall
 - Mesa is built with `-D vulkan-drivers=amd,intel,intel_hasvk,swrast`: RADV for AMD,
   ANV for modern Intel, HasVK for older Intel (Ivy Bridge through Broadwell), and
   lavapipe (`lvp_icd.x86_64.json` / `libvulkan_lvp.so`) as the software fallback.
-- The Intel ANV build uses the `python-ply` helper. RADV, ANV and HasVK are
-  hardware ICDs; lavapipe remains available for systems without a Vulkan GPU.
+- The Intel ANV build uses `python-ply`, `libclc` and the LLVM-matched
+  `spirv-llvm-translator`. The latter two build the Mesa SPIR-V OpenCL-C
+  builtins and the `intel_clc` helper used to embed ANV's internal kernels.
+  RADV, ANV and HasVK are hardware ICDs; lavapipe remains available for
+  systems without a Vulkan GPU.
 - Lavapipe uses LLVM/Clang; the `llvm` recipe builds and retains Clang as well
   as the X86/AMDGPU LLVM targets. Gallium `softpipe` stays enabled.
 - The Vulkan SDK helper recipes are pinned as a compatible set: Vulkan-Headers
@@ -86,7 +89,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
    the upstream tag/asset changed: fix `source`/`version`, bump `rel`, and
    rerun. Review the resulting diff.
 3. Build the Vulkan dependency chain through the normal recipe graph:
-   `spirv-headers → spirv-tools → glslang → mesa`; `vulkan-headers → vulkan-loader`.
+   `llvm → spirv-llvm-translator → libclc → mesa`; `spirv-headers → spirv-tools → glslang → mesa`; `vulkan-headers → vulkan-loader`.
    If a Meson option is rejected, compare it with the pinned Mesa release's
    `meson_options.txt`.
 
@@ -167,9 +170,10 @@ keyring during a tty login.
   The kernel has `amdgpu` and `i915` as modules and firmware is in
   `linux-firmware-lite`. Users need membership in `render` to access DRM render
   nodes such as `/dev/dri/renderD128` (and `video` where the primary node requires it).
-* **Intel OpenGL remains software-rendered for now**: Mesa's `iris` Gallium driver
-  needs `mesa_clc`/libclc, which this LLVM package does not yet build. This does
-  not prevent Intel ANV Vulkan from providing hardware rendering in Zed.
+* **Intel OpenGL remains software-rendered for now**: the `iris` Gallium driver
+  is not part of the selected `gallium-drivers` set. This is separate from
+  Intel ANV Vulkan: its internal build-time compiler and libclc SPIR-V builtins
+  are now packaged, so ANV remains enabled for hardware Vulkan.
 * **NVIDIA Vulkan is not enabled yet**: this Mesa build does not include NVK
   (`nouveau`), which needs additional Rust/bindgen build dependencies. NVIDIA
   users need a separately packaged compatible driver before Zed can use the GPU.

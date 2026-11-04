@@ -1,0 +1,29 @@
+# Mesa's OpenCL C builtins used by Intel ANV's internal intel_clc compiler.
+# Build only the two SPIR-V Mesa targets; the other libclc GPU runtimes are not shipped.
+[package]
+name = "libclc"
+version = "18.1.8"
+rel = 1
+arch = ["x86_64"]
+summary = "LLVM OpenCL C builtins for Mesa SPIR-V"
+license = ["Apache-2.0 WITH LLVM-exception"]
+source = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
+sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a"
+source_dir = "llvm-project-%{version}.src"
+
+[depends]
+build = ["cmake", "ninja", "llvm", "spirv-llvm-translator"]
+run = []
+
+[build]
+configure = """
+cmake -S libclc -B build -G Ninja \\
+    -DCMAKE_BUILD_TYPE=Release \\
+    -DCMAKE_INSTALL_PREFIX=/usr \\
+    -DCMAKE_INSTALL_LIBDIR=lib \\
+    -DLLVM_CMAKE_DIR="$(llvm-config --cmakedir)" \\
+    -DLLVM_SPIRV=/usr/bin/llvm-spirv \\
+    -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-"
+"""
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

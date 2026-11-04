@@ -105,7 +105,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
-| desktop shell | waybar (+ fmt spdlog jsoncpp gtk-layer-shell gtkmm glibmm cairomm pangomm atkmm libsigc++), mako (+ basu inih), xdg-user-dirs |
+| desktop shell | waybar (+ libdbusmenu GTK 3 StatusNotifier tray, fmt spdlog jsoncpp gtk-layer-shell gtkmm glibmm cairomm pangomm atkmm libsigc++), mako (+ basu inih), xdg-user-dirs |
 | desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK and wlr backends, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, GCR/GCK, p11-kit and libgcrypt |
 | audio tools | pavucontrol (+ libcanberra libogg libvorbis in extra/) |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |

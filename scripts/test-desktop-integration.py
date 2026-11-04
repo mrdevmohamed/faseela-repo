@@ -117,6 +117,18 @@ assert re.fullmatch(r"[0-9a-f]{64}", waybar["package"]["sha256"])
 for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled"):
     assert flag in waybar["build"]["configure"], f"waybar must not need systemd: {flag}"
 require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
+# Waybar's tray is optional upstream; require the GTK3 D-Bus menu module so
+# Meson cannot silently publish a bar without StatusNotifier support.
+dbusmenu = recipe("gui", "libdbusmenu")
+assert dbusmenu["package"]["version"] == "18.10.20180917"
+assert re.fullmatch(r"[0-9a-f]{64}", dbusmenu["package"]["sha256"])
+require_deps("gui", "libdbusmenu", "run", {"glib", "gtk3"})
+require_deps("gui", "waybar", "build", {"libdbusmenu"})
+require_deps("gui", "waybar", "run", {"libdbusmenu"})
+assert "-D dbusmenu-gtk=enabled" in waybar["build"]["configure"], (
+    "Waybar must fail Meson configure when the GTK3 StatusNotifier dependency is missing"
+)
+
 
 # Telegram and other Qt tray clients look up org.kde.StatusNotifierWatcher.
 # Waybar's tray module owns the name inside the already-running bar. Do not

@@ -3,14 +3,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 14
+rel = 15
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk"]
 
 [build]
 install = '''
@@ -103,6 +103,24 @@ bindsym XF86AudioLowerVolume exec amixer -q sset Master 5%- unmute
 bindsym XF86AudioMute exec amixer -q sset Master toggle
 SES
 chmod 644 %{pkgdir}/etc/sway/config.d/30-session.conf
+
+# --- XDG Desktop Portal: select GTK for general interfaces -----------------
+# Sway's XDG_CURRENT_DESKTOP value is set by start-sway. Keep this config in
+# the vendor data directory so the portal frontend can select its backend.
+install -d -m755 %{pkgdir}/usr/share/xdg-desktop-portal
+cat > %{pkgdir}/usr/share/xdg-desktop-portal/sway-portals.conf <<'PORTALS'
+[preferred]
+default=gtk
+PORTALS
+chmod 644 %{pkgdir}/usr/share/xdg-desktop-portal/sway-portals.conf
+
+# D-Bus activation happens in the per-session bus created by dbus-run-session.
+# Import the compositor-created Wayland variables so portal backends inherit
+# the correct display and desktop identity.
+cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'PORTALENV'
+# Make the active Wayland session visible to D-Bus-activated desktop portals.
+exec dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+PORTALENV
 # Audio must start for every Sway entry path, not only start-sway. The helper
 # is idempotent so the explicit start-sway preflight and Sway autostart coexist.
 cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'AUDIO'

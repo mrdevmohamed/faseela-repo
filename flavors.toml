@@ -102,7 +102,7 @@ include = ["gcc", "rust", "llvm", "golang", "gdb", "nasm", "lua"]
 
 [flavor.developer-python]
 summary = "Python interpreter and its runtime dependencies"
-include = ["python"]
+include = ["python", "pip", "pipx"]
 
 [flavor.developer-web]
 summary = "JavaScript and TypeScript runtimes: Node.js and Deno"

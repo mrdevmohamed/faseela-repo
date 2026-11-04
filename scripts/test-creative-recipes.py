@@ -187,8 +187,8 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
             wayland_values = run_launcher(installed_binary, wayland_env, f"{label} native Wayland")
         if wayland_values.get("WINIT_UNIX_BACKEND") != "wayland":
             raise AssertionError(f"{recipe.name}: native Wayland backend was not selected in {label}")
-        if wayland_values.get("DISPLAY") != ":0":
-            raise AssertionError(f"{recipe.name}: launcher unexpectedly discarded DISPLAY in {label}")
+        if "DISPLAY" in wayland_values:
+            raise AssertionError(f"{recipe.name}: launcher did not hide stale DISPLAY in native Wayland mode ({label})")
         if app_var and wayland_values.get(app_var) != "1":
             raise AssertionError(f"{recipe.name}: {app_var}=1 was not exported in {label}")
 
@@ -203,6 +203,8 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
         xwayland_values = run_launcher(installed_binary, xwayland_env, f"{label} optional XWayland")
         if xwayland_values.get("WINIT_UNIX_BACKEND") != "x11":
             raise AssertionError(f"{recipe.name}: XWayland override did not select X11 in {label}")
+        if xwayland_values.get("DISPLAY") != ":0":
+            raise AssertionError(f"{recipe.name}: XWayland override discarded DISPLAY in {label}")
         if app_var and app_var in xwayland_values:
             raise AssertionError(f"{recipe.name}: {app_var} was not cleared for XWayland in {label}")
 

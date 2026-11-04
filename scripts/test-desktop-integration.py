@@ -83,7 +83,7 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 # the flavor installs only what the recipe graph pulls in.
 require_deps("gui", "gui-session", "run", {
     "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs",
-    "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-color-emoji",
+    "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji",
 })
 for program in ("exec mako", "exec waybar", "exec xdg-user-dirs-update"):
     assert program in install_script, f"gui-session must autostart: {program}"
@@ -116,14 +116,16 @@ require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsonc
 
 # Fonts: the session ships Latin/Greek/Cyrillic, Arabic and color emoji, all
 # under OFL, all hashed, all refreshing the fontconfig cache on install.
-for name in ("noto-fonts", "noto-fonts-arabic", "noto-color-emoji"):
+for name in ("noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"):
     fonts = recipe("gui", name)
     assert re.fullmatch(r"[0-9a-f]{64}", fonts["package"]["sha256"]), f"{name} sha256 must be pinned"
     assert fonts["package"]["license"] == ["OFL-1.1"]
     assert "fc-cache" in fonts.get("hooks", {}).get("post_install", "")
     assert "fontconfig" in fonts["depends"]["run"]
-naskh = recipe("gui", "noto-fonts-arabic")["build"]["install"]
-assert "sha256sum -c -" in naskh, "the companion Naskh release must be verified against a pinned digest"
+naskh = recipe("gui", "noto-naskh-arabic")
+assert naskh["package"]["version"] == "2.021"
+assert re.fullmatch(r"[0-9a-f]{64}", naskh["package"]["sha256"])
+assert "NotoNaskhArabic/hinted/ttf/*.ttf" in naskh["build"]["install"]
 
 # Xwayland: wlroots enables the feature and sway picks it up; the session
 # inherits it through wlroots' run dependency.

@@ -1,0 +1,23 @@
+# gui recipe: menu-cache — freedesktop menu cache library (libfm's menu backend)
+# LFS applies a consolidated-fixes patch for "multiple definition" link errors with
+# gcc >= 10; -fcommon covers the same failure without fetching a patch at build time.
+# sha256 placeholder: scripts/fill-sha256.py -r menu-cache
+[package]
+name = "menu-cache"
+version = "1.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "menu-cache — freedesktop menu cache library for libfm"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://deb.debian.org/debian/pool/main/m/menu-cache/menu-cache_%{version}.orig.tar.xz"
+sha256 = "ed02eb459dcb398f69b9fa5bf4dd813020405afc84331115469cdf7be9273ec7"
+source_dir = "menu-cache-%{version}"
+
+[depends]
+build = ["pkgconf", "glib", "libfm-extra"]
+run = ["glib", "libfm-extra"]
+
+[build]
+configure = "CFLAGS=\"${CFLAGS:--O2} -fcommon\" ./configure --prefix=/usr --disable-static --disable-gtk-doc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -1,0 +1,21 @@
+# gui recipe: hicolor-icon-theme — the fallback icon theme every GTK app expects
+# sha256 placeholder: scripts/fill-sha256.py -r hicolor-icon-theme
+[package]
+name = "hicolor-icon-theme"
+version = "0.18"
+rel = 1
+arch = ["x86_64"]
+summary = "hicolor-icon-theme — default fallback icon theme"
+license = ["GPL-2.0-only"]
+source = "https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-%{version}.tar.xz"
+sha256 = "db0e50a80aa3bf64bb45cbca5cf9f75efd9348cf2ac690b907435238c3cf81d7"
+source_dir = "hicolor-icon-theme-%{version}"
+
+[depends]
+build = ["meson", "ninja"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,24 @@
+# gui recipe: adwaita-icon-theme — GTK's default icon theme (3.38, the last release with PNGs)
+# gdk-pixbuf here only has PNG/JPEG loaders (no librsvg), so a theme that ships PNG
+# files is required. 3.38 builds the symbolic PNGs at install time with
+# gtk-encode-symbolic-svg, which needs an SVG loader: it is replaced by 'true', so
+# full-colour icons (file types, folders, places) work and symbolic ones are absent.
+# sha256 placeholder: scripts/fill-sha256.py -r adwaita-icon-theme
+[package]
+name = "adwaita-icon-theme"
+version = "3.38.0"
+rel = 1
+arch = ["x86_64"]
+summary = "adwaita-icon-theme — default GTK icon theme (PNG set)"
+license = ["LGPL-3.0-or-later", "CC-BY-SA-3.0"]
+source = "https://download.gnome.org/sources/adwaita-icon-theme/3.38/adwaita-icon-theme-%{version}.tar.xz"
+sha256 = "6683a1aaf2430ccd9ea638dd4bfe1002bc92b412050c3dba20e480f979faaf97"
+source_dir = "adwaita-icon-theme-%{version}"
+
+[depends]
+build = ["pkgconf", "hicolor-icon-theme", "gtk3"]
+run = ["hicolor-icon-theme"]
+
+[build]
+configure = "GTK_ENCODE_SYMBOLIC_SVG=true ./configure --prefix=/usr"
+install = "make DESTDIR=%{pkgdir} GTK_ENCODE_SYMBOLIC_SVG=true install"

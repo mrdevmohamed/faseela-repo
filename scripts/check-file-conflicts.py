@@ -67,7 +67,11 @@ def norm(name: str):
 def read_archive(path: Path):
     """-> {normalised path: 'dir' | 'other'} for the payload of one archive."""
     out = {}
-    proc = subprocess.Popen(["zstd", "-dc", "--", str(path)], stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ["zstd", "-dc", "--", str(path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     try:
         with tarfile.open(fileobj=proc.stdout, mode="r|") as tf:
             for m in tf:
@@ -75,9 +79,19 @@ def read_archive(path: Path):
                 if p:  # None/"" : metadata, or the payload/ directory itself
                     out[p] = "dir" if m.isdir() else "other"
     finally:
+        # tarfile's streaming reader stops at the tar end markers.  Consume
+        # the rest of zstd's output so the decompressor can finish and verify
+        # the complete compressed frame instead of dying with SIGPIPE.
+        while proc.stdout.read(1024 * 1024):
+            pass
         proc.stdout.close()
-        if proc.wait() != 0:
-            raise OSError(f"{path}: zstd could not decompress it")
+        stderr = proc.stderr.read()
+        returncode = proc.wait()
+
+    if returncode != 0:
+        detail = stderr.decode("utf-8", "replace").strip()
+        suffix = f": {detail}" if detail else ""
+        raise OSError(f"{path}: zstd could not decompress it{suffix}")
     return out
 
 

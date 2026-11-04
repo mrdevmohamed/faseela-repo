@@ -1,0 +1,27 @@
+# gui recipe: shared-mime-info — freedesktop MIME type database
+# GIO (and so libfm/PCManFM) needs it to map files to types. The database is built
+# at install time on the target (post_install), not packaged. sha256 placeholder:
+#   python3 scripts/fill-sha256.py -r shared-mime-info
+[package]
+name = "shared-mime-info"
+version = "2.4"
+rel = 1
+arch = ["x86_64"]
+summary = "shared-mime-info — freedesktop.org MIME type database"
+license = ["GPL-2.0-or-later"]
+source = "https://deb.debian.org/debian/pool/main/s/shared-mime-info/shared-mime-info_%{version}.orig.tar.bz2"
+sha256 = "32dc32ae39ff1c1bf8434dd3b36770b48538a1772bc0298509d034f057005992"
+source_dir = "shared-mime-info-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "libxml2"]
+run = ["glib", "libxml2"]
+
+[build]
+configure = "meson setup build --prefix=/usr --buildtype=release -D update-mimedb=false -D build-tests=false -D build-translations=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = '''update-mime-database /usr/share/mime 2>/dev/null || true
+'''

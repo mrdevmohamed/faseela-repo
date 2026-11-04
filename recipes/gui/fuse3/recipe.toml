@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "Filesystem in Userspace library and mount helper"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
 source = "https://github.com/libfuse/libfuse/releases/download/fuse-%{version}/fuse-%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "bcd19582c5e30f7fe45dd86a5540e998590aa01903afc7ebcbeea6c8ac5421ee"
 source_dir = "fuse-%{version}"
 
 [depends]

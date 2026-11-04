@@ -32,7 +32,8 @@ assert not re.search(r"find\s+%\{pkgdir\}/usr/bin[\s\S]*?-delete", llvm_install)
     "LLVM must not prune installed tools from /usr/bin; consumers such as libclc "
     "and LLVM's CMake package may require tools beyond the currently known list"
 )
-assert "rm -rf %{pkgdir}/usr/share/man %{pkgdir}/usr/share/doc" in llvm_install
+assert "rm -rf %{pkgdir}/usr/share/man" not in llvm_install
+assert "rm -rf %{pkgdir}/usr/share/doc" not in llvm_install
 assert llvm["package"]["rel"] >= 8, "Bump LLVM rel when changing its installed tool set"
 
 translator = recipe("recipes/gui/spirv-llvm-translator/recipe.toml")

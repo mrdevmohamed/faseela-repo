@@ -1,0 +1,22 @@
+# gui recipe: fmt — {fmt} formatting library for C++ (waybar dependency)
+# Built as a shared library: waybar and spdlog both link it, so an external
+# fmt avoids two copies of the same code. Tests, examples and docs are off.
+[package]
+name = "fmt"
+version = "12.2.0"
+rel = 1
+arch = ["x86_64"]
+summary = "{fmt} — fast and safe C++ formatting library (shared), used by waybar and spdlog"
+license = ["MIT"]
+source = "https://github.com/fmtlib/fmt/archive/refs/tags/%{version}.tar.gz"
+sha256 = "8b852bb5aa6e7d8564f9e81394055395dd1d1936d38dfd3a17792a02bebd7af0"
+source_dir = "fmt-%{version}"
+
+[depends]
+build = ["cmake", "ninja"]
+run = ["gcc", "glibc"]
+
+[build]
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=ON -DFMT_TEST=OFF -DFMT_DOC=OFF"
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

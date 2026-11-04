@@ -1,0 +1,41 @@
+# gui recipe: xwayland — X11 server that runs as a Wayland client
+# What lets X11-only applications run under sway: wlroots starts it on demand
+# (the Xwayland feature is now enabled there) and proxies the Xwayland shell
+# and selection protocols. This builds the 24.1 series, which is standalone:
+# no Xorg, Xvfb or other DDX is compiled.
+#
+# Options chosen for this system:
+#   xorg/xvfb options do not exist in this release; the build only produces
+#   the Xwayland binary and its pkg-config entry (what wlroots' `dependency(
+#   'xwayland')` resolves to).
+#   -D xdmcp=false        no XDM-AUTHORIZATION-1 (no libXdmcp packaged)
+#   -D xdm-auth-1=false   same
+#   -D secure-rpc=false   no secure RPC here
+#   -D xvfb=false         no Xvfb DDX
+#   -D systemd_notify=disabled  runit, not systemd
+#   -D docs=false -D devel-docs=false  no xml toolchain
+#   -D dri3=true          Mesa's GLX/EGL through glamor needs DRI3
+#   -D glamor=true        hardware GLX through GBM+EGL (Mesa)
+#   -D xwayland_ei=false  no libei input emulation stack
+#   -D sha1=libcrypto     SHA1 from OpenSSL's libcrypto (packaged)
+#   -D xselinux=false -D xace=false  no SELinux, no audit library
+# The Xwayland meson.build falls back gracefully when audit/selinux are off.
+[package]
+name = "xwayland"
+version = "24.1.14"
+rel = 1
+arch = ["x86_64"]
+summary = "Xwayland — X11 server as a Wayland client, for X11 applications under sway"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xserver/xwayland-%{version}.tar.xz"
+sha256 = "4eb6b98d678299a4b96138d886345b294130695760345ef84596225a8224078a"
+source_dir = "xwayland-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libxshmfence", "libxkbfile", "libXfont2", "font-util", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "wayland-protocols", "libxcb", "libX11", "libXau", "openssl", "eudev"]
+run = ["libxshmfence", "libxkbfile", "libXfont2", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "libxcb", "libX11", "openssl"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xdmcp=false -D xdm-auth-1=false -D secure-rpc=false -D xvfb=false -D systemd_notify=disabled -D docs=false -D devel-docs=false -D dri3=true -D glamor=true -D xwayland_ei=false -D sha1=libcrypto -D xselinux=false -D xace=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

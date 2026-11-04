@@ -1,0 +1,47 @@
+# gui recipe: waybar — highly customizable Wayland bar for sway
+# The bar gui-session autostarts. Kept close to upstream defaults, with the
+# optional integrations this tree cannot satisfy turned off explicitly
+# (features default to auto, so absence alone would work, but stating them
+# keeps the build reproducible when a dependency appears later):
+#   systemd     runit supervises services; no systemd user units
+#   man-pages   scdoc is not packaged
+#   logind      logind inhibitor/gamemode; there is no logind here (swayidle
+#               handles idle/lock instead)
+#   upower      power history module; no upower daemon
+#   mpris       no MPRIS player is packaged
+#   mpd         no Music Player Daemon
+#   cava        not packaged
+#   jack        PipeWire (not JACK) runs the audio stack
+#   wireplumber libwireplumber is not packaged; the native PipeWire module
+#               covers the same audio metadata
+#   sndio/gps   neither daemon exists here
+# Kept ON: libinput (gestures), libnl (network), libudev, libevdev, pulseaudio
+# (against pipewire-pulse), pipewire, dbusmenu-gtk (tray icons through the
+# GTK status notifier), rfkill, experimental (needed by the tray on GTK 3).
+[package]
+name = "waybar"
+version = "0.15.0"
+rel = 1
+arch = ["x86_64"]
+summary = "waybar — highly customizable status bar for Wayland compositors"
+license = ["MIT"]
+source = "https://github.com/Alexays/Waybar/archive/refs/tags/%{version}.tar.gz"
+sha256 = "21c2bbef88c40473c355003582f9331d2f9b8a01efdcce0935edfc5f6b023a3e"
+source_dir = "Waybar-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "libsigc++", "glibmm", "wayland", "wayland-protocols", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
+run = ["gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "glibmm", "wayland", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D systemd=disabled -D man-pages=disabled -D logind=disabled -D upower_glib=disabled -D mpris=disabled -D mpd=disabled -D cava=disabled -D jack=disabled -D wireplumber=disabled -D sndio=disabled -D gps=disabled -D tests=disabled -D experimental=true"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+# Upstream ships config.jsonc and style.css examples; make them the session
+# defaults so waybar starts with a sane bar (clock, workspaces, tray, volume,
+# network, battery) without each user writing one first.
+install -d -m755 %{pkgdir}/etc/xdg/waybar
+install -m644 resources/config.jsonc %{pkgdir}/etc/xdg/waybar/config.jsonc
+install -m644 resources/style.css %{pkgdir}/etc/xdg/waybar/style.css
+'''

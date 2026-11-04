@@ -1,0 +1,25 @@
+# extra recipe: bat — cat(1) clone with syntax highlighting and Git integration
+# Pinned upstream binary release (musl-static): same reasoning as ripgrep and
+# fd — no cargo network at build time. The static binary needs nothing from
+# the system; syntax highlighting is built in.
+[package]
+name = "bat"
+version = "0.26.1"
+rel = 1
+arch = ["x86_64"]
+summary = "bat — cat(1) clone with syntax highlighting and Git integration"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/sharkdp/bat/releases/download/v%{version}/bat-v%{version}-x86_64-unknown-linux-musl.tar.gz"
+sha256 = "0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191"
+source_dir = "bat-v%{version}-x86_64-unknown-linux-musl"
+
+[depends]
+build = []
+run = ["glibc"]
+
+[build]
+install = '''
+install -Dm755 bat %{pkgdir}/usr/bin/bat
+install -Dm644 bat.1 %{pkgdir}/usr/share/man/man1/bat.1
+install -Dm644 autocomplete/bat.bash %{pkgdir}/usr/share/bash-completion/completions/bat
+'''

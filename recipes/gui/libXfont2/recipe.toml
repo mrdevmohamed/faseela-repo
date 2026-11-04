@@ -1,0 +1,23 @@
+# gui recipe: libXfont2 — X11 server-side font library (Xwayland dependency)
+# Xwayland renders the built-in (cursor/misc) bitmap fonts through it. The
+# builtin-fonts path is what a server needs; freetype covers the scalable
+# faces. libfontenc is a hard requirement of the build.
+[package]
+name = "libXfont2"
+version = "2.0.7"
+rel = 1
+arch = ["x86_64"]
+summary = "libXfont2 — X11 server-side font rendering library (Xwayland dependency)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-%{version}.tar.xz"
+sha256 = "8b7b82fdeba48769b69433e8e3fbb984a5f6bf368b0d5f47abeec49de3e58efb"
+source_dir = "libXfont2-%{version}"
+
+[depends]
+build = ["pkgconf", "xorgproto", "libfontenc", "freetype", "font-util"]
+run = ["libfontenc", "freetype"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-docs --disable-devel-docs"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

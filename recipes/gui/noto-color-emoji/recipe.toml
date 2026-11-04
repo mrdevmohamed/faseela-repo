@@ -1,0 +1,33 @@
+# gui recipe: noto-color-emoji — color emoji font
+# The CBDT/CBLC bitmap color emoji font every toolkit's fallback chain ends
+# with: fonts render emoji in foot, waybar, mako and the browsers without a
+# per-engine emoji implementation. The upstream repository release tag
+# (v2.051) carries fonts/NotoColorEmoji.ttf; the tar.gz is a normal archive
+# nawa extracts itself. Installed into its own directory so the monochrome
+# symbol fallbacks never shadow it in fontconfig.
+[package]
+name = "noto-color-emoji"
+version = "2.051"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Color Emoji — color emoji font (CBDT/CBLC)"
+license = ["OFL-1.1"]
+source = "https://github.com/googlefonts/noto-emoji/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "04f3d1e5605edebebac00a7a0becb390a4a3ead015066905b27935b30c18e745"
+source_dir = "noto-emoji-%{version}"
+
+[depends]
+build = []
+run = ["fontconfig"]
+
+[build]
+install = '''
+install -d %{pkgdir}/usr/share/fonts/noto-emoji
+install -m644 fonts/NotoColorEmoji.ttf %{pkgdir}/usr/share/fonts/noto-emoji/
+install -d %{pkgdir}/usr/share/licenses/noto-color-emoji
+install -m644 fonts/LICENSE %{pkgdir}/usr/share/licenses/noto-color-emoji/OFL.txt
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

@@ -1,0 +1,25 @@
+# extra recipe: btop — resource monitor (htop-alike with GPU awareness)
+# Source build (the binary release is glibc-dynamic and less portable than
+# compiling it here): a single C++ translation unit plus a Makefile, no
+# submodules in this release, no external libraries beyond libstdc++.
+# CUDA/GPU probing is off (no nvidia stack); RPATH is stripped so the binary
+# carries no build-host paths.
+[package]
+name = "btop"
+version = "1.4.8"
+rel = 1
+arch = ["x86_64"]
+summary = "btop — resource monitor showing CPU, memory, disks, network and processes"
+license = ["Apache-2.0"]
+source = "https://github.com/aristocratos/btop/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "67e07c21b770a6d884c5e50ba1d2cfc90732ea57459367d8732ec7ecbeb3be5f"
+source_dir = "btop-%{version}"
+
+[depends]
+build = ["gcc", "coreutils"]
+run = ["gcc", "glibc"]
+
+[build]
+configure = ""
+compile = "make -j%{jobs} PREFIX=/usr CUDA=false STRIP=true"
+install = "make install PREFIX=/usr DESTDIR=%{pkgdir}"

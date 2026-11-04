@@ -1,0 +1,28 @@
+# extra recipe: ripgrep — fast recursive regex search (rg)
+# This is a pinned upstream binary release (musl-static), not a source build:
+# building it from source needs a network cargo (crates.io) at build time,
+# which the offline bootstrap forbids. The musl binary runs on any x86_64
+# Linux with no runtime libraries at all. Its SHA-256 is pinned by
+# `python3 scripts/fill-sha256.py -r ripgrep`.
+[package]
+name = "ripgrep"
+version = "15.2.0"
+rel = 1
+arch = ["x86_64"]
+summary = "ripgrep (rg) — fast recursive regex search tool, like grep with sane defaults"
+license = ["MIT", "Unlicense"]
+source = "https://github.com/BurntSushi/ripgrep/releases/download/%{version}/ripgrep-%{version}-x86_64-unknown-linux-musl.tar.gz"
+sha256 = "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c"
+source_dir = "ripgrep-%{version}-x86_64-unknown-linux-musl"
+
+[depends]
+build = []
+run = ["glibc"]
+
+[build]
+install = '''
+install -Dm755 rg %{pkgdir}/usr/bin/rg
+# The completion and manual pages ship in the same archive.
+install -Dm644 doc/rg.1 %{pkgdir}/usr/share/man/man1/rg.1
+install -Dm644 complete/rg.bash %{pkgdir}/usr/share/bash-completion/completions/rg
+'''

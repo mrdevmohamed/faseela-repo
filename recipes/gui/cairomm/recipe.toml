@@ -1,0 +1,23 @@
+# gui recipe: cairomm — C++ bindings for cairo (pangomm dependency)
+# The 1.14 series provides the cairomm-1.0 API that pangomm 2.46 and gtkmm
+# 3.24 build against. maintainer-mode=false: a release tarball ships the
+# generated sources; docs, examples and tests are off.
+[package]
+name = "cairomm"
+version = "1.14.6"
+rel = 1
+arch = ["x86_64"]
+summary = "cairomm — C++ bindings for cairo (pangomm dependency)"
+license = ["LGPL-2.1-or-later"]
+source = "https://www.cairographics.org/releases/cairomm-%{version}.tar.xz"
+sha256 = "7e0d5c7f29175d573a03ab5c45aef63f48dd91a5caf335a404cd763e4b7cea4a"
+source_dir = "cairomm-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "cairo", "libsigc++"]
+run = ["cairo", "libsigc++", "gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-examples=false -D build-tests=false -D build-documentation=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

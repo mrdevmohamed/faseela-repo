@@ -1,0 +1,24 @@
+# gui recipe: mako — notification daemon for Wayland
+# Owns org.freedesktop.Notifications on the session bus (sway's config starts
+# it in gui-session); the xdg-desktop-portal frontend routes its Notification
+# interface here too. sd-bus comes from basu; scdoc is not packaged, so no man
+# pages. Icons load through gdk-pixbuf (the "icons" feature finds it on its own).
+[package]
+name = "mako"
+version = "1.11.0"
+rel = 1
+arch = ["x86_64"]
+summary = "lightweight notification daemon for Wayland (org.freedesktop.Notifications)"
+license = ["MIT"]
+source = "https://github.com/emersion/mako/releases/download/v%{version}/mako-%{version}.tar.gz"
+sha256 = "e97eb5bd0dc6a9159019949f48b3db4e8781b56bd6377bd65827e1cb440a7def"
+source_dir = "mako-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "cairo", "pango", "gdk-pixbuf", "glib", "basu"]
+run = ["wayland", "cairo", "pango", "gdk-pixbuf", "glib", "basu"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D sd-bus-provider=basu -D man-pages=disabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

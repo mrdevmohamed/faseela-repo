@@ -1,5 +1,4 @@
 # gui recipe: xorgproto — X.Org protocol headers and pkg-config files
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 #
 # Why X11 client libraries at all: there is no X server in this distribution, but
 # cairo's xlib surface (libX11, libXext, libXrender) and GTK3's X11 backend (which

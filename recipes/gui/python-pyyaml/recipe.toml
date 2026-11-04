@@ -1,5 +1,4 @@
 # gui recipe: python-pyyaml — YAML parser for python (pure python, no libyaml)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "python-pyyaml"
 version = "6.0.2"

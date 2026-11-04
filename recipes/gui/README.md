@@ -1,7 +1,9 @@
 # recipes/gui — Wayland desktop (sway)
 
-A minimal graphical session: **sway** (i3-compatible Wayland compositor) on
-**wlroots 0.18**, **foot** terminal, DejaVu fonts, and **seatd** for seat
+A graphical session: **sway** (i3-compatible Wayland compositor) on
+**wlroots 0.18** (with **Xwayland** for X11-only applications), **foot**
+terminal, DejaVu **and Noto** fonts (Latin/Greek/Cyrillic, Arabic, color
+emoji), **waybar** status bar, **mako** notifications, and **seatd** for seat
 management. System services are supervised by runit; user applications use a
 per-session D-Bus session bus.
 
@@ -83,14 +85,17 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 
 | group | packages |
 |---|---|
-| text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts |
-| X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links; no X server) |
+| text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic noto-color-emoji |
+| X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links) |
+| Xwayland server | libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
 | graphics | mesa (+ python-mako python-markupsafe python-pyyaml python-packaging, glslang and Vulkan-Headers as build helpers), libva (VA-API loader; mesa's AMD video driver) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
-| desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK backend, gsettings-desktop-schemas, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, GCR/GCK, p11-kit and libgcrypt |
+| desktop shell | waybar (+ fmt spdlog jsoncpp gtk-layer-shell gtkmm glibmm cairomm pangomm atkmm libsigc++), mako (+ basu inih), xdg-user-dirs |
+| desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK and wlr backends, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, GCR/GCK, p11-kit and libgcrypt |
+| audio tools | pavucontrol (+ libcanberra libogg libvorbis in extra/) |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
@@ -119,8 +124,9 @@ and a USB/PS2 keyboard and mouse.
 `gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
 `gnome-keyring`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
 user D-Bus session with `dbus-run-session`. The `xdg-desktop-portal` frontend
-owns `org.freedesktop.portal.Desktop` and activates its GTK backend through
-D-Bus. `sway-portals.conf` selects GTK for general interfaces. The Sway
+owns `org.freedesktop.portal.Desktop` and activates its backends through
+D-Bus. `sway-portals.conf` selects GTK for general interfaces with the wlr
+backend as the ScreenCast provider. The Sway
 session drop-in runs `dbus-update-activation-environment` after the compositor
 starts, so the activated backend receives `WAYLAND_DISPLAY` and
 `XDG_CURRENT_DESKTOP=sway`. Bubblewrap, user namespaces, and FUSE support are
@@ -128,6 +134,15 @@ included for the document portal's sandbox and document mounts. GNOME Keyring in
 `/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
 Service daemon is activated on demand by D-Bus. This does not require systemd
 or a system-wide runit service.
+
+The wlr portal backend (ScreenCast through PipeWire), the notification daemon
+and the bar all speak D-Bus through **basu**'s sd-bus — no systemd or elogind
+anywhere in the session stack. The session autostarts `mako`
+(`org.freedesktop.Notifications`), `waybar` (anchored through
+gtk-layer-shell) and `xdg-user-dirs-update`; `pavucontrol` mixes the
+pipewire-pulse server. X11-only applications run through **Xwayland**:
+wlroots enables the feature and spawns the server on demand, so they start
+with no extra setup.
 
 The keyring daemon is built without PAM integration, so this supplies the
 `org.freedesktop.secrets` service but does not automatically unlock a login
@@ -150,11 +165,12 @@ keyring during a tty login.
 * Hardware **video** decode/encode (VA-API): mesa provides `radeonsi_drv_video.so`
   for AMD (`-D gallium-va`), and `recipes/media/intel-media-driver` provides
   `iHD_drv_video.so` for Intel.
-* No X server and no Xwayland (only the X11 *client* libraries, because cairo
-  links them). D-Bus system and per-user session buses are available. The GTK portal backend
-  supplies general desktop integration (including file chooser); wlroots
-  screenshot/screencast portal support is not enabled yet and remains a separate
-  follow-up because its sd-bus provider needs a runit-compatible packaging choice.
+* X11 applications run through **Xwayland** (wlroots' xwayland feature,
+  backed by the xwayland recipe and the X11 libraries above): X11-only
+  programs start under sway with no extra setup. D-Bus system and per-user
+  session buses are available. The GTK portal backend
+  supplies general desktop integration (including file chooser) and the wlr
+  backend supplies ScreenCast through PipeWire (both on basu's sd-bus).
   The launcher is `wmenu` (`Super+D`,
   sway's default `wmenu-run`).
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).

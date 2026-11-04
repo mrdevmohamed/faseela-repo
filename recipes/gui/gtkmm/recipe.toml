@@ -1,0 +1,24 @@
+# gui recipe: gtkmm — C++ bindings for GTK 3 (pavucontrol dependency)
+# Completes the C++ stack (libsigc++/glibmm/cairomm/pangomm/atkmm -> gtkmm-3.0)
+# that pavucontrol 5.0 builds against. build-atkmm-api=true is upstream's
+# default and needed: GTK 3 itself consumes the ATK API at build time.
+# maintainer-mode=false; demos, tests and docs are off.
+[package]
+name = "gtkmm"
+version = "3.24.11"
+rel = 1
+arch = ["x86_64"]
+summary = "gtkmm — C++ bindings for GTK 3 (pavucontrol dependency)"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gtkmm/3.24/gtkmm-%{version}.tar.xz"
+sha256 = "19e383c82d5dd89db275e00b82864e90414d4c3fb3d100b2f996bcc2338a4cc7"
+source_dir = "gtkmm-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "glibmm", "cairomm", "pangomm", "atkmm", "gdk-pixbuf", "libepoxy"]
+run = ["gtk3", "glibmm", "cairomm", "pangomm", "atkmm", "gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-demos=false -D build-tests=false -D build-documentation=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,5 +1,4 @@
 # gui recipe: libinput — Input device handling library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libinput"
 version = "1.26.2"

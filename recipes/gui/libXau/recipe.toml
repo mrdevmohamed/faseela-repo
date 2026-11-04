@@ -1,5 +1,4 @@
 # gui recipe: libXau — X11 authorization protocol library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libXau"
 version = "1.0.11"

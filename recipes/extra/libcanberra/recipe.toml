@@ -1,0 +1,30 @@
+# extra recipe: libcanberra — event sound library (GTK 3 and pavucontrol)
+# Plays the freedesktop event sounds (button clicks, window bells) through
+# libcanberra-gtk3, which GTK 3 loads and pavucontrol links. Output backends
+# here: PulseAudio only (the session runs pipewire-pulse); ALSA, OSS, GStreamer
+# and the null backend are off. The theme cache (tdb) and the old GTK 2
+# module are not needed. libltdl comes from the libtool package.
+[package]
+name = "libcanberra"
+version = "0.30"
+rel = 1
+arch = ["x86_64"]
+summary = "libcanberra — freedesktop event sound library (GTK 3, pavucontrol)"
+license = ["LGPL-2.1-or-later"]
+source = "https://deb.debian.org/debian/pool/main/libc/libcanberra/libcanberra_0.30.orig.tar.xz"
+sha256 = "c2b671e67e0c288a69fc33dc1b6f1b534d07882c2aceed37004bf48c601afa72"
+source_dir = "libcanberra-%{version}"
+
+[depends]
+build = ["pkgconf", "gtk3", "glib", "libpulse", "libvorbis", "libogg", "libtool"]
+run = ["glib", "libpulse", "libvorbis", "libogg"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-alsa --disable-oss --disable-gstreamer --disable-null --disable-tdb --disable-gtk --disable-gtk-doc --disable-lynx --with-builtin=pulse"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+# Drop the .la files: libtool archives pull build-host paths into a distro
+# that has none of them.
+find %{pkgdir} -name '*.la' -delete
+'''

@@ -1,13 +1,13 @@
-# Python packaging metadata utilities shared by build tools such as pipx.
+# gui recipe: python-packaging — Core utilities for python packages (pure python)
 [package]
 name = "python-packaging"
-version = "26.3"
-rel = 2
+version = "24.2"
+rel = 1
 arch = ["x86_64"]
-summary = "Core utilities for Python packages"
+summary = "Core utilities for python packages (pure python)"
 license = ["Apache-2.0", "BSD-2-Clause"]
-source = "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz"
-sha256 = "94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79"
+source = "https://github.com/pypa/packaging/archive/refs/tags/%{version}.tar.gz"
+sha256 = "c448ea78de5134f5002a2aa2bb62a0fb4714bb4ab2d2b00bce8ed6ca22502d5a"
 source_dir = "packaging-%{version}"
 
 [depends]

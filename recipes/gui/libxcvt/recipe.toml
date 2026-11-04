@@ -1,0 +1,23 @@
+# gui recipe: libxcvt — VESA CVT standard timing modeline library
+# Computes display modelines; Xwayland uses it for emulated RandR outputs.
+# This is the shared library split of the old xorg cvt tool, maintained in
+# the xorg/lib/libxcvt repository.
+[package]
+name = "libxcvt"
+version = "0.1.3"
+rel = 1
+arch = ["x86_64"]
+summary = "libxcvt — VESA CVT timing modeline library (Xwayland dependency)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libxcvt-%{version}.tar.xz"
+sha256 = "a929998a8767de7dfa36d6da4751cdbeef34ed630714f2f4a767b351f2442e01"
+source_dir = "libxcvt-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

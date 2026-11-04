@@ -1,0 +1,24 @@
+# gui recipe: inih — small C library for parsing INI files
+# xdg-desktop-portal-wlr reads its config through inih. distro_install installs
+# the shared library, headers and pkg-config entry; INIReader (the C++ wrapper)
+# is not needed by anything in this tree and is left out to keep the library
+# free of a C++ runtime dependency.
+[package]
+name = "inih"
+version = "63"
+rel = 1
+arch = ["x86_64"]
+summary = "inih — small C library for parsing INI files (xdg-desktop-portal-wlr configuration)"
+license = ["BSD-3-Clause"]
+source = "https://github.com/benhoyt/inih/archive/refs/tags/r%{version}.tar.gz"
+sha256 = "5d7967de62c5bfdc4f9f5ab06ce44c9e498bae021c7dac5792c0696e76aa9963"
+source_dir = "inih-r%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D distro_install=true -D with_INIReader=false -D tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

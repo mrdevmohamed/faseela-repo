@@ -1,5 +1,4 @@
 # gui recipe: libdrm — Userspace interface to the kernel DRM subsystem
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libdrm"
 version = "2.4.124"

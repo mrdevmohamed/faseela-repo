@@ -1,0 +1,32 @@
+# extra recipe: yt-dlp — featureful YouTube (and more) downloader
+# A single self-contained Python script: upstream releases it as one file
+# with no external dependencies beyond a Python 3.9+ interpreter (the tree
+# ships 3.13). nawa stages the bare file in the build directory, so the
+# install script only needs to make it executable and add a manual page from
+# the companion release asset. That second download is verified by its own
+# SHA-256 below (the same way the primary source is), not by the recipe
+# system, because nawa supports exactly one pinned source per recipe.
+[package]
+name = "yt-dlp"
+version = "2026.10.26"
+rel = 1
+arch = ["x86_64"]
+summary = "yt-dlp — fork of youtube-dl with additional features and fixes"
+license = ["Unlicense"]
+source = "https://github.com/yt-dlp/yt-dlp/releases/download/%{version}/yt-dlp"
+sha256 = "e51e69e89489f199530f13d32a4342da3ddb2cf34842f364603a066db05afbf3"
+
+[depends]
+build = []
+run = ["python"]
+
+[build]
+install = '''
+install -Dm755 yt-dlp %{pkgdir}/usr/bin/yt-dlp
+# Manual page from the same release; verified against the pinned digest so a
+# changed upstream asset fails the build instead of shipping silently.
+page_sha=0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5
+curl -fsSLo yt-dlp.1 https://github.com/yt-dlp/yt-dlp/releases/download/%{version}/yt-dlp.1
+echo "$page_sha  yt-dlp.1" | sha256sum -c -
+install -Dm644 yt-dlp.1 %{pkgdir}/usr/share/man/man1/yt-dlp.1
+'''

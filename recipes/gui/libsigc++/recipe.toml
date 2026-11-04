@@ -1,0 +1,23 @@
+# gui recipe: libsigc++ — type-safe callback framework for C++ (gtkmm dependency)
+# Bottom layer of the gtkmm C++ stack (libsigc++ -> glibmm/cairomm -> pangomm/
+# atkmm -> gtkmm). maintainer-mode=false keeps the .m4 code generation off; a
+# release tarball already contains the generated sources.
+[package]
+name = "libsigc++"
+version = "2.12.2"
+rel = 1
+arch = ["x86_64"]
+summary = "libsigc++ — type-safe callback framework for C++ (gtkmm dependency)"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/libsigcplusplus/libsigcplusplus/releases/download/%{version}/libsigc++-%{version}.tar.xz"
+sha256 = "7d4cdf1e4332ebfee8085ad960075045e7763cb291b3ccf4744d7cbf08a22b75"
+source_dir = "libsigc++-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = ["gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-examples=false -D build-tests=false -D build-documentation=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

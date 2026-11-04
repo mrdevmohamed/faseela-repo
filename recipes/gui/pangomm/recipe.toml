@@ -1,0 +1,22 @@
+# gui recipe: pangomm — C++ bindings for pango (gtkmm dependency)
+# Provides pangomm-1.4 for gtkmm 3.24. maintainer-mode=false keeps the .hg/.ccg
+# code generation off (release tarballs ship the generated sources).
+[package]
+name = "pangomm"
+version = "2.46.5"
+rel = 1
+arch = ["x86_64"]
+summary = "pangomm — C++ bindings for pango (gtkmm dependency)"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/pangomm/2.46/pangomm-%{version}.tar.xz"
+sha256 = "38ca0b050b065de4e3da0c182df657437757063bbf0c4b6c9567ddba019b1d68"
+source_dir = "pangomm-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "pango", "cairo", "glibmm", "cairomm"]
+run = ["pango", "cairo", "glibmm", "cairomm", "gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-documentation=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

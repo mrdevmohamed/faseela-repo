@@ -1,0 +1,42 @@
+# gui recipe: noto-fonts-arabic — Noto Sans Arabic and Noto Naskh Arabic, hinted TTFs
+# Arabic script support for the GUI session (the session's keyboard layout is
+# "us,ara"): Noto Sans Arabic pairs with noto-fonts for UI text, Noto Naskh
+# Arabic gives the traditional book face for long-form text. Only the hinted
+# static TTFs are installed; the two release zips are staged as single files
+# by nawa and unpacked with unzip here.
+[package]
+name = "noto-fonts-arabic"
+version = "2.013"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Sans Arabic and Noto Naskh Arabic hinted TrueType fonts"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/arabic/releases/download/NotoSansArabic-v%{version}/NotoSansArabic-v%{version}.zip"
+sha256 = "1301aceaea84c501cf2e6dcfb3182e2328c8eae5725817fcb239672bda7154f1"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig", "noto-fonts"]
+
+[build]
+install = '''
+# Noto Sans Arabic (UI text): v2.013 — the pinned primary source
+unzip -q -o NotoSansArabic-v%{version}.zip 'NotoSansArabic/hinted/ttf/*.ttf'
+# Noto Naskh Arabic (book face): v2.021 — companion release verified against
+# a pinned digest, the same way the primary source is (nawa supports exactly
+# one pinned source per recipe).
+naskh_sha=6c050ab9bd087d69b733c505a7576e60c528c2f33cd7b91005a5bd7da4514032
+curl -fsSLo NotoNaskhArabic-v2.021.zip https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v2.021/NotoNaskhArabic-v2.021.zip
+echo "$naskh_sha  NotoNaskhArabic-v2.021.zip" | sha256sum -c -
+unzip -q -o NotoNaskhArabic-v2.021.zip 'NotoNaskhArabic/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoSansArabic/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -m644 NotoNaskhArabic/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-fonts-arabic
+unzip -q -o NotoSansArabic-v%{version}.zip 'NotoSansArabic/LICENSE' 2>/dev/null || true
+[ -f NotoSansArabic/LICENSE ] && install -m644 NotoSansArabic/LICENSE %{pkgdir}/usr/share/licenses/noto-fonts-arabic/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

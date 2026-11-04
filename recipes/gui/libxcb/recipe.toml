@@ -1,5 +1,4 @@
 # gui recipe: libxcb — X protocol C-language binding (XCB)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 # no libXdmcp: XDM-AUTHORIZATION-1 is irrelevant without an X server, and
 # libxcb simply builds without it when it is not installed.
 [package]

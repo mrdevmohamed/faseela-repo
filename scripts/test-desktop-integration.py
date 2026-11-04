@@ -53,9 +53,18 @@ assert "pw_registry_add_listener ((struct pw_registry*)remote->registry," in por
     "xdg-desktop-portal 1.18.4 must cast its registry proxy for PipeWire 1.6 headers"
 )
 
+# GTK's FileChooser backend reads GNOME desktop lockdown settings at startup.
+# Keep the shared schemas in the runtime closure and recompile them after install.
+schemas = recipe("gui", "gsettings-desktop-schemas")
+assert schemas["package"]["version"] == "46.1"
+assert re.fullmatch(r"[0-9a-f]{64}", schemas["package"]["sha256"])
+assert "glib" in schemas["depends"]["run"]
+assert "glib-compile-schemas /usr/share/glib-2.0/schemas" in schemas["hooks"]["post_install"]
+
 gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"
-assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
+assert gtk_portal["package"]["rel"] >= 2, "Bump GTK portal rel when fixing missing GSettings runtime schemas"
+assert {"gtk3", "xdg-desktop-portal", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["run"])
 assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
 assert "-D settings=disabled" in gtk_portal["build"]["configure"]
 

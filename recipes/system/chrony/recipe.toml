@@ -1,8 +1,8 @@
-# system recipe: chrony — NTP daemon with a runit service (not enabled by default).
+# system recipe: chrony — NTP daemon, enabled by default through runit.
 [package]
 name = "chrony"
 version = "4.6.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "chrony: NTP client/server, keeps the system clock in sync"
 license = ["GPL-2.0-only"]
@@ -37,10 +37,13 @@ install -d -m755 %{pkgdir}/etc/sv/chronyd
 # stage2 /sysroot chroot where only bash + shadow exist (no coreutils: install/chown missing)
 printf '#!/bin/sh\ninstall -d -m750 -o chrony -g chrony /var/lib/chrony\nexec chronyd -n -u chrony\n' > %{pkgdir}/etc/sv/chronyd/run
 chmod 755 %{pkgdir}/etc/sv/chronyd/run
+# Start time synchronization on every boot in Faseela's runit service tree.
+install -d -m755 %{pkgdir}/etc/runit/runsvdir/default
+ln -s /etc/sv/chronyd %{pkgdir}/etc/runit/runsvdir/default/chronyd
 '''
 
 [hooks]
 post_install = '''
 /usr/libexec/faseela/ensure-system-account user chrony chrony "chrony time daemon" /var/lib/chrony /usr/bin/false
-echo "chrony: available but not enabled by default:  nawa service enable chronyd"
+echo "chrony: chronyd is enabled by default; check it with: sv status chronyd"
 '''

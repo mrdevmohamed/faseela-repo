@@ -1,0 +1,21 @@
+# Pure-Python CLI library required by userpath (pipx dependency).
+[package]
+name = "click"
+version = "8.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Composable command line interface toolkit"
+license = ["BSD-3-Clause"]
+source = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl"
+sha256 = "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[build]
+install = """
+site=%{pkgdir}/usr/lib/python3.13/site-packages
+install -d "$site"
+python3 -m zipfile -e %{srcdir}/click-8.5.0-py3-none-any.whl "$site"
+"""

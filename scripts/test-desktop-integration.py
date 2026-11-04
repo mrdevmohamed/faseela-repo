@@ -44,10 +44,14 @@ assert "dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP X
 # must provide the general interfaces without depending on systemd.
 portal = recipe("gui", "xdg-desktop-portal")
 assert portal["package"]["version"] == "1.18.4"
+assert portal["package"]["rel"] >= 2, "Bump portal rel for the PipeWire 1.6 API compatibility patch"
 assert {"fuse3", "json-glib", "gdk-pixbuf", "pipewire", "bubblewrap"} <= set(portal["depends"]["run"])
 assert "bubblewrap" in portal["depends"]["build"], "sandboxed image validation needs bwrap at build time"
 assert "-D systemd=disabled" in portal["build"]["configure"]
 assert "-D sandboxed-image-validation=true" in portal["build"]["configure"]
+assert "pw_registry_add_listener ((struct pw_registry*)remote->registry," in portal["build"]["configure"], (
+    "xdg-desktop-portal 1.18.4 must cast its registry proxy for PipeWire 1.6 headers"
+)
 
 gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"

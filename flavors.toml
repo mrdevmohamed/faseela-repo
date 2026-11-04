@@ -98,11 +98,15 @@ include = ["base-devel", "git", "cmake", "ninja", "meson", "make", "pkgconf", "p
 
 [flavor.developer-systems]
 summary = "systems programming: GCC, Rust, LLVM, assembler and Lua"
-include = ["gcc", "rust", "llvm", "gdb", "nasm", "lua"]
+include = ["gcc", "rust", "llvm", "golang", "gdb", "nasm", "lua"]
 
 [flavor.developer-python]
 summary = "Python interpreter and its runtime dependencies"
 include = ["python"]
+
+[flavor.developer-web]
+summary = "JavaScript and TypeScript runtimes: Node.js and Deno"
+include = ["nodejs", "deno"]
 
 [flavor.developer-debugging]
 summary = "debuggers, tracing and memory diagnostics"

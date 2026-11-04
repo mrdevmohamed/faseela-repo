@@ -12,6 +12,15 @@ per-session D-Bus session bus.
 > pinned; run `python3 scripts/fill-sha256.py --dry-run` and then the script
 > itself before building. See "First build" below.
 
+## OpenGL/GLX compatibility for desktop applications
+
+Mesa is built with both the `wayland` and `x11` platforms and DRI-based
+`glx=dri`. Wayland remains the native desktop path; enabling GLX also ships
+the standard `/usr/lib/libGL.so.1` ABI used by older Qt and AppImage clients
+(such as Nekoray), including when they run through Xwayland. The Mesa runtime
+closure includes the X11/XCB and shared-memory fence libraries needed by that
+GLX implementation. This does not add a separate Xorg server.
+
 ## Zed (opt-in, Vulkan enabled)
 
 `zed` is the upstream prebuilt Zed editor bundle. It is in `gui/` but is

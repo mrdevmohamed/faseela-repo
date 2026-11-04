@@ -179,7 +179,7 @@ sway = recipe("gui", "sway")
 assert sway["package"]["rel"] >= 3, "Bump sway rel when wlroots gains Xwayland support"
 xwayland = recipe("gui", "xwayland")
 assert re.fullmatch(r"[0-9a-f]{64}", xwayland["package"]["sha256"])
-for flag in ("-D xdmcp=false", "-D xdm-auth-1=false", "-D systemd_notify=disabled"):
+for flag in ("-D xdmcp=false", "-D xdm-auth-1=false", "-D systemd_notify=false"):
     assert flag in xwayland["build"]["configure"], f"Xwayland must not need extra daemons: {flag}"
 
 # pavucontrol mixes PipeWire's PulseAudio server on the gtkmm 3 stack.

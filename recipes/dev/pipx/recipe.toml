@@ -12,7 +12,7 @@ sha256 = "59254349bb1de6a437027008bd15e7e697c950616ba9128f0cf63a69cfcea6d6"
 
 [depends]
 build = ["python"]
-run = ["python", "pip"]
+run = ["python", "pip", "argcomplete", "filelock", "python-packaging", "platformdirs", "userpath"]
 
 [build]
 install = """

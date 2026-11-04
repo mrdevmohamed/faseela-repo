@@ -1,0 +1,26 @@
+# gui recipe: gsettings-desktop-schemas — shared GNOME desktop GSettings schemas.
+[package]
+name = "gsettings-desktop-schemas"
+version = "46.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Shared desktop-wide GSettings schemas"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gsettings-desktop-schemas/46/gsettings-desktop-schemas-%{version}.tar.xz"
+sha256 = "9b88101437a6958ebe6bbd812e49bbf1d09cc667011e415559d847e870468a61"
+
+[depends]
+build = ["meson", "ninja", "gettext", "glib"]
+run = ["glib"]
+
+[build]
+configure = """
+sed -i -r 's:"(/system):"/org/gnome\\1:g' schemas/*.in &&
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false
+"""
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = '''glib-compile-schemas /usr/share/glib-2.0/schemas
+'''

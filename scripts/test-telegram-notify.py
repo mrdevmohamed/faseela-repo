@@ -67,7 +67,7 @@ class TelegramNotificationTests(unittest.TestCase):
         payload = json.loads(request.data.decode("utf-8"))
         self.assertEqual(payload["chat_id"], "-100123")
         self.assertEqual(payload["parse_mode"], "HTML")
-        self.assertTrue(payload["disable_web_page_preview"])
+        self.assertTrue(payload["link_preview_options"]["is_disabled"])
 
     def test_missing_credentials_skip_without_network_access(self):
         with patch.object(notify, "urlopen") as opener:

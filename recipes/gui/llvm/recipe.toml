@@ -5,7 +5,7 @@
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "LLVM, Clang compiler and clangd language server (X86 + AMDGPU)"
 license = ["Apache-2.0 WITH LLVM-exception"]
@@ -41,8 +41,8 @@ DESTDIR=%{pkgdir} cmake --install build --strip
 { grep -rIn '/build/src' %{pkgdir} || true; } | cut -c1-300 | head -20
 { grep -rIl '/build/src' %{pkgdir} || true; } | while read -r f; do sed -i 's#/build/src#/usr/src#g' "$f"; done
 if grep -rIq '/build/src' %{pkgdir}; then echo "llvm: build path still present after rewrite" >&2; exit 1; fi
-rm -f %{pkgdir}/usr/lib/libLLVM*.a %{pkgdir}/usr/lib/libLTO*.a %{pkgdir}/usr/lib/libRemarks*.a %{pkgdir}/usr/lib/libclang*.a
-# Keep only the compiler tools required to build Mesa's lavapipe and llvm-config.
+# Keep LLVM's static component archives: LLVMExports.cmake imports these targets
+# even when consumers link the shared LLVM dylib. Removing them breaks find_package(LLVM).
 find %{pkgdir}/usr/bin -mindepth 1 \
     ! -name llvm-config ! -name 'llvm-config-18' \
     ! -name llvm-as ! -name 'llvm-as-18' \

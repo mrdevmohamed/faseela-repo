@@ -13,7 +13,8 @@ recipes/
 ├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
-└── extra/       dev tools, editors, net utils, hw tools, misc libs
+├── extra/       general tools, editors, net utils, hw tools, misc libs
+└── dev/         opt-in developer runtimes and toolchains
 ```
 
 Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
@@ -21,8 +22,10 @@ Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
 [gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md));
-the recipe tree counts 297 recipes in total.
+the recipe tree counts 307 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/` and `creative/` are never part of them).
+
+The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
 The first 47 `extra/` recipes are generated from a data table
 (`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator

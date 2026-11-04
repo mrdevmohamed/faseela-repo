@@ -1,0 +1,21 @@
+# Developer runtime: Node.js and npm, official Linux x64 binary release.
+[package]
+name = "nodejs"
+version = "26.13.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Node.js JavaScript runtime and npm"
+license = ["MIT"]
+source = "https://nodejs.org/dist/v%{version}/node-v%{version}-linux-x64.tar.xz"
+sha256 = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+source_dir = "node-v%{version}-linux-x64"
+
+[depends]
+build = []
+run = ["gcc", "glibc"]
+
+[build]
+install = """
+install -d %{pkgdir}/usr
+cp -a . %{pkgdir}/usr/
+"""

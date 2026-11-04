@@ -11,7 +11,7 @@
 #
 # Keys of a [flavor.NAME] table
 #   summary   one line
-#   include   package names, or @category (toolchain base system boot extra gui browser media creative)
+#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative)
 #   extends   other flavors whose packages are included too
 #   exclude   packages left out of the result (nothing else is dropped)
 #   closure   "run"   (default) add every [depends].run dependency, transitively:
@@ -87,3 +87,31 @@ include = ["mpv", "intel-media-driver"]
 [flavor.creative]
 summary = "15 optional Storytold Craft desktop applications for Wayland"
 include = ["@creative"]
+
+
+# --- optional developer environments ----------------------------------------
+# These groups are opt-in and are intentionally excluded from the default ISO
+# and bootstrap flavors. See DEVELOPER-EDITION.md for the full target inventory.
+[flavor.developer-base]
+summary = "core build tools and version control"
+include = ["base-devel", "git", "cmake", "ninja", "meson", "make", "pkgconf", "patch", "autoconf", "automake", "libtool"]
+
+[flavor.developer-systems]
+summary = "systems programming: GCC, Rust, LLVM, assembler and Lua"
+include = ["gcc", "rust", "llvm", "golang", "gdb", "nasm", "lua"]
+
+[flavor.developer-python]
+summary = "Python interpreter and its runtime dependencies"
+include = ["python", "pip", "pipx"]
+
+[flavor.developer-web]
+summary = "JavaScript and TypeScript runtimes: Node.js and Deno"
+include = ["nodejs", "deno"]
+
+[flavor.developer-debugging]
+summary = "debuggers, tracing and memory diagnostics"
+include = ["gdb", "strace", "valgrind"]
+
+[flavor.developer-cli]
+summary = "terminal editors and command-line developer utilities"
+include = ["neovim", "jq", "tree", "zsh", "tmux", "htop", "ncdu"]

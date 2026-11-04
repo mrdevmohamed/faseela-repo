@@ -2,7 +2,7 @@
 [package]
 name = "python"
 version = "3.13.17"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Python programming language (CPython)"
 license = ["Python-2.0"]
@@ -14,10 +14,17 @@ build = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "
 run = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "sqlite", "xz", "zlib"]
 
 [build]
-configure = "cd %{srcdir}/Python-* && ./configure --prefix=/usr --enable-shared --with-system-expat --without-ensurepip --disable-test-modules"
+configure = "cd %{srcdir}/Python-* && ./configure --prefix=/usr --enable-shared --with-system-expat --with-ensurepip=install --disable-test-modules"
 compile = "cd %{srcdir}/Python-* && make -j%{jobs}"
 install = '''
 cd %{srcdir}/Python-* && make DESTDIR=%{pkgdir} install
+
+# Keep ensurepip's bundled wheel so venv can bootstrap pip, but leave ownership
+# of the installed pip module and command wrappers to the separate pip recipe.
+rm -rf %{pkgdir}/usr/lib/python3.13/site-packages/pip \
+       %{pkgdir}/usr/lib/python3.13/site-packages/pip-*.dist-info \
+       %{pkgdir}/usr/lib/python3.13/site-packages/pip-*.data
+rm -f %{pkgdir}/usr/bin/pip %{pkgdir}/usr/bin/pip3 %{pkgdir}/usr/bin/pip3.*
 
 # CPython records the build tree in its sysconfig data and the config
 # Makefile. nawa lint rightly refuses an archive that names the build

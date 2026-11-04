@@ -1,0 +1,21 @@
+# Pure-Python runtime dependency for pipx, pinned to its upstream wheel.
+[package]
+name = "argcomplete"
+version = "3.7.2"
+rel = 1
+arch = ["x86_64"]
+summary = "argcomplete Python runtime dependency"
+license = ["Apache-2.0"]
+source = "https://files.pythonhosted.org/packages/46/bd/551ee6af426af84ca33e02622be722925c196608e9127d731ef17c47f06e/argcomplete-3.7.2-py3-none-any.whl"
+sha256 = "6029205678bdd9c1c728a155f5f9ecf5812393f969eef58807641a2bc2aa5b19"
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[build]
+install = """
+site=%{pkgdir}/usr/lib/python3.13/site-packages
+install -d "$site"
+python3 -m zipfile -e %{srcdir}/argcomplete-3.7.2-py3-none-any.whl "$site"
+"""

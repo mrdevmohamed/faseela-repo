@@ -5,14 +5,14 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 11
+rel = 12
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
 
 [depends]
 build = ["runit"]
-run = ["runit", "eudev", "util-linux", "dhcpcd", "sysklogd", "cronie"]
+run = ["runit", "eudev", "util-linux", "iproute2", "dhcpcd", "sysklogd", "cronie"]
 
 [build]
 install = '''
@@ -34,6 +34,11 @@ mountpoint -q /dev/pts || mount -t devpts -o gid=5,mode=0620 devpts /dev/pts 2>/
 mountpoint -q /dev/shm || mount -t tmpfs -o mode=1777,nosuid,nodev tmpfs /dev/shm 2>/dev/null || true
 
 mount -a 2>/dev/null || true
+
+# loopback: the kernel leaves lo DOWN at boot, and dhcpcd only manages real
+# NICs. Bring it up here (the kernel then adds 127.0.0.1/8 and ::1 itself) so
+# localhost works before any service starts.
+ip link set lo up 2>/dev/null || true
 
 # set the kernel hostname straight through /proc: coreutils does not install a
 # `hostname` binary here, so `hostname -F` silently failed and the prompt

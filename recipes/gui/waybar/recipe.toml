@@ -21,7 +21,7 @@
 [package]
 name = "waybar"
 version = "0.15.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "waybar — highly customizable status bar for Wayland compositors"
 license = ["MIT"]
@@ -38,10 +38,71 @@ configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
-# Upstream ships config.jsonc and style.css examples; make them the session
-# defaults so waybar starts with a sane bar (clock, workspaces, tray, volume,
-# network, battery) without each user writing one first.
+# Session defaults. Upstream's example config draws its icons with Font Awesome
+# glyphs, which no font here provides (they render as empty boxes), so ship a
+# text-only config instead; it is the only bar (sway's stock swaybar is removed).
 install -d -m755 %{pkgdir}/etc/xdg/waybar
-install -m644 resources/config.jsonc %{pkgdir}/etc/xdg/waybar/config.jsonc
-install -m644 resources/style.css %{pkgdir}/etc/xdg/waybar/style.css
+cat > %{pkgdir}/etc/xdg/waybar/config.jsonc <<'WBCFG'
+{
+    "layer": "top",
+    "position": "top",
+    "height": 28,
+    "modules-left": ["sway/workspaces", "sway/mode"],
+    "modules-center": ["sway/window"],
+    "modules-right": ["pulseaudio", "network", "cpu", "memory", "temperature", "sway/language", "battery", "clock", "tray"],
+    "sway/workspaces": { "disable-scroll": true },
+    "sway/window": { "max-length": 60 },
+    "sway/language": { "format": "{short}" },
+    "pulseaudio": {
+        "format": "vol {volume}%",
+        "format-muted": "vol muted",
+        "on-click": "pavucontrol"
+    },
+    "network": {
+        "format-ethernet": "{ipaddr}/{cidr}",
+        "format-wifi": "{essid} {signalStrength}%",
+        "format-disconnected": "no network",
+        "tooltip-format": "{ifname}: {ipaddr}"
+    },
+    "cpu": { "format": "cpu {usage}%" },
+    "memory": { "format": "mem {percentage}%" },
+    "temperature": { "format": "{temperatureC}°C" },
+    "battery": {
+        "format": "bat {capacity}%",
+        "format-charging": "bat {capacity}% +",
+        "states": { "warning": 30, "critical": 15 }
+    },
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip-format": "{:%Y-%m-%d %A}"
+    },
+    "tray": { "spacing": 8 }
+}
+WBCFG
+cat > %{pkgdir}/etc/xdg/waybar/style.css <<'WBCSS'
+* {
+    font-family: "DejaVu Sans Mono", "Noto Sans", sans-serif;
+    font-size: 13px;
+}
+window#waybar {
+    background: #1d2330;
+    color: #e6e6e6;
+}
+#workspaces button {
+    padding: 0 8px;
+    color: #c0c5d0;
+    background: transparent;
+    border: none;
+}
+#workspaces button.focused {
+    color: #ffffff;
+    background: #3b4a63;
+}
+#workspaces button.urgent { background: #c0392b; }
+#pulseaudio, #network, #cpu, #memory, #temperature, #language, #battery, #clock, #tray, #mode {
+    padding: 0 10px;
+}
+#battery.warning { color: #f1c40f; }
+#battery.critical { color: #e74c3c; }
+WBCSS
 '''

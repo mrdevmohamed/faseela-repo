@@ -78,6 +78,30 @@ class Conflicts(unittest.TestCase):
             capture_output=True, text=True, env=self.env)
         return r
 
+    @unittest.skipUnless(shutil.which("zstd"), "zstd is required for this streaming regression")
+    def test_zstd_stream_is_drained_after_tar_end_markers(self):
+        self.recipe("streamed")
+        raw = self.d / "streamed.tar"
+        with tarfile.open(raw, "w") as tf:
+            info = tarfile.TarInfo(".PKGINFO")
+            info.size = 5
+            tf.addfile(info, io.BytesIO(b"name\n"))
+            info = tarfile.TarInfo("payload/usr/bin/streamed")
+            info.size = 1
+            tf.addfile(info, io.BytesIO(b"x"))
+
+        # A tar reader stops at its end markers.  Keep enough valid trailing
+        # tar padding in the zstd frame to fill a pipe if the caller does not
+        # drain it; zstd would otherwise exit with SIGPIPE.
+        with raw.open("ab") as stream:
+            stream.write(b"\\0" * (16 * 1024 * 1024))
+        archive = self.d / "out" / "streamed-1-1.nawa.tar.zst"
+        subprocess.run(["zstd", "-q", "-f", str(raw), "-o", str(archive)], check=True)
+        raw.unlink()
+
+        result = self.run_check('[flavor.x]\\ninclude = ["streamed"]\\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_same_file_in_one_flavor_is_an_error(self):
         for n in ("util-linux", "sysklogd"):
             self.recipe(n)

@@ -131,4 +131,76 @@ fi
 exec "$upstream" "$@"
 LAUNCHER
 chmod 755 "$upstream_bin"
+
+# Keep the upstream executable, but default Faseela's Wayland session to
+# native Wayland instead of an optional XWayland path selected via DISPLAY.
+upstream_bin="%{pkgdir}/usr/bin/lightcraft"
+if [ ! -x "$upstream_bin" ]; then
+    echo "lightcraft: upstream archive did not install usr/bin/lightcraft" >&2
+    exit 1
+fi
+mv "$upstream_bin" "${upstream_bin}.real"
+cat > "$upstream_bin" <<'LAUNCHER'
+#!/bin/sh
+set -eu
+app_name="lightcraft"
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+upstream="$script_dir/$app_name.real"
+
+if [ ! -x "$upstream" ]; then
+    echo "$app_name: upstream executable is missing: $upstream" >&2
+    exit 1
+fi
+
+# Optional XWayland mode for file drag-and-drop (requires a working DISPLAY).
+if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
+    if [ -z "${DISPLAY:-}" ]; then
+        echo "$app_name: FASEELA_CRAFT_USE_XWAYLAND=1 requires a working DISPLAY." >&2
+        exit 1
+    fi
+    unset WINIT_UNIX_BACKEND
+    case "$app_name" in
+    lightcraft) unset LIGHTCRAFT_WAYLAND ;;
+    esac
+    exec "$upstream" "$@"
+fi
+
+wayland_active=0
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    if [ -z "${XDG_RUNTIME_DIR:-}" ] || [ ! -d "$XDG_RUNTIME_DIR" ]; then
+        echo "$app_name: XDG_RUNTIME_DIR is missing; start the app from Faseela's active Sway session." >&2
+        exit 1
+    fi
+    case "$WAYLAND_DISPLAY" in
+        /*) wayland_socket="$WAYLAND_DISPLAY" ;;
+        *)  wayland_socket="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ;;
+    esac
+    if [ ! -S "$wayland_socket" ]; then
+        echo "$app_name: Wayland socket is unavailable: $wayland_socket" >&2
+        exit 1
+    fi
+    wayland_active=1
+elif [ -n "${WAYLAND_SOCKET:-}" ]; then
+    wayland_active=1
+elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    echo "$app_name: this is marked as a Wayland session, but WAYLAND_DISPLAY and WAYLAND_SOCKET are missing." >&2
+    echo "Start or re-enter Faseela's Sway session, then launch the app from its terminal or menu." >&2
+    exit 1
+elif [ -n "${DISPLAY:-}" ]; then
+    exec "$upstream" "$@"
+else
+    echo "$app_name: no graphical session found (DISPLAY, WAYLAND_DISPLAY and WAYLAND_SOCKET are all missing)." >&2
+    echo "Launch it from a desktop session, or run start-sway from a Faseela TTY first." >&2
+    exit 1
+fi
+
+if [ "$wayland_active" -eq 1 ]; then
+    export WINIT_UNIX_BACKEND=wayland
+    case "$app_name" in
+    lightcraft) LIGHTCRAFT_WAYLAND=1; export LIGHTCRAFT_WAYLAND ;;
+    esac
+fi
+exec "$upstream" "$@"
+LAUNCHER
+chmod 755 "$upstream_bin"
 """

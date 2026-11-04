@@ -1,0 +1,29 @@
+# Developer Python package installer. The wheel is a pure-Python upstream artifact
+# with PyPI's published SHA-256 and Trusted Publishing provenance.
+[package]
+name = "pip"
+version = "26.3"
+rel = 1
+arch = ["x86_64"]
+summary = "Python package installer"
+license = ["MIT"]
+source = "https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl"
+sha256 = "f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13"
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[build]
+install = """
+site=%{pkgdir}/usr/lib/python3.13/site-packages
+install -d "$site" %{pkgdir}/usr/bin
+python3 -m zipfile -e %{srcdir}/pip-26.3-py3-none-any.whl "$site"
+for cmd in pip pip3 pip3.13; do
+    cat > %{pkgdir}/usr/bin/$cmd <<'SH'
+#!/bin/sh
+exec /usr/bin/python3 -m pip "$@"
+SH
+    chmod 755 %{pkgdir}/usr/bin/$cmd
+done
+"""

@@ -55,6 +55,8 @@ jobs:
           [ "$(wc -l < "$RUNNER_TEMP/ids.txt")" -eq "$(ls recipes/*/*/recipe.toml | wc -l)" ]
       - name: distributed-release planner (GitHub Releases asset limits)
         run: python3 -I scripts/test-distributed-releases.py
+      - name: Telegram notification regression checks
+        run: python3 -I scripts/test-telegram-notify.py
 
   # One required check for branch protection: green only if EVERY job above is.
   ci-ok:
@@ -71,3 +73,23 @@ jobs:
           for r in $RESULTS; do
             [ "$r" = success ] || { echo "::error::a CI job finished as '$r'"; exit 1; }
           done
+
+  telegram-notify:
+    name: Telegram notification
+    if: ${{ always() }}
+    needs: [recipes, ci-ok]
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Send workflow result to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_RESULTS: recipes=${{ needs.recipes.result }},ci-ok=${{ needs.ci-ok.result }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: python3 -I scripts/notify-telegram.py

@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "GTK backend for XDG Desktop Portal"
 license = ["LGPL-2.1-or-later"]
 source = "https://github.com/flatpak/xdg-desktop-portal-gtk/releases/download/%{version}/xdg-desktop-portal-gtk-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "47a3743d2419a8601e691db37e85bb5fac5ae4b26842177065cd5f22ada23b37"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gtk3", "xdg-desktop-portal"]

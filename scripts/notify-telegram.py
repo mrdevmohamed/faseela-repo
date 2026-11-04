@@ -71,7 +71,7 @@ def send_message(token: str, chat_id: str, message: str) -> None:
         "chat_id": chat_id,
         "text": message,
         "parse_mode": "HTML",
-        "disable_web_page_preview": True,
+        "link_preview_options": {"is_disabled": True},
     }
     request = Request(
         f"https://api.telegram.org/bot{token}/sendMessage",

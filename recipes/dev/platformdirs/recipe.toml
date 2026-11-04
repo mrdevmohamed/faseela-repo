@@ -1,13 +1,13 @@
 # Pure-Python runtime dependency for pipx, pinned to its upstream wheel.
 [package]
 name = "platformdirs"
-version = "4.11.10"
+version = "4.13.2"
 rel = 1
 arch = ["x86_64"]
 summary = "platformdirs Python runtime dependency"
 license = ["MIT"]
-source = "https://files.pythonhosted.org/packages/67/45/cae23ec98a49825d58de75c38cdb714605adeb6e6ab72a7ad2b28322892c/platformdirs-4.11.10-py3-none-any.whl"
-sha256 = "973c4c082b964958c71588448488d2b14fb253893dfbdb82325a14c84e540e8f"
+source = "https://files.pythonhosted.org/packages/f2/7f/e0090311031e1c101a151c303e06988e217469fef857d0a36b43ac760c1e/platformdirs-4.13.2-py3-none-any.whl"
+sha256 = "0b220b7e6e71041a02b4aa07b69e575436f8268a669477e3b7fd1e4062587f1b"
 
 [depends]
 build = ["python"]

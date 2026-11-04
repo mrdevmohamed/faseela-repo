@@ -14,6 +14,7 @@ recipes/
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
+├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── extra/       general tools, editors, net utils, hw tools, misc libs
 └── dev/         opt-in developer runtimes and toolchains
 ```
@@ -23,8 +24,9 @@ Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
 [gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),
-plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md));
-the recipe tree counts 309 recipes in total.
+plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
+and optional `networking/` category (see [networking/README.md](networking/README.md));
+the recipe tree counts 310 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.

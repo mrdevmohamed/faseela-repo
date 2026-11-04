@@ -15,8 +15,9 @@ pass validation.
 | Flavor | Current packages |
 |---|---|
 | `developer-base` | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
-| `developer-systems` | `gcc`, `rust`, `llvm`, `gdb`, `nasm`, `lua` |
+| `developer-systems` | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
 | `developer-python` | `python` |
+| `developer-web` | `nodejs`, `deno` |
 | `developer-debugging` | `gdb`, `strace`, `valgrind` |
 | `developer-cli` | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu` |
 
@@ -31,15 +32,16 @@ a recipe and its dependency closure still need to be implemented and tested.
 |---|---|
 | `python` | Available |
 | `rust` | Available |
-| `nodejs`, `golang`, `deno`, `zig`, `openjdk`, `php`, `ruby`, `dotnet-sdk`, `bun` | Planned |
+| `nodejs` 26.13.0, `golang` 1.27.3, `deno` 2.9.8 | Available as opt-in recipes |
+| `zig`, `openjdk`, `php`, `ruby`, `dotnet-sdk`, `bun` | Planned |
 | `lua` | Available |
 
 ### C, C++, LLVM and build systems
 
 | Package | Status |
 |---|---|
-| `gcc`, `llvm`, `cmake`, `ninja`, `meson`, `make`, `pkgconf` | Available |
-| `clang`, `clangd`, `lld`, `lldb`, `compiler-rt`, `libcxx`, `ccache`, `gdb`, `valgrind` | Planned except `gdb` and `valgrind`, which are available |
+| `gcc`, `llvm` (Clang + clangd), `cmake`, `ninja`, `meson`, `make`, `pkgconf` | Available |
+| `lld`, `lldb`, `compiler-rt`, `libcxx`, `ccache` | Planned; `clangd` is built inside the `llvm` package |
 
 ### Python
 

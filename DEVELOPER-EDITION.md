@@ -16,7 +16,7 @@ pass validation.
 |---|---|
 | `developer-base` | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
 | `developer-systems` | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
-| `developer-python` | `python` |
+| `developer-python` | `python`, `pip`, `pipx` |
 | `developer-web` | `nodejs`, `deno` |
 | `developer-debugging` | `gdb`, `strace`, `valgrind` |
 | `developer-cli` | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu` |
@@ -47,13 +47,14 @@ a recipe and its dependency closure still need to be implemented and tested.
 
 | Package | Status |
 |---|---|
-| `python` | Available; current recipe intentionally disables ensurepip |
-| `pip`, `pipx`, `uv`, `virtualenv`, `setuptools`, `wheel`, `cython`, `ipython` | Planned |
+| `python` | Available; ensurepip enabled to support venv and pipx |
+| `pip` 26.3, `pipx` 1.18.7 | Available as opt-in recipes |
+| `uv`, `virtualenv`, `setuptools`, `wheel`, `cython`, `ipython` | Planned |
 
-Python packaging must not overwrite or bypass the distro-managed Python files.
-The eventual `pip` integration must preserve a clear distinction between
-system-managed packages and user virtual environments. `pipx` must install
-applications into isolated environments.
+Python packaging must not overwrite or bypass distro-managed Python files.
+The `pip` recipe installs into the distro Python site-packages; use virtual
+environments for third-party project dependencies. `pipx` installs applications
+into isolated per-user environments.
 
 ### Web development
 

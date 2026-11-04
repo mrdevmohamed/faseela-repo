@@ -18,7 +18,7 @@ pass validation.
 | `developer-systems` | `gcc`, `rust`, `llvm`, `gdb`, `nasm`, `lua` |
 | `developer-python` | `python` |
 | `developer-debugging` | `gdb`, `strace`, `valgrind` |
-| `developer-cli` | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu`, `ripgrep` (only when a recipe is present) |
+| `developer-cli` | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu` |
 
 ## Full target inventory
 

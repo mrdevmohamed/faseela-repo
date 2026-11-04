@@ -21,7 +21,7 @@
 [package]
 name = "waybar"
 version = "0.15.0"
-rel = 2
+rel = 4
 arch = ["x86_64"]
 summary = "waybar — highly customizable status bar for Wayland compositors"
 license = ["MIT"]
@@ -31,17 +31,78 @@ source_dir = "Waybar-%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "libsigc++", "glibmm", "wayland", "wayland-protocols", "libxkbcommon", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
-run = ["gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "glibmm", "wayland", "libxkbcommon", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
+run = ["nerd-fonts-symbols", "gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "glibmm", "wayland", "libxkbcommon", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D systemd=disabled -D man-pages=disabled -D logind=disabled -D upower_glib=disabled -D mpris=disabled -D mpd=disabled -D cava=disabled -D jack=disabled -D wireplumber=disabled -D sndio=disabled -D gps=disabled -D tests=disabled -D experimental=true"
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
-# Upstream ships config.jsonc and style.css examples; make them the session
-# defaults so waybar starts with a sane bar (clock, workspaces, tray, volume,
-# network, battery) without each user writing one first.
+# Session defaults: the bar draws its icons with Font Awesome glyphs, supplied by
+# the nerd-fonts-symbols package (fontconfig falls back to it for those code
+# points). It is the only bar: sway's stock swaybar is removed.
 install -d -m755 %{pkgdir}/etc/xdg/waybar
-install -m644 resources/config.jsonc %{pkgdir}/etc/xdg/waybar/config.jsonc
-install -m644 resources/style.css %{pkgdir}/etc/xdg/waybar/style.css
+cat > %{pkgdir}/etc/xdg/waybar/config.jsonc <<'WBCFG'
+{
+    "layer": "top",
+    "position": "top",
+    "height": 28,
+    "modules-left": ["sway/workspaces", "sway/mode"],
+    "modules-center": ["sway/window"],
+    "modules-right": ["pulseaudio", "network", "cpu", "memory", "temperature", "sway/language", "battery", "clock", "tray"],
+    "sway/workspaces": { "disable-scroll": true },
+    "sway/window": { "max-length": 60 },
+    "sway/language": { "format": "\uf11c  {short}" },
+    "pulseaudio": {
+        "format": "\uf028  {volume}%",
+        "format-muted": "\uf026  muted",
+        "on-click": "pavucontrol"
+    },
+    "network": {
+        "format-ethernet": "\uf0e8  {ipaddr}/{cidr}",
+        "format-wifi": "\uf1eb  {essid} {signalStrength}%",
+        "format-disconnected": "\uf071  no network",
+        "tooltip-format": "{ifname}: {ipaddr}"
+    },
+    "cpu": { "format": "\uf2db  {usage}%" },
+    "memory": { "format": "\uf0a0  {percentage}%" },
+    "temperature": { "format": "\uf2c9  {temperatureC}°C" },
+    "battery": {
+        "format": "\uf240  {capacity}%",
+        "format-charging": "\uf0e7  {capacity}%",
+        "states": { "warning": 30, "critical": 15 }
+    },
+    "clock": {
+        "format": "\uf017  {:%H:%M}",
+        "tooltip-format": "{:%Y-%m-%d %A}"
+    },
+    "tray": { "spacing": 8 }
+}
+WBCFG
+cat > %{pkgdir}/etc/xdg/waybar/style.css <<'WBCSS'
+* {
+    font-family: "DejaVu Sans Mono", "Symbols Nerd Font", "Noto Sans", sans-serif;
+    font-size: 13px;
+}
+window#waybar {
+    background: #1d2330;
+    color: #e6e6e6;
+}
+#workspaces button {
+    padding: 0 8px;
+    color: #c0c5d0;
+    background: transparent;
+    border: none;
+}
+#workspaces button.focused {
+    color: #ffffff;
+    background: #3b4a63;
+}
+#workspaces button.urgent { background: #c0392b; }
+#pulseaudio, #network, #cpu, #memory, #temperature, #language, #battery, #clock, #tray, #mode {
+    padding: 0 10px;
+}
+#battery.warning { color: #f1c40f; }
+#battery.critical { color: #e74c3c; }
+WBCSS
 '''

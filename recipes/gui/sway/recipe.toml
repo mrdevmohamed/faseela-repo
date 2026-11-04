@@ -6,7 +6,7 @@
 [package]
 name = "sway"
 version = "1.10.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "i3-compatible Wayland compositor (with Xwayland support)"
 license = ["MIT"]
@@ -28,5 +28,10 @@ DESTDIR=%{pkgdir} meson install -C build
 cfg=%{pkgdir}/etc/sway/config
 if [ -f "$cfg" ]; then
     sed -i 's|^output \* bg .*|# &   # disabled: no wallpaper/swaybg package|' "$cfg"
+fi
+# The stock config also starts swaybar (a second bar with just a date); the
+# session runs waybar from gui-session, so remove the `bar { ... }` block.
+if [ -f "$cfg" ]; then
+    sed -i '/^bar {/,/^}/d' "$cfg"
 fi
 '''

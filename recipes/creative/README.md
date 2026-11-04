@@ -100,4 +100,4 @@ upstream layout and a conventional `usr/` tree, whether nawa starts in the
 release directory or the archive extraction root. It copies the files into
 Faseela's `/usr/bin` and `/usr/share` so nawa owns and tracks them normally.
 
-The recipe release number is `rel = 3` for this packaging correction.
+The DesignCraft recipe release number is `rel = 4` for the Wayland launcher and upstream 0.17.0 update.

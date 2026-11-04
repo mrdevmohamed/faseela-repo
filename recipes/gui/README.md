@@ -18,8 +18,8 @@ Mesa is built with both the `wayland` and `x11` platforms and DRI-based
 `glx=dri`. Wayland remains the native desktop path; enabling GLX also ships
 the standard `/usr/lib/libGL.so.1` ABI used by older Qt and AppImage clients
 (such as Nekoray), including when they run through Xwayland. The Mesa runtime
-closure includes the X11/XCB and shared-memory fence libraries needed by that
-GLX implementation. This does not add a separate Xorg server.
+closure includes the X11/XCB, `libXxf86vm` and shared-memory fence libraries
+needed by that GLX implementation. This does not add a separate Xorg server.
 
 ## Zed (opt-in, Vulkan enabled)
 
@@ -101,7 +101,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links) |
 | Xwayland server | libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
-| graphics | mesa (+ python-mako python-markupsafe python-pyyaml python-packaging, glslang and Vulkan-Headers as build helpers), libva (VA-API loader; mesa's AMD video driver) |
+| graphics | mesa (+ `libXxf86vm` for X11/GLX, python-mako python-markupsafe python-pyyaml python-packaging, glslang and Vulkan-Headers as build helpers), libva (VA-API loader; mesa's AMD video driver) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |

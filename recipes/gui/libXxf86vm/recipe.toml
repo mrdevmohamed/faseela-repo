@@ -1,0 +1,20 @@
+# X.Org XFree86 Video Mode extension library.
+# Mesa 24.3's X11/GLX build requires the xxf86vm pkg-config module.
+[package]
+name = "libXxf86vm"
+version = "1.1.7"
+rel = 1
+arch = ["x86_64"]
+summary = "XFree86 video mode extension client library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-%{version}.tar.xz"
+sha256 = "ae50c0f669e0af5a67cc4cd0f54f21d64a64d2660af883e80e95d3fe51b945d8"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "xorgproto", "libX11", "libXext"]
+run = ["libX11", "libXext"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

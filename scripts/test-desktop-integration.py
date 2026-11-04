@@ -60,7 +60,9 @@ assert schemas["package"]["version"] == "46.1"
 assert re.fullmatch(r"[0-9a-f]{64}", schemas["package"]["sha256"])
 assert "glib" in schemas["depends"]["run"]
 assert "glib-compile-schemas /usr/share/glib-2.0/schemas" in schemas["hooks"]["post_install"]
-assert 's:"(/system):"/org/gnome\\\\1:g' in schemas["build"]["configure"]
+assert "sed -i -r" in schemas["build"]["configure"]
+assert "schemas/*.in" in schemas["build"]["configure"]
+assert "/org/gnome" in schemas["build"]["configure"]
 
 gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"

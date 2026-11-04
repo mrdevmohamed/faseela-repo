@@ -1,0 +1,63 @@
+# messaging recipe: Telegram Desktop — official upstream Linux x86_64 binary bundle.
+# The official release is a static Qt build; keep its private runtime files together.
+# Do not strip the upstream binary: it is already release-optimized and pinned by
+# the official release SHA-256. Faseela/Nawa owns updates after installation.
+[package]
+name = "telegram-desktop"
+version = "7.3.3"
+rel = 1
+arch = ["x86_64"]
+summary = "Official Telegram Desktop instant messaging client"
+license = ["GPL-3.0-or-later WITH OpenSSL-exception"]
+source = "https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/td-setup-linux-x64-%{version}.tar.xz"
+sha256 = "7bcd524ea17f3eefda95b2ffdb3d5b355e7f727d44045a6ff2316cd077355df9"
+source_dir = "Telegram"
+
+[depends]
+# Platform libraries for graphics, fonts, X11/Wayland, audio and desktop integration.
+build = ["glib", "fontconfig", "freetype", "mesa", "gtk3", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info"]
+run = ["gcc", "glibc", "glib", "fontconfig", "freetype", "mesa", "gtk3", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info", "hicolor-icon-theme"]
+
+[slim]
+# Preserve the official upstream executable and its bundled runtime payload.
+strip = false
+
+[build]
+install = '''
+set -eu
+
+appdir="%{pkgdir}/usr/lib/telegram-desktop"
+install -d -m755 "$appdir" "%{pkgdir}/usr/bin" "%{pkgdir}/usr/share/applications"
+cp -a ./. "$appdir/"
+
+if [ ! -x "$appdir/Telegram" ]; then
+    echo "telegram-desktop: expected executable Telegram was not found in the upstream archive" >&2
+    exit 1
+fi
+
+# Fail early if a dynamically linked platform library is missing from the
+# declared build dependency closure. Statically bundled libraries are ignored.
+missing=$(ldd "$appdir/Telegram" 2>&1 | grep "not found" || true)
+if [ -n "$missing" ]; then
+    echo "telegram-desktop: unresolved runtime libraries:" >&2
+    echo "$missing" >&2
+    exit 1
+fi
+
+ln -sf ../lib/telegram-desktop/Telegram "%{pkgdir}/usr/bin/telegram-desktop"
+
+cat > "%{pkgdir}/usr/share/applications/org.telegram.desktop.desktop" <<'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Telegram Desktop
+GenericName=Instant Messaging
+Comment=Official Telegram Desktop client
+Exec=telegram-desktop -- %u
+Terminal=false
+StartupNotify=true
+StartupWMClass=TelegramDesktop
+Categories=Network;InstantMessaging;
+MimeType=x-scheme-handler/tg;
+EOF
+'''

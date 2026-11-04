@@ -36,6 +36,7 @@ class PackageSelectionTests(unittest.TestCase):
             "firefox": ("browser", {"run": ["sway"]}),
             "mpv": ("media", {"run": ["sway"]}),
             "creative-app": ("creative", {"run": ["sway"]}),
+            "telegram-desktop": ("messaging", {"run": ["sway"]}),
             "docs-tool": ("docs", {}),
             "binutils": ("toolchain", {}),
             "gcc": ("toolchain", {"run": ["binutils"]}),
@@ -78,12 +79,17 @@ class PackageSelectionTests(unittest.TestCase):
         plan = self.resolve(all_packages=True)
         self.assertEqual(set(plan["packages"]), {
             "base-files", "bash", "nawa", "base-devel", "kernel", "runit", "curl",
-            "sway", "firefox", "mpv", "creative-app", "docs-tool",
+            "sway", "firefox", "mpv", "creative-app", "telegram-desktop", "docs-tool",
         })
         self.assertNotIn("gcc", plan["packages"])
         self.assertNotIn("binutils", plan["packages"])
         self.assertIn("docs", plan["category_counts"])
         self.assertEqual(plan["toolchain_packages"], [])
+
+    def test_messaging_category_can_be_selected_explicitly(self):
+        plan = self.resolve(categories=["messaging"])
+        self.assertEqual(plan["packages"], ["telegram-desktop"])
+        self.assertEqual(plan["category_counts"], {"messaging": 1})
 
     def test_core_keeps_the_legacy_base_system_boot_extra_scope(self):
         plan = self.resolve(core=True)

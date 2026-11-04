@@ -103,6 +103,10 @@ on:
         description: "Select every package in the creative category"
         type: boolean
         default: false
+      messaging:
+        description: "Select every package in the messaging category"
+        type: boolean
+        default: false
       toolchain:
         description: "Rebuild the FULL Toolchain through Bootstrap Stage 3 (safe self-hosting path)"
         type: boolean
@@ -191,6 +195,7 @@ jobs:
           INPUT_BROWSER: ${{ inputs.browser }}
           INPUT_MEDIA: ${{ inputs.media }}
           INPUT_CREATIVE: ${{ inputs.creative }}
+          INPUT_MESSAGING: ${{ inputs.messaging }}
           INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
           INPUT_TOOLCHAIN_PACKAGES: ${{ inputs.toolchain_packages }}
           INPUT_PACKAGES: ${{ inputs.packages }}
@@ -246,6 +251,7 @@ jobs:
             [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
             [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
             [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
+            [[ "$INPUT_MESSAGING" == true ]] && categories+=(messaging)
 
             args=()
             [[ "$INPUT_ALL" == true ]] && args+=(--all)

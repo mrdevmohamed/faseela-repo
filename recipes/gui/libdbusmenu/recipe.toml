@@ -52,9 +52,11 @@ done
 # aborts with "cannot find input file: 'po/Makefile.in.in'". Drop the po
 # subdirectory from the build entirely.
 sed -i -E 's#[[:space:]]*po/Makefile(\.in)?##g' configure.ac
+# Join the backslash-continued SUBDIRS list onto one line before removing the
+# word: deleting a line from the middle of the list can leave a trailing
+# backslash before a blank line, which automake rejects.
 find . -name Makefile.am -print0 | xargs -0 sed -i -E \
-    -e '/^[[:space:]]*po[[:space:]]*(\\)?[[:space:]]*$/d' \
-    -e '/^[[:space:]]*SUBDIRS/ s/(^|[[:space:]=])po([[:space:]]|$)/\1\2/g'
+    -e '/^[[:space:]]*SUBDIRS[[:space:]]*[+:]?=/{:a;/\\$/{N;s/\\\n[[:space:]]*/ /;ta};s/(^|[[:space:]=])po([[:space:]]|$)/\1\2/g}'
 autoreconf -fi
 '''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static --with-gtk=3 --disable-dumper --disable-tests --disable-introspection --disable-vala"

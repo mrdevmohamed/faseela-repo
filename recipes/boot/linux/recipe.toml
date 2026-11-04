@@ -43,8 +43,6 @@
 #         fails loudly instead of leaving a half-updated /boot unnoticed.
 # rel 18: provide explicit TUN, policy-routing, iptables TPROXY/REDIRECT and
 #         native nftables TPROXY/REDIRECT/FIB support for transparent proxies.
-# rel 20: enable user namespaces and built-in FUSE for Bubblewrap and XDG
-#         document-portal sandbox/mount support.
 # rel 19: no sound on real hardware. x86_64_defconfig only enables the HD-audio
 #         *controller* (SND_HDA_INTEL); every codec driver is an unselected,
 #         default-less option, so the controller bound but no codec did and no
@@ -59,6 +57,8 @@
 #         sensor hubs), Wi-Fi/Ethernet/Bluetooth chip drivers and platform
 #         (Fn key/backlight) drivers. Needs the SOF/Cirrus/TI firmware in
 #         linux-firmware-lite rel 2 and the UCM profiles in alsa-ucm-conf.
+# rel 20: enable user namespaces and built-in FUSE for Bubblewrap and XDG
+#         document-portal sandbox/mount support.
 [package]
 name = "linux"
 version = "6.10"

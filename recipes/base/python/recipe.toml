@@ -2,7 +2,7 @@
 [package]
 name = "python"
 version = "3.13.17"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Python programming language (CPython)"
 license = ["Python-2.0"]
@@ -14,7 +14,7 @@ build = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "
 run = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "sqlite", "xz", "zlib"]
 
 [build]
-configure = "cd %{srcdir}/Python-* && ./configure --prefix=/usr --enable-shared --with-system-expat --without-ensurepip --disable-test-modules"
+configure = "cd %{srcdir}/Python-* && ./configure --prefix=/usr --enable-shared --with-system-expat --with-ensurepip=install --disable-test-modules"
 compile = "cd %{srcdir}/Python-* && make -j%{jobs}"
 install = '''
 cd %{srcdir}/Python-* && make DESTDIR=%{pkgdir} install

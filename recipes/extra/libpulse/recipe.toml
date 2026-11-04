@@ -1,11 +1,11 @@
 # extra recipe: libpulse — PulseAudio-compatible client libraries only.
 # Faseela uses PipeWire as its sound server; do not build/install the PulseAudio
-# daemon. Firefox's Linux audio backend needs libpulse.so.0 to connect to the
-# pipewire-pulse compatibility endpoint started by gui-session.
+# daemon. The GLib main-loop integration is required by pavucontrol and other
+# GTK clients that connect to the pipewire-pulse compatibility endpoint.
 [package]
 name = "libpulse"
 version = "17.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "PulseAudio client libraries for PipeWire compatibility"
 license = ["LGPL-2.1-or-later"]
@@ -14,8 +14,8 @@ sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
 source_dir = "pulseaudio-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "m4"]
-run = []
+build = ["meson", "ninja", "pkgconf", "m4", "glib"]
+run = ["glib"]
 
 [build]
 configure = """
@@ -36,8 +36,6 @@ p.write_text(s.replace(old, new, 1))
 p = Path("src/meson.build")
 s = p.read_text()
 for entry in ("  'pulsecore/sndfile-util.c',", "  'pulsecore/sndfile-util.h',"):
-    # TOML interprets backslash escapes in this multiline string. Build the
-    # newline at runtime so Python receives valid one-line string literals.
     needle = entry + chr(10)
     assert s.count(needle) == 1, f"unexpected libpulsecommon source list: {entry!r}"
     s = s.replace(needle, "", 1)
@@ -55,7 +53,7 @@ s = s[:i] + "# Faseela omits pacat/pactl sample-file utilities in the client-onl
 p.write_text(s)
 PY
 
-meson setup build --prefix=/usr --libdir=lib --buildtype=release -D daemon=false -D client=true -D database=simple -D doxygen=false -D man=false -D tests=false -D alsa=disabled -D asyncns=disabled -D avahi=disabled -D bluez5=disabled -D bluez5-gstreamer=disabled -D consolekit=disabled -D dbus=disabled -D elogind=disabled -D fftw=disabled -D glib=disabled -D gsettings=disabled -D gstreamer=disabled -D gtk=disabled -D jack=disabled -D lirc=disabled -D openssl=disabled -D orc=disabled -D oss-output=disabled -D soxr=disabled -D speex=disabled -D systemd=disabled -D tcpwrap=disabled -D udev=disabled -D valgrind=disabled -D x11=disabled -D webrtc-aec=disabled
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -D daemon=false -D client=true -D database=simple -D doxygen=false -D man=false -D tests=false -D alsa=disabled -D asyncns=disabled -D avahi=disabled -D bluez5=disabled -D bluez5-gstreamer=disabled -D consolekit=disabled -D dbus=disabled -D elogind=disabled -D fftw=disabled -D glib=enabled -D gsettings=disabled -D gstreamer=disabled -D gtk=disabled -D jack=disabled -D lirc=disabled -D openssl=disabled -D orc=disabled -D oss-output=disabled -D soxr=disabled -D speex=disabled -D systemd=disabled -D tcpwrap=disabled -D udev=disabled -D valgrind=disabled -D x11=disabled -D webrtc-aec=disabled
 """
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} ninja -C build install"

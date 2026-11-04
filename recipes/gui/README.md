@@ -90,7 +90,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
-| desktop integration | xdg-utils (`xdg-open`), rsync (Zed auto-update), gnome-keyring (Secret Service), GCR/GCK, p11-kit and libgcrypt |
+| desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK backend, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, GCR/GCK, p11-kit and libgcrypt |
 | session | gui-session (seatd runit service, `start-sway`, group setup hook) |
 
 ## Using it
@@ -106,7 +106,8 @@ start-sway                                    # from a text console
 `start-sway` sets `XDG_RUNTIME_DIR`, `LIBSEAT_BACKEND=seatd` and
 `WLR_RENDERER_ALLOW_SOFTWARE=1` (see limitations). The same variables are
 exported for every login shell by `/etc/profile.d/gui-session.sh`, so a plain
-`sway` works too. The Sway session drop-in also starts
+`sway` works too. The Sway session drop-in also imports the compositor environment into the
+session D-Bus activation environment for desktop portals, and starts
 `faseela-audio-session`, which brings up PipeWire, WirePlumber and
 `pipewire-pulse` for the logged-in user even when Sway is launched directly.
 It checks the native and Pulse sockets and avoids starting duplicate daemons. The kernel recipe enables DRM (virtio-gpu, bochs, simpledrm)
@@ -117,7 +118,13 @@ and a USB/PS2 keyboard and mouse.
 
 `gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
 `gnome-keyring`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
-user D-Bus session with `dbus-run-session`; GNOME Keyring installs
+user D-Bus session with `dbus-run-session`. The `xdg-desktop-portal` frontend
+owns `org.freedesktop.portal.Desktop` and activates its GTK backend through
+D-Bus. `sway-portals.conf` selects GTK for general interfaces. The Sway
+session drop-in runs `dbus-update-activation-environment` after the compositor
+starts, so the activated backend receives `WAYLAND_DISPLAY` and
+`XDG_CURRENT_DESKTOP=sway`. Bubblewrap, user namespaces, and FUSE support are
+included for the document portal's sandbox and document mounts. GNOME Keyring installs
 `/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
 Service daemon is activated on demand by D-Bus. This does not require systemd
 or a system-wide runit service.
@@ -144,8 +151,11 @@ keyring during a tty login.
   for AMD (`-D gallium-va`), and `recipes/media/intel-media-driver` provides
   `iHD_drv_video.so` for Intel.
 * No X server and no Xwayland (only the X11 *client* libraries, because cairo
-  links them). D-Bus system and per-user session buses are available, but
-  desktop portals are not packaged yet. The launcher is `wmenu` (`Super+D`,
+  links them). D-Bus system and per-user session buses are available. The GTK portal backend
+  supplies general desktop integration (including file chooser); wlroots
+  screenshot/screencast portal support is not enabled yet and remains a separate
+  follow-up because its sd-bus provider needs a runit-compatible packaging choice.
+  The launcher is `wmenu` (`Super+D`,
   sway's default `wmenu-run`).
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).
   sway's stock `output * bg ...` line is commented out by the sway recipe;

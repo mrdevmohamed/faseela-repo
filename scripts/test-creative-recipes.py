@@ -81,15 +81,58 @@ def check(recipe: Path, data: dict, layout: tuple[str, bool, str]) -> None:
         installed_binary = pkgdir / "usr" / "bin" / name
         installed_desktop = pkgdir / "usr" / "share" / "applications" / f"{name}.desktop"
         installed_icon = pkgdir / "usr" / "share" / "icons" / "hicolor" / "test.txt"
-        for installed in (installed_binary, installed_desktop, installed_icon):
-            if not installed.is_file():
-                raise AssertionError(f"{recipe.name}: {label} did not install {installed}")
-        if installed_binary.read_bytes() != binary.read_bytes():
-            raise AssertionError(f"{recipe.name}: binary changed in {label}")
+
+        if name == "designcraft":
+            upstream_binary = pkgdir / "usr" / "bin" / "designcraft.real"
+            for installed in (upstream_binary, installed_binary, installed_desktop, installed_icon):
+                if not installed.is_file():
+                    raise AssertionError(f"{recipe.name}: {label} did not install {installed}")
+            if upstream_binary.read_bytes() != binary.read_bytes():
+                raise AssertionError(f"{recipe.name}: upstream binary changed in {label}")
+            for executable in (upstream_binary, installed_binary):
+                if executable.stat().st_mode & 0o111 == 0:
+                    raise AssertionError(f"{recipe.name}: executable bit lost in {label}")
+            launcher = installed_binary.read_text(encoding="utf-8")
+            for required in (
+                "no active Wayland session detected",
+                "XDG_RUNTIME_DIR",
+                "wayland_socket",
+                "WINIT_UNIX_BACKEND=wayland",
+                'exec "$script_dir/designcraft.real" "$@"',
+            ):
+                if required not in launcher:
+                    raise AssertionError(f"{recipe.name}: launcher is missing {required!r} in {label}")
+
+            # Running outside Sway must fail early with an actionable message,
+            # not fall through to the unavailable X11 server.
+            no_session_env = os.environ.copy()
+            no_session_env.pop("WAYLAND_DISPLAY", None)
+            no_session_env.pop("XDG_RUNTIME_DIR", None)
+            no_session_env.pop("WINIT_UNIX_BACKEND", None)
+            no_session = subprocess.run(
+                [str(installed_binary)],
+                env=no_session_env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            if no_session.returncode == 0 or "no active Wayland session detected" not in no_session.stdout:
+                raise AssertionError(
+                    f"{recipe.name}: missing Wayland session was not diagnosed in {label}:\\n"
+                    f"{no_session.stdout}"
+                )
+        else:
+            for installed in (installed_binary, installed_desktop, installed_icon):
+                if not installed.is_file():
+                    raise AssertionError(f"{recipe.name}: {label} did not install {installed}")
+            if installed_binary.read_bytes() != binary.read_bytes():
+                raise AssertionError(f"{recipe.name}: binary changed in {label}")
+            if installed_binary.stat().st_mode & 0o111 == 0:
+                raise AssertionError(f"{recipe.name}: executable bit lost in {label}")
+
         if installed_desktop.read_bytes() != desktop.read_bytes():
             raise AssertionError(f"{recipe.name}: desktop file changed in {label}")
-        if installed_binary.stat().st_mode & 0o111 == 0:
-            raise AssertionError(f"{recipe.name}: executable bit lost in {label}")
 
 
 def main() -> int:

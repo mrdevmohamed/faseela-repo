@@ -200,6 +200,7 @@ if [ "$wayland_active" -eq 1 ]; then
     pdfcraft) ;;
     esac
 fi
+unset DISPLAY
 exec "$upstream" "$@"
 LAUNCHER
 chmod 755 "$upstream_bin"

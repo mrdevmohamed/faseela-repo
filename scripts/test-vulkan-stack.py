@@ -28,7 +28,7 @@ assert "spirv-llvm-translator" in mesa_build, "libclc requires the LLVM-matched 
 llvm = recipe("recipes/gui/llvm/recipe.toml")
 assert llvm["package"]["version"] == "18.1.8"
 llvm_install = llvm["build"]["install"]
-assert not re.search(r"find\\s+%\\{pkgdir\\}/usr/bin[\\s\\S]*?-delete", llvm_install), (
+assert not re.search(r"find\s+%\{pkgdir\}/usr/bin[\s\S]*?-delete", llvm_install), (
     "LLVM must not prune installed tools from /usr/bin; consumers such as libclc "
     "and LLVM's CMake package may require tools beyond the currently known list"
 )

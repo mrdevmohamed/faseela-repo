@@ -57,8 +57,11 @@ for font in \
 done
 
 install -d %{pkgdir}/usr/share/fonts/opentype/noto
-install -m644 "$fonts"/NotoSansCJK-{Regular,Bold}.ttc \
-    "$fonts"/NotoSerifCJK-{Regular,Bold}.ttc \
+install -m644 \
+    "$fonts/NotoSansCJK-Regular.ttc" \
+    "$fonts/NotoSansCJK-Bold.ttc" \
+    "$fonts/NotoSerifCJK-Regular.ttc" \
+    "$fonts/NotoSerifCJK-Bold.ttc" \
     %{pkgdir}/usr/share/fonts/opentype/noto/
 
 conf="$work/root/usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf"

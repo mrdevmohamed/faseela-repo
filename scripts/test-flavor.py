@@ -91,6 +91,8 @@ class RealTree(unittest.TestCase):
         self.assertIn("firefox", got["iso-gui"])
         self.assertIn("libpulse", got["iso-gui"])
         self.assertEqual(got["iso-gui-firefox"], got["iso-gui"])
+        self.assertNotIn("telegram-desktop", got["iso-gui"])
+        self.assertIn("telegram-desktop", got["iso-gui-telegram"])
 
     def test_base_files_first_everywhere(self):
         # base-files owns the merged-/usr symlinks (/sbin -> usr/bin ...). If glibc

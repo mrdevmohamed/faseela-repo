@@ -1,12 +1,11 @@
 # gui recipe: basu — sd-bus library extracted from elogind, without systemd
 # sway's tray, mako and xdg-desktop-portal-wlr all speak D-Bus through sd-bus;
 # basu provides that API on a runit system with no systemd or elogind.
-# libcap is optional upstream and unused here; libaudit is turned off
-# (it exists for SELinux-style audit records).
+# gperf is required by the upstream Meson build to generate lookup tables.
 [package]
 name = "basu"
 version = "0.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "sd-bus library extracted from elogind, for the sway tray, mako and portal-wlr"
 license = ["LGPL-2.1-or-later"]
@@ -15,7 +14,7 @@ sha256 = "e2fda9b69fc6c4530173fcf8db94c29aa5f3ed932d948cc6a31892623cde5e4b"
 source_dir = "basu-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf"]
+build = ["meson", "ninja", "pkgconf", "gperf"]
 run = []
 
 [build]

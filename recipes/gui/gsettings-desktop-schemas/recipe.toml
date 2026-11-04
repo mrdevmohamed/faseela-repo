@@ -14,7 +14,10 @@ build = ["meson", "ninja", "gettext", "glib"]
 run = ["glib"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false"
+configure = """
+sed -i -r 's:"(/system):"/org/gnome\\1:g' schemas/*.in &&
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false
+"""
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"
 

@@ -75,6 +75,9 @@ assert "-DBUILD_SHARED_LIBS=ON" in double_conversion["build"]["configure"], (
 assert "double-conversion" in set(nekoray["depends"]["run"]), (
     "Nekoray must pull in the package providing libdouble-conversion.so.3"
 )
+assert "libXxf86vm" in set(nekoray["depends"]["run"]), (
+    "Nekoray must pull in libXxf86vm.so.1 for its bundled Qt/X11 runtime"
+)
 
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"

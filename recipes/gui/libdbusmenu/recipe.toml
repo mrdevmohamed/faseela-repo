@@ -46,6 +46,15 @@ conds="$(find . -name Makefile.am -print0 | xargs -0 sed -n -E 's/^[[:space:]]*(
 for c in $conds; do
     sed -i "/^AM_INIT_AUTOMAKE/a AM_CONDITIONAL([$c], [false])" configure.ac
 done
+# The recipe ships no translations (--disable-nls), but configure.ac still
+# lists po/Makefile.in in AC_CONFIG_FILES. The Debian repack has no
+# po/Makefile.in.in (intltoolize/glib-gettextize never ran), so config.status
+# aborts with "cannot find input file: 'po/Makefile.in.in'". Drop the po
+# subdirectory from the build entirely.
+sed -i -E 's#[[:space:]]*po/Makefile(\.in)?##g' configure.ac
+find . -name Makefile.am -print0 | xargs -0 sed -i -E \
+    -e '/^[[:space:]]*po[[:space:]]*(\\)?[[:space:]]*$/d' \
+    -e '/^[[:space:]]*SUBDIRS/ s/(^|[[:space:]=])po([[:space:]]|$)/\1\2/g'
 autoreconf -fi
 '''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static --with-gtk=3 --disable-dumper --disable-tests --disable-introspection --disable-vala"

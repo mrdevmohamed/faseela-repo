@@ -1,0 +1,27 @@
+# Developer CLI application installer. pipx vendors its Python dependencies in
+# the upstream wheel; pip is a runtime dependency used inside isolated venvs.
+[package]
+name = "pipx"
+version = "1.18.7"
+rel = 1
+arch = ["x86_64"]
+summary = "Install and run Python applications in isolated environments"
+license = ["MIT"]
+source = "https://files.pythonhosted.org/packages/5a/8a/f125b753800f4d5f5640d9a61a28493993a48130aedcd88a96042fc54025/pipx-1.18.7-py3-none-any.whl"
+sha256 = "59254349bb1de6a437027008bd15e7e697c950616ba9128f0cf63a69cfcea6d6"
+
+[depends]
+build = ["python"]
+run = ["python", "pip"]
+
+[build]
+install = """
+site=%{pkgdir}/usr/lib/python3.13/site-packages
+install -d "$site" %{pkgdir}/usr/bin
+python3 -m zipfile -e %{srcdir}/pipx-1.18.7-py3-none-any.whl "$site"
+cat > %{pkgdir}/usr/bin/pipx <<'SH'
+#!/bin/sh
+exec /usr/bin/python3 -m pipx "$@"
+SH
+chmod 755 %{pkgdir}/usr/bin/pipx
+"""

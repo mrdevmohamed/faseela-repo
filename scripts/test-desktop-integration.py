@@ -59,7 +59,8 @@ assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
 assert "-D settings=enabled" in gtk_portal["build"]["configure"], (
     "GTK portal must implement org.freedesktop.portal.Settings for Qt toolkits"
 )
-assert "gsettings-desktop-schemas" in gtk_portal["depends"]["run"]
+assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["build"])
+assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["run"])
 
 fuse = recipe("gui", "fuse3")
 assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"

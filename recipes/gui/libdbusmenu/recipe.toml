@@ -35,6 +35,17 @@ sed -i \
     -e '/^[[:space:]]*docs/d' \
     configure.ac
 sed -i '/^[[:space:]]*docs[[:space:]]/d' Makefile.am
+# Same class of failure again: upstream's configure.ac defines some
+# AM_CONDITIONALs (HAVE_VALGRIND, ...) only inside the --enable-tests branch,
+# while the Makefile.am files test them unconditionally. Autoconf 2.72 then
+# aborts configure with `conditional "HAVE_VALGRIND" was never defined`, even
+# with --disable-tests. Give every conditional the Makefile.am files use a
+# top-level default of false, right after AM_INIT_AUTOMAKE. A real definition
+# later in configure.ac still overrides it at run time.
+conds="$(find . -name Makefile.am -print0 | xargs -0 sed -n -E 's/^[[:space:]]*(if|else)[[:space:]]+!?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*(#.*)?$/\2/p' | sort -u)"
+for c in $conds; do
+    sed -i "/^AM_INIT_AUTOMAKE/a AM_CONDITIONAL([$c], [false])" configure.ac
+done
 autoreconf -fi
 '''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static --with-gtk=3 --disable-dumper --disable-tests --disable-introspection --disable-vala"

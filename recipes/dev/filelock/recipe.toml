@@ -1,0 +1,21 @@
+# Pure-Python runtime dependency for pipx, pinned to its upstream wheel.
+[package]
+name = "filelock"
+version = "4.2.7"
+rel = 1
+arch = ["x86_64"]
+summary = "filelock Python runtime dependency"
+license = ["MIT"]
+source = "https://files.pythonhosted.org/packages/1d/1a/1fcf0d3886bad15b92459a0e529dd86a1ec4d9ef30e789df48044fd3698c/filelock-4.2.7-py3-none-any.whl"
+sha256 = "d08972bbca2b8767ee552aff877b091dd111ffb1d22de7de885766ea7d719d5e"
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[build]
+install = """
+site=%{pkgdir}/usr/lib/python3.13/site-packages
+install -d "$site"
+python3 -m zipfile -e %{srcdir}/filelock-4.2.7-py3-none-any.whl "$site"
+"""

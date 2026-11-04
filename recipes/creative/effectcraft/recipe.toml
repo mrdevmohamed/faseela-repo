@@ -89,6 +89,7 @@ else
     echo "$app_name: no graphical session found; run it from a desktop session or start-sway from a TTY." >&2
     exit 1
 fi
+unset DISPLAY
 exec "$upstream" "$@"
 LAUNCHER
 chmod 755 "$upstream_bin"

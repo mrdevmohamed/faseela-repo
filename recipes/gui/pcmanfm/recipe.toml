@@ -19,6 +19,16 @@ run = ["gtk3", "libfm", "menu-cache", "adwaita-icon-theme", "shared-mime-info"]
 
 [build]
 configure = '''
+# GCC 14 treats incompatible pointer returns as errors by default. Apply the
+# upstream fix: these two functions return AtkObject*, not FmDesktopItemAccessible*.
+desktop_source=src/desktop.c
+matches=$(grep -Fc 'return g_object_ref(item);' "$desktop_source")
+[ "$matches" -eq 2 ] || {
+  echo "pcmanfm GCC 14 patch: expected 2 return sites in $desktop_source, found $matches" >&2
+  exit 1
+}
+sed -i 's/return g_object_ref(item);/return (AtkObject *)g_object_ref(item);/' "$desktop_source"
+
 # intltool is not packaged (see pavucontrol): satisfy configure with stand-ins that
 # live only in the source tree. intltool-merge copies input to output and drops the
 # leading underscore of translatable keys (no translations: NLS is off).

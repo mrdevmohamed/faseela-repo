@@ -15,7 +15,7 @@ sha256 = "41298b926573419f21864205317461750b833c596af6ab0bd206e13336f8cee3"
 source_dir = "libdbusmenu-%{version}~bzr492"
 
 [depends]
-build = ["pkgconf", "glib", "gtk3", "autoconf", "automake", "libtool", "gettext"]
+build = ["pkgconf", "glib", "gtk3", "autoconf", "automake", "libtool", "gettext", "python"]
 run = ["glib", "gtk3"]
 
 [build]
@@ -58,6 +58,33 @@ sed -i -E 's#[[:space:]]*po/Makefile(\.in)?##g' configure.ac
 find . -name Makefile.am -print0 | xargs -0 sed -i -E \
     -e '/^[[:space:]]*SUBDIRS[[:space:]]*[+:]?=/{:a;/\\$/{N;s/\\\n[[:space:]]*/ /;ta};s/(^|[[:space:]=])po([[:space:]]|$)/\1\2/g}'
 autoreconf -fi
+# libdbusmenu-glib/Makefile.am runs `$(XSLTPROC) clean-namespaces.xslt
+# dbus-menu.xml`. xsltproc (libxslt) is not packaged, so configure leaves
+# XSLTPROC empty and make tries to execute the .xslt file itself ("Permission
+# denied"). Generate dbus-menu-clean.xml here with the same transformation
+# (drop everything in the dox namespace, strip element namespaces, keep
+# attributes/text, drop comments) and refresh its timestamp so make keeps it.
+python3 - libdbusmenu-glib/dbus-menu.xml libdbusmenu-glib/dbus-menu-clean.xml <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+DOX = "{http://www.canonical.com/dbus/dox.dtd}"
+src, dst = sys.argv[1:3]
+def clean(e):
+    for c in list(e):
+        if c.tag.startswith(DOX):
+            e.remove(c)
+        else:
+            clean(c)
+    for k in list(e.attrib):
+        if k.startswith(DOX):
+            del e.attrib[k]
+    e.tag = e.tag.rsplit("}", 1)[-1]
+root = ET.parse(src).getroot()
+clean(root)
+ET.ElementTree(root).write(dst, encoding="UTF-8", xml_declaration=True)
+PY
+test -s libdbusmenu-glib/dbus-menu-clean.xml
+touch libdbusmenu-glib/dbus-menu-clean.xml
 '''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-nls --disable-static --with-gtk=3 --disable-dumper --disable-tests --disable-introspection --disable-vala"
 compile = "make -j%{jobs}"

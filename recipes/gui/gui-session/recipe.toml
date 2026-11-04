@@ -2,14 +2,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 18
+rel = 19
 arch = ["x86_64"]
-summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
+summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''

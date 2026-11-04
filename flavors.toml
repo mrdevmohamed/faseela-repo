@@ -11,7 +11,7 @@
 #
 # Keys of a [flavor.NAME] table
 #   summary   one line
-#   include   package names, or @category (toolchain base system boot extra gui browser media creative)
+#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative)
 #   extends   other flavors whose packages are included too
 #   exclude   packages left out of the result (nothing else is dropped)
 #   closure   "run"   (default) add every [depends].run dependency, transitively:

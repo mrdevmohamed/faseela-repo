@@ -119,13 +119,16 @@ for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled
 require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
 
 # Telegram and other Qt tray clients look up org.kde.StatusNotifierWatcher.
-# Waybar's tray module normally owns it; the D-Bus service is the activation
-# fallback when the bar has not yet started.
+# Waybar's tray module owns the name inside the already-running bar. Do not
+# provide a D-Bus activation .service for the watcher: Exec=waybar would launch
+# a second independent bar whenever the name was not owned yet.
 assert '"tray"' in waybar["build"]["install"], "Waybar's packaged config must enable its tray module"
-assert "org.kde.StatusNotifierWatcher.service" in install_script
-assert "Name=org.kde.StatusNotifierWatcher" in install_script
-assert "Exec=/usr/bin/waybar" in install_script
-assert session["package"]["rel"] >= 20, "Bump gui-session rel for StatusNotifierWatcher activation"
+assert install_script.count("exec waybar") == 1, "Sway must start exactly one Waybar instance"
+assert "org.kde.StatusNotifierWatcher.service" not in install_script, (
+    "Do not D-Bus-activate Waybar: it can start a duplicate status bar"
+)
+assert "Exec=/usr/bin/waybar" not in install_script
+assert session["package"]["rel"] >= 21, "Bump gui-session rel for single-instance Waybar startup"
 
 # --- regression coverage for package build failures seen in CI ------------
 # These assertions cover build-time requirements, not just the final session

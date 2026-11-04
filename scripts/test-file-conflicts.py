@@ -94,12 +94,12 @@ class Conflicts(unittest.TestCase):
         # tar padding in the zstd frame to fill a pipe if the caller does not
         # drain it; zstd would otherwise exit with SIGPIPE.
         with raw.open("ab") as stream:
-            stream.write(b"\\0" * (16 * 1024 * 1024))
+            stream.write(b"\0" * (16 * 1024 * 1024))
         archive = self.d / "out" / "streamed-1-1.nawa.tar.zst"
         subprocess.run(["zstd", "-q", "-f", str(raw), "-o", str(archive)], check=True)
         raw.unlink()
 
-        result = self.run_check('[flavor.x]\\ninclude = ["streamed"]\\n')
+        result = self.run_check('[flavor.x]\ninclude = ["streamed"]\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_same_file_in_one_flavor_is_an_error(self):

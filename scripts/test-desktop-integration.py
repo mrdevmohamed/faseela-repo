@@ -123,7 +123,7 @@ dbusmenu = recipe("gui", "libdbusmenu")
 assert dbusmenu["package"]["version"] == "18.10.20180917"
 assert dbusmenu["package"]["rel"] >= 2
 assert re.fullmatch(r"[0-9a-f]{64}", dbusmenu["package"]["sha256"])
-assert dbusmenu["source_dir"] == "libdbusmenu-%{version}~bzr492", (
+assert dbusmenu["package"]["source_dir"] == "libdbusmenu-%{version}~bzr492", (
     "Debian's repacked orig archive extracts under the bzr revision name without +repack1"
 )
 require_deps("gui", "libdbusmenu", "build", {

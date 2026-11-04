@@ -2,7 +2,7 @@
 [package]
 name = "bzip2"
 version = "1.0.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "High-quality block-sorting file compressor"
 license = ["bzip2-1.0.6"]
@@ -26,5 +26,15 @@ ln -sf libbz2.so.1.0.8 %{pkgdir}/usr/lib/libbz2.so
 cp -v bzip2-shared %{pkgdir}/usr/bin/bzip2
 ln -sf bzip2 %{pkgdir}/usr/bin/bzcat
 ln -sf bzip2 %{pkgdir}/usr/bin/bunzip2
+# bzip2's `make install` creates its helper links (bzcmp -> bzdiff, bzegrep and
+# bzfgrep -> bzgrep, bzless -> bzmore, and the man page aliases) as absolute
+# symlinks to $(PREFIX)/..., i.e. into the staging dir. Make them relative so
+# they resolve on the installed system.
+find %{pkgdir} -type l | while read -r l; do
+  t=$(readlink "$l")
+  case "$t" in
+    %{pkgdir}/*) ln -snf "$(realpath -s --relative-to="$(dirname "$l")" "$t")" "$l" ;;
+  esac
+done
 test -d %{pkgdir}/usr/man && mv %{pkgdir}/usr/man %{pkgdir}/usr/share/man || true
 """

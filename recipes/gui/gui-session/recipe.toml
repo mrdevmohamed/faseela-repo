@@ -119,7 +119,7 @@ chmod 644 %{pkgdir}/usr/share/xdg-desktop-portal/sway-portals.conf
 # the correct display and desktop identity.
 cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'PORTALENV'
 # Make the active Wayland session visible to D-Bus-activated desktop portals.
-exec dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+exec dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
 PORTALENV
 # Audio must start for every Sway entry path, not only start-sway. The helper
 # is idempotent so the explicit start-sway preflight and Sway autostart coexist.

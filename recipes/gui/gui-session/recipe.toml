@@ -2,7 +2,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 22
+rel = 23
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
@@ -328,4 +328,11 @@ udevadm trigger --subsystem-match=drm 2>/dev/null || true
 udevadm settle 2>/dev/null || true
 echo "gui-session: add your user:  usermod -aG seat,video,render,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"
+
+# Xtrans requires the shared X11 socket directory to be root-owned and sticky.
+# Keep this safe across installs even if a previous user-launched Xwayland
+# created /tmp/.X11-unix with the wrong owner.
+mkdir -p /tmp/.X11-unix
+chown root:root /tmp/.X11-unix
+chmod 1777 /tmp/.X11-unix
 '''

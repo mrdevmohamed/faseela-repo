@@ -200,10 +200,32 @@ assert "-D xwayland=enabled" in wlroots["build"]["configure"], "wlroots must bui
 assert "xwayland" in wlroots["depends"]["run"], "wlroots must run-depend on the Xwayland server"
 sway = recipe("gui", "sway")
 assert sway["package"]["rel"] >= 3, "Bump sway rel when wlroots gains Xwayland support"
+xkbcomp = recipe("gui", "xkbcomp")
+assert xkbcomp["package"]["version"] == "1.5.0"
+assert re.fullmatch(r"[0-9a-f]{64}", xkbcomp["package"]["sha256"])
+assert {"libX11", "libxkbfile"} <= set(xkbcomp["depends"]["run"]), (
+    "xkbcomp must ship its X11 and XKB file library runtime dependencies"
+)
+assert "install" in xkbcomp["build"] and "DESTDIR=%{pkgdir}" in xkbcomp["build"]["install"]
+
 xwayland = recipe("gui", "xwayland")
 assert re.fullmatch(r"[0-9a-f]{64}", xwayland["package"]["sha256"])
 for flag in ("-D xdmcp=false", "-D xdm-auth-1=false", "-D systemd_notify=false"):
     assert flag in xwayland["build"]["configure"], f"Xwayland must not need extra daemons: {flag}"
+assert xwayland["package"]["rel"] >= 2, "Bump Xwayland rel when changing its XKB runtime"
+assert {"xkbcomp", "xkeyboard-config"} <= set(xwayland["depends"]["run"]), (
+    "Xwayland must install xkbcomp and the XKB rules/layout data it uses at startup"
+)
+
+assert session["package"]["rel"] >= 23, "Bump gui-session rel for X11 socket directory ownership"
+for required in (
+    "mkdir -p /tmp/.X11-unix",
+    "chown root:root /tmp/.X11-unix",
+    "chmod 1777 /tmp/.X11-unix",
+):
+    assert required in session["hooks"]["post_install"], (
+        f"gui-session must establish secure X11 socket directory ownership: {required}"
+    )
 
 # pavucontrol mixes PipeWire's PulseAudio server on the gtkmm 3 stack.
 pavucontrol = recipe("gui", "pavucontrol")

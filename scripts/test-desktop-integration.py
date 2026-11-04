@@ -56,7 +56,10 @@ gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"
 assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
 assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
-assert "-D settings=enabled" in gtk_portal["build"]["configure"], (\n    "GTK portal must implement org.freedesktop.portal.Settings for Qt toolkits"\n)\nassert "gsettings-desktop-schemas" in gtk_portal["depends"]["run"]
+assert "-D settings=enabled" in gtk_portal["build"]["configure"], (
+    "GTK portal must implement org.freedesktop.portal.Settings for Qt toolkits"
+)
+assert "gsettings-desktop-schemas" in gtk_portal["depends"]["run"]
 
 fuse = recipe("gui", "fuse3")
 assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"

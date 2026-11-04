@@ -27,10 +27,14 @@ assert "spirv-llvm-translator" in mesa_build, "libclc requires the LLVM-matched 
 
 llvm = recipe("recipes/gui/llvm/recipe.toml")
 assert llvm["package"]["version"] == "18.1.8"
-for tool in ("llvm-as", "llvm-link", "opt"):
-    assert f"! -name {tool}" in llvm["build"]["install"], (
-        f"LLVM must retain {tool} so libclc can build Mesa's SPIR-V builtins"
-    )
+llvm_install = llvm["build"]["install"]
+assert not re.search(r"find\s+%\{pkgdir\}/usr/bin[\s\S]*?-delete", llvm_install), (
+    "LLVM must not prune installed tools from /usr/bin; consumers such as libclc "
+    "and LLVM's CMake package may require tools beyond the currently known list"
+)
+assert "rm -rf %{pkgdir}/usr/share/man" not in llvm_install
+assert "rm -rf %{pkgdir}/usr/share/doc" not in llvm_install
+assert llvm["package"]["rel"] >= 8, "Bump LLVM rel when changing its installed tool set"
 
 translator = recipe("recipes/gui/spirv-llvm-translator/recipe.toml")
 assert translator["package"]["version"] == "18.1.3"

@@ -16,7 +16,7 @@ not run an application-specific installer or compile the upstream source.
 | `soundcraft` | 0.16.0 | SoundCraft audio workstation |
 | `lightcraft` | 0.17.0 | LightCraft photo manager and RAW developer |
 | `filmcraft` | 0.16.0 | FilmCraft video editor |
-| `designcraft` | 0.16.0 | DesignCraft page layout and publishing |
+| `designcraft` | 0.17.0 | DesignCraft page layout and publishing |
 | `vectorcraft` | 0.20.0 | VectorCraft vector illustration |
 | `effectcraft` | 0.20.0 | EffectCraft motion graphics and visual effects |
 | `wordcraft` | 0.14.0 | WordCraft word processor |
@@ -47,6 +47,12 @@ session is outside this initial support.
 SoundCraft, FilmCraft, EffectCraft and DeckCraft also depend on `alsa-lib`
 and `pipewire`. Faseela's PipeWire build enables the ALSA plugin; start the
 normal Faseela GUI session so its PipeWire user services are available.
+
+DesignCraft has a Faseela launcher at `/usr/bin/designcraft`. It verifies that
+the Sway Wayland socket is present, sets `WINIT_UNIX_BACKEND=wayland`, and
+then runs the upstream binary stored as `/usr/bin/designcraft.real`. This
+prevents winit from falling through to an unavailable X11 server and gives a
+clear diagnostic when the command is run outside a graphical Wayland session.
 
 The release bundles contain the upstream desktop entries, icons, MIME data
 and AppStream metadata under `share/`; the recipes install that content under

@@ -55,6 +55,16 @@ assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
 assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
 assert "-D settings=disabled" in gtk_portal["build"]["configure"]
 
+fuse = recipe("gui", "fuse3")
+assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"
+fuse_configure = fuse["build"]["configure"]
+assert "install_helper.sh" in fuse_configure and "mknod" in fuse_configure, (
+    "fuse3 must not try to create /dev/fuse inside the unprivileged package staging root"
+)
+assert "-D useroot=true" in fuse_configure, (
+    "Keep fusermount3 ownership/mode and udev rule installation enabled"
+)
+
 for name in ("fuse3", "json-glib", "bubblewrap"):
     assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
         r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
@@ -135,9 +145,13 @@ assert "no D-Bus" not in readme
 
 
 kernel = recipe("boot", "linux")
-assert kernel["package"]["rel"] >= 20, "Bump linux rel when changing portal sandbox requirements"
+assert kernel["package"]["rel"] >= 21, "Bump linux rel when changing portal sandbox requirements"
 kernel_config = kernel["build"]["configure"]
 assert "--enable NAMESPACES --enable USER_NS --enable FUSE_FS" in kernel_config
+first_config_line = next(line for line in kernel_config.splitlines() if "--enable FW_LOADER" in line)
+assert first_config_line.endswith("\\\\") is False and first_config_line.endswith("\\"), (
+    "Kernel scripts/config command must end with exactly one shell continuation backslash"
+)
 for option in ("CONFIG_NAMESPACES", "CONFIG_USER_NS", "CONFIG_FUSE_FS"):
     assert f"require_config {option} y" in kernel_config
 

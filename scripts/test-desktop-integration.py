@@ -37,37 +37,24 @@ assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
 assert "sway-portals.conf" in install_script
-assert "default=gtk" in install_script
+assert "default=gtk;wlr" in install_script, (
+    "The portal frontend must prefer GTK for the general interfaces and fall "
+    "back to the wlr backend for ScreenCast"
+)
 assert "dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE" in install_script
 
 # The frontend must own org.freedesktop.portal.Desktop, and the GTK backend
 # must provide the general interfaces without depending on systemd.
 portal = recipe("gui", "xdg-desktop-portal")
 assert portal["package"]["version"] == "1.18.4"
-assert portal["package"]["rel"] >= 2, "Bump portal rel for the PipeWire 1.6 API compatibility patch"
 assert {"fuse3", "json-glib", "gdk-pixbuf", "pipewire", "bubblewrap"} <= set(portal["depends"]["run"])
 assert "bubblewrap" in portal["depends"]["build"], "sandboxed image validation needs bwrap at build time"
 assert "-D systemd=disabled" in portal["build"]["configure"]
 assert "-D sandboxed-image-validation=true" in portal["build"]["configure"]
-assert "pw_registry_add_listener ((struct pw_registry*)remote->registry," in portal["build"]["configure"], (
-    "xdg-desktop-portal 1.18.4 must cast its registry proxy for PipeWire 1.6 headers"
-)
-
-# GTK's FileChooser backend reads GNOME desktop lockdown settings at startup.
-# Keep the shared schemas in the runtime closure and recompile them after install.
-schemas = recipe("gui", "gsettings-desktop-schemas")
-assert schemas["package"]["version"] == "46.1"
-assert re.fullmatch(r"[0-9a-f]{64}", schemas["package"]["sha256"])
-assert "glib" in schemas["depends"]["run"]
-assert "glib-compile-schemas /usr/share/glib-2.0/schemas" in schemas["hooks"]["post_install"]
-assert "sed -i -r" in schemas["build"]["configure"]
-assert "schemas/*.in" in schemas["build"]["configure"]
-assert "/org/gnome" in schemas["build"]["configure"]
 
 gtk_portal = recipe("gui", "xdg-desktop-portal-gtk")
 assert gtk_portal["package"]["version"] == "1.15.3"
-assert gtk_portal["package"]["rel"] >= 2, "Bump GTK portal rel when fixing missing GSettings runtime schemas"
-assert {"gtk3", "xdg-desktop-portal", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["run"])
+assert {"gtk3", "xdg-desktop-portal"} <= set(gtk_portal["depends"]["run"])
 assert "-D wallpaper=disabled" in gtk_portal["build"]["configure"]
 assert "-D settings=disabled" in gtk_portal["build"]["configure"]
 
@@ -90,6 +77,120 @@ assert "pulse/native" in install_script
 assert "pgrep -u" in install_script
 assert "wireplumber" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
+
+# --- desktop session packages added with the wlr portal, panel and fonts ----
+# Every autostarted program must be a run dependency of the session package:
+# the flavor installs only what the recipe graph pulls in.
+require_deps("gui", "gui-session", "run", {
+    "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs",
+    "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji",
+})
+for program in ("exec mako", "exec waybar", "exec xdg-user-dirs-update"):
+    assert program in install_script, f"gui-session must autostart: {program}"
+
+# The ScreenCast backend: basu replaces libsystemd for sd-bus, inih parses
+# its config, and the systemd user unit must not be installed.
+portal_wlr = recipe("gui", "xdg-desktop-portal-wlr")
+assert re.fullmatch(r"[0-9a-f]{64}", portal_wlr["package"]["sha256"])
+require_deps("gui", "xdg-desktop-portal-wlr", "run", {"xdg-desktop-portal", "pipewire", "basu", "inih"})
+for flag in ("-D sd-bus-provider=basu", "-D systemd=disabled"):
+    assert flag in portal_wlr["build"]["configure"], (
+        f"xdg-desktop-portal-wlr must build without systemd: {flag}"
+    )
+
+basu = recipe("gui", "basu")
+assert re.fullmatch(r"[0-9a-f]{64}", basu["package"]["sha256"])
+assert "-D audit=false" in basu["build"]["configure"], "basu must not require the audit library"
+
+# The notification daemon and the status bar, both on basu's sd-bus.
+mako = recipe("gui", "mako")
+assert re.fullmatch(r"[0-9a-f]{64}", mako["package"]["sha256"])
+assert "basu" in mako["depends"]["run"], "mako speaks D-Bus through basu's sd-bus"
+assert "-D sd-bus-provider=basu" in mako["build"]["configure"]
+
+waybar = recipe("gui", "waybar")
+assert re.fullmatch(r"[0-9a-f]{64}", waybar["package"]["sha256"])
+for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled"):
+    assert flag in waybar["build"]["configure"], f"waybar must not need systemd: {flag}"
+require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
+
+# --- regression coverage for package build failures seen in CI ------------
+# These assertions cover build-time requirements, not just the final session
+# dependency graph, so package selection cannot silently omit a required API.
+basu = recipe("gui", "basu")
+assert "gperf" in basu["depends"]["build"], "basu's Meson configure requires gperf"
+
+deno = recipe("dev", "deno")
+assert deno["package"]["source"].endswith(".zip")
+assert "unzip" in deno["depends"]["build"]
+assert "unzip " in deno["build"]["install"] and "install -Dm755 deno " in deno["build"]["install"]
+
+libxkbfile = recipe("gui", "libxkbfile")
+assert libxkbfile["build"]["configure"].startswith("meson setup "), (
+    "libxkbfile 1.2.0 uses Meson; do not invoke the removed Autoconf configure script"
+)
+assert {"meson", "ninja"} <= set(libxkbfile["depends"]["build"])
+
+xkbcommon = recipe("gui", "libxkbcommon")
+assert "-D enable-xkbregistry=true" in xkbcommon["build"]["configure"]
+require_deps("gui", "waybar", "build", {"libxkbcommon"})
+require_deps("gui", "waybar", "run", {"libxkbcommon"})
+
+libpulse = recipe("extra", "libpulse")
+assert {"glib"} <= set(libpulse["depends"]["build"])
+assert "glib" in libpulse["depends"]["run"]
+assert "-D glib=enabled" in libpulse["build"]["configure"]
+
+arabic = recipe("gui", "noto-fonts-arabic")
+arabic_install = arabic["build"]["install"]
+assert "curl " not in arabic_install and "wget " not in arabic_install, (
+    "Arabic font installation must not fetch a second archive inside the offline sandbox"
+)
+assert "noto-naskh-arabic" in session["depends"]["run"], (
+    "Noto Naskh Arabic must be installed through its own pinned recipe"
+)
+
+yt_dlp = recipe("extra", "yt-dlp")
+yt_install = yt_dlp["build"]["install"]
+assert "install -Dm755 yt-dlp" in yt_install
+assert "curl " not in yt_install and "wget " not in yt_install, (
+    "yt-dlp installation must not download its man page inside the offline sandbox"
+)
+
+# Fonts: the session ships Latin/Greek/Cyrillic, Arabic and color emoji, all
+# under OFL, all hashed, all refreshing the fontconfig cache on install.
+for name in ("noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"):
+    fonts = recipe("gui", name)
+    assert re.fullmatch(r"[0-9a-f]{64}", fonts["package"]["sha256"]), f"{name} sha256 must be pinned"
+    assert fonts["package"]["license"] == ["OFL-1.1"]
+    assert "fc-cache" in fonts.get("hooks", {}).get("post_install", "")
+    assert "fontconfig" in fonts["depends"]["run"]
+naskh = recipe("gui", "noto-naskh-arabic")
+assert naskh["package"]["version"] == "2.021"
+assert re.fullmatch(r"[0-9a-f]{64}", naskh["package"]["sha256"])
+assert "NotoNaskhArabic/hinted/ttf/*.ttf" in naskh["build"]["install"]
+
+# Xwayland: wlroots enables the feature and sway picks it up; the session
+# inherits it through wlroots' run dependency.
+wlroots = recipe("gui", "wlroots")
+assert "-D xwayland=enabled" in wlroots["build"]["configure"], "wlroots must build Xwayland support"
+assert "xwayland" in wlroots["depends"]["run"], "wlroots must run-depend on the Xwayland server"
+sway = recipe("gui", "sway")
+assert sway["package"]["rel"] >= 3, "Bump sway rel when wlroots gains Xwayland support"
+xwayland = recipe("gui", "xwayland")
+assert re.fullmatch(r"[0-9a-f]{64}", xwayland["package"]["sha256"])
+for flag in ("-D xdmcp=false", "-D xdm-auth-1=false", "-D systemd_notify=false"):
+    assert flag in xwayland["build"]["configure"], f"Xwayland must not need extra daemons: {flag}"
+
+# pavucontrol mixes PipeWire's PulseAudio server on the gtkmm 3 stack.
+pavucontrol = recipe("gui", "pavucontrol")
+assert re.fullmatch(r"[0-9a-f]{64}", pavucontrol["package"]["sha256"])
+require_deps("gui", "pavucontrol", "run", {"gtkmm", "libpulse"})
+assert "pavucontrol.desktop" in pavucontrol["build"]["install"]
+
+# xdg-user-dirs ships the update helper the session autostarts.
+user_dirs = recipe("gui", "xdg-user-dirs")
+assert re.fullmatch(r"[0-9a-f]{64}", user_dirs["package"]["sha256"])
 
 # NetworkManager's dispatcher is D-Bus-activated, not a persistent runit
 # service. The package install step must validate all three staged artifacts

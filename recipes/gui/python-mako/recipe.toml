@@ -1,5 +1,4 @@
 # gui recipe: python-mako — Python template library (pure python)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "python-mako"
 version = "1.3.6"

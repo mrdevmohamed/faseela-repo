@@ -1,0 +1,23 @@
+# gui recipe: xcb-util-wm — ICCCM and EWMH XCB libraries
+# wlroots' Xwayland support needs xcb-icccm; sway itself asks for xcb-icccm
+# too when wlroots reports the xwayland feature. xcb-util-wm provides both
+# xcb-icccm and xcb-ewmh out of one source.
+[package]
+name = "xcb-util-wm"
+version = "0.4.2"
+rel = 1
+arch = ["x86_64"]
+summary = "xcb-util-wm — ICCCM and EWMH libraries for XCB (wlroots/sway Xwayland support)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-wm-%{version}.tar.xz"
+sha256 = "62c34e21d06264687faea7edbf63632c9f04d55e72114aa4a57bb95e4f888a0b"
+source_dir = "xcb-util-wm-%{version}"
+
+[depends]
+build = ["pkgconf", "libxcb", "xcb-proto", "xorgproto"]
+run = ["libxcb"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-docs"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

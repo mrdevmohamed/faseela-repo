@@ -1,18 +1,21 @@
 # gui recipe: sway — i3-compatible Wayland compositor
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+# rel 3: wlroots now reports the xwayland feature, so sway builds its X11
+# support too (it links xcb for the X11 clients wlroots manages). The tray
+# stays disabled: nothing here runs a StatusNotifierWatcher yet, and sway's
+# sd-bus provider choice (basu) only becomes interesting with the tray on.
 [package]
 name = "sway"
 version = "1.10.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
-summary = "i3-compatible Wayland compositor"
+summary = "i3-compatible Wayland compositor (with Xwayland support)"
 license = ["MIT"]
 source = "https://github.com/swaywm/sway/releases/download/%{version}/sway-%{version}.tar.gz"
 sha256 = "b2fbf3a2f94c8926efa18d6af59bb9f5f1eafa6d46491284b1610c57bef2d105"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "wlroots", "wayland", "wayland-protocols", "libxkbcommon", "pcre2", "json-c", "pango", "cairo", "libevdev", "libinput", "xkeyboard-config"]
-run = ["wlroots", "json-c", "pango", "cairo", "pcre2", "libxkbcommon", "libinput", "libevdev", "wayland"]
+build = ["meson", "ninja", "pkgconf", "wlroots", "wayland", "wayland-protocols", "libxkbcommon", "pcre2", "json-c", "pango", "cairo", "libevdev", "libinput", "xkeyboard-config", "libxcb", "xcb-util-wm"]
+run = ["wlroots", "json-c", "pango", "cairo", "pcre2", "libxkbcommon", "libinput", "libevdev", "wayland", "libxcb"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D man-pages=disabled -D tray=disabled -D gdk-pixbuf=disabled -D default-wallpaper=false -D zsh-completions=false -D bash-completions=false -D fish-completions=false"

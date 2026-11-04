@@ -1,5 +1,4 @@
 # gui recipe: libdisplay-info — EDID and DisplayID library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libdisplay-info"
 version = "0.2.0"

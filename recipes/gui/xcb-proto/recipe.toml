@@ -1,5 +1,4 @@
 # gui recipe: xcb-proto — XML-XCB protocol descriptions and the python generator
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 # installs python/xcbgen under /usr/lib/python3.X/site-packages: bump `rel` together
 # with the python recipe when its minor version changes (libxcb is generated from it).
 [package]

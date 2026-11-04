@@ -1,5 +1,4 @@
 # gui recipe: python-markupsafe — Safely add untrusted strings to HTML/XML (pure python)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "python-markupsafe"
 version = "3.0.2"

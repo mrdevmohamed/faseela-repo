@@ -1,5 +1,4 @@
 # gui recipe: libX11 — Xlib: the X11 client library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libX11"
 version = "1.8.10"

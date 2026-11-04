@@ -1,5 +1,4 @@
 # gui recipe: seatd — Minimal seat management daemon and library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "seatd"
 version = "0.9.1"

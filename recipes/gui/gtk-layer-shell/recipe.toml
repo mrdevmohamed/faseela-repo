@@ -1,0 +1,23 @@
+# gui recipe: gtk-layer-shell — GTK 3 layer-shell library for Wayland panels
+# What waybar anchors itself to a sway output edge with. Introspection and
+# vapi are off (gobject-introspection / vala are not packaged); examples,
+# docs and tests are off too.
+[package]
+name = "gtk-layer-shell"
+version = "0.10.1"
+rel = 1
+arch = ["x86_64"]
+summary = "gtk-layer-shell — a GTK 3 library for the Wayland layer-shell protocol (waybar dependency)"
+license = ["MIT"]
+source = "https://github.com/wmww/gtk-layer-shell/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "88c3a3e0a5300532f3d368d5df64838a87f1fb85273f22d41df0a6b8d0ec59c6"
+source_dir = "gtk-layer-shell-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gtk3", "wayland", "wayland-protocols"]
+run = ["gtk3", "wayland"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D examples=false -D docs=false -D tests=false -D introspection=false -D vapi=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

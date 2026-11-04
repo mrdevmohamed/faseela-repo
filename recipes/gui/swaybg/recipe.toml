@@ -1,5 +1,4 @@
 # gui recipe: swaybg — wallpaper tool for Wayland compositors (used by sway's `output * bg`)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "swaybg"
 version = "1.2.1"

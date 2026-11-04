@@ -1,0 +1,30 @@
+# gui recipe: noto-fonts-arabic — Noto Sans Arabic hinted TTFs.
+# Keep the recipe fully offline after source staging: Noto Naskh Arabic is
+# provided by the separate noto-naskh-arabic package.
+[package]
+name = "noto-fonts-arabic"
+version = "2.013"
+rel = 2
+arch = ["x86_64"]
+summary = "Noto Sans Arabic hinted TrueType fonts"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/arabic/releases/download/NotoSansArabic-v%{version}/NotoSansArabic-v%{version}.zip"
+sha256 = "1301aceaea84c501cf2e6dcfb3182e2328c8eae5725817fcb239672bda7154f1"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig", "noto-fonts"]
+
+[build]
+install = '''
+unzip -q -o NotoSansArabic-v%{version}.zip 'NotoSansArabic/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoSansArabic/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-fonts-arabic
+unzip -q -o NotoSansArabic-v%{version}.zip 'NotoSansArabic/LICENSE' 2>/dev/null || true
+[ -f NotoSansArabic/LICENSE ] && install -m644 NotoSansArabic/LICENSE %{pkgdir}/usr/share/licenses/noto-fonts-arabic/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

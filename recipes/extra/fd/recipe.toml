@@ -1,0 +1,25 @@
+# extra recipe: fd — simple, fast alternative to find
+# Pinned upstream binary release (musl-static): same reasoning as ripgrep —
+# no cargo network at build time, and the static binary needs nothing from
+# the system. Completion and manual pages ship in the same archive.
+[package]
+name = "fd"
+version = "10.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "fd — simple, fast and user-friendly alternative to find"
+license = ["MIT", "Apache-2.0"]
+source = "https://github.com/sharkdp/fd/releases/download/v%{version}/fd-v%{version}-x86_64-unknown-linux-musl.tar.gz"
+sha256 = "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7"
+source_dir = "fd-v%{version}-x86_64-unknown-linux-musl"
+
+[depends]
+build = []
+run = ["glibc"]
+
+[build]
+install = '''
+install -Dm755 fd %{pkgdir}/usr/bin/fd
+install -Dm644 fd.1 %{pkgdir}/usr/share/man/man1/fd.1
+install -Dm644 autocomplete/fd.bash %{pkgdir}/usr/share/bash-completion/completions/fd
+'''

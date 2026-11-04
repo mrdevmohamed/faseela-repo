@@ -1,5 +1,4 @@
 # gui recipe: pixman — Low-level pixel manipulation library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "pixman"
 version = "0.43.4"

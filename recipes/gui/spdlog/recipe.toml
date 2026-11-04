@@ -1,0 +1,23 @@
+# gui recipe: spdlog — fast C++ logging library (waybar dependency)
+# SPDLOG_FMT_EXTERNAL links against the shared fmt package instead of the
+# bundled copy, so waybar gets exactly one formatting library. Benchmarks,
+# examples and tests are off; warnings stay off to keep the log spam down.
+[package]
+name = "spdlog"
+version = "1.17.0"
+rel = 1
+arch = ["x86_64"]
+summary = "spdlog — fast C++ logging library (shared, external fmt), used by waybar"
+license = ["MIT"]
+source = "https://github.com/gabime/spdlog/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "d8862955c6d74e5846b3f580b1605d2428b11d97a410d86e2fb13e857cd3a744"
+source_dir = "spdlog-%{version}"
+
+[depends]
+build = ["cmake", "ninja", "fmt"]
+run = ["fmt", "gcc", "glibc"]
+
+[build]
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DSPDLOG_BUILD_SHARED=ON -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_BENCH=OFF -DSPDLOG_BUILD_WARNINGS=OFF"
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

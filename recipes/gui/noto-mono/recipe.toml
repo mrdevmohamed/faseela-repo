@@ -1,0 +1,31 @@
+# gui recipe: noto-mono — Noto Sans Mono (Latin/Greek/Cyrillic), hinted TTFs
+# The monospace counterpart of noto-fonts for terminals and editors; ships in
+# its own package so a console-only install can pull it without the
+# proportional faces. Only the hinted static TTFs are installed.
+[package]
+name = "noto-mono"
+version = "2.014"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Sans Mono hinted TrueType fonts (Latin, Greek, Cyrillic)"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSansMono-v%{version}/NotoSansMono-v%{version}.zip"
+sha256 = "090cf6c5e03f337a755630ca888b1fef463e64ae7b33ee134e9309c05f978732"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig"]
+
+[build]
+install = '''
+unzip -q -o NotoSansMono-v%{version}.zip 'NotoSansMono/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoSansMono/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-mono
+unzip -q -o NotoSansMono-v%{version}.zip 'NotoSansMono/LICENSE' 2>/dev/null || true
+[ -f NotoSansMono/LICENSE ] && install -m644 NotoSansMono/LICENSE %{pkgdir}/usr/share/licenses/noto-mono/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

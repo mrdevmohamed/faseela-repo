@@ -1,5 +1,4 @@
 # gui recipe: xtrans — X transport library (headers only, build-time)
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 # header-only: libX11 needs it to build, nothing needs it at run time.
 [package]
 name = "xtrans"

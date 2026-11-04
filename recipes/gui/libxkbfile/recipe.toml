@@ -1,0 +1,21 @@
+# gui recipe: libxkbfile — X11 keyboard file access library (Xwayland dependency)
+# libxkbfile 1.2.0 removed its Autoconf build system; use the upstream Meson build.
+[package]
+name = "libxkbfile"
+version = "1.2.0"
+rel = 2
+arch = ["x86_64"]
+summary = "libxkbfile — X11 keyboard description file library (Xwayland dependency)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libxkbfile-%{version}.tar.xz"
+sha256 = "7f71884e5faf56fb0e823f3848599cf9b5a9afce51c90982baeb64f635233ebf"
+source_dir = "libxkbfile-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto"]
+run = ["libX11"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

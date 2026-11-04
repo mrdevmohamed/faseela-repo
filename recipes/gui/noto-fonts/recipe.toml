@@ -1,0 +1,36 @@
+# gui recipe: noto-fonts — Noto Sans (Latin/Greek/Cyrillic), hinted TTFs
+# The default UI font family of the GUI session, complementing DejaVu: Noto
+# Sans covers Latin/Greek/Cyrillic with a consistent design across all
+# weights. The upstream release zip carries hinted/unhinted/static/variable
+# families; only the hinted static TTFs are installed (what fontconfig picks
+# for a sharp rendering at common sizes). nawa stages a .zip as a single
+# file, so the install script unpacks it with unzip. Not every script ships
+# here: Arabic is the separate noto-fonts-arabic package, emoji the
+# noto-color-emoji one.
+[package]
+name = "noto-fonts"
+version = "2.015"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Sans hinted TrueType fonts (Latin, Greek, Cyrillic)"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSans-v%{version}/NotoSans-v%{version}.zip"
+sha256 = "0c34df072a3fa7efbb7cbf34950e1f971a4447cffe365d3a359e2d4089b958f5"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig"]
+
+[build]
+install = '''
+unzip -q -o NotoSans-v%{version}.zip 'NotoSans/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoSans/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-fonts
+unzip -q -o NotoSans-v%{version}.zip 'NotoSans/LICENSE' 2>/dev/null || true
+[ -f NotoSans/LICENSE ] && install -m644 NotoSans/LICENSE %{pkgdir}/usr/share/licenses/noto-fonts/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

@@ -1,20 +1,26 @@
 # gui recipe: wlroots — Modular Wayland compositor library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
+# Xwayland support is now enabled: the xwayland feature pulls in the XCB
+# libraries below (wlroots speaks ICCCM/EWMH window management with the
+# Xwayland server it spawns). xcb-errors stays off: printing X11 protocol
+# errors verbosely is a debugging aid, not a session need. rel 3: pin the
+# Debian source metadata records SHA-256 a28061f7...e80cab
+# for this exact 469969-byte archive; keep checksum verification enabled.
 [package]
 name = "wlroots"
 version = "0.18.2"
-rel = 1
+rel = 3
 arch = ["x86_64"]
-summary = "Modular Wayland compositor library"
+summary = "Modular Wayland compositor library (with Xwayland support)"
 license = ["MIT"]
-source = "https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/%{version}/wlroots-%{version}.tar.gz"
-sha256 = "703c515917d9eb258e44296795f8626190e119b0ee8bfb32fe9f834dab1a1462"
+source = "https://deb.debian.org/debian/pool/main/w/wlroots/wlroots_0.18.2.orig.tar.bz2"
+sha256 = "a28061f7778f28f7be377fd4d6f0ebd58cb2a63b52460e9fde28e2ab43e80cab"
+source_dir = "wlroots-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "eudev"]
-run = ["wayland", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "eudev"]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "eudev", "libxcb", "xcb-util-wm", "xwayland"]
+run = ["wayland", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "eudev", "libxcb", "xwayland"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xwayland=disabled -D examples=false -D backends=drm,libinput -D renderers=gles2 -D allocators=gbm -D session=enabled -D xcb-errors=disabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xwayland=enabled -D examples=false -D backends=drm,libinput -D renderers=gles2 -D allocators=gbm -D session=enabled -D xcb-errors=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

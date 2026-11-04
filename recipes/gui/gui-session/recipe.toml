@@ -1,16 +1,15 @@
 # gui recipe: gui-session — Wayland desktop session: seatd service, start-sway, default fonts/terminal
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 15
+rel = 17
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -104,13 +103,15 @@ bindsym XF86AudioMute exec amixer -q sset Master toggle
 SES
 chmod 644 %{pkgdir}/etc/sway/config.d/30-session.conf
 
-# --- XDG Desktop Portal: select GTK for general interfaces -----------------
+# --- XDG Desktop Portal: GTK for the general interfaces, wlr for ScreenCast --
 # Sway's XDG_CURRENT_DESKTOP value is set by start-sway. Keep this config in
-# the vendor data directory so the portal frontend can select its backend.
+# the vendor data directory so the portal frontend can select its backends:
+# the GTK backend answers the file chooser and friends, xdg-desktop-portal-wlr
+# answers ScreenCast through PipeWire (semicolon-separated preference list).
 install -d -m755 %{pkgdir}/usr/share/xdg-desktop-portal
 cat > %{pkgdir}/usr/share/xdg-desktop-portal/sway-portals.conf <<'PORTALS'
 [preferred]
-default=gtk
+default=gtk;wlr
 PORTALS
 chmod 644 %{pkgdir}/usr/share/xdg-desktop-portal/sway-portals.conf
 
@@ -127,6 +128,20 @@ cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'AUDIO'
 # Start the per-user PipeWire stack even when Sway is launched directly.
 exec /usr/bin/faseela-audio-session
 AUDIO
+
+# --- desktop services: notifications, status bar, XDG user directories ------
+# mako owns org.freedesktop.Notifications (the portal frontend routes its
+# Notification interface there); waybar gives the session a bar with clock,
+# workspaces, network and volume; xdg-user-dirs-update creates ~/Desktop,
+# ~/Downloads, ... once per session and exits.
+cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'DESKTOP'
+# Notification daemon (org.freedesktop.Notifications, also used by the portals)
+exec mako
+# Status bar: workspaces, tray-less clock, network and PulseAudio volume
+exec waybar
+# Create the XDG user directories (~/Desktop, ~/Downloads, ...) once
+exec xdg-user-dirs-update
+DESKTOP
 
 # --- per-user PipeWire stack: idempotent Sway session entry point ------------
 install -d -m755 %{pkgdir}/usr/bin

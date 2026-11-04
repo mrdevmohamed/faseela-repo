@@ -1,5 +1,4 @@
 # gui recipe: cairo — 2D vector graphics library
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 # rel 2: libcairo-gobject (glib=enabled) and the xlib surface (xlib=enabled). GTK3 needs both, and
 #        there can be only one cairo: see recipes/browser. xcb stays off. Adds glib and the
 #        X11 client libraries (recipes/gui/libX11, no X server) to everything that uses cairo.

@@ -1,0 +1,22 @@
+# gui recipe: jsoncpp — JSON C++ library (waybar dependency)
+# waybar reads its config.jsonc through jsoncpp. Built with meson (the tarball
+# carries meson.build next to the CMake one); tests are off.
+[package]
+name = "jsoncpp"
+version = "1.9.8"
+rel = 1
+arch = ["x86_64"]
+summary = "jsoncpp — JSON library for C++ (waybar configuration files)"
+license = ["MIT", "Public-Domain"]
+source = "https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/%{version}.tar.gz"
+sha256 = "51828cf3574281d2b79ec2a1c56a9e4c20cc1103711321ea96384cffb8d2d904"
+source_dir = "jsoncpp-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = ["gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,30 @@
+# gui recipe: Noto Naskh Arabic — hinted Arabic text face.
+# Split from noto-fonts-arabic so each package has one pinned source and never
+# needs to download a second release while running inside the build sandbox.
+[package]
+name = "noto-naskh-arabic"
+version = "2.021"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Naskh Arabic hinted TrueType fonts"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v%{version}/NotoNaskhArabic-v%{version}.zip"
+sha256 = "6c050ab9bd087d69b733c505a7576e60c528c2f33cd7b91005a5bd7da4514032"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig"]
+
+[build]
+install = '''
+unzip -q -o NotoNaskhArabic-v%{version}.zip 'NotoNaskhArabic/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoNaskhArabic/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-naskh-arabic
+unzip -q -o NotoNaskhArabic-v%{version}.zip 'NotoNaskhArabic/LICENSE' 2>/dev/null || true
+[ -f NotoNaskhArabic/LICENSE ] && install -m644 NotoNaskhArabic/LICENSE %{pkgdir}/usr/share/licenses/noto-naskh-arabic/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

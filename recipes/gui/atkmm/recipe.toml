@@ -1,0 +1,22 @@
+# gui recipe: atkmm — C++ bindings for ATK (gtkmm dependency)
+# Provides atkmm-1.6 for gtkmm 3.24. ATK itself comes from at-spi2-core in this
+# tree (it ships both atk and at-spi2 ATK-bridge pkg-config entries).
+[package]
+name = "atkmm"
+version = "2.28.5"
+rel = 1
+arch = ["x86_64"]
+summary = "atkmm — C++ bindings for ATK (gtkmm dependency)"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/atkmm/2.28/atkmm-%{version}.tar.xz"
+sha256 = "ae449192a582a2582a95e0602b15d792bbd639e836339b81ef916aa87540ac5c"
+source_dir = "atkmm-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "at-spi2-core", "glibmm"]
+run = ["at-spi2-core", "glibmm", "gcc", "glibc"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-documentation=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

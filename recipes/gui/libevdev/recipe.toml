@@ -1,5 +1,4 @@
 # gui recipe: libevdev — Wrapper library for evdev input devices
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "libevdev"
 version = "1.13.3"

@@ -1,0 +1,20 @@
+# extra recipe: yt-dlp — featureful YouTube (and more) downloader.
+# The upstream release asset is a self-contained Python script. Do not fetch
+# its man page during package installation: builds run in an isolated sandbox
+# without network access.
+[package]
+name = "yt-dlp"
+version = "2026.10.26"
+rel = 2
+arch = ["x86_64"]
+summary = "yt-dlp — fork of youtube-dl with additional features and fixes"
+license = ["Unlicense"]
+source = "https://github.com/yt-dlp/yt-dlp/releases/download/%{version}/yt-dlp"
+sha256 = "e51e69e89489f199530f13d32a4342da3ddb2cf34842f364603a066db05afbf3"
+
+[depends]
+build = []
+run = ["python"]
+
+[build]
+install = "install -Dm755 yt-dlp %{pkgdir}/usr/bin/yt-dlp"

@@ -1,0 +1,31 @@
+# gui recipe: noto-serif — Noto Serif (Latin/Greek/Cyrillic), hinted TTFs
+# The serif counterpart of noto-fonts, same family coverage (Latin, Greek,
+# Cyrillic). Only the hinted static TTFs are installed; the zip is staged as
+# a single file by nawa and unpacked with unzip here.
+[package]
+name = "noto-serif"
+version = "2.015"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Serif hinted TrueType fonts (Latin, Greek, Cyrillic)"
+license = ["OFL-1.1"]
+source = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSerif-v%{version}/NotoSerif-v%{version}.zip"
+sha256 = "0e9a43c8a4b94ac76f55069ed1d7385bbcaf6b99527a94deb5619e032b7e76c1"
+
+[depends]
+build = ["unzip"]
+run = ["fontconfig"]
+
+[build]
+install = '''
+unzip -q -o NotoSerif-v%{version}.zip 'NotoSerif/hinted/ttf/*.ttf'
+install -d %{pkgdir}/usr/share/fonts/noto
+install -m644 NotoSerif/hinted/ttf/*.ttf %{pkgdir}/usr/share/fonts/noto/
+install -d %{pkgdir}/usr/share/licenses/noto-serif
+unzip -q -o NotoSerif-v%{version}.zip 'NotoSerif/LICENSE' 2>/dev/null || true
+[ -f NotoSerif/LICENSE ] && install -m644 NotoSerif/LICENSE %{pkgdir}/usr/share/licenses/noto-serif/OFL.txt || true
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

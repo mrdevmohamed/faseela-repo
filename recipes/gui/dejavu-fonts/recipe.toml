@@ -1,5 +1,4 @@
 # gui recipe: dejavu-fonts — DejaVu TrueType font family
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py` pins it.
 [package]
 name = "dejavu-fonts"
 version = "2.37"

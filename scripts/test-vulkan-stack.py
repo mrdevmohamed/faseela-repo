@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guard the Vulkan packages and permissions required by the optional Zed flavor."""
+"""Guard Mesa Vulkan/OpenGL runtime support and the optional Zed flavor."""
 
 from pathlib import Path
 import re
@@ -21,7 +21,23 @@ drivers = set(match.group(1).split(","))
 required = {"amd", "intel", "intel_hasvk", "swrast"}
 assert required <= drivers, f"Mesa Vulkan ICDs missing: {sorted(required - drivers)}"
 assert "python-ply" in mesa_build, "Intel ANV requires the python-ply build dependency"
-assert mesa["package"]["rel"] >= 5, "Bump Mesa rel when changing the shipped driver set"
+assert mesa["package"]["rel"] >= 6, "Bump Mesa rel when changing the shipped graphics ABI"
+assert "-D platforms=wayland,x11" in configure, "Mesa must keep Wayland and enable the X11 platform"
+assert "-D glx=dri" in configure, "Mesa must build DRI-based GLX and provide libGL.so.1"
+assert "-D glx=disabled" not in configure, "Mesa must not drop the legacy libGL.so.1 ABI"
+
+glx_runtime = {"libX11", "libXext", "libXfixes", "libxcb", "libxshmfence"}
+assert glx_runtime <= set(mesa["depends"]["build"]), (
+    f"Mesa GLX build dependencies missing: {sorted(glx_runtime - set(mesa['depends']['build']))}"
+)
+assert glx_runtime <= set(mesa["depends"]["run"]), (
+    f"Mesa GLX runtime dependencies missing: {sorted(glx_runtime - set(mesa['depends']['run']))}"
+)
+
+nekoray = recipe("recipes/networking/nekoray/recipe.toml")
+assert "mesa" in set(nekoray["depends"]["run"]), (
+    "Nekoray must pull in Mesa's libGL.so.1 provider"
+)
 
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"

@@ -43,4 +43,22 @@ assert volk["package"]["sha256"] == (
 assert {"cmake", "ninja", "vulkan-headers"} <= set(volk["depends"]["build"])
 assert "volk" in set(vulkan_tools["depends"]["build"])
 
+cjk = recipe("recipes/gui/noto-cjk/recipe.toml")
+cjk_install = cjk["build"]["install"]
+assert cjk["package"]["sha256"] == (
+    "f5dc28a754e17327d99f0a612134d92c8dd6187314ae967cb77f25df60860139"
+)
+assert "binutils" in cjk["depends"]["build"]
+assert "fontconfig" in cjk["depends"]["run"]
+for font in (
+    "NotoSansCJK-Regular.ttc",
+    "NotoSansCJK-Bold.ttc",
+    "NotoSerifCJK-Regular.ttc",
+    "NotoSerifCJK-Bold.ttc",
+):
+    assert font in cjk_install
+assert "70-fonts-noto-cjk.conf" in cjk_install
+assert "etc/fonts/conf.d" in cjk_install
+assert "fc-cache -f" in cjk["hooks"]["post_install"]
+
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

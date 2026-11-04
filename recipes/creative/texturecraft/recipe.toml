@@ -4,7 +4,7 @@
 [package]
 name = "texturecraft"
 version = "0.2.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Native 3D texture-painting application for PBR materials"
 license = ["MIT", "Apache-2.0"]
@@ -51,4 +51,40 @@ else
         cp -a "$upstream_root/share/." "%{pkgdir}/usr/share/"
     fi
 fi
+
+upstream_bin="%{pkgdir}/usr/bin/texturecraft"
+if [ ! -x "$upstream_bin" ]; then echo "texturecraft: upstream executable missing from archive" >&2; exit 1; fi
+mv "$upstream_bin" "${upstream_bin}.real"
+cat > "$upstream_bin" <<'LAUNCHER'
+#!/bin/sh
+set -eu
+app_name="texturecraft"
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+upstream="$script_dir/$app_name.real"
+[ -x "$upstream" ] || { echo "$app_name: upstream executable is missing: $upstream" >&2; exit 1; }
+if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
+    [ -n "${DISPLAY:-}" ] || { echo "$app_name: XWayland mode requires DISPLAY." >&2; exit 1; }
+    export WINIT_UNIX_BACKEND=x11
+    exec "$upstream" "$@"
+fi
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] || { echo "$app_name: XDG_RUNTIME_DIR is missing; launch from Faseela's active Sway session." >&2; exit 1; }
+    case "$WAYLAND_DISPLAY" in /*) wayland_socket="$WAYLAND_DISPLAY" ;; *) wayland_socket="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ;; esac
+    [ -S "$wayland_socket" ] || { echo "$app_name: Wayland socket is unavailable: $wayland_socket" >&2; exit 1; }
+    export WINIT_UNIX_BACKEND=wayland
+elif [ -n "${WAYLAND_SOCKET:-}" ]; then
+    export WINIT_UNIX_BACKEND=wayland
+elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    echo "$app_name: Wayland session variables are missing; re-enter Faseela's Sway session." >&2
+    exit 1
+elif [ -n "${DISPLAY:-}" ]; then
+    exec "$upstream" "$@"
+else
+    echo "$app_name: no graphical session found; run it from a desktop session or start-sway from a TTY." >&2
+    exit 1
+fi
+unset DISPLAY
+exec "$upstream" "$@"
+LAUNCHER
+chmod 755 "$upstream_bin"
 """

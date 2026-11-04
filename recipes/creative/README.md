@@ -16,7 +16,7 @@ not run an application-specific installer or compile the upstream source.
 | `soundcraft` | 0.16.0 | SoundCraft audio workstation |
 | `lightcraft` | 0.17.0 | LightCraft photo manager and RAW developer |
 | `filmcraft` | 0.16.0 | FilmCraft video editor |
-| `designcraft` | 0.16.0 | DesignCraft page layout and publishing |
+| `designcraft` | 0.17.0 | DesignCraft page layout and publishing |
 | `vectorcraft` | 0.20.0 | VectorCraft vector illustration |
 | `effectcraft` | 0.20.0 | EffectCraft motion graphics and visual effects |
 | `wordcraft` | 0.14.0 | WordCraft word processor |
@@ -47,6 +47,19 @@ session is outside this initial support.
 SoundCraft, FilmCraft, EffectCraft and DeckCraft also depend on `alsa-lib`
 and `pipewire`. Faseela's PipeWire build enables the ALSA plugin; start the
 normal Faseela GUI session so its PipeWire user services are available.
+
+Every Craft application has a Faseela launcher at `/usr/bin/<app>`; the untouched
+upstream executable is kept beside it as `/usr/bin/<app>.real`. In a Wayland
+session the launcher validates the compositor socket, selects
+`WINIT_UNIX_BACKEND=wayland`, and sets the upstream app-specific native-Wayland
+switches where needed. This prevents apps that normally prefer XWayland when
+`DISPLAY` is set from connecting to a stale or unavailable X server. It also
+prints a useful diagnostic when launched outside a graphical session.
+
+Native Wayland is the default in Faseela. For apps whose file drag-and-drop
+workflow requires XWayland, use `FASEELA_CRAFT_USE_XWAYLAND=1 <app>`; this
+requires a working `DISPLAY`/XWayland server. The launcher preserves regular
+X11 sessions unchanged.
 
 The release bundles contain the upstream desktop entries, icons, MIME data
 and AppStream metadata under `share/`; the recipes install that content under
@@ -94,4 +107,4 @@ upstream layout and a conventional `usr/` tree, whether nawa starts in the
 release directory or the archive extraction root. It copies the files into
 Faseela's `/usr/bin` and `/usr/share` so nawa owns and tracks them normally.
 
-The recipe release number is `rel = 3` for this packaging correction.
+The creative recipes use `rel = 4` for the Wayland-aware launchers; DesignCraft is pinned to upstream 0.17.0.

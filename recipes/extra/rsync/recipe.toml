@@ -15,7 +15,7 @@ mirrors = [
 
 [depends]
 build = ["zstd", "lz4", "openssl", "zlib"]
-run = ["zstd", "lz4", "openssl"]
+run = ["zstd", "lz4", "openssl", "popt"]
 
 [build]
 configure = "./configure --prefix=/usr --without-included-zlib --disable-xxhash"

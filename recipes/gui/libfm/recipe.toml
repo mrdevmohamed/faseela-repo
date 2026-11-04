@@ -36,7 +36,11 @@ sed -e 's/^_\([A-Za-z]*\)=/\1=/' -e 's/_\(name\|label\|tooltip\)=/\1=/g' "$in" >
 IM
 chmod +x $stub/intltool-update $stub/intltool-extract $stub/intltool-merge
 printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > $stub/XML/Parser.pm
-PATH=$stub:$PATH PERL5LIB=$stub ./configure --prefix=/usr --sysconfdir=/etc --disable-static --disable-nls --disable-gtk-doc --disable-demo --with-gtk=3
+# GCC 14+ diagnoses this generated-source const mismatch as an error.
+# Keep the warning visible but do not make the legacy generated C unbuildable.
+CFLAGS="${CFLAGS:-} -Wno-error=incompatible-pointer-types" \
+  PATH=$stub:$PATH PERL5LIB=$stub \
+  ./configure --prefix=/usr --sysconfdir=/etc --disable-static --disable-nls --disable-gtk-doc --disable-demo --with-gtk=3
 '''
 compile = "make -j%{jobs}"
 install = '''

@@ -4,7 +4,7 @@
 [package]
 name = "nekoray"
 version = "4.0.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Nekoray desktop proxy client powered by sing-box"
 license = ["GPL-3.0-only"]
@@ -56,6 +56,11 @@ cat > "%{pkgdir}/usr/bin/nekoray" <<'RUN'
 #!/bin/sh
 set -eu
 export APPDIR=/usr/lib/nekoray
+# This upstream Qt bundle includes xcb but not the Wayland QPA plugin.
+# Under Sway, use XWayland automatically unless the caller chose a platform.
+if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -n "${DISPLAY:-}" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
+    export QT_QPA_PLATFORM=xcb
+fi
 exec "$APPDIR/AppRun" "$@"
 RUN
 chmod 755 "%{pkgdir}/usr/bin/nekoray"

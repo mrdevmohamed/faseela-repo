@@ -16,6 +16,7 @@ run = ["glibc", "gcc"]
 
 [build]
 install = """
-unzip -q -o deno-x86_64-unknown-linux-gnu.zip -d .
+# Nawa stages ZIP sources as files; unpack the pinned upstream binary archive.
+unzip -oq deno-x86_64-unknown-linux-gnu.zip -d .
 install -Dm755 deno %{pkgdir}/usr/bin/deno
 """

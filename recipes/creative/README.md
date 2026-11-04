@@ -48,11 +48,18 @@ SoundCraft, FilmCraft, EffectCraft and DeckCraft also depend on `alsa-lib`
 and `pipewire`. Faseela's PipeWire build enables the ALSA plugin; start the
 normal Faseela GUI session so its PipeWire user services are available.
 
-DesignCraft has a Faseela launcher at `/usr/bin/designcraft`. It verifies that
-the Sway Wayland socket is present, sets `WINIT_UNIX_BACKEND=wayland`, and
-then runs the upstream binary stored as `/usr/bin/designcraft.real`. This
-prevents winit from falling through to an unavailable X11 server and gives a
-clear diagnostic when the command is run outside a graphical Wayland session.
+Every Craft application has a Faseela launcher at `/usr/bin/<app>`; the untouched
+upstream executable is kept beside it as `/usr/bin/<app>.real`. In a Wayland
+session the launcher validates the compositor socket, selects
+`WINIT_UNIX_BACKEND=wayland`, and sets the upstream app-specific native-Wayland
+switches where needed. This prevents apps that normally prefer XWayland when
+`DISPLAY` is set from connecting to a stale or unavailable X server. It also
+prints a useful diagnostic when launched outside a graphical session.
+
+Native Wayland is the default in Faseela. For apps whose file drag-and-drop
+workflow requires XWayland, use `FASEELA_CRAFT_USE_XWAYLAND=1 <app>`; this
+requires a working `DISPLAY`/XWayland server. The launcher preserves regular
+X11 sessions unchanged.
 
 The release bundles contain the upstream desktop entries, icons, MIME data
 and AppStream metadata under `share/`; the recipes install that content under
@@ -100,4 +107,4 @@ upstream layout and a conventional `usr/` tree, whether nawa starts in the
 release directory or the archive extraction root. It copies the files into
 Faseela's `/usr/bin` and `/usr/share` so nawa owns and tracks them normally.
 
-The DesignCraft recipe release number is `rel = 4` for the Wayland launcher and upstream 0.17.0 update.
+The creative recipes use `rel = 4` for the Wayland-aware launchers; DesignCraft is pinned to upstream 0.17.0.

@@ -200,6 +200,7 @@ if [ "$wayland_active" -eq 1 ]; then
     lightcraft) LIGHTCRAFT_WAYLAND=1; export LIGHTCRAFT_WAYLAND ;;
     esac
 fi
+unset DISPLAY
 exec "$upstream" "$@"
 LAUNCHER
 chmod 755 "$upstream_bin"

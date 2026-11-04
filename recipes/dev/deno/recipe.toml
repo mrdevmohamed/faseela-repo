@@ -16,5 +16,5 @@ run = ["glibc", "gcc"]
 
 [build]
 install = """
-install -Dm755 %{srcdir}/deno %{pkgdir}/usr/bin/deno
+install -Dm755 deno %{pkgdir}/usr/bin/deno
 """

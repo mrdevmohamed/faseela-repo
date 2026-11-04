@@ -2,7 +2,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 19
+rel = 20
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
@@ -137,11 +137,23 @@ AUDIO
 cat >> %{pkgdir}/etc/sway/config.d/30-session.conf <<'DESKTOP'
 # Notification daemon (org.freedesktop.Notifications, also used by the portals)
 exec mako
-# Status bar: workspaces, tray-less clock, network and PulseAudio volume
+# Status bar: workspaces, tray-enabled clock, network and PulseAudio volume
 exec waybar
 # Create the XDG user directories (~/Desktop, ~/Downloads, ...) once
 exec xdg-user-dirs-update
 DESKTOP
+
+# --- D-Bus activation for the StatusNotifierWatcher / Waybar tray ---------
+# Waybar normally owns this name while its tray module is running. Register a
+# session-bus activation fallback as well, so a tray client such as Telegram
+# can start Waybar when the watcher is not running yet.
+install -d -m755 %{pkgdir}/usr/share/dbus-1/services
+cat > %{pkgdir}/usr/share/dbus-1/services/org.kde.StatusNotifierWatcher.service <<'SNI'
+[D-BUS Service]
+Name=org.kde.StatusNotifierWatcher
+Exec=/usr/bin/waybar
+SNI
+chmod 644 %{pkgdir}/usr/share/dbus-1/services/org.kde.StatusNotifierWatcher.service
 
 # --- per-user PipeWire stack: idempotent Sway session entry point ------------
 install -d -m755 %{pkgdir}/usr/bin

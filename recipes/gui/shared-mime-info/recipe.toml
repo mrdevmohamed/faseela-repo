@@ -9,8 +9,8 @@ rel = 1
 arch = ["x86_64"]
 summary = "shared-mime-info — freedesktop.org MIME type database"
 license = ["GPL-2.0-or-later"]
-source = "https://deb.debian.org/debian/pool/main/s/shared-mime-info/shared-mime-info_%{version}.orig.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source = "https://deb.debian.org/debian/pool/main/s/shared-mime-info/shared-mime-info_%{version}.orig.tar.bz2"
+sha256 = "32dc32ae39ff1c1bf8434dd3b36770b48538a1772bc0298509d034f057005992"
 source_dir = "shared-mime-info-%{version}"
 
 [depends]

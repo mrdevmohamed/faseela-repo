@@ -10,7 +10,7 @@ arch = ["x86_64"]
 summary = "libfm-extra — menu/XML helper library of the LXDE file-manager stack"
 license = ["GPL-2.0-or-later"]
 source = "https://deb.debian.org/debian/pool/main/libf/libfm/libfm_%{version}.orig.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "a5042630304cf8e5d8cff9d565c6bd546f228b48c960153ed366a34e87cad1e5"
 source_dir = "libfm-%{version}"
 
 [depends]

@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "hicolor-icon-theme — default fallback icon theme"
 license = ["GPL-2.0-only"]
 source = "https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-%{version}.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "db0e50a80aa3bf64bb45cbca5cf9f75efd9348cf2ac690b907435238c3cf81d7"
 source_dir = "hicolor-icon-theme-%{version}"
 
 [depends]

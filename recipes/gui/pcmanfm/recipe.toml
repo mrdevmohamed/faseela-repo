@@ -10,7 +10,7 @@ arch = ["x86_64"]
 summary = "pcmanfm — lightweight graphical file manager (GTK3)"
 license = ["GPL-2.0-or-later"]
 source = "https://deb.debian.org/debian/pool/main/p/pcmanfm/pcmanfm_%{version}.orig.tar.xz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "14cb7b247493c4cce65fbb5902611e3ad00a7a870fbc1e50adc50428c5140cf7"
 source_dir = "pcmanfm-%{version}"
 
 [depends]

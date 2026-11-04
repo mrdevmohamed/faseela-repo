@@ -26,7 +26,7 @@
 [package]
 name = "xwayland"
 version = "24.1.14"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Xwayland — X11 server as a Wayland client, for X11 applications under sway"
 license = ["MIT"]
@@ -36,7 +36,7 @@ source_dir = "xwayland-%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libxshmfence", "libxkbfile", "libXfont2", "font-util", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "wayland-protocols", "libxcb", "libX11", "libXau", "openssl", "eudev"]
-run = ["libxshmfence", "libxkbfile", "libXfont2", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "libxcb", "libX11", "openssl"]
+run = ["libxshmfence", "libxkbfile", "libXfont2", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "libxcb", "libX11", "openssl", "xkbcomp", "xkeyboard-config"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xdmcp=false -D xdm-auth-1=false -D secure-rpc=false -D xvfb=false -D systemd_notify=false -D docs=false -D devel-docs=false -D dri3=true -D glamor=true -D xwayland_ei=false -D sha1=libcrypto -D xselinux=false -D xace=false -D glx=false"

@@ -1,0 +1,88 @@
+# gui recipe: noto-cjk — Noto Sans/Serif CJK fonts and Fontconfig fallback rules.
+# Based on Debian's repacked Noto CJK font data package. It ships the
+# regular/bold Sans and Serif collections for Japanese, Korean, Simplified
+# Chinese, Traditional Chinese and Hong Kong, plus locale-aware Fontconfig
+# rules for sans-serif, serif and monospace fallback.
+[package]
+name = "noto-cjk"
+version = "20240730"
+rel = 1
+arch = ["x86_64"]
+summary = "Noto Sans and Serif CJK fonts with automatic Fontconfig fallback"
+license = ["OFL-1.1"]
+source = "https://deb.debian.org/debian/pool/main/f/fonts-noto-cjk/fonts-noto-cjk_20240730+repack1-1_all.deb"
+sha256 = "f5dc28a754e17327d99f0a612134d92c8dd6187314ae967cb77f25df60860139"
+
+[depends]
+build = ["binutils"]
+run = ["fontconfig"]
+
+[build]
+install = '''
+deb=fonts-noto-cjk_20240730+repack1-1_all.deb
+work=.noto-cjk-work
+deb_path="$PWD/$deb"
+rm -rf "$work"
+mkdir -p "$work/deb" "$work/root"
+(
+    cd "$work/deb"
+    ar x "$deb_path"
+)
+
+data_archive=$(find "$work/deb" -maxdepth 1 -type f -name 'data.tar.*' -print -quit)
+[ -n "$data_archive" ] || {
+    echo "noto-cjk: Debian archive has no data.tar.* member" >&2
+    exit 1
+}
+
+case "$data_archive" in
+    *.xz)  tar -xJf "$data_archive" -C "$work/root" ;;
+    *.zst) tar --zstd -xf "$data_archive" -C "$work/root" ;;
+    *.gz)  tar -xzf "$data_archive" -C "$work/root" ;;
+    *.tar) tar -xf "$data_archive" -C "$work/root" ;;
+    *)
+        echo "noto-cjk: unsupported data archive: $data_archive" >&2
+        exit 1
+        ;;
+esac
+
+fonts="$work/root/usr/share/fonts/opentype/noto"
+for font in \
+    NotoSansCJK-Regular.ttc NotoSansCJK-Bold.ttc \
+    NotoSerifCJK-Regular.ttc NotoSerifCJK-Bold.ttc; do
+    [ -s "$fonts/$font" ] || {
+        echo "noto-cjk: required font is missing: $font" >&2
+        exit 1
+    }
+done
+
+install -d %{pkgdir}/usr/share/fonts/opentype/noto
+install -m644 "$fonts"/NotoSansCJK-{Regular,Bold}.ttc \
+    "$fonts"/NotoSerifCJK-{Regular,Bold}.ttc \
+    %{pkgdir}/usr/share/fonts/opentype/noto/
+
+conf="$work/root/usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf"
+[ -s "$conf" ] || {
+    echo "noto-cjk: Fontconfig fallback rules are missing" >&2
+    exit 1
+}
+install -Dm644 "$conf" \
+    %{pkgdir}/usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf
+install -d %{pkgdir}/etc/fonts/conf.d
+ln -s ../../../usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf \
+    %{pkgdir}/etc/fonts/conf.d/70-fonts-noto-cjk.conf
+
+copyright="$work/root/usr/share/doc/fonts-noto-cjk/copyright"
+[ -s "$copyright" ] || {
+    echo "noto-cjk: upstream copyright/license file is missing" >&2
+    exit 1
+}
+install -Dm644 "$copyright" \
+    %{pkgdir}/usr/share/licenses/noto-cjk/copyright
+
+rm -rf "$work"
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

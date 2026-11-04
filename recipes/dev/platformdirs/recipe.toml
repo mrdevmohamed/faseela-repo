@@ -17,5 +17,5 @@ run = ["python"]
 install = """
 site=%{pkgdir}/usr/lib/python3.13/site-packages
 install -d "$site"
-python3 -m zipfile -e %{srcdir}/platformdirs-4.11.10-py3-none-any.whl "$site"
+python3 -m zipfile -e %{srcdir}/platformdirs-4.13.2-py3-none-any.whl "$site"
 """

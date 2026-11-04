@@ -5,7 +5,7 @@
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "LLVM, Clang compiler and clangd language server (X86 + AMDGPU)"
 license = ["Apache-2.0 WITH LLVM-exception"]
@@ -47,6 +47,7 @@ find %{pkgdir}/usr/bin -mindepth 1 \
     ! -name llvm-config ! -name 'llvm-config-18' \
     ! -name llvm-as ! -name 'llvm-as-18' \
     ! -name llvm-link ! -name 'llvm-link-18' \
+    ! -name llvm-tblgen ! -name 'llvm-tblgen-18' \
     ! -name opt ! -name 'opt-18' \
     ! -name clang ! -name clang++ ! -name clang-cpp ! -name clangd \
     ! -name 'clang-18' ! -name 'clang++-18' ! -name 'clang-cpp-18' ! -name 'clangd-18' \

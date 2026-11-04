@@ -24,7 +24,7 @@ and the optional `creative/` category (15 packages, see [creative/README.md](cre
 the recipe tree counts 297 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/` and `creative/` are never part of them).
 
-The first 47 `extra/` recipes are generated from a data table
+The `dev/` category is opt-in and currently contains Node.js, Go and Deno; it is intentionally not selected by the default ISO flavors.\n\nThe first 47 `extra/` recipes are generated from a data table
 (`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator
 overwrites, so newer recipes (and everything in `system/`, `boot/`, `gui/`, `creative/`) are
 written by hand and are not in that table.

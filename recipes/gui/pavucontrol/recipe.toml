@@ -23,7 +23,25 @@ build = ["pkgconf", "gtkmm", "gtk3", "libsigc++", "glibmm", "json-glib", "libcan
 run = ["gtkmm", "glibmm", "json-glib", "libcanberra", "libpulse"]
 
 [build]
-configure = "./configure --prefix=/usr --disable-nls --disable-static"
+configure = '''
+# configure.ac's IT_PROG_INTLTOOL runs even with --disable-nls: it calls
+# `intltool-update --version` (the real intltool is not packaged, so the check
+# fails with "Your intltool is too old") and then requires perl XML::Parser.
+# Neither is used for the build, so satisfy the checks with tiny stand-ins
+# that live only in the source tree.
+stub=$PWD/.intltool-stub
+mkdir -p $stub/XML
+printf '#!/bin/sh\necho "intltool-update (intltool) 0.51.0"\n' > $stub/intltool-update
+chmod +x $stub/intltool-update
+printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > $stub/XML/Parser.pm
+PATH=$stub:$PATH PERL5LIB=$stub ./configure --prefix=/usr --disable-nls --disable-static
+# Write the desktop file now and make it newer than its .in, so make never
+# tries to regenerate it through intltool-merge (install reuses the same sed).
+sed -e 's|^_Name=.*|Name=Volume Control|' \
+    -e 's|@bindir@|/usr/bin|g' \
+    src/pavucontrol.desktop.in > src/pavucontrol.desktop
+touch src/pavucontrol.desktop
+'''
 compile = "make -j%{jobs}"
 install = '''
 make DESTDIR=%{pkgdir} install

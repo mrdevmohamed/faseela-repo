@@ -45,6 +45,7 @@ assert "dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP X
 portal = recipe("gui", "xdg-desktop-portal")
 assert portal["package"]["version"] == "1.18.4"
 assert {"fuse3", "json-glib", "gdk-pixbuf", "pipewire", "bubblewrap"} <= set(portal["depends"]["run"])
+assert "bubblewrap" in portal["depends"]["build"], "sandboxed image validation needs bwrap at build time"
 assert "-D systemd=disabled" in portal["build"]["configure"]
 assert "-D sandboxed-image-validation=true" in portal["build"]["configure"]
 

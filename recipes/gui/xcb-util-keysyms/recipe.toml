@@ -1,0 +1,19 @@
+# gui recipe: xcb-util-keysyms — standard X key symbols and keycode conversion
+[package]
+name = "xcb-util-keysyms"
+version = "0.4.1"
+rel = 1
+arch = ["x86_64"]
+summary = "XCB key symbol and keycode conversion library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-keysyms-%{version}.tar.xz"
+sha256 = "7c260a5294412aed429df1da2f8afd3bd07b7cba3fec772fba15a613a6d5c638"
+
+[depends]
+build = ["pkgconf", "libxcb", "xcb-util", "xcb-proto", "xorgproto"]
+run = ["libxcb", "xcb-util"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

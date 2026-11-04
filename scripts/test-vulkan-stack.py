@@ -75,6 +75,47 @@ assert "-DBUILD_SHARED_LIBS=ON" in double_conversion["build"]["configure"], (
 assert "double-conversion" in set(nekoray["depends"]["run"]), (
     "Nekoray must pull in the package providing libdouble-conversion.so.3"
 )
+assert "libXxf86vm" in set(nekoray["depends"]["run"]), (
+    "Nekoray must pull in libXxf86vm.so.1 for its bundled Qt/X11 runtime"
+)
+
+qt_xcb_runtime = {
+    "libSM", "xcb-util-image", "xcb-util-keysyms",
+    "xcb-util-renderutil", "libxkbcommon",
+}
+missing_qt_runtime = qt_xcb_runtime - set(nekoray["depends"]["run"])
+assert not missing_qt_runtime, (
+    f"Nekoray Qt/XCB runtime dependencies missing: {sorted(missing_qt_runtime)}"
+)
+
+ice = recipe("recipes/gui/libICE/recipe.toml")
+sm = recipe("recipes/gui/libSM/recipe.toml")
+assert "libICE" in set(sm["depends"]["run"]), "libSM must pull in libICE.so.6"
+
+for package in ("xcb-util-image", "xcb-util-keysyms", "xcb-util-renderutil"):
+    xcb_recipe = recipe(f"recipes/gui/{package}/recipe.toml")
+    assert "libxcb" in set(xcb_recipe["depends"]["run"]), (
+        f"{package} must pull in the core XCB runtime"
+    )
+
+for package in ("xcb-util-image", "xcb-util-keysyms", "xcb-util-renderutil"):
+    xcb_recipe = recipe(f"recipes/gui/{package}/recipe.toml")
+    assert "xcb-util" in set(xcb_recipe["depends"]["run"]), (
+        f"{package} must pull in the shared xcb-util runtime"
+    )
+
+xkbcommon = recipe("recipes/gui/libxkbcommon/recipe.toml")
+assert "-D enable-x11=true" in xkbcommon["build"]["configure"], (
+    "libxkbcommon must build libxkbcommon-x11.so.0 for Qt's XCB platform"
+)
+assert "libxcb" in set(xkbcommon["depends"]["build"])
+assert "libxcb" in set(xkbcommon["depends"]["run"])
+assert nekoray["package"]["rel"] >= 5, (
+    "Bump Nekoray rel when changing the extracted application runtime"
+)
+assert "export QT_QPA_PLATFORM=xcb" in nekoray["build"]["install"], (
+    "Nekoray must select its bundled XCB QPA plugin under Wayland/XWayland sessions"
+)
 
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"

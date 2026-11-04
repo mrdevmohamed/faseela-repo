@@ -1,0 +1,19 @@
+# gui recipe: xcb-util — base helper library shared by the XCB utility modules
+[package]
+name = "xcb-util"
+version = "0.4.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Base utility library for XCB extension helper modules"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-%{version}.tar.xz"
+sha256 = "5abe3bbbd8e54f0fa3ec945291b7e8fa8cfd3cccc43718f8758430f94126e512"
+
+[depends]
+build = ["pkgconf", "libxcb", "xcb-proto", "xorgproto"]
+run = ["libxcb"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

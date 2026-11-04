@@ -3,7 +3,7 @@
 [package]
 name = "libxkbcommon"
 version = "1.7.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Keyboard handling library (xkb)"
 license = ["MIT"]
@@ -11,10 +11,10 @@ source = "https://xkbcommon.org/download/libxkbcommon-%{version}.tar.xz"
 sha256 = "65782f0a10a4b455af9c6baab7040e2f537520caa2ec2092805cdfd36863b247"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "xkeyboard-config", "bison"]
-run = ["xkeyboard-config"]
+build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "xkeyboard-config", "bison", "libxcb"]
+run = ["xkeyboard-config", "libxcb"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D enable-x11=false -D enable-wayland=true -D enable-docs=false -D enable-xkbregistry=true -D enable-tools=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D enable-x11=true -D enable-wayland=true -D enable-docs=false -D enable-xkbregistry=true -D enable-tools=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

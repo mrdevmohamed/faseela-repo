@@ -1,0 +1,19 @@
+# gui recipe: xcb-util-image — XCB implementation of XImage and XShmImage
+[package]
+name = "xcb-util-image"
+version = "0.4.1"
+rel = 1
+arch = ["x86_64"]
+summary = "XCB image and shared-memory image helper library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-image-%{version}.tar.xz"
+sha256 = "ccad8ee5dadb1271fd4727ad14d9bd77a64e505608766c4e98267d9aede40d3d"
+
+[depends]
+build = ["pkgconf", "libxcb", "xcb-util", "xcb-proto", "xorgproto"]
+run = ["libxcb", "xcb-util"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

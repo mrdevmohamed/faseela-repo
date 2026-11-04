@@ -64,7 +64,8 @@ upstream="$script_dir/$app_name.real"
 [ -x "$upstream" ] || { echo "$app_name: upstream executable is missing: $upstream" >&2; exit 1; }
 if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
     [ -n "${DISPLAY:-}" ] || { echo "$app_name: XWayland mode requires DISPLAY." >&2; exit 1; }
-    unset WINIT_UNIX_BACKEND GRIDCRAFT_WAYLAND
+    export WINIT_UNIX_BACKEND=x11
+    unset GRIDCRAFT_WAYLAND
     exec "$upstream" "$@"
 fi
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then

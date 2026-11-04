@@ -6,7 +6,7 @@
 [package]
 name = "libdbusmenu"
 version = "18.10.20180917"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "D-Bus menu transport library (GLib and GTK 3)"
 license = ["LGPL-2.1-or-later", "LGPL-3.0-or-later"]
@@ -25,11 +25,13 @@ prepare = '''
 # requires gnome-common and gtk-doc (neither is part of Faseela).
 #
 # The recipe ships no translations or API docs. Remove the GNOME-only
-# configure macros and docs subdirectory; keep the in-tree introspection
-# macro available but disable that feature during configure.
+# intltool/docs configure macros and docs subdirectory. tests/Makefile.am
+# still references ENABLE_GTK_DOC while Automake generates Makefile.in, even
+# with tests disabled, so define that conditional explicitly as false. Keep
+# the in-tree introspection macro available but disable that feature later.
 sed -i \
     -e '/^[[:space:]]*IT_PROG_INTLTOOL(/d' \
-    -e '/^[[:space:]]*GTK_DOC_CHECK(/d' \
+    -e 's/^[[:space:]]*GTK_DOC_CHECK(.*/AM_CONDITIONAL([ENABLE_GTK_DOC], [false])/' \
     -e '/^[[:space:]]*docs/d' \
     configure.ac
 sed -i '/^[[:space:]]*docs[[:space:]]/d' Makefile.am

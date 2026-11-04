@@ -2,19 +2,18 @@
 # Xwayland support is now enabled: the xwayland feature pulls in the XCB
 # libraries below (wlroots speaks ICCCM/EWMH window management with the
 # Xwayland server it spawns). xcb-errors stays off: printing X11 protocol
-# errors verbosely is a debugging aid, not a session need. rel 2: source
-# moved to the Debian pool mirror of the same 0.18.2 tarball, because
-# gitlab.freedesktop.org archive URLs sit behind an anti-bot interstitial
-# that returns 200 for any path; the pool tarball is verifiable end to end.
+# errors verbosely is a debugging aid, not a session need. rel 3: pin the
+# Debian's published source metadata records SHA-256 a28061f7...e80cab
+# for this exact 469969-byte archive; keep checksum verification enabled.
 [package]
 name = "wlroots"
 version = "0.18.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Modular Wayland compositor library (with Xwayland support)"
 license = ["MIT"]
 source = "https://deb.debian.org/debian/pool/main/w/wlroots/wlroots_0.18.2.orig.tar.bz2"
-sha256 = "703c515917d9eb258e44296795f8626190e119b0ee8bfb32fe9f834dab1a1462"
+sha256 = "a28061f7778f28f7be377fd4d6f0ebd58cb2a63b52460e9fde28e2ab43e80cab"
 source_dir = "wlroots-%{version}"
 
 [depends]

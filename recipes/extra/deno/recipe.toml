@@ -1,0 +1,20 @@
+# extra recipe: Deno JavaScript/TypeScript runtime.
+# The release asset digest is published by the immutable upstream GitHub release.
+[package]
+name = "deno"
+version = "2.9.8"
+rel = 1
+arch = ["x86_64"]
+summary = "Deno JavaScript and TypeScript runtime"
+license = ["MIT"]
+source = "https://github.com/denoland/deno/releases/download/v%{version}/deno-x86_64-unknown-linux-gnu.zip"
+sha256 = "e890975bc2549807bbcc0b584ffafda72cc7c93349dd99c80483dd784f6c4609"
+
+[depends]
+build = ["unzip"]
+run = ["glibc", "gcc"]
+
+[build]
+install = """
+install -Dm755 deno %{pkgdir}/usr/bin/deno
+"""

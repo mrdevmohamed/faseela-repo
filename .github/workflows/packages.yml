@@ -912,3 +912,23 @@ jobs:
         run: |
           echo "::error::some packages failed - see 'Build report' in the run summary. The packages that did build were published."
           exit 1
+
+  telegram-notify:
+    name: Telegram notification
+    if: ${{ always() }}
+    needs: [select, build]
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Send workflow result to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_RESULTS: select=${{ needs.select.result }},build=${{ needs.build.result }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: python3 -I scripts/notify-telegram.py

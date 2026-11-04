@@ -3,7 +3,7 @@
 # libraries below (wlroots speaks ICCCM/EWMH window management with the
 # Xwayland server it spawns). xcb-errors stays off: printing X11 protocol
 # errors verbosely is a debugging aid, not a session need. rel 3: pin the
-# Debian's published source metadata records SHA-256 a28061f7...e80cab
+# Debian source metadata records SHA-256 a28061f7...e80cab
 # for this exact 469969-byte archive; keep checksum verification enabled.
 [package]
 name = "wlroots"

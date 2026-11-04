@@ -2,14 +2,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 16
+rel = 17
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-color-emoji"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "eudev", "runit", "shadow", "base-files", "coreutils", "xdg-utils", "gnome-keyring", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''

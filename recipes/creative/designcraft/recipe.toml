@@ -78,7 +78,7 @@ if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
         echo "$app_name: FASEELA_CRAFT_USE_XWAYLAND=1 requires a working DISPLAY." >&2
         exit 1
     fi
-    unset WINIT_UNIX_BACKEND
+    export WINIT_UNIX_BACKEND=x11
     case "$app_name" in
     designcraft) unset DESIGNCRAFT_WAYLAND ;;
     esac
@@ -141,7 +141,8 @@ upstream="$script_dir/$app_name.real"
 
 if [ "${FASEELA_CRAFT_USE_XWAYLAND:-0}" = "1" ]; then
     [ -n "${DISPLAY:-}" ] || { echo "$app_name: XWayland mode requires DISPLAY." >&2; exit 1; }
-    unset WINIT_UNIX_BACKEND DESIGNCRAFT_WAYLAND
+    export WINIT_UNIX_BACKEND=x11
+    unset DESIGNCRAFT_WAYLAND
     exec "$upstream" "$@"
 fi
 

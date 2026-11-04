@@ -1,0 +1,36 @@
+# gui recipe: nerd-fonts-symbols — Nerd Fonts "Symbols Only" (icon glyphs)
+# Icon-only font (Font Awesome, Material, Powerline, Devicons, ... in the private
+# use area). fontconfig falls back to it for those code points, so waybar's icons
+# render without changing the bar's text font.
+# sha256 is the all-zero placeholder: pin it with
+#   python3 scripts/fill-sha256.py -r nerd-fonts-symbols
+# (upstream publishes SHA-256.txt next to the release assets; compare against it).
+[package]
+name = "nerd-fonts-symbols"
+version = "3.5.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Nerd Fonts symbols-only icon font (Font Awesome, Material, Powerline glyphs)"
+license = ["MIT", "OFL-1.1"]
+source = "https://github.com/ryanoasis/nerd-fonts/releases/download/v%{version}/NerdFontsSymbolsOnly.tar.xz"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source_dir = "."
+
+[depends]
+build = []
+run = ["fontconfig"]
+
+[build]
+install = '''
+install -d %{pkgdir}/usr/share/fonts/nerd-fonts-symbols
+# the archive is flat; take the TTFs wherever they land
+find . -name '*.ttf' -exec install -m644 {} %{pkgdir}/usr/share/fonts/nerd-fonts-symbols/ \;
+install -d %{pkgdir}/usr/share/licenses/nerd-fonts-symbols
+for f in LICENSE LICENSE.txt; do
+    [ -f "$f" ] && install -m644 "$f" %{pkgdir}/usr/share/licenses/nerd-fonts-symbols/ || true
+done
+'''
+
+[hooks]
+post_install = '''fc-cache -f 2>/dev/null || true
+'''

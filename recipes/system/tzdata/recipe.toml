@@ -5,7 +5,7 @@
 [package]
 name = "tzdata"
 version = "2025b"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "IANA time zone database (/usr/share/zoneinfo)"
 license = ["LicenseRef-Public-Domain"]
@@ -34,7 +34,7 @@ install -m644 zone.tab zone1970.tab iso3166.tab "$zd"/
 
 [hooks]
 post_install = '''
-# default to UTC until the admin picks a zone
-[ -e /etc/localtime ] || ln -s /usr/share/zoneinfo/UTC /etc/localtime
-echo "tzdata: set your zone with:  ln -sf /usr/share/zoneinfo/Africa/Cairo /etc/localtime"
+# Faseela's default timezone; preserve any choice already made by the administrator.
+[ -e /etc/localtime ] || ln -s /usr/share/zoneinfo/Africa/Cairo /etc/localtime
+echo "tzdata: default timezone is Africa/Cairo; change it by linking /etc/localtime to another zone under /usr/share/zoneinfo"
 '''

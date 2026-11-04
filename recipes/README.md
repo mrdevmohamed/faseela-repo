@@ -13,7 +13,8 @@ recipes/
 ├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
-└── extra/       dev tools, editors, net utils, hw tools, misc libs
+├── extra/       general tools, editors, net utils, hw tools, misc libs
+└── dev/         opt-in developer runtimes and toolchains
 ```
 
 Current set: 10 toolchain + 39 base + 40 system + 7 boot + 84 extra =
@@ -24,7 +25,9 @@ and the optional `creative/` category (15 packages, see [creative/README.md](cre
 the recipe tree counts 297 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/` and `creative/` are never part of them).
 
-The `dev/` category is opt-in and currently contains Node.js, Go and Deno; it is intentionally not selected by the default ISO flavors.\n\nThe first 47 `extra/` recipes are generated from a data table
+The `dev/` category is opt-in and currently contains Node.js, Go and Deno; it is intentionally not selected by the default ISO flavors.
+
+The first 47 `extra/` recipes are generated from a data table
 (`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator
 overwrites, so newer recipes (and everything in `system/`, `boot/`, `gui/`, `creative/`) are
 written by hand and are not in that table.

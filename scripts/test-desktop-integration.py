@@ -114,6 +114,49 @@ for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled
     assert flag in waybar["build"]["configure"], f"waybar must not need systemd: {flag}"
 require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
 
+# --- regression coverage for package build failures seen in CI ------------
+# These assertions cover build-time requirements, not just the final session
+# dependency graph, so package selection cannot silently omit a required API.
+basu = recipe("gui", "basu")
+assert "gperf" in basu["depends"]["build"], "basu's Meson configure requires gperf"
+
+deno = recipe("dev", "deno")
+assert deno["package"]["source"].endswith(".zip")
+assert "unzip" in deno["depends"]["build"]
+assert "unzip " in deno["build"]["install"] and "install -Dm755 deno " in deno["build"]["install"]
+
+libxkbfile = recipe("gui", "libxkbfile")
+assert libxkbfile["build"]["configure"].startswith("meson setup "), (
+    "libxkbfile 1.2.0 uses Meson; do not invoke the removed Autoconf configure script"
+)
+assert {"meson", "ninja"} <= set(libxkbfile["depends"]["build"])
+
+xkbcommon = recipe("gui", "libxkbcommon")
+assert "-D enable-xkbregistry=true" in xkbcommon["build"]["configure"]
+require_deps("gui", "waybar", "build", {"libxkbcommon"})
+require_deps("gui", "waybar", "run", {"libxkbcommon"})
+
+libpulse = recipe("extra", "libpulse")
+assert {"glib"} <= set(libpulse["depends"]["build"])
+assert "glib" in libpulse["depends"]["run"]
+assert "-D glib=enabled" in libpulse["build"]["configure"]
+
+arabic = recipe("gui", "noto-fonts-arabic")
+arabic_install = arabic["build"]["install"]
+assert "curl " not in arabic_install and "wget " not in arabic_install, (
+    "Arabic font installation must not fetch a second archive inside the offline sandbox"
+)
+assert "noto-naskh-arabic" in session["depends"]["run"], (
+    "Noto Naskh Arabic must be installed through its own pinned recipe"
+)
+
+yt_dlp = recipe("extra", "yt-dlp")
+yt_install = yt_dlp["build"]["install"]
+assert "install -Dm755 yt-dlp" in yt_install
+assert "curl " not in yt_install and "wget " not in yt_install, (
+    "yt-dlp installation must not download its man page inside the offline sandbox"
+)
+
 # Fonts: the session ships Latin/Greek/Cyrillic, Arabic and color emoji, all
 # under OFL, all hashed, all refreshing the fontconfig cache on install.
 for name in ("noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"):

@@ -2,7 +2,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 21
+rel = 22
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
@@ -31,6 +31,16 @@ ln -s /etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default/seatd
 # --- default wallpaper: sway's stock config has its own wallpaper line disabled;
 #     this drop-in is read through its `include /etc/sway/config.d/*` -----------
 install -d -m755 %{pkgdir}/usr/share/backgrounds/faseela %{pkgdir}/etc/sway/config.d
+
+# --- Xwayland: start the X11 server immediately -----------------------------
+# Sway's default "enable" mode starts Xwayland lazily. The bundled Qt runtime
+# used by Nekoray ships the xcb plugin but no Wayland QPA plugin, so ensure
+# Xwayland is ready before the user launches X11-only desktop applications.
+cat > %{pkgdir}/etc/sway/config.d/00-xwayland.conf <<'XWAYLAND'
+xwayland force
+XWAYLAND
+chmod 644 %{pkgdir}/etc/sway/config.d/00-xwayland.conf
+
 base64 -d > %{pkgdir}/usr/share/backgrounds/faseela/default.png <<'PNG'
 iVBORw0KGgoAAAANSUhEUgAAAGAAAAA2CAIAAAC3LQuFAAAHK0lEQVR42r1aWbLbMAwjMp7pZ+/Q
 +9+R/fAigQQpOV3yZvIc23FMCAQ348fPXwbYeOF+e3biPg7af+3F80fnPGee3waseG+OXj+MdNnp

@@ -129,6 +129,13 @@ assert "org.kde.StatusNotifierWatcher.service" not in install_script, (
 )
 assert "Exec=/usr/bin/waybar" not in install_script
 assert session["package"]["rel"] >= 21, "Bump gui-session rel for single-instance Waybar startup"
+assert session["package"]["rel"] >= 22, "Bump gui-session rel when changing Xwayland startup"
+assert "xwayland force" in install_script, (
+    "Start Xwayland immediately so X11-only Qt applications can use the XCB platform"
+)
+assert "00-xwayland.conf" in install_script, (
+    "gui-session must persist the Xwayland startup setting in the Sway config drop-ins"
+)
 
 # --- regression coverage for package build failures seen in CI ------------
 # These assertions cover build-time requirements, not just the final session

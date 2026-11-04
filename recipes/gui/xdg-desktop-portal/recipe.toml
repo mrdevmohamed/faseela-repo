@@ -3,7 +3,7 @@
 [package]
 name = "xdg-desktop-portal"
 version = "1.18.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Desktop-agnostic portal frontend for D-Bus applications"
 license = ["LGPL-2.1-or-later"]
@@ -15,6 +15,9 @@ build = ["meson", "ninja", "pkgconf", "dbus", "pipewire", "fuse3", "json-glib", 
 run = ["dbus", "pipewire", "fuse3", "json-glib", "gdk-pixbuf", "bubblewrap"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D systemd=disabled -D geoclue=disabled -D libportal=disabled -D docbook-docs=disabled -D pytest=disabled -D man-pages=disabled -D installed-tests=false -D sandboxed-image-validation=true"
+# PipeWire 1.6 exposes pw_registry_add_listener() with a struct pw_registry*
+# parameter. Upstream 1.18.4 stores the result as struct pw_proxy* and passes
+# it without a cast; upstream 1.20.4 contains this exact compatibility cast.
+configure = "sed -i 's/pw_registry_add_listener (remote->registry,/pw_registry_add_listener ((struct pw_registry*)remote->registry,/' src/pipewire.c && meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D systemd=disabled -D geoclue=disabled -D libportal=disabled -D docbook-docs=disabled -D pytest=disabled -D man-pages=disabled -D installed-tests=false -D sandboxed-image-validation=true"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,9 +1,9 @@
 # Developer runtime: Deno JavaScript/TypeScript runtime.
-# SHA-256 is the digest attached to the immutable upstream v2.9.8 release asset.
+# The upstream Linux release is a ZIP containing the standalone executable.
 [package]
 name = "deno"
 version = "2.9.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Deno JavaScript and TypeScript runtime"
 license = ["MIT"]
@@ -16,5 +16,6 @@ run = ["glibc", "gcc"]
 
 [build]
 install = """
+unzip -q -o deno-x86_64-unknown-linux-gnu.zip -d .
 install -Dm755 deno %{pkgdir}/usr/bin/deno
 """

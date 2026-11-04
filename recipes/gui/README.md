@@ -135,7 +135,7 @@ included for the document portal's sandbox and document mounts. GNOME Keyring in
 Service daemon is activated on demand by D-Bus. This does not require systemd
 or a system-wide runit service.
 
-Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. A session D-Bus activation descriptor starts Waybar on demand if the watcher is not already running.
+Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. Sway starts one Waybar process for the session; there is deliberately no D-Bus activation descriptor for the watcher, because `Exec=waybar` could launch a second independent status bar when the name is not owned yet. Start Telegram after the session bar is running so its tray icon can register with that existing watcher.
 
 The wlr portal backend (ScreenCast through PipeWire), the notification daemon
 and the bar all speak D-Bus through **basu**'s sd-bus — no systemd or elogind

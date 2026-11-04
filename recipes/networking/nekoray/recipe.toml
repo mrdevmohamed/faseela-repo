@@ -1,0 +1,75 @@
+# Transitional package: the final upstream AppImage is used until the
+# Faseela-maintained Nekoray fork publishes its own complete Linux bundle.
+# Keep the upstream bundle intact, including its bundled Qt runtime and notices.
+[package]
+name = "nekoray"
+version = "4.0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Nekoray desktop proxy client powered by sing-box"
+license = ["GPL-3.0-only"]
+source = "https://github.com/MatsuriDayo/nekoray/releases/download/4.0.1/nekoray-4.0.1-2024-12-12-linux-x64.AppImage"
+sha256 = "bec95e7fafe7f7f10923977c9f7511c878aa25a7eecc51c53ae85d8f35e24b35"
+
+[depends]
+build = []
+run = [
+  "glibc", "gcc", "glib", "ca-certificates", "openssl",
+  "fontconfig", "freetype", "mesa",
+  "libX11", "libXau", "libXcursor", "libXdamage", "libXext",
+  "libXfixes", "libXi", "libXrandr", "libXrender", "libxcb",
+  "wayland", "libxkbcommon", "hicolor-icon-theme",
+  "iptables", "iproute2"
+]
+
+[slim]
+strip = false
+cleanup = false
+split = false
+
+[build]
+install = '''
+set -eu
+appimage="nekoray-%{version}-2024-12-12-linux-x64.AppImage"
+if [ ! -f "$appimage" ]; then
+    echo "nekoray: source AppImage not found: $appimage" >&2
+    exit 1
+fi
+chmod 755 "$appimage"
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+appimage_path="$(pwd -P)/$appimage"
+(
+    cd "$workdir"
+    "$appimage_path" --appimage-extract
+)
+appdir="$workdir/squashfs-root"
+if [ ! -x "$appdir/AppRun" ] || [ ! -x "$appdir/nekobox" ] || [ ! -d "$appdir/usr" ]; then
+    echo "nekoray: AppImage payload is incomplete (expected AppRun, nekobox and usr/)" >&2
+    exit 1
+fi
+dest="%{pkgdir}/usr/lib/nekoray"
+install -d -m755 "$dest" "%{pkgdir}/usr/bin" "%{pkgdir}/usr/share/applications"
+cp -a "$appdir/." "$dest/"
+cat > "%{pkgdir}/usr/bin/nekoray" <<'RUN'
+#!/bin/sh
+set -eu
+export APPDIR=/usr/lib/nekoray
+exec "$APPDIR/AppRun" "$@"
+RUN
+chmod 755 "%{pkgdir}/usr/bin/nekoray"
+cat > "%{pkgdir}/usr/share/applications/nekoray.desktop" <<'DESKTOP'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Nekoray
+GenericName=Proxy Client
+Comment=Qt-based proxy configuration manager using sing-box
+Exec=nekoray %U
+Icon=network-vpn
+Terminal=false
+StartupNotify=true
+StartupWMClass=nekobox
+Categories=Network;Utility;
+DESKTOP
+'''

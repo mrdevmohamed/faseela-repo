@@ -67,6 +67,15 @@ assert "mesa" in set(nekoray["depends"]["run"]), (
     "Nekoray must pull in Mesa's libGL.so.1 provider"
 )
 
+double_conversion = recipe("recipes/extra/double-conversion/recipe.toml")
+assert double_conversion["package"]["version"] == "3.4.0"
+assert "-DBUILD_SHARED_LIBS=ON" in double_conversion["build"]["configure"], (
+    "double-conversion must install the shared library required by Nekoray"
+)
+assert "double-conversion" in set(nekoray["depends"]["run"]), (
+    "Nekoray must pull in the package providing libdouble-conversion.so.3"
+)
+
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"
 assert len(ply["package"]["sha256"]) == 64

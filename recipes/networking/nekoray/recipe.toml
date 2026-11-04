@@ -4,7 +4,7 @@
 [package]
 name = "nekoray"
 version = "4.0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Nekoray desktop proxy client powered by sing-box"
 license = ["GPL-3.0-only"]
@@ -15,7 +15,7 @@ sha256 = "bec95e7fafe7f7f10923977c9f7511c878aa25a7eecc51c53ae85d8f35e24b35"
 build = []
 run = [
   "glibc", "gcc", "glib", "ca-certificates", "openssl",
-  "fontconfig", "freetype", "mesa",
+  "fontconfig", "freetype", "mesa", "double-conversion",
   "libX11", "libXau", "libXcursor", "libXdamage", "libXext",
   "libXfixes", "libXi", "libXrandr", "libXrender", "libxcb",
   "wayland", "libxkbcommon", "hicolor-icon-theme",

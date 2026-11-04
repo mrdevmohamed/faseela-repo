@@ -21,7 +21,7 @@
 [package]
 name = "waybar"
 version = "0.15.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "waybar — highly customizable status bar for Wayland compositors"
 license = ["MIT"]
@@ -30,8 +30,8 @@ sha256 = "21c2bbef88c40473c355003582f9331d2f9b8a01efdcce0935edfc5f6b023a3e"
 source_dir = "Waybar-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "libsigc++", "glibmm", "wayland", "wayland-protocols", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
-run = ["gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "glibmm", "wayland", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
+build = ["meson", "ninja", "pkgconf", "gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "libsigc++", "glibmm", "wayland", "wayland-protocols", "libxkbcommon", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
+run = ["gtk3", "gtkmm", "gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "glibmm", "wayland", "libxkbcommon", "libnl", "libevdev", "libinput", "eudev", "libpulse", "pipewire"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D systemd=disabled -D man-pages=disabled -D logind=disabled -D upower_glib=disabled -D mpris=disabled -D mpd=disabled -D cava=disabled -D jack=disabled -D wireplumber=disabled -D sndio=disabled -D gps=disabled -D tests=disabled -D experimental=true"

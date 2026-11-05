@@ -7,7 +7,7 @@
 [package]
 name = "google-chrome"
 version = "157.0.8103.38"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Google Chrome Stable (official Google binary for Linux x86_64)"
 license = ["Google-Chrome-EULA"]

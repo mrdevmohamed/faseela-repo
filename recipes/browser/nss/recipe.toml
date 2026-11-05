@@ -1,0 +1,70 @@
+# browser recipe: NSS — Mozilla Network Security Services.
+# Built against Faseela's NSPR, SQLite and zlib instead of bundling them.
+[package]
+name = "nss"
+version = "3.133"
+rel = 3
+arch = ["x86_64"]
+summary = "Mozilla Network Security Services libraries"
+license = ["MPL-2.0"]
+source = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_133_RTM/src/nss-%{version}.tar.gz"
+sha256 = "4d752526b9846a1d962588cfbd09b7cc2a4f6a4effbd9157d58a30e8a2573065"
+source_dir = "nss-%{version}"
+
+[depends]
+build = ["nspr", "sqlite", "zlib", "perl"]
+run = ["nspr", "sqlite", "zlib"]
+
+[build]
+compile = """
+cd nss
+make -j%{jobs} all \
+    BUILD_OPT=1 \
+    NSS_ALLOW_SSLKEYLOGFILE=1 \
+    NSS_DISABLE_GTESTS=1 \
+    NSS_USE_SYSTEM_SQLITE=1 \
+    NSPR_INCLUDE_DIR=/usr/include/nspr \
+    NSPR_LIB_DIR=/usr/lib \
+    USE_64=1
+"""
+install = """
+set -eu
+dist="%{srcdir}/dist"
+if [ ! -d "$dist/public/nss" ]; then
+    echo "nss: expected public headers at $dist/public/nss" >&2
+    find "%{srcdir}" -maxdepth 3 -type d -name dist -print >&2
+    exit 1
+fi
+
+objdir="$(find "$dist" -mindepth 1 -maxdepth 1 -type d -name 'Linux*_OPT.OBJ' -print -quit)"
+if [ -z "$objdir" ]; then
+    echo "nss: no NSS object directory found directly under $dist" >&2
+    find "$dist" -maxdepth 2 -type d -print >&2
+    exit 1
+fi
+echo "nss: installing from $objdir"
+
+for lib in libnss3.so libssl3.so libsmime3.so; do
+    if [ ! -f "$objdir/lib/$lib" ]; then
+        echo "nss: required library is missing: $objdir/lib/$lib" >&2
+        ls -la "$objdir/lib" >&2
+        exit 1
+    fi
+done
+
+install -d "%{pkgdir}/usr/lib" "%{pkgdir}/usr/include/nss" "%{pkgdir}/usr/bin"
+cp -RL "$dist/public/nss/." "%{pkgdir}/usr/include/nss/"
+cp -aL "$objdir"/lib/*.so* "%{pkgdir}/usr/lib/"
+find "$objdir/lib" -maxdepth 1 -type f -name '*.chk' -exec cp -a '{}' "%{pkgdir}/usr/lib/" ';'
+for tool in certutil modutil pk12util; do
+    if [ -x "$objdir/bin/$tool" ]; then
+        install -m755 "$objdir/bin/$tool" "%{pkgdir}/usr/bin/$tool"
+    fi
+done
+
+if [ ! -e "%{pkgdir}/usr/lib/libnss3.so" ]; then
+    echo "nss: libnss3.so was not staged in %{pkgdir}/usr/lib" >&2
+    ls -la "%{pkgdir}/usr/lib" >&2
+    exit 1
+fi
+"""

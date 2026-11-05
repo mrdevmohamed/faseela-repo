@@ -1,27 +1,30 @@
-# recipes/browser — Firefox
+# recipes/browser — Firefox and Google Chrome
 
-**Firefox ESR** (Mozilla's official binary) and the GTK3 stack it runs on. The
-browser recipes remain a separate category, but Firefox is included in the standard
-`iso-gui` image. 12 packages:
+**Firefox ESR**, official **Google Chrome Stable**, and the GTK3 stack used by the browsers.
+The browser recipes remain a separate category. Firefox is included in the standard
+`iso-gui` image; Google Chrome stays opt-in. 16 packages:
 
 | group | packages |
 |---|---|
-| browser | firefox |
+| browser | firefox google-chrome |
+| Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
 
 (libX11, libxcb, libXau, libXext and libXrender are in `gui/`: cairo links them.)
 
-> **Status: written offline, not yet built**, like `gui/`. Every `sha256` is an
-> all-zero placeholder and versions, URLs and meson option names come from
-> upstream knowledge, not from a test build. See "First build" below.
+> The original GTK3 recipes still need their first full build/CI verification. The
+> NSPR, NSS and libcups source hashes are pinned. Google Chrome is an install-time
+> downloader: its proprietary .deb is fetched from Google and SHA-256 verified on the
+> target machine; it is not redistributed by the Faseela package repository.
 
 ## Why a separate category
 
 The GTK3/browser recipes stay under `recipes/browser/`, keeping `@gui` limited to
 the desktop stack. The `iso-gui` flavor explicitly includes `firefox`, so its
 runtime dependency closure (GTK3 and the required X11 client libraries) is installed
-in the standard GUI ISO. The package workflow builds everything required by
+in the standard GUI ISO. Google Chrome is not added to that ISO; install it only on
+systems that need it. The package workflow builds everything required by
 `flavor:iso-gui`; use `@browser` when you need to build just the browser category.
 
 For an already-installed system, Firefox can also be installed directly:
@@ -30,9 +33,29 @@ For an already-installed system, Firefox can also be installed directly:
 nawa install firefox --repo https://github.com/mrdevmohamed/faseela-repo/releases/download/stable
 ```
 
+Install the genuine Google browser (not Chromium) with:
+
+```
+sudo nawa install google-chrome
+```
+
+The first installation downloads Google's official x86_64 package (about 141 MiB)
+from `dl.google.com`, verifies its pinned SHA-256, and extracts the browser. It does
+not add Google's APT repository or updater. The wrapper and desktop launcher are
+managed by Nawa; future Chrome updates are delivered by updating this recipe.
+
 `ALL` / `@all` still does not include `@browser` or `@gui`.
 
-## Why the official binary
+## Google Chrome package
+
+The Chrome recipe is an install-time bootstrap package. The repository contains only
+the small wrapper and installer hook, not Google's proprietary browser payload. The
+hook pins the upstream version and checksum, retries interrupted downloads, and skips
+the download when the same version is already installed. It extracts only the browser,
+launcher, desktop file and icons; it does not install Google's APT configuration or
+scheduled update jobs. The downloaded package is licensed under Google's Chrome terms.
+
+## Why the official Firefox binary
 
 Firefox from source needs clang, nodejs, cbindgen, the whole GTK/X11/NSS/ICU stack and
 16+ GB of RAM and 30+ GB of disk for the link step: out of reach for a hosted runner,

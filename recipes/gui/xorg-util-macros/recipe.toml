@@ -1,0 +1,20 @@
+# gui recipe: X.Org Autotools macros used by X11 client libraries.
+[package]
+name = "xorg-util-macros"
+version = "1.20.2"
+rel = 1
+arch = ["x86_64"]
+summary = "X.Org Autotools macros"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/util/util-macros-%{version}.tar.xz"
+sha256 = "9ac269eba24f672d7d7b3574e4be5f333d13f04a7712303b1821b2a51ac82e8e"
+source_dir = "util-macros-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

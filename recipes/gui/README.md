@@ -98,7 +98,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | group | packages |
 |---|---|
 | text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic, noto-naskh-arabic noto-cjk noto-color-emoji |
-| X11 client libraries | xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender (what cairo's xlib surface links) |
+| X11 client libraries | xorg-util-macros xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender libXtst libXScrnSaver libxshmfence (GTK3 and Chrome client-side libraries; no X server) |
 | Xwayland server | xkbcomp xkeyboard-config libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
 | graphics | mesa (+ `libXxf86vm` for X11/GLX, python-mako python-markupsafe python-pyyaml python-packaging, glslang and Vulkan-Headers as build helpers), libva (VA-API loader; mesa's AMD video driver) |

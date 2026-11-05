@@ -133,19 +133,26 @@ and a USB/PS2 keyboard and mouse.
 
 ## Desktop integration
 
-`gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
-`gnome-keyring` and `upower`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
+`gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`,
+`gnome-keyring`, and `upower`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
 user D-Bus session with `dbus-run-session`. The `xdg-desktop-portal` frontend
 owns `org.freedesktop.portal.Desktop` and activates its backends through
 D-Bus. The GTK backend is built with its Settings portal enabled and declares the required Fontconfig and GSettings schemas, so Qt/GTK clients can read standard appearance settings instead of receiving `UnknownMethod`. `sway-portals.conf` selects GTK for general interfaces with the wlr
-backend as the ScreenCast provider, and explicitly maps\n`org.freedesktop.impl.portal.Secret` to `gnome-keyring` for Sway. The keyring\nbackend is activated on the per-user session bus; it is not a system service. The Sway
+backend as the ScreenCast provider, and explicitly maps
+`org.freedesktop.impl.portal.Secret` to `gnome-keyring` for Sway. The keyring
+backend is activated on the per-user session bus; it is not a system service. The Sway
 session drop-in runs `dbus-update-activation-environment` after the compositor
 starts, so the activated backend receives `WAYLAND_DISPLAY` and
 `XDG_CURRENT_DESKTOP=sway`. Bubblewrap, user namespaces, and FUSE support are
 included for the document portal's sandbox and document mounts. GNOME Keyring installs
 `/usr/share/dbus-1/services/org.freedesktop.secrets.service`, so the Secret
 Service daemon is activated on demand by D-Bus. This does not require systemd
-or a system-wide runit service.
+or a system-wide runit service. UPower is separately activated by the
+system D-Bus through
+`/usr/share/dbus-1/system-services/org.freedesktop.UPower.service`.
+`gui-session` already installs `dbus-system`, which supervises the system bus
+with runit. UPower does not need a permanently running runit service; its
+`libgudev` and `libusb` dependencies provide device discovery and USB support.
 
 Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. Sway starts one Waybar process for the session; Waybar is not registered for D-Bus activation, because `Exec=waybar` could launch a second independent status bar when the name is not owned yet. Start Telegram after the session bar is running so its tray icon can register with that existing watcher.
 

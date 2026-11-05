@@ -1,0 +1,21 @@
+# boot recipe: efibootmgr — UEFI Boot Manager utility
+[package]
+name = "efibootmgr"
+version = "18"
+rel = 1
+arch = ["x86_64"]
+summary = "Manage UEFI firmware boot entries"
+license = ["GPL-2.0"]
+source = "https://github.com/rhboot/efibootmgr/archive/%{version}.tar.gz"
+sha256 = "442867d12f8525034a404fc8af3036dba8e1fc970998af2486c3b940dfad0874"
+
+[depends]
+build = ["efivar", "popt", "pkgconf"]
+run = ["efivar", "popt"]
+
+[build]
+# Keep the build compatible with current compilers; upstream enables -Werror.
+# EFIDIR is mandatory at build time and provides the default EFI loader path.
+configure = "sed -i 's/-Werror //' Make.defaults"
+compile = "make -j%{jobs} EFIDIR=GRUB EFI_LOADER=grubx64.efi"
+install = "make DESTDIR=%{pkgdir} prefix=/usr EFIDIR=GRUB EFI_LOADER=grubx64.efi install"

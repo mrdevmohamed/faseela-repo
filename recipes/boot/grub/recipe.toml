@@ -11,7 +11,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -20,7 +20,7 @@ sha256 = "bc8d3c73535b8838d8c8e2654d73edc4e6ae8c8acdb45d5df5dc9a1547446d43"
 
 [depends]
 build = ["bison", "flex"]
-run = []
+run = ["efibootmgr"]
 
 [build]
 # --target=x86_64 with --with-platform=efi is the x86_64-efi platform (the tools come from

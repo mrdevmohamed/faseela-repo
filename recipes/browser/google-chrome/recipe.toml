@@ -67,9 +67,9 @@ chmod 0755 "%{pkgdir}/usr/bin/google-chrome"
 [hooks]
 post_install = '''
 set -eu
-version="%{version}"
+version="157.0.8103.38"
 sha256="a62b277dc03da2cff50cc04589deb66f6875be339c066d46adb49b49eedb629d"
-url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_$version-1_amd64.deb"
+url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_157.0.8103.38-1_amd64.deb"
 
 # Reinstalling the same Nawa package must not download Chrome's 140+ MB payload again.
 if [ -x /opt/google/chrome/chrome ] &&

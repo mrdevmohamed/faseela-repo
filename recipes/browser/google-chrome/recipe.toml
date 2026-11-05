@@ -100,11 +100,9 @@ printf '%s  %s\n' "$sha256" "$tmp/chrome.deb" | sha256sum -c -
 
 ar p "$tmp/chrome.deb" data.tar.xz > "$tmp/data.tar.xz"
 install -d "$tmp/root"
-tar -xJf "$tmp/data.tar.xz" -C "$tmp/root" \
-    opt/google/chrome \
-    usr/bin/google-chrome-stable \
-    usr/share/applications/google-chrome.desktop \
-    usr/share/icons/hicolor
+# Google DEB payload paths include a leading ./; unpack the whole data archive
+# in a disposable directory, then copy only the browser-owned paths below.
+tar -xJf "$tmp/data.tar.xz" -C "$tmp/root"
 
 test -x "$tmp/root/opt/google/chrome/chrome"
 test -x "$tmp/root/usr/bin/google-chrome-stable"

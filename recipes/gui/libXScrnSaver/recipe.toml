@@ -1,0 +1,21 @@
+# gui recipe: libXScrnSaver — X11 Screen Saver extension client library.
+# This is a client library; it does not provide a screen-locker or X server.
+[package]
+name = "libXScrnSaver"
+version = "1.2.4"
+rel = 1
+arch = ["x86_64"]
+summary = "X11 Screen Saver extension client library"
+license = ["MIT"]
+source = "https://www.x.org/archive/individual/lib/libXScrnSaver-%{version}.tar.xz"
+sha256 = "75cd2859f38e207a090cac980d76bc71e9da99d48d09703584e00585abc920fe"
+source_dir = "libXScrnSaver-%{version}"
+
+[depends]
+build = ["pkgconf", "xorgproto", "libX11", "libXext"]
+run = ["libX11", "libXext"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

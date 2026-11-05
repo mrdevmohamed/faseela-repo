@@ -318,6 +318,10 @@ assert "-D gtk_doc=false" in gudev["build"]["configure"]
 
 upower = recipe("gui", "upower")
 assert upower["package"]["version"] == "1.91.5"
+assert upower["package"]["rel"] >= 2, "Bump UPower rel when fixing build metadata"
+assert upower["package"]["source_dir"] == "upower-v%{version}", (
+    "UPower GitLab archives extract into upower-v<version>; configure must run from that source tree"
+)
 assert re.fullmatch(r"[0-9a-f]{64}", upower["package"]["sha256"])
 require_deps("gui", "upower", "build", {
     "meson", "ninja", "pkgconf", "glib", "libgudev", "libusb", "polkit",

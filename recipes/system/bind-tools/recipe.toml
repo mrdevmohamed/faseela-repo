@@ -1,33 +1,33 @@
 # system recipe: BIND DNS client utilities only.
-# This deliberately builds the client tools and their libraries, not named(8).
-# Provides dig, host, nslookup, nsupdate and rndc.
+# Build the libraries and dig's client programs; do not build named(8).
+# Provides dig, host and nslookup. No DNS server/service is installed.
 [package]
 name = "bind-tools"
 version = "9.20.30"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "DNS client utilities: dig, host, nslookup, nsupdate and rndc (no DNS server)"
+summary = "DNS client utilities: dig, host and nslookup (no DNS server)"
 license = ["MPL-2.0", "BSD-3-Clause"]
 source = "https://ftp.isc.org/isc/bind9/%{version}/bind-%{version}.tar.xz"
 sha256 = "9e1443a40a72a30272cbc3196d020a6b2e26937111c83e59e101e82e1e3b4fef"
+source_dir = "bind-%{version}"
 
 [depends]
-build = ["libuv", "liburcu", "openssl", "perl", "pkgconf"]
-run = ["libuv", "liburcu", "openssl"]
+build = ["libcap", "libuv", "liburcu", "openssl", "perl", "pkgconf"]
+run = ["libcap", "libuv", "liburcu", "openssl"]
 
 [build]
-configure = "./configure --prefix=/usr --sysconfdir=/etc --disable-doh"
+configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-doh --disable-developer --without-gssapi --without-libidn2 --with-libxml2=no --with-json-c=no --with-lmdb=no --with-liburcu=mb"
 compile = """
 set -eu
-for dir in lib/isc lib/dns lib/ns lib/isccfg lib/isccc bin/dig bin/nsupdate bin/rndc; do
-    make -C "$dir" -j%{jobs}
-done
+# BIND's client programs are under bin/dig; the source root is bind-%{version}.
+make -C lib -j%{jobs}
+make -C bin/dig -j%{jobs}
 """
 install = """
 set -eu
-for dir in lib/isc lib/dns lib/ns lib/isccfg lib/isccc bin/dig bin/nsupdate bin/rndc; do
-    make -C "$dir" DESTDIR=%{pkgdir} install
-done
+make -C lib DESTDIR=%{pkgdir} install
+make -C bin/dig DESTDIR=%{pkgdir} install
 test -x "%{pkgdir}/usr/bin/dig"
 test -x "%{pkgdir}/usr/bin/host"
 test -x "%{pkgdir}/usr/bin/nslookup"

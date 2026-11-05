@@ -7,7 +7,7 @@
 [package]
 name = "google-chrome"
 version = "157.0.8103.38"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Google Chrome Stable (official Google binary for Linux x86_64)"
 license = ["Google-Chrome-EULA"]
@@ -139,7 +139,21 @@ fi
 ln -sfn /opt/google/chrome/google-chrome /usr/bin/google-chrome-stable
 install -m644 "$tmp/root/usr/share/applications/google-chrome.desktop" \
     /usr/share/applications/google-chrome.desktop
-cp -a "$tmp/root/usr/share/icons/hicolor/." /usr/share/icons/hicolor/
+# Some official Chrome DEBs ship their icons under /opt/google/chrome
+# instead of /usr/share/icons. Icons are optional; install product logos
+# when present and never fail the browser install because the icon tree is absent.
+for logo in /opt/google/chrome/product_logo_*.png; do
+    [ -f "$logo" ] || continue
+    filename="${logo##*/}"
+    size="${filename#product_logo_}"
+    size="${size%.png}"
+    case "$size" in
+        16|24|32|48|64|128|256)
+            install -d "/usr/share/icons/hicolor/${size}x${size}/apps"
+            install -m644 "$logo" "/usr/share/icons/hicolor/${size}x${size}/apps/google-chrome.png"
+            ;;
+    esac
+done
 echo "google-chrome: installed official Google Chrome $version"
 CHROME_INSTALLER
 chmod 0755 "%{pkgdir}/usr/libexec/google-chrome-install"

@@ -1,0 +1,129 @@
+# browser recipe: official Google Chrome Stable for x86_64.
+#
+# The proprietary Google .deb is NOT mirrored in the Faseela package repository.
+# The post-install hook downloads it directly from dl.google.com and verifies the
+# pinned SHA-256 before extracting the browser payload. No Google APT repository,
+# cron updater or package-manager integration is installed.
+[package]
+name = "google-chrome"
+version = "157.0.8103.38"
+rel = 1
+arch = ["x86_64"]
+summary = "Google Chrome Stable (official Google binary for Linux x86_64)"
+license = ["Google-Chrome-EULA"]
+
+[depends]
+build = []
+run = [
+    "alsa-lib",
+    "at-spi2-core",
+    "binutils",
+    "ca-certificates",
+    "cairo",
+    "coreutils",
+    "curl",
+    "dbus",
+    "eudev",
+    "expat",
+    "fontconfig",
+    "freetype",
+    "gdk-pixbuf",
+    "glib",
+    "gtk3",
+    "libX11",
+    "libXcomposite",
+    "libXcursor",
+    "libXdamage",
+    "libXext",
+    "libXfixes",
+    "libXi",
+    "libXrandr",
+    "libXrender",
+    "libcap",
+    "libcups",
+    "libdrm",
+    "libxcb",
+    "libxkbcommon",
+    "mesa",
+    "nspr",
+    "nss",
+    "pango",
+    "tar",
+    "vulkan-loader",
+    "xdg-utils",
+    "zlib",
+]
+
+[build]
+install = """
+install -d "%{pkgdir}/usr/bin"
+cat > "%{pkgdir}/usr/bin/google-chrome" <<'EOF'
+#!/bin/sh
+exec /usr/bin/google-chrome-stable "$@"
+EOF
+chmod 0755 "%{pkgdir}/usr/bin/google-chrome"
+"""
+
+[hooks]
+post_install = '''
+set -eu
+version="%{version}"
+sha256="a62b277dc03da2cff50cc04589deb66f6875be339c066d46adb49b49eedb629d"
+url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_$version-1_amd64.deb"
+
+# Reinstalling the same Nawa package must not download Chrome's 140+ MB payload again.
+if [ -x /opt/google/chrome/chrome ] &&
+   [ -x /usr/bin/google-chrome-stable ] &&
+   [ -r /opt/google/chrome/.faseela-version ] &&
+   [ "$(cat /opt/google/chrome/.faseela-version)" = "$version" ]; then
+    exit 0
+fi
+
+tmp="$(mktemp -d /var/tmp/google-chrome.XXXXXX)"
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+echo "google-chrome: downloading the official Google Chrome $version package"
+curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 -o "$tmp/chrome.deb" "$url"
+printf '%s  %s\n' "$sha256" "$tmp/chrome.deb" | sha256sum -c -
+
+ar p "$tmp/chrome.deb" data.tar.xz > "$tmp/data.tar.xz"
+install -d "$tmp/root"
+tar -xJf "$tmp/data.tar.xz" -C "$tmp/root" \
+    opt/google/chrome \
+    usr/bin/google-chrome-stable \
+    usr/share/applications/google-chrome.desktop \
+    usr/share/icons/hicolor
+
+test -x "$tmp/root/opt/google/chrome/chrome"
+test -x "$tmp/root/usr/bin/google-chrome-stable"
+if [ -f "$tmp/root/opt/google/chrome/chrome-sandbox" ]; then
+    chown root:root "$tmp/root/opt/google/chrome/chrome-sandbox"
+    chmod 4755 "$tmp/root/opt/google/chrome/chrome-sandbox"
+fi
+printf '%s\n' "$version" > "$tmp/root/opt/google/chrome/.faseela-version"
+
+install -d /opt/google /usr/bin /usr/share/applications /usr/share/icons/hicolor
+rm -rf "$tmp/old-chrome"
+if [ -d /opt/google/chrome ]; then
+    mv /opt/google/chrome "$tmp/old-chrome"
+fi
+if ! mv "$tmp/root/opt/google/chrome" /opt/google/chrome; then
+    [ ! -d "$tmp/old-chrome" ] || mv "$tmp/old-chrome" /opt/google/chrome
+    exit 1
+fi
+
+install -m755 "$tmp/root/usr/bin/google-chrome-stable" /usr/bin/google-chrome-stable
+install -m644 "$tmp/root/usr/share/applications/google-chrome.desktop" \
+    /usr/share/applications/google-chrome.desktop
+cp -a "$tmp/root/usr/share/icons/hicolor/." /usr/share/icons/hicolor/
+echo "google-chrome: installed official Google Chrome $version"
+'''
+
+post_remove = '''
+rm -rf /opt/google/chrome
+rm -f /usr/bin/google-chrome-stable
+rm -f /usr/share/applications/google-chrome.desktop
+if [ -d /usr/share/icons/hicolor ]; then
+    find /usr/share/icons/hicolor -type f \
+        \( -name 'google-chrome.png' -o -name 'google-chrome.svg' \) -delete
+fi
+'''

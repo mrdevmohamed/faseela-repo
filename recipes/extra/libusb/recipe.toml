@@ -1,13 +1,13 @@
 # extra recipe: libusb — userspace USB library
 [package]
 name = "libusb"
-version = "1.0.27"
-rel = 1
+version = "1.0.30"
+rel = 2
 arch = ["x86_64"]
 summary = "libusb — userspace USB library"
 license = ["LGPL-2.1-or-later"]
 source = "https://github.com/libusb/libusb/releases/download/v%{version}/libusb-%{version}.tar.bz2"
-sha256 = "ffaa41d741a8a3bee244ac8e54a72ea05bf2879663c098c82fc5757853441575"
+sha256 = "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
 
 [depends]
 build = ["eudev"]

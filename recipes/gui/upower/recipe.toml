@@ -1,0 +1,40 @@
+# gui recipe: UPower — D-Bus system service for power-device information.
+# UPower is activated on demand by the system D-Bus; runit supervises dbus-system,
+# not a second always-running UPower service. Systemd unit installation is disabled.
+[package]
+name = "upower"
+version = "1.91.5"
+rel = 1
+arch = ["x86_64"]
+summary = "Power-device enumeration and statistics service"
+license = ["GPL-2.0-or-later"]
+source = "https://gitlab.freedesktop.org/upower/upower/-/archive/v%{version}/upower-v%{version}.tar.bz2"
+sha256 = "c465a1c7fc05d00ac2bc7321c19b9b7e479410d8392bd7eb3e714275729629fd"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "libgudev", "libusb", "polkit"]
+run = ["dbus-system", "glib", "libgudev", "libusb", "polkit"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D gtk-doc=false -D man=false -D systemdsystemunitdir=no -D udevrulesdir=/usr/lib/udev/rules.d"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+# UPower must be available through the system D-Bus activation path. Do not
+# replace this with a runit service: dbus-system already supervises the bus.
+DBUS_SERVICE="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.UPower.service"
+DBUS_POLICY="%{pkgdir}/usr/share/dbus-1/system.d/org.freedesktop.UPower.conf"
+UPOWERD="%{pkgdir}/usr/libexec/upowerd"
+test -x "$UPOWERD"
+test -s "$DBUS_SERVICE"
+test -s "$DBUS_POLICY"
+grep -Fq 'Name=org.freedesktop.UPower' "$DBUS_SERVICE"
+grep -Fq 'Exec=/usr/libexec/upowerd' "$DBUS_SERVICE"
+'''
+
+[hooks]
+post_install = '''
+# Refresh udev's view of UPower battery/HID rules without requiring a reboot.
+udevadm control --reload-rules 2>/dev/null || true
+udevadm hwdb --update 2>/dev/null || true
+'''

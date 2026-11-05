@@ -134,7 +134,7 @@ and a USB/PS2 keyboard and mouse.
 ## Desktop integration
 
 `gui-session` installs `xdg-utils` (including `xdg-open`), `rsync`, and
-`gnome-keyring`, and UPower. Zed uses `rsync` for auto-updates. The Sway launcher starts a
+`gnome-keyring` and `upower`. Zed uses `rsync` for auto-updates. The Sway launcher starts a
 user D-Bus session with `dbus-run-session`. The `xdg-desktop-portal` frontend
 owns `org.freedesktop.portal.Desktop` and activates its backends through
 D-Bus. The GTK backend is built with its Settings portal enabled and declares the required Fontconfig and GSettings schemas, so Qt/GTK clients can read standard appearance settings instead of receiving `UnknownMethod`. `sway-portals.conf` selects GTK for general interfaces with the wlr

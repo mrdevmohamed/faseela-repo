@@ -1,7 +1,7 @@
 # browser recipe: official Google Chrome Stable for x86_64.
 #
 # The proprietary Google .deb is NOT mirrored in the Faseela package repository.
-# The post-install hook downloads it directly from dl.google.com and verifies the
+# The install helper downloads it directly from dl.google.com and verifies the
 # pinned SHA-256 before extracting the browser payload. No Google APT repository,
 # cron updater or package-manager integration is installed.
 [package]
@@ -56,22 +56,22 @@ run = [
 
 [build]
 install = """
-install -d "%{pkgdir}/usr/bin"
-cat > "%{pkgdir}/usr/bin/google-chrome" <<'EOF'
+install -d "%{pkgdir}/usr/bin" "%{pkgdir}/usr/libexec"
+cat > "%{pkgdir}/usr/bin/google-chrome" <<'CHROME_WRAPPER'
 #!/bin/sh
 exec /usr/bin/google-chrome-stable "$@"
-EOF
+CHROME_WRAPPER
 chmod 0755 "%{pkgdir}/usr/bin/google-chrome"
-"""
 
-[hooks]
-post_install = '''
+cat > "%{pkgdir}/usr/libexec/google-chrome-install" <<'CHROME_INSTALLER'
+#!/bin/sh
 set -eu
+
 version="157.0.8103.38"
 sha256="a62b277dc03da2cff50cc04589deb66f6875be339c066d46adb49b49eedb629d"
 url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_157.0.8103.38-1_amd64.deb"
 
-# Reinstalling the same Nawa package must not download Chrome's 140+ MB payload again.
+# A same-version reinstall must not download the 140+ MiB payload again.
 if [ -x /opt/google/chrome/chrome ] &&
    [ -x /usr/bin/google-chrome-stable ] &&
    [ -r /opt/google/chrome/.faseela-version ] &&
@@ -116,9 +116,15 @@ install -m644 "$tmp/root/usr/share/applications/google-chrome.desktop" \
     /usr/share/applications/google-chrome.desktop
 cp -a "$tmp/root/usr/share/icons/hicolor/." /usr/share/icons/hicolor/
 echo "google-chrome: installed official Google Chrome $version"
-'''
+CHROME_INSTALLER
+chmod 0755 "%{pkgdir}/usr/libexec/google-chrome-install"
+"""
 
-post_remove = '''
+[hooks]
+# If the network is unavailable the helper remains installed and can be retried.
+post_install = "exec /usr/libexec/google-chrome-install"
+
+post_remove = """
 rm -rf /opt/google/chrome
 rm -f /usr/bin/google-chrome-stable
 rm -f /usr/share/applications/google-chrome.desktop
@@ -126,4 +132,4 @@ if [ -d /usr/share/icons/hicolor ]; then
     find /usr/share/icons/hicolor -type f \
         \( -name 'google-chrome.png' -o -name 'google-chrome.svg' \) -delete
 fi
-'''
+"""

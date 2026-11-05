@@ -21,7 +21,7 @@ def require_deps(category: str, name: str, kind: str, required: set[str]) -> Non
 
 session = recipe("gui", "gui-session")
 assert session["package"]["rel"] >= 13, "Bump gui-session rel for desktop integration changes"
-require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "rsync", "xdg-desktop-portal-gtk"})
+require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
 assert "%{pkgdir}/etc/udev/rules.d" in install_script
@@ -37,7 +37,7 @@ assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
 assert "sway-portals.conf" in install_script
-assert "default=gtk;wlr" in install_script, (
+assert "org.freedesktop.impl.portal.Secret=gnome-keyring" in install_script, (\n    "Sway must route the Secret portal interface to the session GNOME Keyring backend"\n)\nassert "default=gtk;wlr" in install_script, (
     "The portal frontend must prefer GTK for the general interfaces and fall "
     "back to the wlr backend for ScreenCast"
 )
@@ -243,7 +243,7 @@ assert {"xkbcomp", "xkeyboard-config"} <= set(xwayland["depends"]["run"]), (
     "Xwayland must install xkbcomp and the XKB rules/layout data it uses at startup"
 )
 
-assert session["package"]["rel"] >= 23, "Bump gui-session rel for X11 socket directory ownership"
+assert session["package"]["rel"] >= 24, "Bump gui-session rel for Secret portal and UPower integration"
 for required in (
     "mkdir -p /tmp/.X11-unix",
     "chown root:root /tmp/.X11-unix",
@@ -303,6 +303,49 @@ assert {"dbus", "glib", "gcr", "libgcrypt", "p11-kit"} <= set(gkr["depends"]["ru
 gkr_configure = gkr["build"]["configure"]
 for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
     assert flag in gkr_configure, f"gnome-keyring must not require systemd/PAM/SSH agent: {flag}"
+
+
+# Sway explicitly selects GNOME Keyring for the Secret portal interface. This
+# is a per-user session-bus backend, not a systemd/runit service.
+assert "org.freedesktop.impl.portal.Secret=gnome-keyring" in install_script
+
+gudev = recipe("gui", "libgudev")
+assert gudev["package"]["version"] == "238"
+assert re.fullmatch(r"[0-9a-f]{64}", gudev["package"]["sha256"])
+require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "eudev"})
+require_deps("gui", "libgudev", "run", {"glib", "eudev"})
+assert "-D gtk_doc=false" in gudev["build"]["configure"]
+
+upower = recipe("gui", "upower")
+assert upower["package"]["version"] == "1.91.5"
+assert re.fullmatch(r"[0-9a-f]{64}", upower["package"]["sha256"])
+require_deps("gui", "upower", "build", {
+    "meson", "ninja", "pkgconf", "glib", "libgudev", "libusb", "polkit",
+})
+require_deps("gui", "upower", "run", {
+    "dbus-system", "glib", "libgudev", "libusb", "polkit",
+})
+upower_configure = upower["build"]["configure"]
+for flag in ("-D gtk-doc=false", "-D man=false", "-D systemdsystemunitdir=no",
+             "-D udevrulesdir=/usr/lib/udev/rules.d"):
+    assert flag in upower_configure, f"UPower must be built without systemd units: {flag}"
+upower_install = upower["build"]["install"]
+for required in (
+    "usr/share/dbus-1/system-services/org.freedesktop.UPower.service",
+    "usr/share/dbus-1/system.d/org.freedesktop.UPower.conf",
+    "Name=org.freedesktop.UPower",
+    "Exec=/usr/libexec/upowerd",
+    "test -x",
+):
+    assert required in upower_install, f"UPower must ship system D-Bus activation: {required}"
+assert "runit" not in upower.get("depends", {}).get("run", []), (
+    "UPower is D-Bus-activated on demand; dbus-system, not a dedicated runit service, owns the bus"
+)
+
+libusb = recipe("extra", "libusb")
+assert libusb["package"]["version"] == "1.0.30"
+assert libusb["package"]["rel"] >= 2
+assert libusb["package"]["sha256"] == "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
 
 gcr = recipe("gui", "gcr")
 assert {"glib", "libgcrypt", "p11-kit"} <= set(gcr["depends"]["run"])

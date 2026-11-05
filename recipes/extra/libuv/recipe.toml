@@ -1,13 +1,13 @@
-# extra recipe: libuv — multi-platform asynchronous I/O library (Node.js, Neovim)
+# extra recipe: libuv — multi-platform asynchronous I/O library (Node.js, Neovim, BIND)
 [package]
 name = "libuv"
-version = "1.51.0"
+version = "1.53.0"
 rel = 1
 arch = ["x86_64"]
 summary = "libuv — multi-platform asynchronous I/O library (Node.js, Neovim)"
 license = ["MIT"]
 source = "https://dist.libuv.org/dist/v%{version}/libuv-v%{version}.tar.gz"
-sha256 = "5f0557b90b1106de71951a3c3931de5e0430d78da1d9a10287ebc7a3f78ef8eb"
+sha256 = "cb0d6dd2128d5a95bd242c6cc982a24fe608fa93da57b6b4ec763b0018c53e64"
 source_dir = "libuv-v%{version}"
 
 [depends]

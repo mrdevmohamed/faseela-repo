@@ -33,7 +33,7 @@ dist="../dist"
 objdir="$(find "$dist" -mindepth 1 -maxdepth 1 -type d -name 'Linux*_OPT.OBJ' -print -quit)"
 test -n "$objdir"
 install -d "%{pkgdir}/usr/lib" "%{pkgdir}/usr/include/nss" "%{pkgdir}/usr/bin"
-cp -a "$dist/public/nss/." "%{pkgdir}/usr/include/nss/"
+cp -RL "$dist/public/nss/." "%{pkgdir}/usr/include/nss/"
 cp -a "$objdir"/lib/*.so* "%{pkgdir}/usr/lib/"
 find "$objdir/lib" -maxdepth 1 -type f -name '*.chk' -exec cp -a '{}' "%{pkgdir}/usr/lib/" ';'
 for tool in certutil modutil pk12util; do

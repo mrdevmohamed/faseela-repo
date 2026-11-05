@@ -10,7 +10,7 @@ recipes/
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
-├── browser/     optional Firefox and the GTK3 stack it needs (opt-in, on top of gui/)
+├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
@@ -19,14 +19,14 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 41 system + 8 boot + 84 extra =
-**182 packages**, plus the optional `gui/` category (72 packages, see
-[gui/README.md](gui/README.md)), the optional `browser/` category (12 packages,
+Current set: 10 toolchain + 39 base + 43 system + 8 boot + 94 extra =
+**194 packages**, plus the optional `gui/` category (125 packages, see
+[gui/README.md](gui/README.md)), the optional `browser/` category (16 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),
 plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
 and optional `networking/` category (see [networking/README.md](networking/README.md));
-the recipe tree counts 316 recipes in total.
+the recipe tree counts 385 recipes in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
@@ -81,7 +81,8 @@ gettext → texinfo → util-linux → perl → python → openssl → sqlite �
 libunistring → libidn2 → less → rust → nawa (self-hosting)
 
 **system** — attr → acl (POSIX ACLs), libcap → iputils (ping, arping,
-clockdiff, tracepath), libndp, efivar (UEFI variable libraries and tools), then libpsl → curl → git → shadow → procps-ng →
+clockdiff, tracepath), liburcu → bind-tools (dig, host, nslookup),
+libndp, efivar (UEFI variable libraries and tools), then libpsl → curl → git → shadow → procps-ng →
 psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
 libmnl → iproute2 → dhcpcd → sysklogd → runit
 
@@ -118,7 +119,8 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `wget` (extra) pulls `libpsl` (system) + `openssl`, `pcre2` (base);
 `kbd` (extra) pulls `meson`, `ninja` (extra);
 `iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
-(extra), and `pkgconf` (toolchain); `coreutils` and `tar` pull `acl` + `attr` (system).
+(extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
+and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 
 **gui, desktop services** — dbus-system → polkit / bluez / network-manager;
 pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;

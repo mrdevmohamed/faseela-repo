@@ -1,0 +1,174 @@
+# browser recipe: official Google Chrome Stable for x86_64.
+#
+# The proprietary Google .deb is NOT mirrored in the Faseela package repository.
+# The install helper downloads it directly from dl.google.com and verifies the
+# pinned SHA-256 before extracting the browser payload. No Google APT repository,
+# cron updater or package-manager integration is installed.
+[package]
+name = "google-chrome"
+version = "157.0.8103.38"
+rel = 4
+arch = ["x86_64"]
+summary = "Google Chrome Stable (official Google binary for Linux x86_64)"
+license = ["Google-Chrome-EULA"]
+
+[depends]
+build = []
+run = [
+    "alsa-lib",
+    "at-spi2-core",
+    "binutils",
+    "ca-certificates",
+    "cairo",
+    "coreutils",
+    "curl",
+    "dbus",
+    "eudev",
+    "expat",
+    "fontconfig",
+    "freetype",
+    "gdk-pixbuf",
+    "glib",
+    "gtk3",
+    "libX11",
+    "libXcomposite",
+    "libXcursor",
+    "libXdamage",
+    "libXext",
+    "libXfixes",
+    "libXi",
+    "libXrandr",
+    "libXrender",
+    "bzip2",
+    "harfbuzz",
+    "libpng",
+    "libpulse",
+    "libva",
+    "libxshmfence",
+    "libXtst",
+    "libXScrnSaver",
+    "pciutils",
+    "pipewire",
+    "util-linux",
+    "wayland",
+    "wget",
+    "libcap",
+    "libcups",
+    "libdrm",
+    "libxcb",
+    "libxkbcommon",
+    "mesa",
+    "nspr",
+    "nss",
+    "pango",
+    "tar",
+    "vulkan-loader",
+    "xdg-utils",
+    "zlib",
+]
+
+[build]
+install = """
+install -d "%{pkgdir}/usr/bin" "%{pkgdir}/usr/libexec"
+cat > "%{pkgdir}/usr/bin/google-chrome" <<'CHROME_WRAPPER'
+#!/bin/sh
+exec /usr/bin/google-chrome-stable "$@"
+CHROME_WRAPPER
+chmod 0755 "%{pkgdir}/usr/bin/google-chrome"
+
+cat > "%{pkgdir}/usr/libexec/google-chrome-install" <<'CHROME_INSTALLER'
+#!/bin/sh
+set -eu
+
+version="157.0.8103.38"
+sha256="a62b277dc03da2cff50cc04589deb66f6875be339c066d46adb49b49eedb629d"
+url="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_157.0.8103.38-1_amd64.deb"
+
+# A same-version reinstall must not download the 140+ MiB payload again.
+if [ -x /opt/google/chrome/chrome ] &&
+   [ -x /usr/bin/google-chrome-stable ] &&
+   [ -r /opt/google/chrome/.faseela-version ] &&
+   [ "$(cat /opt/google/chrome/.faseela-version)" = "$version" ]; then
+    exit 0
+fi
+
+tmp="$(mktemp -d /var/tmp/google-chrome.XXXXXX)"
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+echo "google-chrome: downloading the official Google Chrome $version package"
+curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 -o "$tmp/chrome.deb" "$url"
+printf '%s  %s\n' "$sha256" "$tmp/chrome.deb" | sha256sum -c -
+
+ar p "$tmp/chrome.deb" data.tar.xz > "$tmp/data.tar.xz"
+install -d "$tmp/root"
+# Google DEB payload paths include a leading ./; unpack the whole data archive
+# in a disposable directory, then copy only the browser-owned paths below.
+tar -xJf "$tmp/data.tar.xz" -C "$tmp/root"
+
+test -x "$tmp/root/opt/google/chrome/chrome" || {
+    echo "google-chrome: extracted Chrome binary is missing or not executable" >&2
+    exit 1
+}
+test -x "$tmp/root/opt/google/chrome/google-chrome" || {
+    echo "google-chrome: extracted Chrome launcher is missing or not executable" >&2
+    exit 1
+}
+test -f "$tmp/root/usr/share/applications/google-chrome.desktop" || {
+    echo "google-chrome: desktop entry is missing from the official package" >&2
+    exit 1
+}
+
+# The DEB launcher under usr/bin is an absolute symlink into /opt. It is
+# dangling while the payload is still staged under $tmp/root, so recreate it
+# after moving the Chrome directory instead of testing/copying that symlink.
+if [ -f "$tmp/root/opt/google/chrome/chrome-sandbox" ]; then
+    chown root:root "$tmp/root/opt/google/chrome/chrome-sandbox"
+    chmod 4755 "$tmp/root/opt/google/chrome/chrome-sandbox"
+fi
+printf '%s\n' "$version" > "$tmp/root/opt/google/chrome/.faseela-version"
+
+install -d /opt/google /usr/bin /usr/share/applications /usr/share/icons/hicolor
+rm -rf "$tmp/old-chrome"
+if [ -d /opt/google/chrome ]; then
+    mv /opt/google/chrome "$tmp/old-chrome"
+fi
+if ! mv "$tmp/root/opt/google/chrome" /opt/google/chrome; then
+    [ ! -d "$tmp/old-chrome" ] || mv "$tmp/old-chrome" /opt/google/chrome
+    exit 1
+fi
+
+ln -sfn /opt/google/chrome/google-chrome /usr/bin/google-chrome-stable
+install -m644 "$tmp/root/usr/share/applications/google-chrome.desktop" \
+    /usr/share/applications/google-chrome.desktop
+# Some official Chrome DEBs ship their icons under /opt/google/chrome
+# instead of /usr/share/icons. Icons are optional; install product logos
+# when present and never fail the browser install because the icon tree is absent.
+for logo in /opt/google/chrome/product_logo_*.png; do
+    [ -f "$logo" ] || continue
+    filename="${logo##*/}"
+    size="${filename#product_logo_}"
+    size="${size%.png}"
+    case "$size" in
+        16|24|32|48|64|128|256)
+            install -d "/usr/share/icons/hicolor/${size}x${size}/apps"
+            install -m644 "$logo" "/usr/share/icons/hicolor/${size}x${size}/apps/google-chrome.png"
+            ;;
+    esac
+done
+echo "google-chrome: installed official Google Chrome $version"
+CHROME_INSTALLER
+chmod 0755 "%{pkgdir}/usr/libexec/google-chrome-install"
+"""
+
+[hooks]
+# If the network is unavailable the helper remains installed and can be retried.
+post_install = "exec /usr/libexec/google-chrome-install"
+
+post_remove = """
+rm -rf /opt/google/chrome
+rm -f /usr/bin/google-chrome-stable
+rm -f /usr/share/applications/google-chrome.desktop
+if [ -d /usr/share/icons/hicolor ]; then
+    find /usr/share/icons/hicolor -type f -name 'google-chrome.png' -delete
+    find /usr/share/icons/hicolor -type f -name 'google-chrome.svg' -delete
+fi
+"""

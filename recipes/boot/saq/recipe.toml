@@ -32,7 +32,7 @@ path = Path("src/saq")
 source = path.read_text()
 
 start = source.index("stage_firmware() {")
-end = source.index("\\n}\\n\\nbuild_one()", start)
+end = source.index("\n}\n\nbuild_one()", start)
 stage_firmware = """stage_firmware() {
     local pattern="$1" base suffix rel out dest match found=0
     local -a matches=()
@@ -69,7 +69,7 @@ module_start = source.index(
     source.index("build_one() {"),
 )
 module_end = source.index(
-    '\\n    else\\n        info "no loadable storage modules',
+    '\n    else\n        info "no loadable storage modules',
     module_start,
 )
 module_scan = """    find "$MODULES_TREE" -type f -name '*.ko' -print0 >"$WORK/modfiles.list"
@@ -87,7 +87,7 @@ module_scan = """    find "$MODULES_TREE" -type f -name '*.ko' -print0 >"$WORK/m
 source = source[:module_start] + module_scan + source[module_end:]
 
 update_start = source.index("update_default() {")
-for_start = source.index("\\n    for cand in", update_start)
+for_start = source.index("\n    for cand in", update_start)
 update_prefix = """update_default() {
     local ver="" cand version_list=""
     local -a versions=()

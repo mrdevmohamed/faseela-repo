@@ -1,0 +1,21 @@
+# gui recipe: libXtst — X11 testing extension client library.
+# Google Chrome links libXtst even in Wayland sessions.
+[package]
+name = "libXtst"
+version = "1.2.5"
+rel = 2
+arch = ["x86_64"]
+summary = "X11 XTEST extension client library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXtst-%{version}.tar.xz"
+sha256 = "b50d4c25b97009a744706c1039c598f4d8e64910c9fde381994e1cae235d9242"
+source_dir = "libXtst-%{version}"
+
+[depends]
+build = ["pkgconf", "xorg-util-macros", "xorgproto", "libX11", "libXi"]
+run = ["libX11", "libXi"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

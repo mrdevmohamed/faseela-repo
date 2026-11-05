@@ -1,0 +1,21 @@
+# browser recipe: libcups — CUPS client library only.
+# Chrome links libcups.so.2; --with-components=libcups intentionally excludes cupsd.
+[package]
+name = "libcups"
+version = "2.4.20"
+rel = 1
+arch = ["x86_64"]
+summary = "CUPS client library (without printing daemon)"
+license = ["Apache-2.0 WITH LLVM-exception"]
+source = "https://github.com/OpenPrinting/cups/releases/download/v%{version}/cups-%{version}-source.tar.gz"
+sha256 = "ab4d9cd7f3e58060091d2b24972223d6401675f11c49b65abf4f6ef31dea22ff"
+source_dir = "cups-%{version}"
+
+[depends]
+build = ["pkgconf", "openssl", "zlib"]
+run = ["openssl", "zlib"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --with-components=libcups --with-tls=openssl"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

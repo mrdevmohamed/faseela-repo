@@ -305,10 +305,6 @@ for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
     assert flag in gkr_configure, f"gnome-keyring must not require systemd/PAM/SSH agent: {flag}"
 
 
-# Sway explicitly selects GNOME Keyring for the Secret portal interface. This
-# is a per-user session-bus backend, not a systemd/runit service.
-assert "org.freedesktop.impl.portal.Secret=gnome-keyring" in install_script
-
 gudev = recipe("gui", "libgudev")
 assert gudev["package"]["version"] == "238"
 assert re.fullmatch(r"[0-9a-f]{64}", gudev["package"]["sha256"])

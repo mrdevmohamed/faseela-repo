@@ -129,7 +129,7 @@ rm -rf /opt/google/chrome
 rm -f /usr/bin/google-chrome-stable
 rm -f /usr/share/applications/google-chrome.desktop
 if [ -d /usr/share/icons/hicolor ]; then
-    find /usr/share/icons/hicolor -type f \
-        \( -name 'google-chrome.png' -o -name 'google-chrome.svg' \) -delete
+    find /usr/share/icons/hicolor -type f -name 'google-chrome.png' -delete
+    find /usr/share/icons/hicolor -type f -name 'google-chrome.svg' -delete
 fi
 """

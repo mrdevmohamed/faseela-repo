@@ -37,7 +37,10 @@ assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
 assert "sway-portals.conf" in install_script
-assert "org.freedesktop.impl.portal.Secret=gnome-keyring" in install_script, (\n    "Sway must route the Secret portal interface to the session GNOME Keyring backend"\n)\nassert "default=gtk;wlr" in install_script, (
+assert "org.freedesktop.impl.portal.Secret=gnome-keyring" in install_script, (
+    "Sway must route the Secret portal interface to the session GNOME Keyring backend"
+)
+assert "default=gtk;wlr" in install_script, (
     "The portal frontend must prefer GTK for the general interfaces and fall "
     "back to the wlr backend for ScreenCast"
 )

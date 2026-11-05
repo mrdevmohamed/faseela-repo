@@ -17,7 +17,7 @@ build = ["libcap", "libuv", "liburcu", "openssl", "perl", "pkgconf"]
 run = ["libcap", "libuv", "liburcu", "openssl"]
 
 [build]
-configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-doh --disable-developer --without-gssapi --without-libidn2 --with-libxml2=no --with-json-c=no --with-lmdb=no --with-liburcu=mb"
+configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-doh --disable-developer --without-gssapi --without-libidn2 --with-libxml2=no --with-json-c=no --with-lmdb=no --with-zlib=no --with-readline=no --with-cmocka=no --with-jemalloc=no --disable-geoip --disable-dnstap"
 compile = """
 set -eu
 # BIND's client programs are under bin/dig; the source root is bind-%{version}.

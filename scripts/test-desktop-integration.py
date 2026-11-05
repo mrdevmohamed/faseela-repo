@@ -311,6 +311,7 @@ for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
 gudev = recipe("gui", "libgudev")
 assert gudev["package"]["version"] == "238"
 assert re.fullmatch(r"[0-9a-f]{64}", gudev["package"]["sha256"])
+assert gudev["package"]["sha256"] != "0" * 64, "libgudev source checksum must be pinned"
 require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "eudev"})
 require_deps("gui", "libgudev", "run", {"glib", "eudev"})
 assert "-D gtk_doc=false" in gudev["build"]["configure"]

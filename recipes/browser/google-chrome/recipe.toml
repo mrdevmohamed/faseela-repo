@@ -7,7 +7,7 @@
 [package]
 name = "google-chrome"
 version = "157.0.8103.38"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Google Chrome Stable (official Google binary for Linux x86_64)"
 license = ["Google-Chrome-EULA"]
@@ -104,8 +104,22 @@ install -d "$tmp/root"
 # in a disposable directory, then copy only the browser-owned paths below.
 tar -xJf "$tmp/data.tar.xz" -C "$tmp/root"
 
-test -x "$tmp/root/opt/google/chrome/chrome"
-test -x "$tmp/root/usr/bin/google-chrome-stable"
+test -x "$tmp/root/opt/google/chrome/chrome" || {
+    echo "google-chrome: extracted Chrome binary is missing or not executable" >&2
+    exit 1
+}
+test -x "$tmp/root/opt/google/chrome/google-chrome" || {
+    echo "google-chrome: extracted Chrome launcher is missing or not executable" >&2
+    exit 1
+}
+test -f "$tmp/root/usr/share/applications/google-chrome.desktop" || {
+    echo "google-chrome: desktop entry is missing from the official package" >&2
+    exit 1
+}
+
+# The DEB launcher under usr/bin is an absolute symlink into /opt. It is
+# dangling while the payload is still staged under $tmp/root, so recreate it
+# after moving the Chrome directory instead of testing/copying that symlink.
 if [ -f "$tmp/root/opt/google/chrome/chrome-sandbox" ]; then
     chown root:root "$tmp/root/opt/google/chrome/chrome-sandbox"
     chmod 4755 "$tmp/root/opt/google/chrome/chrome-sandbox"
@@ -122,7 +136,7 @@ if ! mv "$tmp/root/opt/google/chrome" /opt/google/chrome; then
     exit 1
 fi
 
-install -m755 "$tmp/root/usr/bin/google-chrome-stable" /usr/bin/google-chrome-stable
+ln -sfn /opt/google/chrome/google-chrome /usr/bin/google-chrome-stable
 install -m644 "$tmp/root/usr/share/applications/google-chrome.desktop" \
     /usr/share/applications/google-chrome.desktop
 cp -a "$tmp/root/usr/share/icons/hicolor/." /usr/share/icons/hicolor/

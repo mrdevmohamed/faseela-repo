@@ -25,15 +25,19 @@ from pathlib import Path
 
 path = Path("cups/dest.c")
 text = path.read_text()
-needle = "  cups_dest_t\\t*dests;\\t\\t\\t/* Destinations */\\n"
-addition = (
-    "  int\\t\\tnum_local;\\t\\t/* Number of local cupsd queues */\\n"
-    "  cups_dest_t\\t*local_dests;\\t\\t/* Local cupsd queues */\\n"
-)
-if "num_local" not in text:
-    if needle not in text:
-        raise SystemExit("CUPS 2.4.20 dest.c layout changed; refusing to apply the DNS-SD fix")
-    text = text.replace(needle, needle + addition, 1)
+start = text.index("typedef struct _cups_getdata_s")
+end = text.index("} _cups_getdata_t;", start)
+struct = text[start:end]
+if "num_local" not in struct:
+    marker = "/* Destinations */"
+    pos = text.index(marker, start)
+    line_end = text.index("\\n", pos) + 1
+    text = (
+        text[:line_end]
+        + "  int\\tnum_local;\\t\\t/* Number of local cupsd queues */\\n"
+        + "  cups_dest_t\\t*local_dests;\\t/* Local cupsd queues */\\n"
+        + text[line_end:]
+    )
     path.write_text(text)
 PY
 '''

@@ -3,7 +3,7 @@
 [package]
 name = "libXtst"
 version = "1.2.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 XTEST extension client library"
 license = ["MIT"]

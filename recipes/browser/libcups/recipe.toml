@@ -24,21 +24,24 @@ python3 - <<'PY'
 from pathlib import Path
 
 path = Path("cups/dest.c")
-text = path.read_text()
-start = text.index("typedef struct _cups_getdata_s")
-end = text.index("} _cups_getdata_t;", start)
-struct = text[start:end]
+source = path.read_text()
+start = source.index("typedef struct _cups_getdata_s")
+end = source.index("} _cups_getdata_t;", start)
+struct = source[start:end]
 if "num_local" not in struct:
     marker = "/* Destinations */"
-    pos = text.index(marker, start)
-    line_end = text.index("\\n", pos) + 1
-    text = (
-        text[:line_end]
-        + "  int\\tnum_local;\\t\\t/* Number of local cupsd queues */\\n"
-        + "  cups_dest_t\\t*local_dests;\\t/* Local cupsd queues */\\n"
-        + text[line_end:]
+    pos = source.index(marker, start)
+    newline = chr(10)
+    tab = chr(9)
+    line_end = source.index(newline, pos) + 1
+    addition = (
+        "  int" + tab + "num_local;" + tab * 2
+        + "/* Number of local cupsd queues */" + newline
+        + "  cups_dest_t" + tab + "*local_dests;" + tab
+        + "/* Local cupsd queues */" + newline
     )
-    path.write_text(text)
+    source = source[:line_end] + addition + source[line_end:]
+    path.write_text(source)
 PY
 '''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --with-components=libcups --with-tls=openssl"

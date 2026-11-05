@@ -84,7 +84,9 @@ module_scan = """    find "$MODULES_TREE" -type f -name '*.ko' -print0 >"$WORK/m
             sort -u >"$WORK/firmware.list"
         while IFS= read -r fw; do
             [[ -z "$fw" ]] || stage_firmware "$fw"
-        done <"$WORK/firmware.list""""
+        done <"$WORK/firmware.list"
+"""
+module_scan = module_scan.rstrip("\n")
 source = source[:module_start] + module_scan + source[module_end:]
 
 update_start = source.index("update_default() {")

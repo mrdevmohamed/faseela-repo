@@ -4,10 +4,14 @@
 # pinned here to ONE commit by sha256. The live ISO keeps its own initramfs
 # (bootstrap/initramfs.sh); saq builds the disk-boot images and is called by
 # the linux package's hooks. Needs a static busybox with findfs/modprobe.
+#
+# Nawa intentionally runs package hooks in a minimal chroot without /proc or
+# /dev. Patch saq's process substitutions to ordinary files/here-strings so
+# the linux post_install hook can generate initramfs images in that chroot.
 [package]
 name = "saq"
 version = "1.1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Initramfs generator and kernel boot-image maintenance for Faseela"
 license = ["GPL-2.0"]
@@ -16,12 +20,108 @@ sha256 = "780ee6885e7bb85369dc3405ad04a7c27bbbaa321d902d1164b2848c03497f5d"
 source_dir = "saq-b381e200069d0ede8d7e133008ee92530054500b"
 
 [depends]
-build = []
+build = ["python"]
 run = ["bash", "busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "util-linux", "sed", "grep", "xz", "zstd"]
 
 [build]
+configure = '''
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("src/saq")
+source = path.read_text()
+
+start = source.index("stage_firmware() {")
+end = source.index("\\n}\\n\\nbuild_one()", start)
+stage_firmware = """stage_firmware() {
+    local pattern="$1" base suffix rel out dest match found=0
+    local -a matches=()
+    if [[ "$pattern" == /* || "/$pattern/" == *"/../"* ]]; then
+        warn "ignoring unsafe firmware path: $pattern"
+        return 0
+    fi
+    for base in "$ROOT/usr/lib/firmware" "$ROOT/lib/firmware"; do
+        [[ -d "$base" ]] || continue
+        for suffix in "" .xz .zst .gz; do
+            # Expand the firmware glob directly; hooks run in Nawa's chroot
+            # without /proc, so process substitution is not available here.
+            matches=("$base"/$pattern$suffix)
+            for match in "${matches[@]}"; do
+                [[ -f "$match" ]] || continue
+                rel="${match#"$base"/}"
+                [[ -n "$rel" ]] || continue
+                out="${rel%"$suffix"}"
+                dest="$TREE/lib/firmware/$out"
+                found=1
+                [[ ! -e "$dest" ]] || continue
+                mkdir -p -- "${dest%/*}"
+                decompress "$match" >"$dest"
+            done
+        done
+        if [[ "$found" == 1 ]]; then break; fi
+    done
+    if [[ "$found" == 0 ]]; then warn "firmware not installed for $VER: $pattern"; fi
+}"""
+source = source[:start] + stage_firmware + source[end + 2:]
+
+module_start = source.index(
+    "    while IFS= read -r -d '' path; do modfiles+=",
+    source.index("build_one() {"),
+)
+module_end = source.index(
+    '\\n    else\\n        info "no loadable storage modules',
+    module_start,
+)
+module_scan = """    find "$MODULES_TREE" -type f -name '*.ko' -print0 >"$WORK/modfiles.list"
+    while IFS= read -r -d '' path; do
+        modfiles+=("$path")
+    done <"$WORK/modfiles.list"
+    if (("${#modfiles[@]}")); then
+        # Store the firmware scan in ordinary files; /proc/self/fd does not
+        # exist in Nawa's minimal chroot.
+        (modinfo -F firmware "${modfiles[@]}" 2>/dev/null || true) |
+            sort -u >"$WORK/firmware.list"
+        while IFS= read -r fw; do
+            [[ -z "$fw" ]] || stage_firmware "$fw"
+        done <"$WORK/firmware.list""""
+source = source[:module_start] + module_scan + source[module_end:]
+
+update_start = source.index("update_default() {")
+for_start = source.index("\\n    for cand in", update_start)
+update_prefix = """update_default() {
+    local ver="" cand version_list=""
+    local -a versions=()
+    # Use a here-string: Nawa does not mount /proc inside package hook chroots.
+    version_list="$(installed_versions | sort -Vr)"
+    if [[ -n "$version_list" ]]; then
+        mapfile -t versions <<<"$version_list"
+    fi"""
+source = source[:update_start] + update_prefix + source[for_start:]
+
+old_main = "    mapfile -t ALL_VERSIONS < <(installed_versions | sort -V)"
+if source.count(old_main) != 1:
+    raise SystemExit("saq: expected exactly one all-kernels process substitution")
+source = source.replace(
+    old_main,
+    """    version_list="$(installed_versions | sort -V)"
+    ALL_VERSIONS=()
+    if [[ -n "$version_list" ]]; then
+        mapfile -t ALL_VERSIONS <<<"$version_list"
+    fi""",
+    1,
+)
+
+if "<(" in source:
+    raise SystemExit("saq: process substitution remains; refusing to package")
+path.write_text(source)
+PY
+'''
 check = """
 bash -n src/saq
+if grep -Fq '<(' src/saq; then
+  echo "saq: process substitution would fail in Nawa chroot hooks" >&2
+  exit 1
+fi
 sh -n share/saq/init
 """
 install = """

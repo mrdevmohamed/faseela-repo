@@ -119,7 +119,7 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `wget` (extra) pulls `libpsl` (system) + `openssl`, `pcre2` (base);
 `kbd` (extra) pulls `meson`, `ninja` (extra);
 `iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
-(extra), and `pkgconf` (toolchain); `bind-tools` pulls `libuv`, `liburcu`, `openssl`
+(extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
 and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 
 **gui, desktop services** — dbus-system → polkit / bluez / network-manager;

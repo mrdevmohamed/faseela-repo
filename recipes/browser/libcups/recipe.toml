@@ -1,9 +1,10 @@
 # browser recipe: libcups — CUPS client library only.
-# Chrome links libcups.so.2; --with-components=libcups intentionally excludes cupsd.
+# Chrome links libcups.so.2; no printing daemon or service is installed.
+# CUPS 2.4.20 needs the upstream fix for destination enumeration without DNS-SD.
 [package]
 name = "libcups"
 version = "2.4.20"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "CUPS client library (without printing daemon)"
 license = ["Apache-2.0 WITH LLVM-exception"]
@@ -16,6 +17,26 @@ build = ["pkgconf", "openssl", "zlib"]
 run = ["openssl", "zlib"]
 
 [build]
+# Upstream commit 23a183b fixes CUPS 2.4.20 when Avahi/DNS-SD is not present:
+# _cups_getdata_t must carry num_local and local_dests for cups_enum_dests.
+prepare = '''
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("cups/dest.c")
+text = path.read_text()
+needle = "  cups_dest_t\\t*dests;\\t\\t\\t/* Destinations */\\n"
+addition = (
+    "  int\\t\\tnum_local;\\t\\t/* Number of local cupsd queues */\\n"
+    "  cups_dest_t\\t*local_dests;\\t\\t/* Local cupsd queues */\\n"
+)
+if "num_local" not in text:
+    if needle not in text:
+        raise SystemExit("CUPS 2.4.20 dest.c layout changed; refusing to apply the DNS-SD fix")
+    text = text.replace(needle, needle + addition, 1)
+    path.write_text(text)
+PY
+'''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --with-components=libcups --with-tls=openssl"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

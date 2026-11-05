@@ -76,7 +76,7 @@ module_scan = """    find "$MODULES_TREE" -type f -name '*.ko' -print0 >"$WORK/m
     while IFS= read -r -d '' path; do
         modfiles+=("$path")
     done <"$WORK/modfiles.list"
-    if (("${#modfiles[@]}")); then
+    if ((${#modfiles[@]})); then
         # Store the firmware scan in ordinary files; /proc/self/fd does not
         # exist in Nawa's minimal chroot.
         (modinfo -F firmware "${modfiles[@]}" 2>/dev/null || true) |

@@ -3,7 +3,7 @@
 [package]
 name = "nss"
 version = "3.133"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Mozilla Network Security Services libraries"
 license = ["MPL-2.0"]

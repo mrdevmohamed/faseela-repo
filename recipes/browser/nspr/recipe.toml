@@ -1,0 +1,21 @@
+# browser recipe: NSPR — Mozilla's platform-neutral runtime library.
+# Google Chrome's official Linux package requires libnspr4.
+[package]
+name = "nspr"
+version = "4.40"
+rel = 1
+arch = ["x86_64"]
+summary = "Mozilla Netscape Portable Runtime"
+license = ["MPL-2.0"]
+source = "https://archive.mozilla.org/pub/nspr/releases/v%{version}/src/nspr-%{version}.tar.gz"
+sha256 = "c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc"
+source_dir = "nspr-%{version}"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "cd nspr && ./configure --prefix=/usr --disable-debug --enable-optimize --enable-64bit --with-pthreads --enable-ipv6"
+compile = "cd nspr && make -j%{jobs}"
+install = "cd nspr && make DESTDIR=%{pkgdir} install"

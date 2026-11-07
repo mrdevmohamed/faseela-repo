@@ -1,0 +1,27 @@
+# system recipe: container-name DNS server used by Netavark.
+[package]
+name = "aardvark-dns"
+version = "2.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "DNS server for container networks"
+license = ["Apache-2.0"]
+workdir = "."
+
+[[package.sources]]
+name = "crate"
+url = "https://crates.io/api/v1/crates/aardvark-dns/%{version}/download"
+sha256 = "9f766fcc7f3d8e35da54bca2afc3339c3ff60c24d380d706fa18187055e5c818"
+into = "."
+strip_components = 1
+
+[depends]
+build = []
+run = []
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --locked --offline --bin aardvark-dns"
+install = 'install -Dm0755 target/release/aardvark-dns "%{pkgdir}/usr/libexec/podman/aardvark-dns"'

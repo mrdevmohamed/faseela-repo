@@ -34,13 +34,12 @@ jobs:
           python-version: "3.x"
 
       - name: Pin Nawa source
-        id: pin
         env:
           NAWA_COMMIT: ${{ inputs.commit }}
         run: |
           set -euo pipefail
 
-          if [[ -n "\${NAWA_COMMIT//[[:space:]]/}" ]]; then
+          if [[ -n "$NAWA_COMMIT" ]]; then
             python3 -I scripts/pin-nawa-source.py "$NAWA_COMMIT"
           else
             python3 -I scripts/pin-nawa-source.py
@@ -48,16 +47,6 @@ jobs:
 
           python3 -I scripts/check-recipes.py
           git diff --check
-
-          commit="$(python3 -I - <<'PY'
-          import re
-          from pathlib import Path
-
-          recipe = Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
-          match = re.search(
-              r'^source = "https://github\\.com/mrdevmohamed/nawa/archive/([0-9a-f]{40})\\.tar\\.gz"
-          echo "commit=$commit" >> "$GITHUB_OUTPUT"
-          echo "Pinned Nawa source commit: $commit"
 
       - name: Create or update pinning pull request
         uses: peter-evans/create-pull-request@v7
@@ -72,46 +61,10 @@ jobs:
 
             Updates recipes/base/nawa/recipe.toml using scripts/pin-nawa-source.py.
 
-            - Pinned upstream commit: ${{ steps.pin.outputs.commit }}
-            - Source archive SHA-256 is calculated from GitHub's archive response.
-            - Package version and release number are updated by the pinning script.
-            - Recipe validation and git diff --check passed before this PR was created.
+            The script resolves the latest Nawa default-branch commit unless an
+            explicit commit SHA was supplied, downloads the GitHub source archive,
+            calculates its SHA-256, and updates the package version and release.
+
+            Recipe validation and git diff --check passed before this PR was created.
 
             Merge after the repository CI checks pass.
-          labels: |
-            dependencies
-            nawa
-,
-              recipe,
-              re.MULTILINE,
-          )
-          if not match:
-              raise SystemExit("could not extract the pinned Nawa commit from the recipe")
-          print(match.group(1))
-          PY
-          )"
-          echo "commit=$commit" >> "$GITHUB_OUTPUT"
-          echo "Pinned Nawa source commit: $commit"
-
-      - name: Create or update pinning pull request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: @@GITHUB_TOKEN@@
-          branch: automation/pin-nawa-source
-          delete-branch: true
-          commit-message: "chore(nawa): pin upstream source"
-          title: "chore(nawa): pin latest upstream source"
-          body: |
-            ## Nawa source pin update
-
-            Updates recipes/base/nawa/recipe.toml using scripts/pin-nawa-source.py.
-
-            - Pinned upstream commit: @@PINNED_COMMIT@@
-            - Source archive SHA-256 is calculated from GitHub's archive response.
-            - Package version and release number are updated by the pinning script.
-            - Recipe validation and git diff --check passed before this PR was created.
-
-            Merge after the repository CI checks pass.
-          labels: |
-            dependencies
-            nawa

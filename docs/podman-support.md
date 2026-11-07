@@ -52,9 +52,11 @@ crun recipe explicitly disables systemd integration and links to the declared
 libcap, libseccomp and json-c dependencies. A third recipe, `containers-common`,
 packages local, version-controlled defaults using Nawa's recipe-local asset
 support. It selects `cgroupfs` for the runit host, `crun`, Netavark, rootless
-`pasta`, and enforcing short-name resolution. Its storage defaults prefer
-kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available rather
-than forcing FUSE on every host. The config package still needs an end-to-end
+`pasta`, and enforcing short-name resolution. It leaves Netavark's default
+rootless network directory under the user's graphroot instead of forcing the
+rootful `/etc/containers/networks` path on unprivileged users. Its storage defaults
+prefer kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available
+rather than forcing FUSE on every host. The config package still needs an end-to-end
 install and Podman validation. Remaining components are conmon, catatonit, Netavark, aardvark-dns, passt,
 fuse-overlayfs and the Podman CLI itself.
 

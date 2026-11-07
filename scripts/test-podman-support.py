@@ -59,6 +59,7 @@ assert '"/usr/bin/passt"' in passt["build"]["install"]
 fuse_overlayfs = recipe("recipes/system/fuse-overlayfs/recipe.toml")
 fuse_pkg = fuse_overlayfs["package"]
 assert fuse_pkg["version"] == "2.0.0"
+assert fuse_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assert fuse_pkg["license"] == ["GPL-2.0-or-later"]
 assert fuse_pkg["sources"][0]["sha256"] == "89a46041b603f8ed3393d69be608777fc1f5cba7744afd7542a72e777b91fa36"
 assert fuse_overlayfs["fetch"]["cargo"]["dir"] == "."
@@ -68,6 +69,7 @@ assert "/usr/bin/fuse-overlayfs" in fuse_overlayfs["build"]["install"]
 netavark = recipe("recipes/system/netavark/recipe.toml")
 netavark_pkg = netavark["package"]
 assert netavark_pkg["version"] == "2.1.0"
+assert netavark_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assert netavark_pkg["sources"][0]["sha256"] == "a7a69b66f7d6700d0202467820c343e35edade9e115bb2ac6f28f2630f4bb060"
 assert netavark_pkg["sources"][0]["strip_components"] == 1
 assert netavark["fetch"]["cargo"]["dir"] == "."
@@ -80,6 +82,7 @@ assert "systemd" not in str(netavark["depends"]).lower()
 aardvark = recipe("recipes/system/aardvark-dns/recipe.toml")
 aardvark_pkg = aardvark["package"]
 assert aardvark_pkg["version"] == "2.1.0"
+assert aardvark_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assert aardvark_pkg["sources"][0]["sha256"] == "9f766fcc7f3d8e35da54bca2afc3339c3ff60c24d380d706fa18187055e5c818"
 assert aardvark["fetch"]["cargo"]["dir"] == "."
 assert "--locked --offline --bin aardvark-dns" in aardvark["build"]["compile"]

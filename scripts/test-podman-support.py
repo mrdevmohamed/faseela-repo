@@ -45,6 +45,26 @@ assert "json-c" in crun["depends"]["build"]
 assert "--disable-systemd" in crun["build"]["configure"]
 assert "systemd" not in crun["depends"].get("run", [])
 
+netavark = recipe("recipes/system/netavark/recipe.toml")
+netavark_pkg = netavark["package"]
+assert netavark_pkg["version"] == "2.1.0"
+assert netavark_pkg["sources"][0]["sha256"] == "a7a69b66f7d6700d0202467820c343e35edade9e115bb2ac6f28f2630f4bb060"
+assert netavark_pkg["sources"][0]["strip_components"] == 1
+assert netavark["fetch"]["cargo"]["dir"] == "."
+assert "protobuf-compiler" in netavark["depends"]["build"]
+assert {"aardvark-dns", "nftables"} <= set(netavark["depends"]["run"])
+assert "--locked --offline --bin netavark" in netavark["build"]["compile"]
+assert "/usr/libexec/podman/netavark" in netavark["build"]["install"]
+assert "systemd" not in str(netavark["depends"]).lower()
+
+aardvark = recipe("recipes/system/aardvark-dns/recipe.toml")
+aardvark_pkg = aardvark["package"]
+assert aardvark_pkg["version"] == "2.1.0"
+assert aardvark_pkg["sources"][0]["sha256"] == "9f766fcc7f3d8e35da54bca2afc3339c3ff60c24d380d706fa18187055e5c818"
+assert aardvark["fetch"]["cargo"]["dir"] == "."
+assert "--locked --offline --bin aardvark-dns" in aardvark["build"]["compile"]
+assert "/usr/libexec/podman/aardvark-dns" in aardvark["build"]["install"]
+
 protoc = recipe("recipes/dev/protobuf-compiler/recipe.toml")
 protoc_pkg = protoc["package"]
 assert protoc_pkg["name"] == "protobuf-compiler"

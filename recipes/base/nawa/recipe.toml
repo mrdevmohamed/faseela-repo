@@ -2,7 +2,8 @@
 #
 # The source is pinned to one upstream commit and verified independently by
 # SHA-256. The multi-source schema extracts the GitHub archive directly into
-# the source workspace (strip_components = 1).
+# the source workspace (strip_components = 1); Cargo dependencies are fetched
+# from Cargo.lock by Nawa's fetch phase, not bundled in a vendor directory.
 #
 # The commit, version, and source hash are maintained by:
 #   python3 scripts/pin-nawa-source.py [<nawa commit>]
@@ -10,7 +11,7 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 17
+rel = 18
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
@@ -23,13 +24,11 @@ url = "https://github.com/mrdevmohamed/nawa/archive/3e652cf84b1f2963957ab0f446a8
 sha256 = "1dac94586d73ca9aaada2e77c443243cd4483f4d6f5453a1724cd0449ed7cc2a"
 strip_components = 1
 
-[depends]
-build = ["rust"]
-run = []
+[fetch.cargo]
+dir = "."
 
 [build]
-# All Rust crates are included in vendor/ and selected by .cargo/config.toml.
-# Keep the build fully offline; no [fetch.cargo] phase is necessary.
+# Nawa fetches the locked Cargo dependency graph before this offline build.
 compile = "cargo build --release --offline --locked"
 install = """
 install -Dm755 target/release/nawa %{pkgdir}/usr/bin/nawa

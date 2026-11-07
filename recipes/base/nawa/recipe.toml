@@ -1,16 +1,12 @@
 # base recipe: nawa — this distribution's source-based package manager (self-hosting build)
 #
-# The source lives in its own repository (github.com/mrdevmohamed/nawa) and is
-# pinned here to ONE commit by sha256. The crates are vendored in that
-# repository (vendor/ + .cargo/config.toml), so the build needs no network
-# beyond fetching this tarball, and runs with the distro's own `rust` recipe
-# (cargo on the sandbox PATH).
+# The source is pinned to one upstream commit and verified independently by
+# SHA-256. The multi-source schema extracts the GitHub archive directly into
+# the source workspace (strip_components = 1).
 #
-# The commit, `version` and `sha256` are written by
+# The commit, version, and source hash are maintained by:
 #   python3 scripts/pin-nawa-source.py [<nawa commit>]
-# bootstrap/fetch-nawa.sh reads this same pin to unpack the source for the
-# stage-2 bootstrap build, so there is exactly one place that says which nawa
-# the distribution ships.
+# bootstrap/fetch-nawa.sh reads the same pin from this recipe.
 [package]
 name = "nawa"
 version = "1.0.0"
@@ -18,15 +14,22 @@ rel = 16
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
-source = "https://github.com/mrdevmohamed/nawa/archive/b2802092ee1fb9c97b05f2d55dc6b02b00a75c7b.tar.gz"
+# Fail closed on Nawa versions that predate the multi-source recipe schema.
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nawa"
+url = "https://github.com/mrdevmohamed/nawa/archive/b2802092ee1fb9c97b05f2d55dc6b02b00a75c7b.tar.gz"
 sha256 = "25e307282ffd1149f5f0364e73d47a6b21c0489b90ffbf4fe15fb9fff3f01d30"
-source_dir = "nawa-b2802092ee1fb9c97b05f2d55dc6b02b00a75c7b"
+strip_components = 1
 
 [depends]
 build = ["rust"]
 run = []
 
 [build]
+# All Rust crates are included in vendor/ and selected by .cargo/config.toml.
+# Keep the build fully offline; no [fetch.cargo] phase is necessary.
 compile = "cargo build --release --offline --locked"
 install = """
 install -Dm755 target/release/nawa %{pkgdir}/usr/bin/nawa

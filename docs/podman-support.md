@@ -46,11 +46,12 @@ layer as Podman dependencies.
 
 ## Build and dependency work
 
-The repository already has Go and Rust toolchains. Two source recipes now exist:
+The repository already has Go and Rust toolchains. Two source recipes now exist and have built successfully through Nawa:
 `libseccomp` 2.6.1 (security-fixed upstream release) and `crun` 1.30.1. The
 crun recipe explicitly disables systemd integration and links to the declared
-libcap, libseccomp and json-c dependencies. Neither recipe is considered
-installable until CI and package builds pass. Remaining components are conmon,
+libcap, libseccomp and json-c dependencies. Both recipes have now passed the normal Nawa package-build workflow; this validates
+source staging, compilation, package splitting, and installation into the build root.
+It does not validate Podman itself or the remaining runtime components. Remaining components are conmon,
 containers-common configuration, Netavark, aardvark-dns, passt, fuse-overlayfs
 and the Podman CLI itself.
 

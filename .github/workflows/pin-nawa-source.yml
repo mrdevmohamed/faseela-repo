@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: pin-nawa-source
@@ -71,11 +72,32 @@ jobs:
 
             Merge after the repository CI checks pass.
 
+      - name: Dispatch package reconciliation when pin is unchanged
+        if: ${{ steps.cpr.outputs.pull-request-operation == 'none' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh workflow run packages.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF_NAME" \
+            -f all=true
+
+          {
+            echo "### Package reconciliation queued"
+            echo
+            echo "The Nawa pin already matches upstream, so no pinning PR was needed."
+            echo "Dispatched **Build packages** with `all=true` to reconcile all non-Toolchain packages."
+            echo "Already-published package archives are skipped by the package builder."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Report pin result and PR link
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+          PR_OPERATION: ${{ steps.cpr.outputs.pull-request-operation }}
         run: |
           set -euo pipefail
 
@@ -91,17 +113,23 @@ jobs:
               echo
               echo "Pinning Pull Request: $pr_url"
               echo
-              echo "The source archive hash and recipe validation completed successfully."
+              echo "Package builds will start automatically after this recipe PR is merged."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$PR_OPERATION" == none ]]; then
+            {
+              echo "### Nawa source is already up to date"
+              echo
+              echo "The recipe already points to the latest upstream Nawa commit."
+              echo "The full non-Toolchain package reconciliation was dispatched."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             compare_url="https://github.com/$GITHUB_REPOSITORY/compare/main...automation/pin-nawa-source?expand=1"
             {
-              echo "### Nawa source pin was pushed"
+              echo "### Nawa source pin needs attention"
               echo
-              echo "GitHub blocked automatic Pull Request creation for GITHUB_TOKEN."
-              echo "The update is safe on branch \`automation/pin-nawa-source\`."
+              echo "No pull-request URL was returned. Check the create/update PR step."
               echo
-              echo "[Open the comparison and create the Pull Request]($compare_url)"
+              echo "[Open the branch comparison]($compare_url)"
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning::Pin committed and pushed, but automatic PR creation is disabled for GitHub Actions. Use the comparison link in the job summary."
+            echo "::warning::No pinning pull-request URL was returned; inspect the create/update PR step."
           fi

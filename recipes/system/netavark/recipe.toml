@@ -6,6 +6,7 @@ rel = 1
 arch = ["x86_64"]
 summary = "Container network stack for rootful and rootless Podman"
 license = ["Apache-2.0"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
 workdir = "."
 
 [[package.sources]]

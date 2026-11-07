@@ -416,7 +416,7 @@ jobs:
           cp -a recipes distro/recipes
           cp -a flavors.toml distro/flavors.toml
           # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
-          # Reject an older DISTRO_REF that still expects bootstrap/nawa-source.toml.
+          # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.
           grep -Fq 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' distro/bootstrap/fetch-nawa.sh || {
             echo "::error::DISTRO_REF must use recipe-driven Nawa fetching (update Faseela to the revision containing bootstrap/fetch-nawa.sh's recipe pin support)"
             exit 1

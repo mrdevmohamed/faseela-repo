@@ -5,6 +5,7 @@ name = "protobuf-compiler"
 version = "36.2"
 rel = 1
 arch = ["x86_64"]
+source_date_epoch = 1789666294
 summary = "Protocol Buffers compiler and standard .proto definitions"
 license = ["BSD-3-Clause"]
 source = "https://github.com/protocolbuffers/protobuf/releases/download/v%{version}/protoc-%{version}-linux-x86_64.zip"

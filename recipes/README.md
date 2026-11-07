@@ -16,7 +16,7 @@ recipes/
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── extra/       general tools, editors, net utils, hw tools, misc libs
-└── dev/         opt-in developer runtimes and toolchains
+├── dev/         opt-in developer runtimes and toolchains\n└── security/    ProjectDiscovery security assessment tools (opt-in; see [security/README.md](security/README.md))
 ```
 
 Current set: 10 toolchain + 39 base + 43 system + 8 boot + 94 extra =
@@ -27,7 +27,7 @@ and the optional `creative/` category (15 packages, see [creative/README.md](cre
 plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
 and optional `networking/` category (see [networking/README.md](networking/README.md));
 the recipe tree counts 385 recipes in total.
-`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
+`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/`, `messaging/` and `security/` are never part of them).
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 

@@ -51,5 +51,8 @@ docs = (ROOT / "docs/podman-support.md").read_text(encoding="utf-8")
 assert "Faseela uses **runit**, not systemd" in docs
 assert "Rootless operation is a release" in docs
 assert "libseccomp" in docs
+assert "\\n" not in docs, "documentation contains literal escaped newline sequences"
+for component in ("conmon", "catatonit", "containers-common", "netavark", "aardvark-dns", "passt", "fuse-overlayfs"):
+    assert f"| `{component}` |" in docs, f"missing documented component: {component}"
 
 print("PODMAN PREREQUISITE REGRESSION CHECKS PASSED")

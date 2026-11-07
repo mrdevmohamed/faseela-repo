@@ -63,12 +63,17 @@ A checksum-pinned Podman 6.1.4 source recipe is now present. Upstream includes i
 A pinned `passt` recipe now builds both `passt` and `pasta`; its package build and
 rootless port-forwarding behavior still need validation.
 
-The initial CLI target is Podman 6.1.4. Its upstream `go.mod` declares Go
-1.26.0, while Faseela's opt-in `golang` recipe is 1.27.3. Nawa already has
-a dedicated `[fetch.go]` backend: it fetches the locked module graph before
-the build and then enforces `GOPROXY=off` during compilation. The Podman
-recipe must use that backend rather than run `go mod download` in its build
-script or ship a locally maintained vendor directory.
+The CLI target is Podman 6.1.4. Its upstream `go.mod` declares Go
+1.26.0, while Faseela's opt-in `golang` recipe is 1.27.3. This release
+includes its own `vendor/` tree and `vendor/modules.txt`; the recipe pins
+the source archive and builds with `GOFLAGS=-mod=vendor -trimpath`. This
+uses the upstream-maintained dependency snapshot without a downstream
+vendor directory, without running `go mod download`, and without network
+access during compilation. Nawa's `[fetch.go]` backend remains the right
+path for non-vendored Go projects, but is not used for this recipe. The
+`containers_image_openpgp` tag selects the bundled pure-Go OpenPGP
+implementation and avoids GPGME/libassuan dependencies; OpenPGP signing is
+therefore not provided by this build.
 
 Use the upstream Podman release's dependency versions as a compatibility set.
 Netavark and aardvark-dns must use matching major/minor release lines;

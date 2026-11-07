@@ -1,0 +1,20 @@
+# ProjectDiscovery proxify command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "proxify"
+version = "0.0.16"
+rel = 1
+arch = ["x86_64"]
+summary = "HTTP and HTTPS traffic capture and replay proxy"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/proxify/releases/download/v0.0.16/proxify_0.0.16_linux_amd64.zip"
+sha256 = "242eb958d95b05ca2cf9e2b874ddbee8f143ac13eac4aba3637b2f5736f9c1be"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "proxify_0.0.16_linux_amd64.zip" -d .
+install -Dm755 proxify %{pkgdir}/usr/bin/proxify
+"""

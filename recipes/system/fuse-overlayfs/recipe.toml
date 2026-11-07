@@ -1,0 +1,27 @@
+# system recipe: FUSE overlay storage fallback for rootless containers.
+[package]
+name = "fuse-overlayfs"
+version = "2.0.0"
+rel = 1
+arch = ["x86_64"]
+summary = "FUSE overlay filesystem for rootless container storage"
+license = ["GPL-2.0-or-later"]
+workdir = "."
+
+[[package.sources]]
+name = "crate"
+url = "https://crates.io/api/v1/crates/fuse-overlayfs/%{version}/download"
+sha256 = "89a46041b603f8ed3393d69be608777fc1f5cba7744afd7542a72e777b91fa36"
+into = "."
+strip_components = 1
+
+[depends]
+build = []
+run = []
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --locked --offline --bin fuse-overlayfs"
+install = 'install -Dm0755 target/release/fuse-overlayfs "%{pkgdir}/usr/bin/fuse-overlayfs"'

@@ -12,6 +12,18 @@ def recipe(path: str) -> dict:
     return tomllib.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
+linux = recipe("recipes/boot/linux/recipe.toml")
+assert linux["package"]["rel"] == 22
+kernel_config = linux["build"]["configure"]
+for option in (
+    "PID_NS", "NET_NS", "IPC_NS", "UTS_NS", "CGROUPS", "CGROUP_PIDS",
+    "MEMCG", "CGROUP_SCHED", "FAIR_GROUP_SCHED", "CGROUP_CPUACCT",
+    "CGROUP_FREEZER", "SECCOMP", "SECCOMP_FILTER", "VETH", "BRIDGE",
+    "BRIDGE_NETFILTER",
+):
+    assert f"--enable {option}" in kernel_config, f"kernel config does not enable {option}"
+    assert f"require_config CONFIG_{option} y" in kernel_config, f"kernel config does not assert {option}"
+
 crun = recipe("recipes/system/crun/recipe.toml")
 crun_pkg = crun["package"]
 assert crun_pkg["name"] == "crun"

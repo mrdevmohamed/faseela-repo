@@ -108,8 +108,10 @@ OverlayFS. This is a kernel build-time contract, not proof that the running
 kernel exposes every controller or that the host's cgroup hierarchy is
 configured correctly.
 
-Before using rootless Podman, verify that the installed Shadow package provides
-both setuid helpers:
+Faseela's Shadow recipe now enables subordinate-ID support explicitly and
+fails its package install if either helper is missing; it also enforces the
+root-owned setuid mode. Still verify the installed binaries before enabling
+rootless Podman:
 
 ```sh
 command -v newuidmap newgidmap

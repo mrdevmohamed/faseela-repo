@@ -33,6 +33,6 @@ Or build selected tools by their package names, for example
 These are security assessment tools. Use them only against systems and assets
 you own or are explicitly authorized to test. Passive discovery and OOB
 callbacks may still disclose queried domains or metadata to third-party
-providers. Some subfinder/uncover sources require provider API keys; configure
+providers. Naabu's SYN/packet-capture features require `libpcap` (pulled in as a runtime dependency) and suitable network privileges; CONNECT scans are less privileged. Some subfinder/uncover sources require provider API keys; configure
 those in the tool's own config files rather than embedding credentials in
 package recipes.

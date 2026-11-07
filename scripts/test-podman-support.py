@@ -53,8 +53,8 @@ assert passt_pkg["source"].startswith("https://passt.top/passt/snapshot/")
 assert {"make", "gcc"} <= set(passt["depends"]["build"])
 assert "PAGE_SIZE=4096" in passt["build"]["compile"]
 assert "PAGE_SIZE=4096" in passt["build"]["install"]
-assert '"/usr/bin/pasta"' in passt["build"]["install"]
-assert '"/usr/bin/passt"' in passt["build"]["install"]
+assert "%{pkgdir}/usr/bin/pasta" in passt["build"]["install"]
+assert "%{pkgdir}/usr/bin/passt" in passt["build"]["install"]
 
 fuse_overlayfs = recipe("recipes/system/fuse-overlayfs/recipe.toml")
 fuse_pkg = fuse_overlayfs["package"]

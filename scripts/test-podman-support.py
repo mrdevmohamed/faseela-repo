@@ -25,6 +25,30 @@ assert "json-c" in crun["depends"]["build"]
 assert "--disable-systemd" in crun["build"]["configure"]
 assert "systemd" not in crun["depends"].get("run", [])
 
+common = recipe("recipes/system/containers-common/recipe.toml")
+common_pkg = common["package"]
+assert common_pkg["name"] == "containers-common"
+assert common_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assets = common["assets"]["include"]
+assert set(assets) == {"containers.conf", "storage.conf", "registries.conf"}
+install = common["build"]["install"]
+assert "%{assetsdir}" in install and "%{pkgdir}" in install
+
+common_dir = ROOT / "recipes/system/containers-common"
+containers_conf = tomllib.loads((common_dir / "containers.conf").read_text(encoding="utf-8"))
+storage_conf = tomllib.loads((common_dir / "storage.conf").read_text(encoding="utf-8"))
+registries_conf = tomllib.loads((common_dir / "registries.conf").read_text(encoding="utf-8"))
+assert containers_conf["engine"]["cgroup_manager"] == "cgroupfs"
+assert containers_conf["engine"]["runtime"] == "crun"
+assert containers_conf["network"]["network_backend"] == "netavark"
+assert containers_conf["network"]["default_rootless_network_cmd"] == "pasta"
+assert storage_conf["storage"]["driver"] == "overlay"
+assert storage_conf["storage"]["runroot"] == "/run/containers/storage"
+assert storage_conf["storage"]["graphroot"] == "/var/lib/containers/storage"
+assert "mount_program" not in storage_conf["storage"]["options"]["overlay"]
+assert registries_conf["unqualified-search-registries"] == ["docker.io"]
+assert registries_conf["short-name-mode"] == "enforcing"
+
 seccomp = recipe("recipes/system/libseccomp/recipe.toml")
 pkg = seccomp["package"]
 assert pkg["name"] == "libseccomp"

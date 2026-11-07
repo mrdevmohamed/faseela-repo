@@ -95,7 +95,7 @@ assert podman_pkg["sha256"] == "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda82
 assert "golang" in podman["depends"]["build"]
 assert {"libseccomp", "sqlite"} <= set(podman["depends"]["build"])
 assert {"ca-certificates", "conmon", "catatonit", "containers-common", "crun", "netavark", "aardvark-dns", "passt", "fuse-overlayfs", "shadow", "nftables"} <= set(podman["depends"]["run"])
-assert "[fetch.go]" not in str(podman), "upstream vendor tree should be used as shipped"
+assert "fetch" not in podman, "vendored upstream modules need no Go fetch backend"
 assert "-mod=vendor" in podman["build"]["compile"]
 assert "systemd" not in podman["build"]["compile"].lower()
 assert "containers_image_openpgp" in podman["build"]["compile"]

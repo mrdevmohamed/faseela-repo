@@ -6,6 +6,9 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 
+assert not (ROOT / "scripts/write-nawa-lock.py").exists()
+assert not (ROOT / "scripts/test-write-nawa-lock.py").exists()
+
 
 def recipe(path: str) -> dict:
     return tomllib.loads((ROOT / path).read_text(encoding="utf-8"))

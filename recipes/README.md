@@ -26,7 +26,7 @@ see [browser/README.md](browser/README.md)), the optional `media/` category (23 
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),
 plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
 and optional `networking/` category (1 package, see [networking/README.md](networking/README.md));
-plus the opt-in `dev/` category (10 packages). The recipe tree counts **388 recipes** in total.
+plus the opt-in `dev/` category (11 packages). The recipe tree counts **389 recipes** in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.

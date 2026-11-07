@@ -99,6 +99,53 @@ dependency tree or unpinned build-time downloads.
 - Document required kernel features: user namespaces, namespaces, cgroups
   (prefer unified v2), seccomp, OverlayFS, veth/bridge, and nftables support.
 
+## Rootless provisioning and kernel contract
+
+The Linux recipe now explicitly enables and asserts the kernel features needed
+for container isolation and networking: user/PID/network/IPC/UTS namespaces,
+cgroup controllers, seccomp filtering, veth, bridge/netfilter, FUSE and
+OverlayFS. This is a kernel build-time contract, not proof that the running
+kernel exposes every controller or that the host's cgroup hierarchy is
+configured correctly.
+
+Before using rootless Podman, verify that the installed Shadow package provides
+both setuid helpers:
+
+```sh
+command -v newuidmap newgidmap
+stat -c '%A %U:%G %n' "$(command -v newuidmap)" "$(command -v newgidmap)"
+```
+
+Both helpers must be installed securely as root-owned setuid programs (normally
+mode `4755`). Verify the actual installed package; do not assume that a binary
+being present on disk is enough.
+
+Each user needs non-overlapping subordinate UID and GID ranges, normally at
+least 65,536 IDs, in `/etc/subuid` and `/etc/subgid`. Inspect existing ranges
+before assigning one. For a free range, an administrator can use:
+
+```sh
+sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 USERNAME
+grep '^USERNAME:' /etc/subuid /etc/subgid
+```
+
+Replace `USERNAME` with the account name and choose a range that does not
+overlap any existing user's allocation or a real system UID/GID. Log out and
+back in after changing mappings. Never silently allocate ranges or rewrite
+these files during package installation.
+
+On the running system, check the active cgroup v2 mount and controllers:
+
+```sh
+findmnt -t cgroup2
+cat /sys/fs/cgroup/cgroup.controllers
+```
+
+Rootless mode must be tested as an ordinary user, not as root. The kernel
+configuration alone cannot guarantee that unprivileged user namespaces are
+permitted by host policy, that subordinate ranges are valid, or that the
+cgroup controllers are delegated to the user's session.
+
 ## Required acceptance tests
 
 1. Offline recipe validation and dependency ordering for every package.

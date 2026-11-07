@@ -59,7 +59,7 @@ prefer kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available
 rather than forcing FUSE on every host. The config package still needs an end-to-end
 install and Podman validation. Netavark, aardvark-dns and fuse-overlayfs now
 have checksum-pinned Cargo recipes, but their Nawa builds are not yet confirmed.
-The remaining major package to implement is the Podman CLI. Its Go module fetch and offline build must be validated with Nawa before the recipe is accepted.
+A checksum-pinned Podman 6.1.4 source recipe is now present. Upstream includes its own `vendor/` tree, so the recipe uses that exact upstream-managed dependency snapshot with `-mod=vendor`; it does not add a downstream vendor tree or invoke network fetch during compilation. The CLI build and complete runtime dependency closure still need to be validated through Nawa.
 A pinned `passt` recipe now builds both `passt` and `pasta`; its package build and
 rootless port-forwarding behavior still need validation.
 

@@ -75,7 +75,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_URL: \${{ steps.cpr.outputs.pull-request-url }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
           set -euo pipefail
 

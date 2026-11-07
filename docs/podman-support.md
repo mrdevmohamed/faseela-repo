@@ -28,7 +28,7 @@ Keep the components separate so they can be upgraded and tested independently:
 | Package | Responsibility |
 |---|---|
 | `podman` | CLI, engine, API client and configuration |
-| `containers-common` | shared registries, storage, policy and default configuration |
+| `containers-common` | runit-compatible engine, storage and registry defaults |
 | `conmon` | OCI container monitor |
 | `catatonit` | per-container pause/init process and child reaping |
 | `crun` | default OCI runtime |
@@ -46,14 +46,17 @@ layer as Podman dependencies.
 
 ## Build and dependency work
 
-The repository already has Go and Rust toolchains. Two source recipes now exist and have built successfully through Nawa:
+The repository already has Go and Rust toolchains. Two compiled source recipes have built successfully through Nawa:
 `libseccomp` 2.6.1 (security-fixed upstream release) and `crun` 1.30.1. The
 crun recipe explicitly disables systemd integration and links to the declared
-libcap, libseccomp and json-c dependencies. Both recipes have now passed the normal Nawa package-build workflow; this validates
-source staging, compilation, package splitting, and installation into the build root.
-It does not validate Podman itself or the remaining runtime components. Remaining components are conmon,
-containers-common configuration, Netavark, aardvark-dns, passt, fuse-overlayfs
-and the Podman CLI itself.
+libcap, libseccomp and json-c dependencies. A third recipe, `containers-common`,
+packages local, version-controlled defaults using Nawa's recipe-local asset
+support. It selects `cgroupfs` for the runit host, `crun`, Netavark, rootless
+`pasta`, and enforcing short-name resolution. Its storage defaults prefer
+kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available rather
+than forcing FUSE on every host. The config package still needs an end-to-end
+install and Podman validation. Remaining components are conmon, catatonit, Netavark, aardvark-dns, passt,
+fuse-overlayfs and the Podman CLI itself.
 
 The initial CLI target is Podman 6.1.4. Its upstream `go.mod` declares Go
 1.26.0, while Faseela's opt-in `golang` recipe is 1.27.3. Nawa already has

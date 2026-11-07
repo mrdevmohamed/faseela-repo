@@ -107,6 +107,7 @@ assert {"autoconf", "automake", "libtool", "make", "gcc"} <= set(catatonit["depe
 assert catatonit["build"]["prepare"] == "./autogen.sh"
 assert "./configure --prefix=/usr" in catatonit["build"]["configure"]
 assert "DESTDIR=%{pkgdir}" in catatonit["build"]["install"]
+assert "/usr/libexec/podman/catatonit" in catatonit["build"]["install"]
 
 protoc = recipe("recipes/dev/protobuf-compiler/recipe.toml")
 protoc_pkg = protoc["package"]

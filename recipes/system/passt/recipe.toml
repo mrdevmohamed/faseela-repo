@@ -7,6 +7,7 @@ arch = ["x86_64"]
 summary = "User-mode networking for namespaces and virtual machines"
 license = ["BSD-3-Clause", "GPL-2.0-or-later"]
 source = "https://passt.top/passt/snapshot/passt-%{version}.tar.gz"
+# SHA-256 verified against the pinned upstream snapshot in NixOS/nixpkgs.
 sha256 = "503e1f91cb52a8c0d04e6671a66063475b8a2d5d0b7fd428aad48ad6ef0443ee"
 
 [depends]

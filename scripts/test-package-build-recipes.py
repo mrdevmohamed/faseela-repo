@@ -61,4 +61,26 @@ assert "70-fonts-noto-cjk.conf" in cjk_install
 assert "etc/fonts/conf.d" in cjk_install
 assert "fc-cache -f" in cjk["hooks"]["post_install"]
 
+# Nawa's crates are fetched by the package manager's Cargo backend. There is
+# deliberately no vendor tree and no recipe-side cargo fetch command.
+nawa = recipe("recipes/base/nawa/recipe.toml")
+nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
+assert nawa["package"]["rel"] == 18
+assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
+assert nawa["fetch"]["cargo"]["dir"] == "."
+assert "rust" not in nawa.get("depends", {}).get("build", [])
+assert nawa["build"]["compile"] == "cargo build --release --offline --locked"
+assert "vendor/" not in nawa_text
+assert "cargo fetch" not in nawa["build"]["compile"]
+
+# A selected Nawa target must be bootstrapped from the pinned source with the
+# seed Rust toolchain before the ordinary package loop can parse its recipe.
+workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+assert "building nawa from its pinned source requires the seed rootfs" in workflow
+assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
+assert "cargo fetch --locked" in workflow
+assert "deps nawa" in workflow
+assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
+
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

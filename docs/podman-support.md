@@ -53,6 +53,13 @@ installable until CI and package builds pass. Remaining components are conmon,
 containers-common configuration, Netavark, aardvark-dns, passt, fuse-overlayfs
 and the Podman CLI itself.
 
+The initial CLI target is Podman 6.1.4. Its upstream `go.mod` declares Go
+1.26.0, while Faseela's opt-in `golang` recipe is 1.27.3. Nawa already has
+a dedicated `[fetch.go]` backend: it fetches the locked module graph before
+the build and then enforces `GOPROXY=off` during compilation. The Podman
+recipe must use that backend rather than run `go mod download` in its build
+script or ship a locally maintained vendor directory.
+
 Use the upstream Podman release's dependency versions as a compatibility set.
 In particular, Netavark and aardvark-dns major/minor release lines must match;
 do not independently select arbitrary latest versions. The Netavark 2.x line

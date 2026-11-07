@@ -20,7 +20,7 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 52 system + 8 boot + 94 extra =
-**197 core packages**, plus the optional `gui/` category (125 packages, see
+**203 core packages**, plus the optional `gui/` category (125 packages, see
 [gui/README.md](gui/README.md)), the optional `browser/` category (16 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),

@@ -1,0 +1,20 @@
+# ProjectDiscovery interactsh-client command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "interactsh-client"
+version = "1.4.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Out-of-band interaction testing client"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/interactsh/releases/download/v1.4.1/interactsh-client_1.4.1_linux_amd64.zip"
+sha256 = "1b7e2f1c2f61b36b8d3ce9857f0f338ad7dba47c32274465c77e868bcbc5eeeb"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "interactsh-client_1.4.1_linux_amd64.zip" -d .
+install -Dm755 interactsh-client %{pkgdir}/usr/bin/interactsh-client
+"""

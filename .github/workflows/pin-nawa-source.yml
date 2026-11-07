@@ -35,7 +35,7 @@ jobs:
 
       - name: Pin Nawa source
         env:
-          NAWA_COMMIT: \${{ inputs.commit }}
+          NAWA_COMMIT: ${{ inputs.commit }}
         run: |
           set -euo pipefail
 
@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
-          token: \${{ github.token }}
+          token: ${{ github.token }}
           branch: automation/pin-nawa-source
           delete-branch: true
           commit-message: "chore(nawa): pin upstream source"
@@ -74,8 +74,8 @@ jobs:
       - name: Report pin result and PR link
         if: always()
         env:
-          GH_TOKEN: \${{ github.token }}
-          PR_URL: \${{ steps.cpr.outputs.pull-request-url }}
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         run: |
           set -euo pipefail
 

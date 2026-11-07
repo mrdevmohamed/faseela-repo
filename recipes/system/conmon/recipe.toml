@@ -15,4 +15,4 @@ run = ["glib", "libseccomp"]
 
 [build]
 compile = "make -j%{jobs} DISABLE_SYSTEMD=1"
-install = "make DISABLE_SYSTEMD=1 PREFIX=/usr BINDIR=%{pkgdir}/usr/bin LIBEXECDIR=%{pkgdir}/usr/libexec/podman install.podman"
+install = "make DISABLE_SYSTEMD=1 PREFIX=/usr DESTDIR=%{pkgdir} BINDIR=/usr/bin LIBEXECDIR=/usr/libexec install.podman"

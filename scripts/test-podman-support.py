@@ -45,6 +45,15 @@ assert "json-c" in crun["depends"]["build"]
 assert "--disable-systemd" in crun["build"]["configure"]
 assert "systemd" not in crun["depends"].get("run", [])
 
+fuse_overlayfs = recipe("recipes/system/fuse-overlayfs/recipe.toml")
+fuse_pkg = fuse_overlayfs["package"]
+assert fuse_pkg["version"] == "2.0.0"
+assert fuse_pkg["license"] == ["GPL-2.0-or-later"]
+assert fuse_pkg["sources"][0]["sha256"] == "89a46041b603f8ed3393d69be608777fc1f5cba7744afd7542a72e777b91fa36"
+assert fuse_overlayfs["fetch"]["cargo"]["dir"] == "."
+assert "--locked --offline --bin fuse-overlayfs" in fuse_overlayfs["build"]["compile"]
+assert "/usr/bin/fuse-overlayfs" in fuse_overlayfs["build"]["install"]
+
 netavark = recipe("recipes/system/netavark/recipe.toml")
 netavark_pkg = netavark["package"]
 assert netavark_pkg["version"] == "2.1.0"

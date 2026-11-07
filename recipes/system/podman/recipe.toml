@@ -29,5 +29,5 @@ run = [
 ]
 
 [build]
-compile = "GOFLAGS='-mod=vendor -trimpath' make -j%{jobs} podman BUILDTAGS='seccomp sqlite containers_image_openpgp exclude_graphdriver_btrfs' PREFIX=/usr LIBEXECDIR=/usr/libexec HELPER_BINARIES_DIR='/usr/libexec/podman:/usr/bin' GIT_COMMIT='v%{version}'"
+compile = "GOFLAGS='-mod=vendor -trimpath' make -j%{jobs} podman BUILDTAGS='seccomp libsqlite3 containers_image_openpgp exclude_graphdriver_btrfs' PREFIX=/usr LIBEXECDIR=/usr/libexec HELPER_BINARIES_DIR='/usr/libexec/podman:/usr/bin' GIT_COMMIT='v%{version}'"
 install = 'install -Dm0755 "bin/podman" "%{pkgdir}/usr/bin/podman"'

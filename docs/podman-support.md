@@ -113,6 +113,24 @@ dependency tree or unpinned build-time downloads.
 - Document required kernel features: user namespaces, namespaces, cgroups
   (prefer unified v2), seccomp, OverlayFS, veth/bridge, and nftables support.
 
+## Cgroup behavior without systemd
+
+Faseela deliberately does not ship systemd. The shared configuration therefore
+selects `cgroupfs` instead of relying on a systemd user manager. This is not
+equivalent to systemd delegation: upstream Podman documents that the cgroupfs
+manager does not manage container cgroups in rootless mode. Rootless containers
+can still run, but per-container CPU, memory and PID cgroup limits must not be
+claimed as supported on this configuration. Rootful cgroup management remains
+a separate path.
+
+The acceptance suite must distinguish these capabilities:
+
+- Rootless baseline: image pull, container lifecycle, networking, mounts,
+  volumes and cleanup without assuming cgroup resource limits.
+- Rootless cgroup controls: not supported until Faseela has an explicit,
+  runit-compatible per-user cgroup delegation design and tests.
+- Rootful smoke tests: validate cgroupfs controller setup independently.
+
 ## Rootless provisioning and kernel contract
 
 The Linux recipe now explicitly enables and asserts the kernel features needed

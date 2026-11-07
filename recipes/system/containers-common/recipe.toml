@@ -4,6 +4,7 @@ name = "containers-common"
 version = "0.1.0"
 rel = 1
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Shared configuration defaults for OCI container tools"
 license = ["Apache-2.0", "GPL-2.0-or-later"]
 source = "local:/nawa-schema-2-requires-a-newer-nawa"

@@ -186,8 +186,8 @@ cgroup controllers are delegated to the user's session.
 2. Build each source package through the normal Nawa package workflow.
 3. Install the optional flavor on a clean Faseela rootfs and verify
    `podman --version`, `podman info`, and the selected OCI runtime/network paths.
-4. Rootless pull and run of `hello-world` as an unprivileged user.
-5. Rootless port publishing and container DNS using Netavark/Aardvark.
+4. Rootless pull and run of `docker.io/library/hello-world` as an unprivileged user; use `--cgroups=disabled` for the baseline run because Faseela does not provide a systemd user-cgroup delegate.
+5. Rootless port publishing and container DNS using Netavark/Aardvark, again without claiming per-container cgroup resource limits.
 6. Bind mounts, named volumes, image removal and container cleanup.
 7. Rootful smoke test as a separate test; it must not substitute for rootless.
 8. Verify no Podman-related package installs or enables a systemd service and

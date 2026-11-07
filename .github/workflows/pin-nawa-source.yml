@@ -35,7 +35,7 @@ jobs:
 
       - name: Pin Nawa source
         env:
-          NAWA_COMMIT: ${{ inputs.commit }}
+          NAWA_COMMIT: \${{ inputs.commit }}
         run: |
           set -euo pipefail
 
@@ -49,9 +49,11 @@ jobs:
           git diff --check
 
       - name: Create or update pinning pull request
+        id: cpr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ github.token }}
+          token: \${{ github.token }}
           branch: automation/pin-nawa-source
           delete-branch: true
           commit-message: "chore(nawa): pin upstream source"
@@ -68,3 +70,38 @@ jobs:
             Recipe validation and git diff --check passed before this PR was created.
 
             Merge after the repository CI checks pass.
+
+      - name: Report pin result and PR link
+        if: always()
+        env:
+          GH_TOKEN: \${{ github.token }}
+          PR_URL: \${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          set -euo pipefail
+
+          pr_url="$PR_URL"
+          if [[ -z "$pr_url" ]]; then
+            pr_url="$(gh pr view automation/pin-nawa-source \
+              --repo "$GITHUB_REPOSITORY" --json url --jq .url 2>/dev/null || true)"
+          fi
+
+          if [[ -n "$pr_url" ]]; then
+            {
+              echo "### Nawa source pin is ready"
+              echo
+              echo "Pinning Pull Request: $pr_url"
+              echo
+              echo "The source archive hash and recipe validation completed successfully."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            compare_url="https://github.com/$GITHUB_REPOSITORY/compare/main...automation/pin-nawa-source?expand=1"
+            {
+              echo "### Nawa source pin was pushed"
+              echo
+              echo "GitHub blocked automatic Pull Request creation for GITHUB_TOKEN."
+              echo "The update is safe on branch \`automation/pin-nawa-source\`."
+              echo
+              echo "[Open the comparison and create the Pull Request]($compare_url)"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Pin committed and pushed, but automatic PR creation is disabled for GitHub Actions. Use the comparison link in the job summary."
+          fi

@@ -1,0 +1,20 @@
+name: Compute Nawa archive pin (temporary)
+
+on:
+  push:
+    branches:
+      - update/nawa-1.0.0-19-sandbox-fix
+
+permissions:
+  contents: read
+
+jobs:
+  pin:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute SHA-256 from the official GitHub archive
+        run: |
+          python3 scripts/pin-nawa-source.py 4772ed9faf1e1608050f5028606e0ba8c346cb0c
+          grep -E '^(version|rel) = ' recipes/base/nawa/recipe.toml
+          grep -A3 '^\[\[package.sources\]\]' recipes/base/nawa/recipe.toml

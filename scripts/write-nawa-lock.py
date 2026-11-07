@@ -11,7 +11,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RECIPE = ROOT / "recipes" / "base" / "nawa" / "recipe.toml
+RECIPE = ROOT / "recipes" / "base" / "nawa" / "recipe.toml"
 SOURCE_NAME = "nawa"
 ARCHIVE_RE = re.compile(
     r"https://github\.com/([^/]+/[^/]+)/archive/([0-9a-f]{40})\.tar\.gz"

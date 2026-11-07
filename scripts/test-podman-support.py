@@ -88,6 +88,26 @@ assert aardvark["fetch"]["cargo"]["dir"] == "."
 assert "--locked --offline --bin aardvark-dns" in aardvark["build"]["compile"]
 assert "/usr/libexec/podman/aardvark-dns" in aardvark["build"]["install"]
 
+conmon = recipe("recipes/system/conmon/recipe.toml")
+conmon_pkg = conmon["package"]
+assert conmon_pkg["version"] == "2.2.1"
+assert conmon_pkg["sha256"] == "814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3"
+assert {"gcc", "make", "pkgconf", "glib", "libseccomp"} <= set(conmon["depends"]["build"])
+assert {"glib", "libseccomp"} <= set(conmon["depends"]["run"])
+assert "DISABLE_SYSTEMD=1" in conmon["build"]["compile"]
+assert "DESTDIR=%{pkgdir}" in conmon["build"]["install"]
+assert "LIBEXECDIR=/usr/libexec" in conmon["build"]["install"]
+assert "install.podman" in conmon["build"]["install"]
+
+catatonit = recipe("recipes/system/catatonit/recipe.toml")
+catatonit_pkg = catatonit["package"]
+assert catatonit_pkg["version"] == "0.2.1"
+assert catatonit_pkg["sha256"] == "771385049516fdd561fbb9164eddf376075c4c7de3900a8b18654660172748f1"
+assert {"autoconf", "automake", "libtool", "make", "gcc"} <= set(catatonit["depends"]["build"])
+assert catatonit["build"]["prepare"] == "./autogen.sh"
+assert "./configure --prefix=/usr" in catatonit["build"]["configure"]
+assert "DESTDIR=%{pkgdir}" in catatonit["build"]["install"]
+
 protoc = recipe("recipes/dev/protobuf-compiler/recipe.toml")
 protoc_pkg = protoc["package"]
 assert protoc_pkg["name"] == "protobuf-compiler"
@@ -146,7 +166,7 @@ assert "%{pkgdir}" in seccomp["build"]["install"]
 flavors = (ROOT / "flavors.toml").read_text(encoding="utf-8")
 for default in ("bootstrap", "rootfs-min", "iso-nogui", "iso-gui"):
     section = flavors.split(f"[flavor.{default}]", 1)[1].split("[flavor.", 1)[0]
-    assert all(name not in section for name in ("podman", "developer-containers", "containers-common", "crun", "libseccomp", "protobuf-compiler", "netavark", "aardvark-dns", "fuse-overlayfs", "passt"))
+    assert all(name not in section for name in ("podman", "developer-containers", "containers-common", "conmon", "catatonit", "crun", "libseccomp", "protobuf-compiler", "netavark", "aardvark-dns", "fuse-overlayfs", "passt"))
 
 docs = (ROOT / "docs/podman-support.md").read_text(encoding="utf-8")
 assert "Faseela uses **runit**, not systemd" in docs

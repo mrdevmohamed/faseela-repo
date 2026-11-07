@@ -31,6 +31,8 @@ jobs:
         run: python3 -I scripts/check-recipes.py
       - name: Package build recipe regression checks
         run: python3 -I scripts/test-package-build-recipes.py
+      - name: Podman prerequisite and default-flavor regression checks
+        run: python3 -I scripts/test-podman-support.py
       - name: Package selection and multi-select regression checks
         run: python3 -I scripts/test-package-selection.py
       - name: creative recipes install bin/share and usr payload layouts

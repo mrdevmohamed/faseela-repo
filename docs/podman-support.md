@@ -68,15 +68,17 @@ recipe must use that backend rather than run `go mod download` in its build
 script or ship a locally maintained vendor directory.
 
 Use the upstream Podman release's dependency versions as a compatibility set.
-Netavark and aardvark-dns must use matching major/minor release lines; the
-candidate pair is v2.1.0 for both. Netavark 2.x is intended for Podman 6.x and
-requires Rust 1.88 or newer; Faseela's pinned Rust recipe is 1.96.1 and meets
-that minimum. Netavark's build script also invokes `protoc` through
-`tonic-prost-build`, so an opt-in `protobuf-compiler` recipe was added. It
-packages the official upstream protoc 36.2 x86_64 release artifact with its
-verified SHA-256; it is a prebuilt build tool, not a source-compiled runtime
-library. The Netavark and Aardvark source artifacts still need independently
-verified hashes before their recipes can be added.
+Netavark and aardvark-dns must use matching major/minor release lines;
+the recipes now pin v2.1.0 for both. Their source crates are fetched from
+crates.io with checksums verified against the crates.io index, then Cargo
+dependencies are fetched from each crate's lockfile through Nawa's locked Cargo
+backend. No local `vendor/` tree is maintained. Netavark 2.x is intended for
+Podman 6.x and requires Rust 1.88 or newer; Faseela's pinned Rust recipe is
+1.96.1 and meets that minimum. Netavark's build script invokes `protoc`
+through `tonic-prost-build`, so an opt-in `protobuf-compiler` recipe was
+added. It packages the official upstream protoc 36.2 x86_64 release artifact
+with its verified SHA-256; it is a prebuilt build tool, not a source-compiled
+runtime library. Both Cargo recipes still need actual Nawa package builds.
 
 Every recipe must use Nawa's declared source list/build model, build offline
 after source staging, declare all recipe-level build/runtime dependencies,

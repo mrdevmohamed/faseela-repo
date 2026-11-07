@@ -12,6 +12,14 @@ def recipe(path: str) -> dict:
     return tomllib.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
+shadow = recipe("recipes/system/shadow/recipe.toml")
+assert shadow["package"]["rel"] == 3
+assert "--enable-subids" in shadow["build"]["configure"]
+shadow_install = shadow["build"]["install"]
+for helper in ("newuidmap", "newgidmap"):
+    assert f"/usr/bin/$helper" in shadow_install
+assert "chmod 4755" in shadow_install
+
 linux = recipe("recipes/boot/linux/recipe.toml")
 assert linux["package"]["rel"] == 22
 kernel_config = linux["build"]["configure"]

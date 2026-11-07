@@ -11,7 +11,7 @@ sha256 = "0cc77c0ca32d2f519ffbaa7665bb0e7c88c40753ab22f03551d453a1a823e9f0"
 
 [depends]
 build = ["unzip"]
-run = ["glibc"]
+run = ["glibc", "libpcap"]
 
 [build]
 install = """

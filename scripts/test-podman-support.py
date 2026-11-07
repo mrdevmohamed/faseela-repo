@@ -12,6 +12,19 @@ def recipe(path: str) -> dict:
     return tomllib.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
+crun = recipe("recipes/system/crun/recipe.toml")
+crun_pkg = crun["package"]
+assert crun_pkg["name"] == "crun"
+assert crun_pkg["version"] == "1.30.1"
+assert crun_pkg["sha256"] == (
+    "99d036d95113552b6df66c7c879432835504bf0e525fc0372745071df129527b"
+)
+assert "libseccomp" in crun["depends"]["build"]
+assert "libcap" in crun["depends"]["build"]
+assert "json-c" in crun["depends"]["build"]
+assert "--disable-systemd" in crun["build"]["configure"]
+assert "systemd" not in crun["depends"].get("run", [])
+
 seccomp = recipe("recipes/system/libseccomp/recipe.toml")
 pkg = seccomp["package"]
 assert pkg["name"] == "libseccomp"

@@ -111,6 +111,10 @@ on:
         description: "Select every package in the networking category"
         type: boolean
         default: false
+      security:
+        description: "Select every ProjectDiscovery security tool package"
+        type: boolean
+        default: false
       toolchain:
         description: "Rebuild the FULL Toolchain through Bootstrap Stage 3 (safe self-hosting path)"
         type: boolean
@@ -201,6 +205,7 @@ jobs:
           INPUT_CREATIVE: ${{ inputs.creative }}
           INPUT_MESSAGING: ${{ inputs.messaging }}
           INPUT_NETWORKING: ${{ inputs.networking }}
+          INPUT_SECURITY: ${{ inputs.security }}
           INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
           INPUT_TOOLCHAIN_PACKAGES: ${{ inputs.toolchain_packages }}
           INPUT_PACKAGES: ${{ inputs.packages }}
@@ -258,6 +263,7 @@ jobs:
             [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
             [[ "$INPUT_MESSAGING" == true ]] && categories+=(messaging)
             [[ "$INPUT_NETWORKING" == true ]] && categories+=(networking)
+            [[ "$INPUT_SECURITY" == true ]] && categories+=(security)
 
             args=()
             [[ "$INPUT_ALL" == true ]] && args+=(--all)

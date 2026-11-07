@@ -45,6 +45,16 @@ assert "json-c" in crun["depends"]["build"]
 assert "--disable-systemd" in crun["build"]["configure"]
 assert "systemd" not in crun["depends"].get("run", [])
 
+protoc = recipe("recipes/dev/protobuf-compiler/recipe.toml")
+protoc_pkg = protoc["package"]
+assert protoc_pkg["name"] == "protobuf-compiler"
+assert protoc_pkg["version"] == "36.2"
+assert protoc_pkg["sha256"] == "121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278"
+assert protoc_pkg["source"].endswith("protoc-%{version}-linux-x86_64.zip")
+assert "unzip" in protoc["depends"]["build"]
+assert "extracted/bin/protoc" in protoc["build"]["install"]
+assert "%{pkgdir}/usr/bin/protoc" in protoc["build"]["install"]
+
 common = recipe("recipes/system/containers-common/recipe.toml")
 common_pkg = common["package"]
 assert common_pkg["name"] == "containers-common"

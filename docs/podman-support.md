@@ -93,8 +93,10 @@ still need actual Nawa package builds and runtime validation.
 
 Every recipe must use Nawa's declared source list/build model, build offline
 after source staging, declare all recipe-level build/runtime dependencies,
-install only into `%{pkgdir}`, and carry a verified SHA-256. No vendored
-dependency tree or unpinned build-time downloads.
+install only into `%{pkgdir}`, and carry a verified SHA-256. Do not maintain a
+downstream vendor tree; an upstream-published vendor tree is acceptable only
+when it is part of the checksum-pinned source release and the build explicitly
+uses it offline. Never download unpinned dependencies during compilation.
 
 ## Faseela-specific runtime integration
 

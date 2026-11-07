@@ -6,6 +6,7 @@ rel = 1
 arch = ["x86_64"]
 summary = "DNS server for container networks"
 license = ["Apache-2.0"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
 workdir = "."
 
 [[package.sources]]

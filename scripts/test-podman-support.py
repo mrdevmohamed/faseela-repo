@@ -62,6 +62,8 @@ assert containers_conf["engine"]["cgroup_manager"] == "cgroupfs"
 assert containers_conf["engine"]["runtime"] == "crun"
 assert containers_conf["network"]["network_backend"] == "netavark"
 assert containers_conf["network"]["default_rootless_network_cmd"] == "pasta"
+assert "/usr/bin" in containers_conf["engine"]["helper_binaries_dir"]
+assert "network_config_dir" not in containers_conf["network"], "preserve Netavark rootless per-user network directory"
 assert storage_conf["storage"]["driver"] == "overlay"
 assert storage_conf["storage"]["runroot"] == "/run/containers/storage"
 assert storage_conf["storage"]["graphroot"] == "/var/lib/containers/storage"

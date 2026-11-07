@@ -14,5 +14,9 @@ build = ["make", "gcc"]
 run = []
 
 [build]
-compile = "make prefix=/usr"
-install = 'make prefix=/usr DESTDIR="%{pkgdir}" install'
+compile = "make prefix=/usr PAGE_SIZE=4096"
+install = """
+make prefix=/usr PAGE_SIZE=4096 DESTDIR="%{pkgdir}" install
+test -x "%{pkgdir}/usr/bin/passt"
+test -x "%{pkgdir}/usr/bin/pasta"
+"""

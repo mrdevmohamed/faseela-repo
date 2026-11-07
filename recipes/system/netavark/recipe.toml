@@ -1,0 +1,27 @@
+# system recipe: Netavark OCI container networking backend.
+[package]
+name = "netavark"
+version = "2.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Container network stack for rootful and rootless Podman"
+license = ["Apache-2.0"]
+workdir = "."
+
+[[package.sources]]
+name = "crate"
+url = "https://crates.io/api/v1/crates/netavark/%{version}/download"
+sha256 = "a7a69b66f7d6700d0202467820c343e35edade9e115bb2ac6f28f2630f4bb060"
+into = "."
+strip_components = 1
+
+[depends]
+build = ["protobuf-compiler"]
+run = ["aardvark-dns", "nftables"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --locked --offline --bin netavark"
+install = 'install -Dm0755 target/release/netavark "%{pkgdir}/usr/libexec/podman/netavark"'

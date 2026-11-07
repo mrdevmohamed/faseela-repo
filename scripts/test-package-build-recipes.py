@@ -76,11 +76,19 @@ assert "cargo fetch" not in nawa["build"]["compile"]
 
 # A selected Nawa target must be bootstrapped from the pinned source with the
 # seed Rust toolchain before the ordinary package loop can parse its recipe.
-workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
-assert "building nawa from its pinned source requires the seed rootfs" in workflow
-assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
-assert "cargo fetch --locked" in workflow
-assert "deps nawa" in workflow
-assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
+for workflow_path in (
+    ".github/workflows/packages.yml",
+    ".github/workflows/packages-experimental.yml",
+):
+    workflow = (ROOT / workflow_path).read_text(encoding="utf-8")
+    assert "write-nawa-lock" not in workflow
+    assert "nawa-source.toml" not in workflow
+    assert 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' in workflow
+    if workflow_path.endswith("/packages.yml"):
+        assert "building nawa from its pinned source requires the seed rootfs" in workflow
+        assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
+        assert "cargo fetch --locked" in workflow
+        assert "deps nawa" in workflow
+        assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
 
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

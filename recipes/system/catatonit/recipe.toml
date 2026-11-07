@@ -1,0 +1,20 @@
+# system recipe: catatonit — tiny init and signal forwarder for containers.
+[package]
+name = "catatonit"
+version = "0.2.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Minimal init process for OCI containers"
+license = ["GPL-2.0-or-later"]
+source = "https://github.com/openSUSE/catatonit/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "771385049516fdd561fbb9164eddf376075c4c7de3900a8b18654660172748f1"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "make", "gcc"]
+run = []
+
+[build]
+prepare = "./autogen.sh"
+configure = "./configure --prefix=/usr --disable-shared"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

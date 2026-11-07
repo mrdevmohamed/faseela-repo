@@ -59,8 +59,9 @@ prefer kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available
 rather than forcing FUSE on every host. The config package still needs an end-to-end
 install and Podman validation. Netavark, aardvark-dns and fuse-overlayfs now
 have checksum-pinned Cargo recipes, but their Nawa builds are not yet confirmed.
-The remaining packages to implement are conmon, catatonit, passt and the Podman
-CLI itself.
+The remaining packages to implement are conmon, catatonit and the Podman CLI.
+A pinned `passt` recipe now builds both `passt` and `pasta`; its package build and
+rootless port-forwarding behavior still need validation.
 
 The initial CLI target is Podman 6.1.4. Its upstream `go.mod` declares Go
 1.26.0, while Faseela's opt-in `golang` recipe is 1.27.3. Nawa already has
@@ -82,7 +83,7 @@ added. It packages the official upstream protoc 36.2 x86_64 release artifact
 with its verified SHA-256; it is a prebuilt build tool, not a source-compiled
 runtime library. The `fuse-overlayfs` 2.0.0 crate is also pinned from crates.io
 and built through the same offline Cargo backend; its upstream MSRV is 1.85.0,
-which the Faseela Rust toolchain satisfies. Netavark, Aardvark and fuse-overlayfs
+which the Faseela Rust toolchain satisfies. Netavark, Aardvark, fuse-overlayfs and passt
 still need actual Nawa package builds and runtime validation.
 
 Every recipe must use Nawa's declared source list/build model, build offline

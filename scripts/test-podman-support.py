@@ -94,7 +94,7 @@ assert podman_pkg["version"] == "6.1.4"
 assert podman_pkg["sha256"] == "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8"
 assert "golang" in podman["depends"]["build"]
 assert {"libseccomp", "sqlite"} <= set(podman["depends"]["build"])
-assert {"conmon", "catatonit", "containers-common", "crun", "netavark", "aardvark-dns", "passt", "fuse-overlayfs", "shadow", "nftables"} <= set(podman["depends"]["run"])
+assert {"ca-certificates", "conmon", "catatonit", "containers-common", "crun", "netavark", "aardvark-dns", "passt", "fuse-overlayfs", "shadow", "nftables"} <= set(podman["depends"]["run"])
 assert "[fetch.go]" not in str(podman), "upstream vendor tree should be used as shipped"
 assert "-mod=vendor" in podman["build"]["compile"]
 assert "systemd" not in podman["build"]["compile"].lower()

@@ -29,7 +29,8 @@ Keep the components separate so they can be upgraded and tested independently:
 |---|---|
 | `podman` | CLI, engine, API client and configuration |
 | `containers-common` | shared registries, storage, policy and default configuration |
-| `conmon` | OCI container monitor |\n| `catatonit` | per-container pause/init process and child reaping |
+| `conmon` | OCI container monitor |
+| `catatonit` | per-container pause/init process and child reaping |
 | `crun` | default OCI runtime |
 | `netavark` | rootful/rootless network setup and firewall rules |
 | `aardvark-dns` | container-name DNS for Netavark networks |
@@ -82,7 +83,9 @@ dependency tree or unpinned build-time downloads.
   `registries.conf`, and signature policy without overwriting administrator
   configuration on upgrades.
 - Configure `crun` and `netavark` paths explicitly.
-- Package the upstream-required `catatonit` pause process; do not substitute a\n  permanent system service or a systemd unit.\n- Rootless setup must document subordinate UID/GID ranges and ensure the
+- Package the upstream-required `catatonit` pause process; do not substitute a
+  permanent system service or a systemd unit.
+- Rootless setup must document subordinate UID/GID ranges and ensure the
   required `newuidmap`/`newgidmap` helpers exist. Do not silently edit
   `/etc/subuid` or `/etc/subgid` for existing users.
 - Prefer rootless `pasta` networking. Rootless networking and DNS must be

@@ -45,11 +45,12 @@ layer as Podman dependencies.
 
 ## Build and dependency work
 
-The repository currently has Go and Rust toolchains, but does not yet have the
-complete container dependency closure. Before adding the Podman recipe, add
-and validate missing prerequisites (at minimum the selected versions of
-libseccomp, conmon, containers-common, crun, Netavark, aardvark-dns, passt and
-fuse-overlayfs, plus any required image/signature libraries).
+The repository currently has Go and Rust toolchains. The first prerequisite,
+`libseccomp` 2.6.0, now has a pinned recipe in `recipes/system/libseccomp/`.
+It has not yet passed repository CI or a package build, so it is not considered
+available for installation yet. The remaining dependency closure still needs
+recipes and validation: conmon, containers-common, crun, Netavark, aardvark-dns,
+passt and fuse-overlayfs, plus any required image/signature libraries.
 
 Use the upstream Podman release's dependency versions as a compatibility set.
 In particular, Netavark and aardvark-dns major/minor release lines must match;

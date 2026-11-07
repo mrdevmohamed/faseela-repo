@@ -1,0 +1,20 @@
+# ProjectDiscovery katana command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "katana"
+version = "1.8.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Web crawling and endpoint discovery framework"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/katana/releases/download/v1.8.0/katana_1.8.0_linux_amd64.zip"
+sha256 = "cb027ae99d0757061b70c07a15c7a80f62c5a535ab52c4a329f80c4b0a7309d2"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "katana_1.8.0_linux_amd64.zip" -d .
+install -Dm755 katana %{pkgdir}/usr/bin/katana
+"""

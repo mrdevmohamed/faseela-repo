@@ -531,7 +531,7 @@ jobs:
                 "$candidate" --version
                 # This loads and validates recipes/base/nawa/recipe.toml,
                 # including package.sources and [fetch.cargo], without building.
-                "$candidate" --recipes /faseela/recipes --profiles /faseela/profiles --builddir /build deps nawa >/dev/null
+                "$candidate" --recipes /faseela/recipes deps nawa >/dev/null
                 "$candidate" repo-create --help | grep -q -- --index-version
                 mv -f "$candidate" /usr/bin/nawa
                 /usr/bin/nawa --version

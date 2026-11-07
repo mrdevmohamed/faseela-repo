@@ -1,0 +1,19 @@
+# system recipe: crun — OCI container runtime without systemd integration.
+[package]
+name = "crun"
+version = "1.30.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Lightweight OCI container runtime"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://github.com/containers/crun/releases/download/%{version}/crun-%{version}.tar.gz"
+sha256 = "99d036d95113552b6df66c7c879432835504bf0e525fc0372745071df129527b"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "make", "pkgconf", "python", "libcap", "libseccomp", "json-c"]
+run = ["libcap", "libseccomp", "json-c"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-systemd --disable-bpf"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

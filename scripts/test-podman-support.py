@@ -69,7 +69,7 @@ assert "%{pkgdir}" in seccomp["build"]["install"]
 flavors = (ROOT / "flavors.toml").read_text(encoding="utf-8")
 for default in ("bootstrap", "rootfs-min", "iso-nogui", "iso-gui"):
     section = flavors.split(f"[flavor.{default}]", 1)[1].split("[flavor.", 1)[0]
-    assert "podman" not in section and "developer-containers" not in section
+    assert all(name not in section for name in ("podman", "developer-containers", "containers-common", "crun", "libseccomp"))
 
 docs = (ROOT / "docs/podman-support.md").read_text(encoding="utf-8")
 assert "Faseela uses **runit**, not systemd" in docs

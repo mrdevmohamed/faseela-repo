@@ -68,9 +68,16 @@ assert "fc-cache -f" in cjk["hooks"]["post_install"]
 # deliberately no vendor tree and no recipe-side cargo fetch command.
 nawa = recipe("recipes/base/nawa/recipe.toml")
 nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
-assert nawa["package"]["rel"] == 18
+assert nawa["package"]["rel"] == 19
 assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
+assert nawa["package"]["sources"][0]["url"] == (
+    "https://github.com/mrdevmohamed/nawa/archive/"
+    "4772ed9faf1e1608050f5028606e0ba8c346cb0c.tar.gz"
+)
+assert nawa["package"]["sources"][0]["sha256"] == (
+    "8853cba625e275d8387776379e86a92fe35a81ab1d2ccf93004283403c03c5a0"
+)
 assert nawa["fetch"]["cargo"]["dir"] == "."
 assert "rust" not in nawa.get("depends", {}).get("build", [])
 assert nawa["build"]["compile"] == "cargo build --release --offline --locked"

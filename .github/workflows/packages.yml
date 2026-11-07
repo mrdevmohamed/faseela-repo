@@ -317,6 +317,14 @@ jobs:
             echo "::error::invalid Toolchain selection mode"; exit 1;
           }
 
+          # Building the Nawa recipe now bootstraps the pinned source into the seed
+          # rootfs before parsing its multi-source/Cargo recipe. This always
+          # requires the Rust toolchain, even if a previous transition archive exists.
+          if [[ " $pkgs " == *" nawa "* && "$INPUT_ROOTFS" == min ]]; then
+            echo "::error::building nawa from its pinned source requires the seed rootfs (Rust/Cargo); choose rootfs=auto or seed"
+            exit 1
+          fi
+
           if (( transition_needed )); then
             if [[ "$INPUT_ROOTFS" == min ]]; then
               echo "::error::the Nawa transition requires the seed rootfs (Rust is installed there); choose rootfs=auto or seed"
@@ -497,6 +505,39 @@ jobs:
           sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
           sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
           sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
+
+          # Build the pinned Nawa client from the seed source before asking
+          # any Nawa binary to parse its own multi-source / Cargo-fetch recipe.
+          # Schema-v3 repo support alone does not imply recipe-schema support.
+          if [[ " $PKGS " == *" nawa "* ]]; then
+            [[ "$ROOTFS_KIND" == seed ]] || {
+              echo "::error::building nawa requires the seed rootfs (Rust/Cargo)"
+              exit 1
+            }
+            echo "Bootstrapping the selected Nawa source with the seed Rust toolchain."
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env HOME=/root PATH=/opt/cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin CARGO_HOME=/root/.cargo /bin/bash -c '
+                set -euo pipefail
+                cd /faseela/nawa
+                [[ -s Cargo.toml && -s Cargo.lock ]] || {
+                  echo "pinned Nawa source is missing Cargo.toml or Cargo.lock" >&2
+                  exit 1
+                }
+                cargo fetch --locked
+                CARGO_NET_OFFLINE=true cargo build --release --offline --locked
+
+                candidate=/usr/bin/.nawa-bootstrap-new
+                rm -f "$candidate"
+                install -m 0755 target/release/nawa "$candidate"
+                "$candidate" --version
+                # This loads and validates recipes/base/nawa/recipe.toml,
+                # including package.sources and [fetch.cargo], without building.
+                "$candidate" --recipes /faseela/recipes deps nawa >/dev/null
+                "$candidate" repo-create --help | grep -q -- --index-version
+                mv -f "$candidate" /usr/bin/nawa
+                /usr/bin/nawa --version
+              '
+            echo "Pinned Nawa source compiled with seed Rust and installed before package builds." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           supports_schema_v3() {
             local repo_help

@@ -1,6 +1,6 @@
 # Podman support for Faseela
 
-Status: implementation plan; no Podman package is published yet.
+Status: prerequisite recipes are being implemented; the Podman CLI is not packaged or published yet.
 
 Podman is an optional developer/container feature. It must not enter
 `bootstrap`, `rootfs-min`, `iso-nogui`, `iso-gui`, or the default build
@@ -59,7 +59,7 @@ prefer kernel OverlayFS and leave automatic `fuse-overlayfs` discovery available
 rather than forcing FUSE on every host. The config package still needs an end-to-end
 install and Podman validation. Netavark, aardvark-dns and fuse-overlayfs now
 have checksum-pinned Cargo recipes, but their Nawa builds are not yet confirmed.
-The remaining packages to implement are conmon, catatonit and the Podman CLI.
+The remaining major package to implement is the Podman CLI. Its Go module fetch and offline build must be validated with Nawa before the recipe is accepted.
 A pinned `passt` recipe now builds both `passt` and `pasta`; its package build and
 rootless port-forwarding behavior still need validation.
 

@@ -41,6 +41,8 @@ def run():
     check(package["version"] == "15.0.0.193", "unexpected Huion driver version")
     check("xwayland" in recipe.get("depends", {}).get("run", []),
           "Qt/XCB control panel must declare Xwayland at run time")
+    check("xorg-xprop" in recipe.get("depends", {}).get("run", []),
+          "Huion launcher requires xprop from xorg-xprop at run time")
 
     flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))["flavor"]
     check("huiontablet" in flavors.get("iso-gui-huion", {}).get("include", []),

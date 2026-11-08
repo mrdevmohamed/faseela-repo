@@ -49,8 +49,26 @@ jobs:
             echo "--- $f"
             sed -n '1,240p' "$f"
           done
-          echo '=== Payload files ==='
-          find "$RUNNER_TEMP/huion-root" -printf '%M %u:%g %p -> %l\\n' | sort
+          root="$RUNNER_TEMP/huion-root"
+          echo '=== Top-level payload ==='
+          find "$root" -mindepth 1 -maxdepth 4 -printf '%M %p -> %l\\n' | sort
+          echo '=== Desktop entry ==='
+          cat "$root/usr/share/applications/huiontablet.desktop"
+          echo '=== Autostart entry ==='
+          cat "$root/etc/xdg/autostart/huiontablet.desktop"
+          echo '=== udev rules ==='
+          cat "$root/usr/lib/udev/rules.d/20-huion.rules"
+          echo '=== Huion launch scripts ==='
+          for f in "$root/usr/lib/huiontablet/huiontablet.sh" "$root/usr/lib/huiontablet/huionCore.sh" "$root/usr/lib/huiontablet/detectSessionProtocol"; do
+            echo "--- $f"
+            sed -n '1,220p' "$f"
+          done
+          echo '=== ELF files and dynamic dependencies ==='
+          find "$root/usr/lib/huiontablet" -type f -exec file {} + | grep ELF
+          for f in "$root/usr/lib/huiontablet/huiontablet" "$root/usr/lib/huiontablet/huionCore" "$root/usr/lib/huiontablet/libs/libhuionhid.so"; do
+            echo "--- ldd $f"
+            LD_LIBRARY_PATH="$root/usr/lib/huiontablet/libs:$root/usr/lib/huiontablet/xdotool" ldd "$f" || true
+          done
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
       - name: Bash completion is enabled in default interactive shells

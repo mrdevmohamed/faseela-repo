@@ -5,6 +5,7 @@ catalog-based file-conflict check, on synthetic archives.
 Archives are real tar files. When the machine has no `zstd`, a pass-through shim
 stands in for it (the tools only ever run `zstd -dc FILE` and `zstd ... -c`
 reading stdin), exactly like test-file-conflicts.py."""
+import hashlib
 import io
 import os
 import shutil
@@ -213,7 +214,7 @@ class Catalog(Base):
         self.archive("a", {"usr/bin/a": b"1"})
         out, cat = self.build()
         noncanonical = pc.zstd_decompress_file(cat) + b"\\n"
-        renamed = out / ("catalog-" + "f" * 64 + ".json.zst")
+        renamed = out / ("catalog-" + hashlib.sha256(noncanonical).hexdigest() + ".json.zst")
         renamed.write_bytes(pc.zstd_compress(noncanonical))
         with self.assertRaises(pc.CatalogError):
             pc.load_catalog(renamed)

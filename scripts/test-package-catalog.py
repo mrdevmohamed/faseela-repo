@@ -209,6 +209,15 @@ class Catalog(Base):
         with self.assertRaises(pc.CatalogError):
             pc.load_catalog(plain)
 
+    def test_catalog_rejects_noncanonical_json_even_with_matching_name(self):
+        self.archive("a", {"usr/bin/a": b"1"})
+        out, cat = self.build()
+        noncanonical = pc.zstd_decompress_file(cat) + b"\\n"
+        renamed = out / ("catalog-" + "f" * 64 + ".json.zst")
+        renamed.write_bytes(pc.zstd_compress(noncanonical))
+        with self.assertRaises(pc.CatalogError):
+            pc.load_catalog(renamed)
+
     def test_merge_equals_a_fresh_build(self):
         # the catalog-level form of the repo-update == repo-create invariant:
         # merging records into an old catalog gives what a full rebuild gives

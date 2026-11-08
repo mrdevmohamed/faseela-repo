@@ -102,22 +102,22 @@ def insert_after_once(path, anchor, addition):
 # device-table additions to Faseela's pinned Linux 6.10 source.
 insert_after_once(
     "drivers/hid/hid-ids.h",
-    "#define USB_DEVICE_ID_HUION_TABLET2\\t0x006d",
-    "\\n#define USB_DEVICE_ID_HUION_TABLET4\\t0x006f",
+    "#define USB_DEVICE_ID_HUION_TABLET2\t0x006d",
+    "\n#define USB_DEVICE_ID_HUION_TABLET4\t0x006f",
 )
 insert_after_once(
     "drivers/hid/hid-uclogic-core.c",
-    "\\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\\n"
-    "\\t\\t\\t\\tUSB_DEVICE_ID_HUION_TABLET2) },",
-    "\\n\\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\\n"
-    "\\t\\t\\t\\tUSB_DEVICE_ID_HUION_TABLET4) },",
+    "\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\n"
+    "\t\t\t\tUSB_DEVICE_ID_HUION_TABLET2) },",
+    "\n\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\n"
+    "\t\t\t\tUSB_DEVICE_ID_HUION_TABLET4) },",
 )
 insert_after_once(
     "drivers/hid/hid-uclogic-params.c",
-    "\\tcase VID_PID(USB_VENDOR_ID_HUION,\\n"
-    "\\t\\t     USB_DEVICE_ID_HUION_TABLET2):",
-    "\\n\\tcase VID_PID(USB_VENDOR_ID_HUION,\\n"
-    "\\t\\t     USB_DEVICE_ID_HUION_TABLET4):",
+    "\tcase VID_PID(USB_VENDOR_ID_HUION,\n"
+    "\t\t     USB_DEVICE_ID_HUION_TABLET2):",
+    "\n\tcase VID_PID(USB_VENDOR_ID_HUION,\n"
+    "\t\t     USB_DEVICE_ID_HUION_TABLET4):",
 )
 PY
 '''

@@ -1,9 +1,9 @@
 name: Temporary Huion package inspection
 
 on:
-  push:
+  pull_request:
     branches:
-      - add/huion-hs64-driver
+      - main
     paths:
       - .github/workflows/huion-package-inspection.yml
 

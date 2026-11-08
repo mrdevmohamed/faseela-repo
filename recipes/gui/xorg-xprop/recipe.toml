@@ -1,0 +1,20 @@
+# gui recipe: xorg-xprop — X11 window property inspection utility.
+[package]
+name = "xorg-xprop"
+version = "1.2.8"
+rel = 1
+arch = ["x86_64"]
+summary = "X.Org utility for displaying window and font properties"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/app/xprop-%{version}.tar.xz"
+sha256 = "d689e2adb7ef7b439f6469b51cda8a7daefc83243854c2a3b8f84d0f029d67ee"
+source_dir = "xprop-%{version}"
+
+[depends]
+build = ["pkgconf", "xorg-util-macros", "libX11"]
+run = ["libX11"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

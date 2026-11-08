@@ -237,7 +237,10 @@ def record_filename(file: str) -> str:
 
 
 def validate_record(rec, where: str) -> dict:
-    if not isinstance(rec, dict) or rec.get("schema") != SCHEMA:
+    expected_keys = {"schema", "name", "version", "rel", "arch", "file", "sha256",
+                     "size", "installed_size", "files"}
+    if (not isinstance(rec, dict) or set(rec) != expected_keys
+            or type(rec.get("schema")) is not int or rec["schema"] != SCHEMA):
         raise CatalogError(f"{where}: not a schema-{SCHEMA} package record")
     for key, typ in (("name", str), ("version", str), ("rel", int), ("arch", str), ("file", str),
                      ("sha256", str), ("size", int), ("installed_size", int), ("files", list)):
@@ -292,10 +295,6 @@ def catalog_bytes(records) -> bytes:
 
 def load_catalog(path: Path) -> dict:
     """-> {archive file name: record}"""
-    try:
-        doc = json.loads(zstd_decompress_file(path))
-    except json.JSONDecodeError as exc:
-        raise CatalogError(f"{path}: not valid JSON: {exc}") from exc
     raw = zstd_decompress_file(path)
     try:
         doc = json.loads(raw)

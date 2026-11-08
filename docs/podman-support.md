@@ -187,6 +187,29 @@ configuration alone cannot guarantee that unprivileged user namespaces are
 permitted by host policy, that subordinate ranges are valid, or that the
 cgroup controllers are delegated to the user's session.
 
+## Storage paths and signature policy
+
+`containers-common` deliberately does **not** set `graphroot`, `runroot` or the
+deprecated `rootless_storage_path`. Podman 6.x applies a configured `graphroot`
+to unprivileged users as well, so setting it system-wide makes every rootless
+run fail with `mkdir /var/lib/containers/storage: permission denied`. With the
+keys unset, the built-in defaults select the system paths for root and
+`~/.local/share/containers/storage` for ordinary users.
+
+The package also installs a default `/usr/share/containers/policy.json`
+(`insecureAcceptAnything`, matching upstream's default). Podman will not pull
+images without a policy file. Administrators who want signature enforcement
+should provide their own `/etc/containers/policy.json`, which takes precedence.
+
+## Known rootless caveats on Faseela
+
+- The first-run warning `"/" is not a shared mount` is harmless for
+  `hello-world`, but can break some bind mounts. Making `/` a shared mount
+  (`mount --make-rshared /`) belongs in early boot and is not done yet.
+- Use `doas` instead of `sudo` for the administrator commands above.
+- A user without `/etc/subuid` and `/etc/subgid` entries cannot pull
+  multi-UID images; add the ranges before the first run.
+
 ## Required acceptance tests
 
 1. Offline recipe validation and dependency ordering for every package.

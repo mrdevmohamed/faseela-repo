@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import re
+import json
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -141,14 +142,17 @@ assert common_pkg["name"] == "containers-common"
 assert common_pkg["source_date_epoch"] == 1767225600
 assert common_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assets = common["assets"]["include"]
-assert set(assets) == {"containers.conf", "storage.conf", "registries.conf"}
+assert set(assets) == {"containers.conf", "storage.conf", "registries.conf", "policy.json"}
 install = common["build"]["install"]
 assert "%{assetsdir}" in install and "%{pkgdir}" in install
+assert "/usr/share/containers/policy.json" in install
 
 common_dir = ROOT / "recipes/system/containers-common"
 containers_conf = tomllib.loads((common_dir / "containers.conf").read_text(encoding="utf-8"))
 storage_conf = tomllib.loads((common_dir / "storage.conf").read_text(encoding="utf-8"))
 registries_conf = tomllib.loads((common_dir / "registries.conf").read_text(encoding="utf-8"))
+policy = json.loads((common_dir / "policy.json").read_text(encoding="utf-8"))
+assert policy["default"], "policy.json needs a default policy"
 assert containers_conf["engine"]["cgroup_manager"] == "cgroupfs"
 assert containers_conf["engine"]["runtime"] == "crun"
 assert containers_conf["network"]["network_backend"] == "netavark"
@@ -156,8 +160,9 @@ assert containers_conf["network"]["default_rootless_network_cmd"] == "pasta"
 assert "/usr/bin" in containers_conf["engine"]["helper_binaries_dir"]
 assert "network_config_dir" not in containers_conf["network"], "preserve Netavark rootless per-user network directory"
 assert storage_conf["storage"]["driver"] == "overlay"
-assert storage_conf["storage"]["runroot"] == "/run/containers/storage"
-assert storage_conf["storage"]["graphroot"] == "/var/lib/containers/storage"
+assert "runroot" not in storage_conf["storage"], "runroot breaks rootless users"
+assert "graphroot" not in storage_conf["storage"], "graphroot is applied to rootless users and breaks them"
+assert "rootless_storage_path" not in storage_conf["storage"], "rootless_storage_path is deprecated"
 assert "mount_program" not in storage_conf["storage"]["options"]["overlay"]
 assert registries_conf["unqualified-search-registries"] == ["docker.io"]
 assert registries_conf["short-name-mode"] == "enforcing"

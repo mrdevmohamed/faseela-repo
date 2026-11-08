@@ -43,6 +43,14 @@ def run():
           "Qt/XCB control panel must declare Xwayland at run time")
     check("xorg-xprop" in recipe.get("depends", {}).get("run", []),
           "Huion launcher requires xprop from xorg-xprop at run time")
+    xprop_recipe_path = ROOT / "recipes/gui/xorg-xprop/recipe.toml"
+    check(xprop_recipe_path.is_file(), "xorg-xprop package recipe must exist")
+    if xprop_recipe_path.is_file():
+        xprop_recipe = tomllib.loads(xprop_recipe_path.read_text(encoding="utf-8"))
+        check(xprop_recipe.get("package", {}).get("name") == "xorg-xprop",
+              "xprop provider recipe must be named xorg-xprop")
+        check(xprop_recipe.get("package", {}).get("version") == "1.2.8",
+              "unexpected xorg-xprop package version")
 
     flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))["flavor"]
     check("huiontablet" in flavors.get("iso-gui-huion", {}).get("include", []),

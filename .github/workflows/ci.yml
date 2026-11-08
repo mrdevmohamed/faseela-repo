@@ -27,6 +27,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Huion HS64 kernel driver support regression check
+        run: python3 -I scripts/test-huion-support.py
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
       - name: Bash completion is enabled in default interactive shells

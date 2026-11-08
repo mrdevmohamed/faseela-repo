@@ -108,7 +108,7 @@ def canonical(obj) -> bytes:
 # --------------------------------------------------------------------------
 
 def parse_pkginfo(text: str, where: str) -> dict:
-    """Same rules nawa applies in `repo-create` for a schema-v2/v3 index."""
+    """Validate the package metadata required to create a schema-v3 index."""
     info = {}
     for line in text.splitlines():
         line = line.strip()
@@ -131,7 +131,7 @@ def parse_pkginfo(text: str, where: str) -> dict:
     if rel == 0:
         raise CatalogError(f"{where}: .PKGINFO has invalid pkgrel 0")
     arch = info.get("arch", "")
-    if not arch or not re.fullmatch(r"[A-Za-z0-9_+-]+", arch):
+    if not arch or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]*", arch):
         raise CatalogError(f"{where}: .PKGINFO has a missing or invalid arch {arch!r}")
     installed = info.get("size")
     if installed is None or not installed.isascii() or not installed.isdigit():
@@ -156,7 +156,7 @@ def _safe_parts(name: str, where: str):
     parts = normalized.split("/")
     while parts and parts[0] in ("", "."):
         parts.pop(0)
-    if any(part in ("..", "") for part in parts):
+    if any(part in ("", ".", "..") for part in parts):
         raise CatalogError(f"{where}: unsafe archive path {name!r}")
     return [part for part in parts if part != "."]
 

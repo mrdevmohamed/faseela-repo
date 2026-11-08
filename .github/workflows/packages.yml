@@ -644,12 +644,19 @@ jobs:
 
           workers="${PACKAGE_DOWNLOAD_JOBS:-12}"
           [[ "$workers" =~ ^[0-9]+$ ]] || {
-            echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 4"; exit 1;
-          }
-          workers=$((10#$workers))
-          (( workers >= 1 && workers <= 4 )) || {
             echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
           }
+          workers=$((10#$workers))
+          (( workers >= 1 && workers <= 32 )) || {
+            echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
+          }
+          # GitHub's public release CDN has returned widespread HTTP 504s
+          # under the previous 12-way fan-out. Keep the effective concurrency
+          # conservative even when the repository variable is set higher.
+          if (( workers > 4 )); then
+            echo "Capping PACKAGE_DOWNLOAD_JOBS from $workers to 4 to avoid release-CDN overload."
+            workers=4
+          fi
 
           if (( n > 0 )); then
             xargs -0 -r -n 2 -P "$workers" bash -euo pipefail -c '

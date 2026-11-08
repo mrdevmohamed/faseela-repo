@@ -142,10 +142,10 @@ class Records(Base):
 
     def test_pkginfo_requires_arch_and_nonnegative_decimal_size(self):
         cases = (
-            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\nsize = 10\\n",
-            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\n",
-            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\nsize = nope\\n",
-            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\nsize = -1\\n",
+            b"pkgname = a\npkgver = 1\npkgrel = 1\nsize = 10\n",
+            b"pkgname = a\npkgver = 1\npkgrel = 1\narch = x86_64\n",
+            b"pkgname = a\npkgver = 1\npkgrel = 1\narch = x86_64\nsize = nope\n",
+            b"pkgname = a\npkgver = 1\npkgrel = 1\narch = x86_64\nsize = -1\n",
         )
         for info in cases:
             with self.subTest(info=info):

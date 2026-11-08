@@ -561,17 +561,21 @@ jobs:
           # the real Nawa recipe (multi-source + Cargo fetch) to verify that
           # this binary understands and validates the current recipe schema.
           supports_recipe_schema() {
-            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa \
-              --recipes /faseela/recipes recipe check nawa >/dev/null 2>&1
+            local output
+            output="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa \
+              --recipes /faseela/recipes recipe check nawa 2>&1)" || return 1
+            # recipe check exits zero for warnings on old implementations;
+            # require the current schema's known tables/keys with no warnings.
+            grep -Fq 'nawa: recipe check: 1 recipe(s), 0 warning(s)' <<< "$output"
           }
 
           supports_nawa_features() {
             supports_schema_v3 && supports_recipe_schema
           }
 
-          # Older rootfs releases can carry Nawa 1.0.0-10 even though the
-          # current, signed transition package already contains Nawa 1.0.0-11.
-          # Upgrade locally before attempting to write the schema-v3 index.
+          # Older rootfs releases can carry a Nawa client that predates the
+          # current recipe schema even when its repository-index support is
+          # already up to date. Upgrade locally before package builds.
           if ! supports_nawa_features; then
             nawa_archive="$(python3 -I - <<'PY'
           import tomllib

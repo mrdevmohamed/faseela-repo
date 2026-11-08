@@ -1,6 +1,7 @@
 # Incremental package publishing: design
 
-Status: proposal (not implemented).
+Status: proposal. Phase 0 tooling is implemented; nothing in the publish
+workflow uses it yet (see section 14).
 Scope: `.github/workflows/packages.yml`, `scripts/check-file-conflicts.py`,
 `scripts/distributed-releases.py`, and the `nawa` repository tooling
 (`mrdevmohamed/nawa`, `repo-create`).
@@ -578,3 +579,33 @@ In `mrdevmohamed/faseela-repo`:
   backoff, bounded attempts and a named failure.
 - **End to end (shadow phase):** repeated publishes with exact equality
   against the full-scan index.
+
+## 14. Implementation status
+
+Implemented in `faseela-repo` (no change to the production publish path):
+
+- `scripts/package_catalog.py`: `record`, `build`, `merge` and `verify`
+  commands for package records and the catalog (sections 6.1 and 6.2).
+  `merge` updates a catalog from records without opening any archive, and
+  `verify` compares a catalog with archives and with a repository
+  `index.toml`.
+- `scripts/check-file-conflicts.py --catalog FILE`: reads file lists from the
+  catalog (section 6.5). An archive present in the archive directory still
+  wins for the same file name, so packages built by the current run need no
+  record.
+- `scripts/test-package-catalog.py` (wired into `ci.yml`): record contents,
+  rejection of invalid `.PKGINFO`, deterministic content-addressed catalogs,
+  the catalog-level equivalent of the `repo-update` invariant (merge equals a
+  fresh build), verification, and parity between the archive-based and the
+  catalog-based conflict check.
+
+Not implemented yet:
+
+- the signed `catalog.toml` pointer: `package_catalog.py` writes an
+  **unsigned** pointer (marked as such) and must never be published as is;
+  signing needs the repository key in the publish job;
+- `nawa repo-update` (lives in `mrdevmohamed/nawa`);
+- the backfill job (Phase 0 exit criteria), shadow mode, closure-based fetch,
+  and the scheduled jobs of section 6.8;
+- the tests were run against a pass-through `zstd` shim locally; CI exercises
+  them with the real `zstd`.

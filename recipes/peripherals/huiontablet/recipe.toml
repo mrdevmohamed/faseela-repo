@@ -15,7 +15,7 @@ sha256 = "cc563c2358dd0ba13c245f97341d20fecfa8509bfa5c75c8258c895f48b6fa02"
 
 [depends]
 build = ["binutils", "tar", "xz"]
-run = ["bash", "coreutils", "eudev", "mesa", "procps-ng", "psmisc", "xwayland"]
+run = ["bash", "coreutils", "eudev", "mesa", "procps-ng", "psmisc", "xorg-xprop", "xwayland"]
 
 [build]
 install = '''

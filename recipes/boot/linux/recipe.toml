@@ -63,10 +63,11 @@
 #         passed literally to scripts/config and aborted kernel configuration.
 # rel 22: explicitly enable and assert the namespaces, cgroup v2 controllers,
 #         seccomp, veth and bridge support required by rootless/rootful Podman.
+# rel 23: build the in-tree hid-uclogic module for native Huion HS64 pen input.
 [package]
 name = "linux"
 version = "6.10"
-rel = 22
+rel = 23
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -192,6 +193,7 @@ scripts/config \
 # Input needed to type into the saq rescue shell and to log in.
 scripts/config \
     --enable HID --enable HID_GENERIC --enable USB_HID \
+    --module HID_UCLOGIC \
     --enable KEYBOARD_ATKBD --enable VIRTIO_INPUT \
     --module I2C_HID_ACPI
 
@@ -464,6 +466,7 @@ require_config CONFIG_BLK_DEV_DM y
 # Input: a keyboard for the rescue shell and for login.
 require_config CONFIG_HID_GENERIC y
 require_config CONFIG_USB_HID y
+require_config CONFIG_HID_UCLOGIC m
 require_config CONFIG_KEYBOARD_ATKBD y
 require_config CONFIG_VIRTIO_INPUT y
 

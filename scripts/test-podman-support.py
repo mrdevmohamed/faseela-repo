@@ -153,6 +153,7 @@ common = recipe("recipes/system/containers-common/recipe.toml")
 common_pkg = common["package"]
 assert common_pkg["name"] == "containers-common"
 assert common_pkg["source_date_epoch"] == 1767225600
+assert common_pkg["rel"] == 3
 assert common_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assets = common["assets"]["include"]
 assert set(assets) == {"containers.conf", "storage.conf", "registries.conf", "policy.json"}

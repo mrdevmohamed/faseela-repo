@@ -130,6 +130,18 @@ can still run, but per-container CPU, memory and PID cgroup limits must not be
 claimed as supported on this configuration. Rootful cgroup management remains
 a separate path.
 
+The installed `runit-services` stage-1 script mounts the unified cgroup v2
+hierarchy at `/sys/fs/cgroup` during boot when it is not already mounted.
+This makes the host hierarchy available without systemd; it does **not** delegate
+a subtree or controllers to an unprivileged user. After reboot, verify the
+mount and the controllers with:
+
+```sh
+findmnt -t cgroup2
+cat /sys/fs/cgroup/cgroup.controllers
+```
+
+
 The acceptance suite must distinguish these capabilities:
 
 - Rootless baseline: image pull, container lifecycle, networking, mounts,

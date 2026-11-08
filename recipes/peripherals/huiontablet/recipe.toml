@@ -35,7 +35,7 @@ rm -rf "$payload"
 install -d "$payload"
 
 # Extract only the data archive. Never execute control.tar maintainer scripts.
-member="$(ar t "$deb" | awk '/^data\\.tar\\.(xz|zst|gz|bz2)$/ { print; exit }')"
+member="$(ar t "$deb" | awk '/^data\.tar\.(xz|zst|gz|bz2)$/ { print; exit }')"
 test -n "$member" || {
     echo "huiontablet: unsupported Debian data archive" >&2
     exit 1
@@ -86,7 +86,7 @@ PY
 # shared objects stay executable; data, QML, images and configuration do not.
 find "$dest" -type d -exec chmod 0755 {} +
 find "$dest" -type f -exec chmod 0644 {} +
-find "$dest" -type f \\( -name '*.so' -o -name '*.so.*' \\) -exec chmod 0755 {} +
+find "$dest" -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 0755 {} +
 for executable in huiontablet huionCore huiontablet.sh huionCore.sh detectSessionProtocol screenshot; do
     [ ! -f "$dest/$executable" ] || chmod 0755 "$dest/$executable"
 done

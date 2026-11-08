@@ -20,19 +20,14 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 53 system + 8 boot + 94 extra =
-**204 core packages**, plus the optional `gui/` category (125 packages, see
-[gui/README.md](gui/README.md)), the optional `browser/` category (16 packages,
-see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
-and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),
-plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
-and optional `networking/` category (1 package, see [networking/README.md](networking/README.md));
-plus the opt-in `dev/` category (11 packages). The recipe tree counts **396 recipes** in total.
-`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
-and optional `networking/` category (see [networking/README.md](networking/README.md)),
-plus the optional `security/` category (12 ProjectDiscovery tools; see [security/README.md](security/README.md));
-the recipe tree counts 397 recipes in total.
-`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/`, `messaging/` and `security/` are never part of them).
+Current set: 10 toolchain + 39 base + 54 system + 8 boot + 94 extra =
+**205 core packages**. Optional categories contain 125 GUI, 16 browser, 23
+media, 15 creative, 1 messaging, 1 networking, 12 security and 11 developer
+packages. The recipe tree contains **409 recipes** in total.
+
+The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
+only when `WITH_GUI=1`; browser, media, creative, messaging, networking,
+security and developer packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
@@ -89,24 +84,15 @@ libunistring → libidn2 → less → rust → nawa (self-hosting)
 clockdiff, tracepath), liburcu → bind-tools (dig, host, nslookup),
 libndp, efivar (UEFI variable libraries and tools), then libpsl → curl → git → shadow → procps-ng →
 psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
-libmnl → iproute2 → dhcpcd → sysklogd → runit
+libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
 
 **boot** — linux; efibootmgr → grub → busybox
 
-**extra** — 67 packages across three thematic sets plus a later batch:
-
-* dev/build: autoconf, automake, libtool, patch, ninja, meson, cmake,
-  lz4, libarchive, zip, unzip, pigz, brotli, p7zip
-* net/editors: openssh, wget, rsync, libpcap, tcpdump, libnftnl,
-  iptables, nftables, ethtool, libevent, vim, nano, tmux, htop, screen
-* misc/libs/hw: jq, which, time, cpio, tree, popt, logrotate, cronie,
-  ca-certificates, libxml2, libyaml, dosfstools, parted, mdadm,
-  pciutils, usbutils, libusb, kbd (meson-based)
-
-* later additions — user tools and hardware: lsof, strace, ncdu, socat,
-  bash-completion, man-pages, wireguard-tools, exfatprogs, brightnessctl,
-  alsa-lib, alsa-utils, zsh, nnn, fastfetch, pv, lua, nasm, libjpeg-turbo,
-  valgrind, gdb
+**extra** — 94 general-purpose packages covering development/build
+utilities, network diagnostics, editors, hardware inspection, storage tools,
+compression and command-line productivity. The live ISO's `iso-nogui` flavor
+includes this category; inspect the current inventory with
+`python3 scripts/recipe-ids.py recipes`.
 
 **system, later additions** — attr/acl (extended attributes and POSIX ACLs),
 libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
@@ -131,7 +117,7 @@ and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;
 PipeWire and WirePlumber start in the user's Sway session.
 
-Verify any chain — or the whole 295-package graph at once — with:
+Verify any dependency chain — or the complete recipe graph — with:
 
 ```
 nawa --recipes recipes deps <name>

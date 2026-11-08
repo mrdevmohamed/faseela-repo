@@ -71,7 +71,7 @@ nawa = recipe("recipes/base/nawa/recipe.toml")
 nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # The commit, release and hash are bumped by scripts/pin-nawa-source.py (and by
 # the automation that runs it), so check their shape rather than one pin.
-assert nawa["package"]["rel"] >= 19
+assert nawa["package"]["rel"] >= 21
 assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
 assert re.fullmatch(
@@ -95,6 +95,13 @@ assert "building nawa from its pinned source requires the seed rootfs" in workfl
 assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
 assert "cargo fetch --locked" in workflow
 assert "deps nawa" in workflow
+assert "supports_schema_v3()" in workflow
+assert "supports_recipe_schema()" in workflow
+assert "supports_nawa_features()" in workflow
+assert "recipe check nawa" in workflow
+assert "if ! supports_nawa_features; then" in workflow
+assert "supports_nawa_features ||" in workflow
+assert workflow.index("supports_nawa_features()") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
 assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
 
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

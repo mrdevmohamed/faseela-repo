@@ -1,0 +1,138 @@
+# Phase 0 of docs/package-repository-design.md: build the package records and the
+# catalog for every archive that is already published.
+#
+# Manual only, read-only and non-destructive: it never creates or edits a
+# release, never touches the signed index, and uses no secret. It downloads the
+# published archives once, derives one record per archive, builds the catalog,
+# cross-checks it against the published schema-v3 index, and keeps the result as
+# a workflow artifact for review.
+#
+# Exit criterion of Phase 0 (design, section 7): every package listed in the
+# published index has a matching record (sha256, size, version, rel, arch).
+#
+# The catalog.toml pointer in the artifact is UNSIGNED. Do not upload it to a
+# release; signing it needs the repository key in the publish job and is not
+# part of this workflow.
+name: Package catalog backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "Parallel downloads (1-4; the release CDN overloads above 4)"
+        type: string
+        default: "4"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-catalog-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: build and verify the catalog
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      PKG_REPO: ${{ github.repository }}
+      PKG_TAG: ${{ vars.PKG_TAG || 'stable' }}
+      PKG_V3_TAG: ${{ vars.PKG_V3_TAG || 'stable-v3' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          set -euo pipefail
+          command -v zstd >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq zstd; }
+          zstd --version
+          python3 --version
+
+      - name: List the published archives
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp "repos/$PKG_REPO/releases?per_page=100" > "$RUNNER_TEMP/package-releases.json"
+          python3 -I scripts/distributed-releases.py list \
+            --releases-json "$RUNNER_TEMP/package-releases.json" \
+            --stable-tag "$PKG_TAG" > "$RUNNER_TEMP/published.tsv"
+          echo "$(wc -l < "$RUNNER_TEMP/published.tsv") published archive(s)"
+
+      - name: Download the published schema-v3 index (cross-check only)
+        id: index
+        run: |
+          set -euo pipefail
+          url="https://github.com/$PKG_REPO/releases/download/$PKG_V3_TAG/index.toml"
+          if curl --fail --location --silent --show-error \
+               --retry 8 --retry-all-errors --retry-delay 5 --retry-max-time 300 \
+               --connect-timeout 30 --max-time 300 --output "$RUNNER_TEMP/index.toml" "$url"; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "Downloaded the published index." >> "$GITHUB_STEP_SUMMARY"
+            echo "Note: this index is NOT signature-verified here; it is used only to cross-check the catalog." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::no published index at $url; the catalog will not be cross-checked"
+          fi
+
+      - name: Download the archives
+        env:
+          JOBS: ${{ inputs.jobs }}
+        run: |
+          set -euo pipefail
+          index_args=()
+          if [[ "${{ steps.index.outputs.present }}" == "true" ]]; then
+            index_args=(--index "$RUNNER_TEMP/index.toml")
+          fi
+          python3 -I scripts/fetch-published-archives.py \
+            --list "$RUNNER_TEMP/published.tsv" --repo "$PKG_REPO" \
+            --out "$RUNNER_TEMP/archives" --jobs "${JOBS:-4}" "${index_args[@]}"
+
+      - name: Build the records and the catalog
+        run: |
+          set -euo pipefail
+          index_args=()
+          if [[ "${{ steps.index.outputs.present }}" == "true" ]]; then
+            index_args=(--index "$RUNNER_TEMP/index.toml")
+          fi
+          python3 -I scripts/package_catalog.py build "$RUNNER_TEMP/archives" \
+            --out-dir "$RUNNER_TEMP/catalog" "${index_args[@]}"
+
+      - name: Verify the catalog
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          catalogs=("$RUNNER_TEMP"/catalog/catalog-*.json.zst)
+          (( ${#catalogs[@]} == 1 )) || {
+            echo "::error::expected exactly one catalog file, found ${#catalogs[@]}"; exit 1;
+          }
+          index_args=()
+          if [[ "${{ steps.index.outputs.present }}" == "true" ]]; then
+            index_args=(--index "$RUNNER_TEMP/index.toml")
+          fi
+          # --strict: an archive without a record is an error. With --index, every
+          # package the index lists must match its record exactly.
+          python3 -I scripts/package_catalog.py verify \
+            --catalog "${catalogs[0]}" --archives "$RUNNER_TEMP/archives" \
+            "${index_args[@]}" --strict
+
+          published=$(wc -l < "$RUNNER_TEMP/published.tsv")
+          records=$(find "$RUNNER_TEMP/catalog" -name '*.nawa.record.json.zst' | wc -l)
+          (( records == published )) || {
+            echo "::error::$records record(s) for $published published archive(s)"; exit 1;
+          }
+          {
+            echo "### Package catalog"
+            echo
+            echo "- archives: $published"
+            echo "- records: $records"
+            echo "- catalog: \`$(basename "${catalogs[0]}")\` ($(stat -c %s "${catalogs[0]}") bytes)"
+            echo "- cross-checked against the published index: ${{ steps.index.outputs.present }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-catalog-${{ github.run_id }}
+          path: ${{ runner.temp }}/catalog/
+          retention-days: 30
+          if-no-files-found: error

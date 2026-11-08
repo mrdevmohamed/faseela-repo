@@ -609,6 +609,15 @@ Implemented in `faseela-repo` (no change to the production publish path):
   catalog (section 6.5). An archive present in the archive directory still
   wins for the same file name, so packages built by the current run need no
   record.
+- `scripts/fetch-published-archives.py` and
+  `.github/workflows/package-catalog-backfill.yml`: the Phase 0 backfill. The
+  workflow is manual only, read-only and uses no secret. It lists the published
+  archives, downloads them with at most 4 workers (exponential backoff with
+  jitter, `Retry-After` honoured, atomic `.part` files, sha256/size checked
+  against the published index), builds the records and catalog, runs
+  `package_catalog.py verify --strict` against the archives and the published
+  index, and keeps the result as a workflow artifact. It does not publish
+  anything and the `catalog.toml` it produces stays unsigned.
 - `scripts/test-package-catalog.py` (wired into `ci.yml`): record contents,
   rejection of invalid `.PKGINFO`, deterministic content-addressed catalogs,
   the catalog-level equivalent of the `repo-update` invariant (merge equals a
@@ -628,7 +637,8 @@ Not implemented yet:
 - the signed `catalog.toml` pointer: `package_catalog.py` writes an
   **unsigned** pointer (marked as such) and must never be published as is;
   signing needs the repository key in the publish job;
-- the workflow side: backfill job (Phase 0 exit criteria), shadow mode,
+- running the backfill and checking its Phase 0 exit criterion (it has not
+  been run yet), then the rest of the workflow side: shadow mode,
   closure-based fetch, publish with `repo-update`, and the scheduled jobs of
   section 6.8;
 - `distributed-releases.py plan` for new archives only (section 11, item 2);

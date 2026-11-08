@@ -130,14 +130,33 @@ def parse_pkginfo(text: str, where: str) -> dict:
     rel = int(raw_rel)
     if rel == 0:
         raise CatalogError(f"{where}: .PKGINFO has invalid pkgrel 0")
-    installed = info.get("size", "0")
+    arch = info.get("arch", "")
+    if not arch or not re.fullmatch(r"[A-Za-z0-9_+-]+", arch):
+        raise CatalogError(f"{where}: .PKGINFO has a missing or invalid arch {arch!r}")
+    installed = info.get("size")
+    if installed is None or not installed.isascii() or not installed.isdigit():
+        raise CatalogError(f"{where}: .PKGINFO has a missing or invalid size {installed!r}")
     return {
         "name": name,
         "version": version,
         "rel": rel,
-        "arch": info.get("arch", ""),
-        "installed_size": int(installed) if installed.isascii() and installed.isdigit() else 0,
+        "arch": arch,
+        "installed_size": int(installed),
     }
+
+
+def _safe_parts(name: str, where: str):
+    """Return normalized archive path components, rejecting traversal."""
+    if not isinstance(name, str) or not name or "\x00" in name or "\\" in name:
+        raise CatalogError(f"{where}: unsafe archive path {name!r}")
+    if name.startswith("/"):
+        raise CatalogError(f"{where}: absolute archive path {name!r}")
+    parts = name.split("/")
+    while parts and parts[0] in ("", "."):
+        parts.pop(0)
+    if any(part in ("..", "") for part in parts):
+        raise CatalogError(f"{where}: unsafe archive path {name!r}")
+    return [part for part in parts if part != "."]
 
 
 def _strip(name: str):
@@ -161,7 +180,7 @@ def scan_archive(path: Path):
     try:
         with tarfile.open(fileobj=proc.stdout, mode="r|") as tf:
             for m in tf:
-                parts = _strip(m.name)
+                parts = _safe_parts(m.name, str(path))
                 if parts == [".PKGINFO"]:
                     f = tf.extractfile(m)
                     if f is not None:
@@ -222,16 +241,28 @@ def validate_record(rec, where: str) -> dict:
                      ("sha256", str), ("size", int), ("installed_size", int), ("files", list)):
         if not isinstance(rec.get(key), typ) or isinstance(rec.get(key), bool):
             raise CatalogError(f"{where}: record field {key!r} is missing or has the wrong type")
-    if not NAME_RE.fullmatch(rec["name"]) or not VERSION_RE.fullmatch(rec["version"]) or rec["rel"] < 1:
-        raise CatalogError(f"{where}: record has an invalid name, version or rel")
+    if (not NAME_RE.fullmatch(rec["name"]) or not VERSION_RE.fullmatch(rec["version"])
+            or rec["rel"] < 1 or not rec["arch"]
+            or not re.fullmatch(r"[A-Za-z0-9_+-]+", rec["arch"])):
+        raise CatalogError(f"{where}: record has an invalid name, version, rel or arch")
+    if rec["size"] < 0 or rec["installed_size"] < 0:
+        raise CatalogError(f"{where}: record size fields must be non-negative integers")
     if rec["file"] != f"{rec['name']}-{rec['version']}-{rec['rel']}{ARCHIVE_SUFFIX}":
         raise CatalogError(f"{where}: record file name does not match name-version-rel")
     if not SHA256_RE.fullmatch(rec["sha256"]):
         raise CatalogError(f"{where}: record sha256 is not 64 lowercase hex digits")
+    seen_paths = {}
     for item in rec["files"]:
-        if (not isinstance(item, dict) or not isinstance(item.get("path"), str) or not item["path"]
+        if (not isinstance(item, dict) or not isinstance(item.get("path"), str)
                 or item.get("kind") not in ("dir", "other")):
             raise CatalogError(f"{where}: record has a malformed files entry {item!r}")
+        raw_path = item["path"]
+        if (not raw_path or raw_path.startswith("/") or "\\" in raw_path
+                or "\x00" in raw_path or any(part in ("", ".", "..") for part in raw_path.split("/"))):
+            raise CatalogError(f"{where}: record has an unsafe payload path {raw_path!r}")
+        if raw_path in seen_paths:
+            raise CatalogError(f"{where}: record has duplicate payload path {raw_path!r}")
+        seen_paths[raw_path] = item["kind"]
     return rec
 
 
@@ -272,7 +303,10 @@ def load_catalog(path: Path) -> dict:
             raise CatalogError(f"{path}: duplicate record for {rec['file']}")
         out[rec["file"]] = rec
     m = CATALOG_RE.fullmatch(path.name)
-    if m and hashlib.sha256(catalog_bytes(out.values())).hexdigest() != m.group(1):
+    if not m:
+        raise CatalogError(f"{path}: catalog filename must be catalog-<sha256>.json.zst")
+    digest = hashlib.sha256(catalog_bytes(out.values())).hexdigest()
+    if digest != m.group(1):
         raise CatalogError(f"{path}: content does not match the sha256 in its file name")
     return out
 

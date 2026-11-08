@@ -22,7 +22,7 @@ for helper in ("newuidmap", "newgidmap"):
 assert "chmod 4755" in shadow_install
 
 linux = recipe("recipes/boot/linux/recipe.toml")
-assert linux["package"]["rel"] == 22
+assert linux["package"]["rel"] == 23
 kernel_config = linux["build"]["configure"]
 for option in (
     "PID_NS", "NET_NS", "IPC_NS", "UTS_NS", "CGROUPS", "CGROUP_PIDS",

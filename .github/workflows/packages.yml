@@ -563,7 +563,7 @@ jobs:
           supports_schema_v3() {
             local repo_help
             repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)" || return 1
-            for option in --index-version --locations --recipes-rev; do
+            for option in --index-version --locations --recipes-rev --groups; do
               grep -q -- "$option" <<< "$repo_help" || return 1
             done
           }

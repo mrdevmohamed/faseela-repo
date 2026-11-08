@@ -216,8 +216,8 @@ class RealRecipeTreeTests(unittest.TestCase):
     def test_packages_workflow_stays_within_dispatch_limit_and_exposes_peripherals(self):
         root = Path(__file__).resolve().parent.parent
         workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
-        start = workflow.index("    inputs:\\n")
-        end = workflow.index("\\npermissions:", start)
+        start = workflow.index("    inputs:\n")
+        end = workflow.index("\npermissions:", start)
         inputs = workflow[start:end].splitlines()[1:]
         declared = [
             line for line in inputs

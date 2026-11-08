@@ -557,10 +557,22 @@ jobs:
             done
           }
 
+          # Index-v3 support and recipe-schema support are independent. Load
+          # the real Nawa recipe (multi-source + Cargo fetch) to verify that
+          # this binary understands and validates the current recipe schema.
+          supports_recipe_schema() {
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa \
+              --recipes /faseela/recipes recipe check nawa >/dev/null 2>&1
+          }
+
+          supports_nawa_features() {
+            supports_schema_v3 && supports_recipe_schema
+          }
+
           # Older rootfs releases can carry Nawa 1.0.0-10 even though the
           # current, signed transition package already contains Nawa 1.0.0-11.
           # Upgrade locally before attempting to write the schema-v3 index.
-          if ! supports_schema_v3; then
+          if ! supports_nawa_features; then
             nawa_archive="$(python3 -I - <<'PY'
           import tomllib
           from pathlib import Path
@@ -593,8 +605,8 @@ jobs:
             sudo rm -rf "$T/tmp/nawa-transition"
             rm -rf "$transition_dir"
 
-            supports_schema_v3 || {
-              echo "::error::installing the signed Nawa transition package did not enable --index-version, --locations and --recipes-rev"
+            supports_nawa_features || {
+              echo "::error::installed Nawa still lacks schema-v3 repository support or current recipe-schema support (nawa recipe check nawa)"
               exit 1
             }
             echo "Nawa upgraded from the signed $NAWA_TRANSITION_TAG transition package before the build." >> "$GITHUB_STEP_SUMMARY"

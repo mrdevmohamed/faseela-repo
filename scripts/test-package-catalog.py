@@ -140,6 +140,37 @@ class Records(Base):
         rec = pc.load_record(self.d / "rec" / "tool-1-1.nawa.record.json.zst")
         self.assertEqual(rec, pc.make_record(arc))
 
+    def test_pkginfo_requires_arch_and_nonnegative_decimal_size(self):
+        cases = (
+            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\nsize = 10\\n",
+            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\n",
+            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\nsize = nope\\n",
+            b"pkgname = a\\npkgver = 1\\npkgrel = 1\\narch = x86_64\\nsize = -1\\n",
+        )
+        for info in cases:
+            with self.subTest(info=info):
+                with self.assertRaises(pc.CatalogError):
+                    pc.parse_pkginfo(info.decode(), "test")
+
+    def test_record_rejects_unsafe_and_duplicate_paths(self):
+        arc = self.archive("tool", {"usr/bin/tool": b"x"})
+        rec = pc.make_record(arc)
+        for bad in ("../escape", "/absolute", "usr//bin/tool", "usr/./bin/tool", r"usr\\bin\\tool"):
+            changed = dict(rec)
+            changed["files"] = [{"path": bad, "kind": "other"}]
+            with self.subTest(path=bad), self.assertRaises(pc.CatalogError):
+                pc.validate_record(changed, "test")
+        changed = dict(rec)
+        changed["files"] = [{"path": "usr/bin/tool", "kind": "other"},
+                            {"path": "usr/bin/tool", "kind": "other"}]
+        with self.assertRaises(pc.CatalogError):
+            pc.validate_record(changed, "test")
+
+    def test_archive_payload_path_traversal_is_rejected(self):
+        arc = self.archive("tool", {"../escape": b"x"})
+        with self.assertRaises(pc.CatalogError):
+            pc.make_record(arc)
+
 
 class Catalog(Base):
     def test_build_is_deterministic_and_content_addressed(self):
@@ -169,6 +200,14 @@ class Catalog(Base):
         shutil.copy(cat, other)
         with self.assertRaises(pc.CatalogError):
             pc.load_catalog(other)
+
+    def test_catalog_requires_content_addressed_filename(self):
+        self.archive("a", {"usr/bin/a": b"1"})
+        out, cat = self.build()
+        plain = out / "catalog.json.zst"
+        shutil.copy(cat, plain)
+        with self.assertRaises(pc.CatalogError):
+            pc.load_catalog(plain)
 
     def test_merge_equals_a_fresh_build(self):
         # the catalog-level form of the repo-update == repo-create invariant:

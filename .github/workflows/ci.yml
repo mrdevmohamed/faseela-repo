@@ -29,6 +29,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Huion HS64 kernel driver support regression check
         run: python3 -I scripts/test-huion-support.py
+      - name: Huion tablet control-panel package regression check
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://driverdl.huion.com/driver/Linux/HuionTablet_LinuxDriver_v15.0.0.193.x86_64.deb'
+          deb="$RUNNER_TEMP/huiontablet.deb"
+          curl --fail --location --retry 3 --connect-timeout 20 "$url" --output "$deb"
+          python3 -I scripts/test-huiontablet-package.py "$deb"
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
       - name: Validate package groups against recipes

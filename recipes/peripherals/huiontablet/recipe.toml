@@ -101,7 +101,7 @@ cat > "%{pkgdir}/usr/share/applications/huiontablet.desktop" <<'DESKTOP'
 Name=Huion Tablet
 Comment=Configure Huion pen pressure and tablet buttons
 Exec=/usr/lib/huiontablet/huiontablet.sh manual_launch
-Icon=huiontablet
+Icon=/usr/share/icons/huiontablet.png
 Terminal=false
 Type=Application
 Categories=Settings;HardwareSettings;

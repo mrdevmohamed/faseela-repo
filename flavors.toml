@@ -11,7 +11,7 @@
 #
 # Keys of a [flavor.NAME] table
 #   summary   one line
-#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative messaging networking security)
+#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative messaging networking security peripherals)
 #   extends   other flavors whose packages are included too
 #   exclude   packages left out of the result (nothing else is dropped)
 #   closure   "run"   (default) add every [depends].run dependency, transitively:
@@ -49,6 +49,11 @@ extends = ["rootfs-min"]
 summary = "live ISO, no GUI"
 include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
+
+[flavor.iso-gui-huion]
+summary = "iso-gui plus the official Huion tablet control panel"
+extends = ["iso-gui"]
+include = ["huiontablet"]
 
 [flavor.iso-gui]
 summary = "live ISO with Sway, PipeWire audio, Firefox ESR, NetworkManager, Bluetooth and polkit"

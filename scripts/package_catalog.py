@@ -296,8 +296,17 @@ def load_catalog(path: Path) -> dict:
         doc = json.loads(zstd_decompress_file(path))
     except json.JSONDecodeError as exc:
         raise CatalogError(f"{path}: not valid JSON: {exc}") from exc
-    if not isinstance(doc, dict) or doc.get("schema") != SCHEMA or not isinstance(doc.get("records"), list):
+    raw = zstd_decompress_file(path)
+    try:
+        doc = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise CatalogError(f"{path}: not valid JSON: {exc}") from exc
+    if (not isinstance(doc, dict) or set(doc) != {"schema", "records"}
+            or type(doc.get("schema")) is not int or doc["schema"] != SCHEMA
+            or not isinstance(doc.get("records"), list)):
         raise CatalogError(f"{path}: not a schema-{SCHEMA} catalog")
+    if canonical(doc) != raw:
+        raise CatalogError(f"{path}: catalog JSON is not in canonical form")
     out = {}
     for rec in doc["records"]:
         validate_record(rec, str(path))
@@ -307,7 +316,7 @@ def load_catalog(path: Path) -> dict:
     m = CATALOG_RE.fullmatch(path.name)
     if not m:
         raise CatalogError(f"{path}: catalog filename must be catalog-<sha256>.json.zst")
-    digest = hashlib.sha256(catalog_bytes(out.values())).hexdigest()
+    digest = hashlib.sha256(raw).hexdigest()
     if digest != m.group(1):
         raise CatalogError(f"{path}: content does not match the sha256 in its file name")
     return out

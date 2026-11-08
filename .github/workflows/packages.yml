@@ -617,7 +617,7 @@ jobs:
       - name: Fetch the packages already published
         id: published
         env:
-          PACKAGE_DOWNLOAD_JOBS: ${{ vars.PACKAGE_DOWNLOAD_JOBS || '12' }}
+          PACKAGE_DOWNLOAD_JOBS: ${{ vars.PACKAGE_DOWNLOAD_JOBS || '4' }}
         run: |
           set -euo pipefail
           sudo mkdir -p "$T/build/out"
@@ -650,6 +650,13 @@ jobs:
           (( workers >= 1 && workers <= 32 )) || {
             echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
           }
+          # GitHub's public release CDN has returned widespread HTTP 504s
+          # under the previous 12-way fan-out. Keep the effective concurrency
+          # conservative even when the repository variable is set higher.
+          if (( workers > 4 )); then
+            echo "Capping PACKAGE_DOWNLOAD_JOBS from $workers to 4 to avoid release-CDN overload."
+            workers=4
+          fi
 
           if (( n > 0 )); then
             xargs -0 -r -n 2 -P "$workers" bash -euo pipefail -c '
@@ -661,8 +668,8 @@ jobs:
 
               echo "Downloading $asset ($tag)"
               curl --fail --location --silent --show-error \
-                --retry 3 --retry-all-errors --retry-delay 2 \
-                --connect-timeout 30 --output "$part" "$url"
+                --retry 8 --retry-all-errors --retry-delay 5 --retry-max-time 300 \
+                --connect-timeout 30 --max-time 1800 --output "$part" "$url"
               [[ -s "$part" ]] || {
                 echo "::error::downloaded asset is empty: $asset" >&2
                 exit 1

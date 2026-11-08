@@ -7,11 +7,16 @@ and it only finds out when the image is being assembled, one package at a time.
 This looks at the BUILT archives instead, before they are published, and
 answers for every flavor of flavors.toml at once.
 
-    check-file-conflicts.py ARCHIVE_DIR [--flavor NAME ...] [--recipes DIR]
-                            [--flavors FILE] [--all] [--strict]
+    check-file-conflicts.py [ARCHIVE_DIR] [--catalog FILE] [--flavor NAME ...]
+                            [--recipes DIR] [--flavors FILE] [--all] [--strict]
 
   ARCHIVE_DIR   directory holding <name>-<version>-<rel>.nawa.tar.zst
                 (the exact version/rel each recipe currently says)
+  --catalog     package catalog (scripts/package_catalog.py): file lists are
+                read from its records instead of opening archives. An archive
+                present in ARCHIVE_DIR still wins for the same file name, so
+                packages built by this run are checked without a record. At
+                least one of ARCHIVE_DIR and --catalog is required.
   --flavor      only these flavors (default: all of them)
   --all         also list files shared by packages that no single flavor
                 installs together (alternatives such as linux-firmware and
@@ -44,6 +49,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 import flavor  # noqa: E402
+import package_catalog  # noqa: E402
 
 MERGED = {"bin": "usr/bin", "sbin": "usr/bin", "lib": "usr/lib", "lib64": "usr/lib64"}
 
@@ -97,13 +103,17 @@ def read_archive(path: Path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("archives", type=Path)
+    ap.add_argument("archives", type=Path, nargs="?")
+    ap.add_argument("--catalog", type=Path)
     ap.add_argument("--flavors", type=Path, default=ROOT / "flavors.toml")
     ap.add_argument("--recipes", type=Path, default=ROOT / "recipes")
     ap.add_argument("--flavor", action="append")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--strict", action="store_true")
     a = ap.parse_args(argv)
+    if a.archives is None and a.catalog is None:
+        ap.error("give an ARCHIVE_DIR, a --catalog, or both")
+    catalog = package_catalog.load_catalog(a.catalog) if a.catalog else {}
 
     flavors = flavor.load_flavors(a.flavors)
     recipes_toml = {}
@@ -117,8 +127,16 @@ def main(argv=None):
 
     def files(pkg):
         if pkg not in cache:
-            arc = a.archives / recipes_toml[pkg]
-            cache[pkg] = read_archive(arc) if arc.exists() else None
+            arc = a.archives / recipes_toml[pkg] if a.archives else None
+            if arc is not None and arc.exists():
+                cache[pkg] = read_archive(arc)
+            elif recipes_toml[pkg] in catalog:
+                # the records hold RAW payload paths; norm() applies the same
+                # merged-/usr mapping an archive member goes through
+                cache[pkg] = {norm("payload/" + path): kind
+                              for path, kind in package_catalog.files_of(catalog[recipes_toml[pkg]]).items()}
+            else:
+                cache[pkg] = None
         return cache[pkg]
 
     errors, warnings = [], []

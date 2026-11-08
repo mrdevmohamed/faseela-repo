@@ -33,6 +33,19 @@ for option in (
     assert f"--enable {option}" in kernel_config, f"kernel config does not enable {option}"
     assert f"require_config CONFIG_{option} y" in kernel_config, f"kernel config does not assert {option}"
 
+runit_services = recipe("recipes/system/runit-services/recipe.toml")
+assert runit_services["package"]["rel"] == 13
+runit_install = runit_services["build"]["install"]
+stage1 = runit_install.split("cat > %{pkgdir}/etc/runit/1 <<'EOF'\n", 1)[1].split(
+    "\nEOF\ncat > %{pkgdir}/etc/runit/2", 1
+)[0]
+assert "mkdir -p /sys/fs/cgroup" in stage1
+assert "mountpoint -q /sys/fs/cgroup" in stage1
+assert "mount -t cgroup2 none /sys/fs/cgroup" in stage1
+assert stage1.index("mount -a") < stage1.index("mount -t cgroup2"), (
+    "cgroup2 should be mounted after fstab mounts have been processed"
+)
+
 crun = recipe("recipes/system/crun/recipe.toml")
 crun_pkg = crun["package"]
 assert crun_pkg["name"] == "crun"

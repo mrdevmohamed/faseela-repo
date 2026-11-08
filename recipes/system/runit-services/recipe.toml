@@ -5,7 +5,7 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 12
+rel = 13
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
@@ -34,6 +34,16 @@ mountpoint -q /dev/pts || mount -t devpts -o gid=5,mode=0620 devpts /dev/pts 2>/
 mountpoint -q /dev/shm || mount -t tmpfs -o mode=1777,nosuid,nodev tmpfs /dev/shm 2>/dev/null || true
 
 mount -a 2>/dev/null || true
+
+# Unified cgroup v2 hierarchy for Podman and other container runtimes.
+# The initramfs provides /sys (sysfs), but the installed system must mount
+# the cgroup2 controller hierarchy itself before supervised services start.
+mkdir -p /sys/fs/cgroup
+if ! mountpoint -q /sys/fs/cgroup; then
+    if ! mount -t cgroup2 none /sys/fs/cgroup; then
+        echo "runit: warning: failed to mount the cgroup2 hierarchy" >&2
+    fi
+fi
 
 # loopback: the kernel leaves lo DOWN at boot, and dhcpcd only manages real
 # NICs. Bring it up here (the kernel then adds 127.0.0.1/8 and ::1 itself) so

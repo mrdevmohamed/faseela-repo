@@ -124,3 +124,17 @@ Verify any dependency chain — or the complete recipe graph — with:
 nawa --recipes recipes deps <name>
 nawa --recipes recipes deps-all        # full-tree topological order
 ```
+
+## Optional hardware integrations
+
+The `peripherals/` category contains vendor-specific device applications that
+must not enter the default ISO. The optional `huiontablet` package provides
+Huion's official HS64 control panel (pen pressure and button configuration)
+for USB ID `256c:006f`. It is packaged from a checksum-pinned vendor DEB without
+executing its Ubuntu maintainer scripts. The package installs a restricted
+udev rule for the HS64, adds a desktop launcher, and starts the Huion tray /
+background components in Faseela's Sway session.
+
+Build it directly with `nawa build huiontablet` or include it in an image with
+the `iso-gui-huion` flavor. The normal `iso-gui` flavor deliberately excludes
+this proprietary, device-specific application.

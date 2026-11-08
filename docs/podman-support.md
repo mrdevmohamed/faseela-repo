@@ -201,7 +201,9 @@ cgroup controllers are delegated to the user's session.
 
 ## Storage paths and signature policy
 
-`containers-common` deliberately does **not** set `graphroot`, `runroot` or the
+The `containers-common` storage defaults are shipped as recipe rel 3 so an upgrade
+replaces earlier builds that incorrectly pinned system-wide rootful paths. Its
+`storage.conf` deliberately does **not** set `graphroot`, `runroot` or the
 deprecated `rootless_storage_path`. Podman 6.x applies a configured `graphroot`
 to unprivileged users as well, so setting it system-wide makes every rootless
 run fail with `mkdir /var/lib/containers/storage: permission denied`. With the

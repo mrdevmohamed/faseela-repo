@@ -2,7 +2,7 @@
 [package]
 name = "containers-common"
 version = "0.1.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Shared configuration defaults for OCI container tools"

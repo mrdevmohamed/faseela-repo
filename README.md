@@ -1,5 +1,7 @@
 # faseela-repo
 
+**[Read the documentation](https://mrdevmohamed.github.io/faseela-repo/)** — recipes, package repository, build workflows, and contribution guide.
+
 The package side of the [faseela](https://github.com/mrdevmohamed/faseela)
 distribution: the **recipes**, the CI that builds them, and the **published
 packages**.

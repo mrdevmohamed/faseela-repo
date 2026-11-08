@@ -26,6 +26,26 @@ linux_configure = linux["build"]["configure"]
 assert "require_config CONFIG_MODULES y" in linux_configure
 assert "require_config CONFIG_KMOD y" not in linux_configure
 
+net_tools = recipe("recipes/system/net-tools/recipe.toml")
+assert net_tools["package"]["version"] == "2.10"
+assert net_tools["package"]["rel"] == 1
+assert net_tools["package"]["sha256"] == (
+    "b262435a5241e89bfa51c3cabd5133753952f7a7b7b93f32e08cb9d96f580d69"
+)
+assert net_tools["package"]["license"] == ["GPL-2.0-or-later"]
+assert net_tools["depends"]["build"] == []
+assert net_tools["depends"]["run"] == []
+net_tools_configure = net_tools["build"]["configure"]
+assert 'yes "" | make config' in net_tools_configure
+for obsolete_family in ("/ROM/s/1/0/", "/X25/s/1/0/", "/ROSE/s/1/0/"):
+    assert obsolete_family in net_tools_configure
+net_tools_install = net_tools["build"]["install"]
+assert "make DESTDIR=%{pkgdir} BINDIR=/usr/bin SBINDIR=/usr/sbin install" in net_tools_install
+for duplicate in ("hostname", "dnsdomainname", "domainname", "nisdomainname", "ypdomainname"):
+    assert f"/usr/bin/{duplicate}" in net_tools_install
+for binary in ("ifconfig", "netstat", "route"):
+    assert f'test -x "%{{pkgdir}}/usr/bin/$tool"' in net_tools_install
+
 xdg = recipe("recipes/gui/xdg-utils/recipe.toml")
 xdg_compile = xdg["build"]["compile"]
 assert "python" in xdg["depends"]["build"]

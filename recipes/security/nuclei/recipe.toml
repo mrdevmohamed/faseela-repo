@@ -1,0 +1,20 @@
+# ProjectDiscovery nuclei command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "nuclei"
+version = "3.11.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Fast template-based vulnerability scanner"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/nuclei/releases/download/v3.11.1/nuclei_3.11.1_linux_amd64.zip"
+sha256 = "ea63d4ae232808cd7c6bc00d0142428e231fab59dae01042246097d195835ab6"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "nuclei_3.11.1_linux_amd64.zip" -d .
+install -Dm755 nuclei %{pkgdir}/usr/bin/nuclei
+"""

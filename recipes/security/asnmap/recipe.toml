@@ -1,0 +1,20 @@
+# ProjectDiscovery asnmap command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "asnmap"
+version = "1.2.0"
+rel = 1
+arch = ["x86_64"]
+summary = "ASN and network range mapping utility"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/asnmap/releases/download/v1.2.0/asnmap_1.2.0_linux_amd64.zip"
+sha256 = "38c732ceb6832c00475111a7972e67ba8e5012b9ea4f776108fe38198289d667"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "asnmap_1.2.0_linux_amd64.zip" -d .
+install -Dm755 asnmap %{pkgdir}/usr/bin/asnmap
+"""

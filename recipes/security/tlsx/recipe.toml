@@ -1,0 +1,20 @@
+# ProjectDiscovery tlsx command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "tlsx"
+version = "1.4.0"
+rel = 1
+arch = ["x86_64"]
+summary = "TLS certificate and service probing toolkit"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/tlsx/releases/download/v1.4.0/tlsx_1.4.0_linux_amd64.zip"
+sha256 = "05628cec246e292e2f9afc6e7bc5de95aaa0fbe78fd556d5ad220b9f4702d364"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "tlsx_1.4.0_linux_amd64.zip" -d .
+install -Dm755 tlsx %{pkgdir}/usr/bin/tlsx
+"""

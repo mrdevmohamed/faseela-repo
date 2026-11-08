@@ -525,6 +525,21 @@ jobs:
           sudo rm -f "$T/etc/resolv.conf"
           sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
           sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
+
+          # sync-repo.sh copies the distribution build inputs, but groups.toml
+          # belongs to this package repository and is assembled beside recipes.
+          # repo-create runs inside the chroot and reads this exact path.
+          [[ -s distro/groups.toml ]] || {
+            echo "::error::the assembled package repository has no groups.toml"
+            exit 1
+          }
+          sudo install -D -m 0644 distro/groups.toml "$T/faseela/groups.toml"
+          sudo cmp -s distro/groups.toml "$T/faseela/groups.toml" || {
+            echo "::error::groups.toml was not copied intact to $T/faseela/groups.toml"
+            exit 1
+          }
+          echo "Verified signed group catalog at $T/faseela/groups.toml."
+
           sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
 
           # Build the pinned Nawa client from the seed source before asking

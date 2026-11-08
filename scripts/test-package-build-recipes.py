@@ -99,6 +99,7 @@ assert "supports_schema_v3()" in workflow
 assert "supports_recipe_schema()" in workflow
 assert "supports_nawa_features()" in workflow
 assert "recipe check nawa" in workflow
+assert "1 recipe(s), 0 warning(s)" in workflow
 assert "if ! supports_nawa_features; then" in workflow
 assert "supports_nawa_features ||" in workflow
 assert workflow.index("supports_nawa_features()") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")

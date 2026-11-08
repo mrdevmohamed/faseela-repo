@@ -1,0 +1,157 @@
+# peripherals recipe: official Huion Tablet control panel for HS64 (USB 256c:006f).
+#
+# The vendor DEB is used only as a checksum-pinned payload container. Its
+# Ubuntu maintainer scripts are deliberately never executed: Faseela stages
+# the application files itself and supplies its own udev/Sway integration.
+[package]
+name = "huiontablet"
+version = "15.0.0.193"
+rel = 1
+arch = ["x86_64"]
+summary = "Official Huion tablet control panel and background driver"
+license = ["Huion-EULA"]
+source = "https://driverdl.huion.com/driver/Linux/HuionTablet_LinuxDriver_v%{version}.x86_64.deb"
+sha256 = "cc563c2358dd0ba13c245f97341d20fecfa8509bfa5c75c8258c895f48b6fa02"
+
+[depends]
+build = ["binutils", "tar", "xz"]
+run = ["bash", "coreutils", "eudev", "mesa", "procps-ng", "psmisc", "xwayland"]
+
+[build]
+install = '''
+set -eu
+
+deb="%{srcdir}/HuionTablet_LinuxDriver_v%{version}.x86_64.deb"
+payload="%{srcdir}/.huiontablet-payload"
+vendor="$payload/usr/lib/huiontablet"
+dest="%{pkgdir}/usr/lib/huiontablet"
+
+test -s "$deb" || {
+    echo "huiontablet: verified vendor DEB is missing" >&2
+    exit 1
+}
+
+rm -rf "$payload"
+install -d "$payload"
+
+# Extract only the data archive. Never execute control.tar maintainer scripts.
+member="$(ar t "$deb" | awk '/^data\\.tar\\.(xz|zst|gz|bz2)$/ { print; exit }')"
+test -n "$member" || {
+    echo "huiontablet: unsupported Debian data archive" >&2
+    exit 1
+}
+case "$member" in
+    data.tar.xz)  ar p "$deb" "$member" | tar -xJf - -C "$payload" ;;
+    data.tar.zst) ar p "$deb" "$member" | tar --zstd -xf - -C "$payload" ;;
+    data.tar.gz)  ar p "$deb" "$member" | tar -xzf - -C "$payload" ;;
+    data.tar.bz2) ar p "$deb" "$member" | tar -xjf - -C "$payload" ;;
+    *) echo "huiontablet: unsupported data member $member" >&2; exit 1 ;;
+esac
+
+for required in huiontablet huionCore huiontablet.sh detectSessionProtocol; do
+    test -f "$vendor/$required" || {
+        echo "huiontablet: vendor payload is missing $required" >&2
+        exit 1
+    }
+done
+test -f "$vendor/libs/libhuionhid.so"
+test -f "$vendor/plugins/platforms/libqxcb.so"
+test -d "$vendor/qml"
+test -d "$vendor/res"
+
+install -d "$dest"
+cp -a "$vendor/." "$dest/"
+
+# The vendor launcher relies on its private xdotool/libxdo pair. Keep both
+# inside the application instead of copying them into global system paths.
+python3 - "$dest/huiontablet.sh" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+old = "LD_LIBRARY_PATH=$dirname/libs\nexport LD_LIBRARY_PATH\n"
+new = (
+    "LD_LIBRARY_PATH=$dirname/libs:$dirname/xdotool\n"
+    "export LD_LIBRARY_PATH\n"
+    "PATH=$dirname/xdotool:$PATH\n"
+    "export PATH\n"
+)
+if text.count(old) != 1:
+    raise SystemExit("huiontablet: expected one vendor library-path block")
+path.write_text(text.replace(old, new, 1), encoding="utf-8")
+PY
+
+# Normalize the vendor archive's permissive 0777 modes. Executables and
+# shared objects stay executable; data, QML, images and configuration do not.
+find "$dest" -type d -exec chmod 0755 {} +
+find "$dest" -type f -exec chmod 0644 {} +
+find "$dest" -type f \\( -name '*.so' -o -name '*.so.*' \\) -exec chmod 0755 {} +
+for executable in huiontablet huionCore huiontablet.sh huionCore.sh detectSessionProtocol screenshot; do
+    [ ! -f "$dest/$executable" ] || chmod 0755 "$dest/$executable"
+done
+[ ! -f "$dest/xdotool/xdotool" ] || chmod 0755 "$dest/xdotool/xdotool"
+
+# Application launcher: usable from wmenu/desktop menus.
+install -d "%{pkgdir}/usr/share/applications" "%{pkgdir}/usr/share/icons"
+install -m 0644 "$payload/usr/share/icons/huiontablet.png" \
+    "%{pkgdir}/usr/share/icons/huiontablet.png"
+cat > "%{pkgdir}/usr/share/applications/huiontablet.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=Huion Tablet
+Comment=Configure Huion pen pressure and tablet buttons
+Exec=/usr/lib/huiontablet/huiontablet.sh manual_launch
+Icon=huiontablet
+Terminal=false
+Type=Application
+Categories=Settings;HardwareSettings;
+StartupNotify=true
+DESKTOP
+chmod 0644 "%{pkgdir}/usr/share/applications/huiontablet.desktop"
+
+# Only grant the input group access to this HS64 revision. The vendor rule
+# grants mode 0666 to every Huion USB device; do not ship that broad rule.
+install -d "%{pkgdir}/usr/lib/udev/rules.d"
+cat > "%{pkgdir}/usr/lib/udev/rules.d/20-huion.rules" <<'UDEV'
+# Huion HS64 (USB 256c:006f): input access for users in the input group.
+KERNEL=="uhid", GROUP="input", MODE="0660"
+KERNEL=="uinput", GROUP="input", MODE="0660"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="256c", ATTRS{idProduct}=="006f", GROUP="input", MODE="0660"
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="256c", ATTRS{idProduct}=="006f", GROUP="input", MODE="0660"
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="256c", ATTRS{idProduct}=="006f", GROUP="input", MODE="0660"
+UDEV
+chmod 0644 "%{pkgdir}/usr/lib/udev/rules.d/20-huion.rules"
+
+# Faseela's Sway session reads /etc/sway/config.d/*.conf. The official UI is
+# built with Qt's XCB platform plugin, so Xwayland is a declared dependency.
+install -d "%{pkgdir}/etc/sway/config.d"
+cat > "%{pkgdir}/etc/sway/config.d/40-huiontablet.conf" <<'SWAY'
+# Start the Huion background component and control panel in the Sway session.
+exec /usr/lib/huiontablet/huiontablet.sh autostart
+SWAY
+chmod 0644 "%{pkgdir}/etc/sway/config.d/40-huiontablet.conf"
+'''
+
+[hooks]
+post_install = '''
+if command -v udevadm >/dev/null 2>&1; then
+    udevadm control --reload-rules
+fi
+'''
+pre_remove = '''
+if command -v killall >/dev/null 2>&1; then
+    killall huionCore 2>/dev/null || true
+    killall huiontablet 2>/dev/null || true
+fi
+'''
+post_remove = '''
+if command -v udevadm >/dev/null 2>&1; then
+    udevadm control --reload-rules
+fi
+'''
+
+[slim]
+# Keep the vendor's prebuilt Qt/QML runtime and binaries byte-for-byte.
+strip = false
+cleanup = false
+split = false

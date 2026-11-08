@@ -67,7 +67,7 @@
 [package]
 name = "linux"
 version = "6.10"
-rel = 23
+rel = 24
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -79,6 +79,48 @@ build = ["bison", "flex", "perl", "bc", "openssl", "elfutils", "kmod"]
 run = ["saq"]
 
 [build]
+prepare = '''
+python3 - <<'PY'
+from pathlib import Path
+
+
+def insert_after_once(path, anchor, addition):
+    path = Path(path)
+    text = path.read_text(encoding="utf-8")
+    marker = addition.strip()
+    if marker in text:
+        if text.count(marker) != 1:
+            raise SystemExit(f"{path}: Huion HS64 support marker is duplicated")
+        return
+    if text.count(anchor) != 1:
+        raise SystemExit(f"{path}: expected exactly one upstream insertion point")
+    path.write_text(text.replace(anchor, anchor + addition, 1), encoding="utf-8")
+
+
+# DIGImend v13 added Huion PID 0x006f to the same parameter initialization
+# path as the earlier Huion 0x006d/0x006e devices. Backport only these three
+# device-table additions to Faseela's pinned Linux 6.10 source.
+insert_after_once(
+    "drivers/hid/hid-ids.h",
+    "#define USB_DEVICE_ID_HUION_TABLET2\\t0x006d",
+    "\\n#define USB_DEVICE_ID_HUION_TABLET4\\t0x006f",
+)
+insert_after_once(
+    "drivers/hid/hid-uclogic-core.c",
+    "\\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\\n"
+    "\\t\\t\\t\\tUSB_DEVICE_ID_HUION_TABLET2) },",
+    "\\n\\t{ HID_USB_DEVICE(USB_VENDOR_ID_HUION,\\n"
+    "\\t\\t\\t\\tUSB_DEVICE_ID_HUION_TABLET4) },",
+)
+insert_after_once(
+    "drivers/hid/hid-uclogic-params.c",
+    "\\tcase VID_PID(USB_VENDOR_ID_HUION,\\n"
+    "\\t\\t     USB_DEVICE_ID_HUION_TABLET2):",
+    "\\n\\tcase VID_PID(USB_VENDOR_ID_HUION,\\n"
+    "\\t\\t     USB_DEVICE_ID_HUION_TABLET4):",
+)
+PY
+'''
 configure = '''
 make mrproper
 make defconfig

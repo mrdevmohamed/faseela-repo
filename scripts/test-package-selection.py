@@ -213,6 +213,26 @@ class PackageSelectionTests(unittest.TestCase):
 
 
 class RealRecipeTreeTests(unittest.TestCase):
+    def test_packages_workflow_stays_within_dispatch_limit_and_exposes_peripherals(self):
+        root = Path(__file__).resolve().parent.parent
+        workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+        start = workflow.index("    inputs:\\n")
+        end = workflow.index("\\npermissions:", start)
+        inputs = workflow[start:end].splitlines()[1:]
+        declared = [
+            line for line in inputs
+            if line.startswith("      ") and line.endswith(":")
+            and line[6].isalnum()
+        ]
+        self.assertLessEqual(
+            len(declared), 25,
+            f"workflow_dispatch declares {len(declared)} inputs; GitHub allows at most 25",
+        )
+        self.assertIn("      peripherals:", inputs)
+        self.assertIn("INPUT_PERIPHERALS: ${{ inputs.peripherals }}", workflow)
+        self.assertIn('[[ "$INPUT_PERIPHERALS" == true ]] && categories+=(peripherals)', workflow)
+        self.assertNotIn("INPUT_CORE", workflow)
+
     def test_all_is_every_non_toolchain_recipe_in_this_repository(self):
         root = Path(__file__).resolve().parent.parent
         recipes = flavor.load_recipes(root / "recipes")

@@ -41,10 +41,10 @@ test -n "$member" || {
     exit 1
 }
 case "$member" in
-    data.tar.xz)  ar p "$deb" "$member" | tar -xJf - -C "$payload" ;;
-    data.tar.zst) ar p "$deb" "$member" | tar --zstd -xf - -C "$payload" ;;
-    data.tar.gz)  ar p "$deb" "$member" | tar -xzf - -C "$payload" ;;
-    data.tar.bz2) ar p "$deb" "$member" | tar -xjf - -C "$payload" ;;
+    data.tar.xz)  ar p "$deb" "$member" | tar --no-same-owner -xJf - -C "$payload" ;;
+    data.tar.zst) ar p "$deb" "$member" | tar --no-same-owner --zstd -xf - -C "$payload" ;;
+    data.tar.gz)  ar p "$deb" "$member" | tar --no-same-owner -xzf - -C "$payload" ;;
+    data.tar.bz2) ar p "$deb" "$member" | tar --no-same-owner -xjf - -C "$payload" ;;
     *) echo "huiontablet: unsupported data member $member" >&2; exit 1 ;;
 esac
 

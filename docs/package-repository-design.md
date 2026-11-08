@@ -281,53 +281,68 @@ multiple gigabytes of archives.
 
 ### 6.3 Incremental index update: `nawa repo-update`
 
-A new `nawa` subcommand that produces the same index `repo-create` would
-produce, from the previous index and a delta, without opening any archive.
+A `nawa` subcommand that produces the same index `repo-create` would produce,
+from the previous index and a delta, without opening any archive. It is
+implemented (see section 14); the shape below is the implemented one.
 
 ```
-nawa repo-update
-    --base index.toml                 # previous index, signature-checked
-    --base-sig index.toml.sig
-    --trust-key nawa.pub              # key used to verify the base
-    --add records/*.record.json.zst   # new or replaced packages
-    --remove <archive-file> ...       # superseded or pruned archives
-    --index-version 3
-    --locations locations.toml        # download URLs for the added archives
-    --recipes <tree> --recipes-rev <rev>
+nawa repo-update DIR
+    --base index.toml                 # previous index; signature checked first
+    --trust-key nawa.pub              # key that must have signed --base
+    --key nawa.sec                    # the updated index is always signed
+    --add-entries entries.toml        # [[package]] entries for new archives
+    --remove <archive-file> ...       # archive files that left the repository
+    --drop <package> ...              # packages that disappear on purpose
+    --locations locations.toml        # download URLs (schema-3 base)
+    --recipes <tree> --recipes-rev <rev>   # optional, as in repo-create
     --out index.toml
-    --sign --key nawa.sec
 ```
+
+`entries.toml` is **not** a new format: it is a list of `[[package]]` tables
+with the fields `nawa` already parses as `RepoEntry` (`name, version, rel,
+arch, file, sha256, size, installed_size`, optionally `download_url`).
+`scripts/package_catalog.py entries` writes it from package records, so `nawa`
+never has to read the JSON records and gains no new dependency or file format.
 
 Algorithm:
 
-1. Verify `--base` against `--base-sig` with `--trust-key`. **Refuse to
-   proceed on failure.** An unverified base must never be merged into a
-   signed index.
-2. Load the base entries into a map keyed by package name.
-3. For each `--remove`, drop the entry whose `file` matches. (This is how
-   `recipe-ids.py --stale` pruning is expressed.)
-4. For each `--add` record: validate it with the same rules as today (same
-   `pkgrel` checks, same filename rules, `download_url` must exist in the
-   locations manifest and be an absolute HTTPS URL), build a `RepoEntry` from
-   the record, and apply the existing **newest-per-name** rule
-   (`vercmp` over `version-rel`) against whatever the map holds.
-5. Pack the recipe tree (`pack_recipes`) and set the `recipes` entry exactly
-   as `repo-create --recipes` does today.
-6. Set a fresh `generated` and `expires` (now + 90 days). This is **required**:
-   an incremental scheme that did not refresh expiry would let the index
-   expire silently.
-7. `index.validate()`, write to a temporary file, rename atomically, sign.
+1. Verify the `--base` signature against `--trust-key` over the exact bytes
+   that are then parsed. **Refuse to proceed on failure.** An unverified base
+   must never be merged into a signed index.
+2. Load the base entries keyed by package name (schema 2 or 3 only; a v1
+   index has no signed hash policy, so `repo-create` remains the tool for it).
+3. For each `--remove FILE`, drop the entry whose `file` is FILE, if there is
+   one. An unindexed name (an old archive that was never the newest) is a
+   no-op: this is how `recipe-ids.py --stale` pruning is expressed.
+4. For each `--drop NAME`, drop that package's entry. Dropping a package that
+   is not in the base index is an error (it catches typos).
+5. For each added entry: its `file` must equal `name-version-rel.nawa.tar.zst`,
+   and the existing **newest-per-name** rule applies (`vercmp` over
+   `version-rel`, the same one `repo-create` uses); an older entry is ignored.
+   Re-adding an indexed file unchanged is a no-op; re-adding it with another
+   sha256 or size is an error, because archive file names are immutable.
+6. If a removal deleted the indexed archive of a package and no entry for that
+   package was added (and it was not dropped), fail: the package would
+   silently vanish. To roll back to an older archive, add that archive's entry.
+7. Fill missing `download_url` values from `--locations`, pack the recipe tree
+   when `--recipes` is given (otherwise keep the base `recipes` entry), set a
+   fresh `generated` and `expires` (now + 90 days), run `index.validate()`,
+   write atomically (temporary file plus rename), and sign.
 
-Required invariant (property test in `nawa`):
+Step 7's fresh validity window is **required**: an incremental scheme that did
+not refresh expiry would let the index expire silently. It also means that
+`repo-update` with no delta is the expiry-refresh job of section 6.8.
 
-    repo-update(base = repo-create(A), add = records(B), remove = R)
-        ==  repo-create((A \ R) ∪ B)
+Required invariant (unit-tested in `nawa`):
 
-compared on `package` entries and `recipes`, ignoring `generated`/`expires`.
-This one test is what lets the incremental index be trusted: it proves the
-two code paths are equivalent.
+    repo-update(base = repo-create(A), delta)  ==  repo-create(A') 
 
-`repo-create` is unchanged and remains the reference implementation.
+where A' is A with the removed archives taken out and the added ones put in,
+compared on the `package` entries and ignoring `generated`/`expires`. It holds
+under the removal contract of step 6, which is why the tool enforces it
+instead of guessing. This test is what lets the incremental index be trusted:
+it shows the two code paths are equivalent. `repo-create` is unchanged and
+remains the reference implementation.
 
 ### 6.4 Closure-based fetching for builds
 
@@ -548,11 +563,12 @@ Phase 0 and Phase 3; they are not yet measured.
 
 In `mrdevmohamed/nawa`:
 
-- `repo-update` subcommand with the algorithm in 6.3;
-- record generation (for example `nawa record <archive>`), reusing the
-  `.PKGINFO` parsing and validation of `repo-create`;
-- property test for the `repo-update` / `repo-create` equivalence invariant;
-- optionally a `catalog` helper for merge and verification.
+- `repo-update` subcommand with the algorithm in 6.3 (done);
+- unit tests for the `repo-update` / `repo-create` equivalence invariant (done).
+
+Records are generated by `scripts/package_catalog.py` in this repository, not
+by `nawa`: `nawa` only consumes `[[package]]` entries, so it needs no JSON
+dependency and no new file format.
 
 In `mrdevmohamed/faseela-repo`:
 
@@ -584,11 +600,11 @@ In `mrdevmohamed/faseela-repo`:
 
 Implemented in `faseela-repo` (no change to the production publish path):
 
-- `scripts/package_catalog.py`: `record`, `build`, `merge` and `verify`
-  commands for package records and the catalog (sections 6.1 and 6.2).
-  `merge` updates a catalog from records without opening any archive, and
-  `verify` compares a catalog with archives and with a repository
-  `index.toml`.
+- `scripts/package_catalog.py`: `record`, `build`, `merge`, `entries` and
+  `verify` commands for package records and the catalog (sections 6.1, 6.2).
+  `merge` updates a catalog from records without opening any archive,
+  `entries` writes the `[[package]]` input of `nawa repo-update`, and `verify`
+  compares a catalog with archives and with a repository `index.toml`.
 - `scripts/check-file-conflicts.py --catalog FILE`: reads file lists from the
   catalog (section 6.5). An archive present in the archive directory still
   wins for the same file name, so packages built by the current run need no
@@ -596,16 +612,25 @@ Implemented in `faseela-repo` (no change to the production publish path):
 - `scripts/test-package-catalog.py` (wired into `ci.yml`): record contents,
   rejection of invalid `.PKGINFO`, deterministic content-addressed catalogs,
   the catalog-level equivalent of the `repo-update` invariant (merge equals a
-  fresh build), verification, and parity between the archive-based and the
-  catalog-based conflict check.
+  fresh build), verification, entries output, and parity between the
+  archive-based and the catalog-based conflict check.
+
+Implemented in `mrdevmohamed/nawa` (separate repository; delivered as a patch,
+not yet merged):
+
+- `nawa repo-update` (section 6.3) with unit tests for equivalence with
+  `repo-create`, refresh of the validity window, immutability, the removal
+  contract and schema-3 URL filling from a locations manifest; checked end to
+  end with real keys (a base signed by another key is refused).
 
 Not implemented yet:
 
 - the signed `catalog.toml` pointer: `package_catalog.py` writes an
   **unsigned** pointer (marked as such) and must never be published as is;
   signing needs the repository key in the publish job;
-- `nawa repo-update` (lives in `mrdevmohamed/nawa`);
-- the backfill job (Phase 0 exit criteria), shadow mode, closure-based fetch,
-  and the scheduled jobs of section 6.8;
-- the tests were run against a pass-through `zstd` shim locally; CI exercises
-  them with the real `zstd`.
+- the workflow side: backfill job (Phase 0 exit criteria), shadow mode,
+  closure-based fetch, publish with `repo-update`, and the scheduled jobs of
+  section 6.8;
+- `distributed-releases.py plan` for new archives only (section 11, item 2);
+- the `faseela-repo` tests were run against a pass-through `zstd` shim
+  locally; CI exercises them with the real `zstd`.

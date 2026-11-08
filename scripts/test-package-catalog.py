@@ -173,6 +173,27 @@ class Records(Base):
             pc.make_record(arc)
 
 
+class Entries(Base):
+    def test_entries_match_the_index_entry_fields(self):
+        import tomllib
+        b = self.archive("bee", {"usr/bin/bee": b"2"})
+        a = self.archive("ant", {"usr/bin/ant": b"1"}, version="1.5", rel=3)
+        r = self.run_tool("record", b, a, "--out-dir", self.d / "rec")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        out = self.d / "entries.toml"
+        r = self.run_tool("entries", self.d / "rec" / "bee-1-1.nawa.record.json.zst",
+                          self.d / "rec" / "ant-1.5-3.nawa.record.json.zst", "--out", out)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        got = tomllib.loads(out.read_text())["package"]
+        want = []
+        for arc in (a, b):  # sorted by file name
+            rec = pc.make_record(arc)
+            want.append({k: rec[k] for k in ("name", "version", "rel", "arch", "file", "sha256",
+                                             "size", "installed_size")})
+        self.assertEqual(got, want)
+        self.assertNotIn("download_url", out.read_text())
+
+
 class Catalog(Base):
     def test_build_is_deterministic_and_content_addressed(self):
         self.archive("a", {"usr/bin/a": b"1"})

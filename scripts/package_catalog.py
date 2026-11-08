@@ -11,6 +11,7 @@ conflict checks) does not have to reopen every archive.
     package_catalog.py build   ARCHIVE_DIR --out-dir DIR [--index index.toml]
     package_catalog.py merge   --catalog CAT [--add RECORD...] [--remove FILE...]
                                --out-dir DIR [--index index.toml]
+    package_catalog.py entries RECORD... --out entries.toml
     package_catalog.py verify  --catalog CAT [--archives DIR] [--index index.toml]
                                [--strict]
 
@@ -18,6 +19,8 @@ conflict checks) does not have to reopen every archive.
   build    records for every archive of a directory plus the catalog and its
            pointer; deterministic (same archives -> same catalog bytes)
   merge    new catalog from an old one plus records, WITHOUT opening archives
+  entries  [[package]] index entries for records, the input of
+           `nawa repo-update --add-entries` (download_url comes from --locations)
   verify   catalog against archives (sha256 and size) and/or against a
            repository index.toml (file, version, rel, arch, sha256, size)
 
@@ -339,6 +342,27 @@ def write_catalog(records, out_dir: Path, index: Path | None = None) -> Path:
     return out_dir / name
 
 
+def entries_toml(records) -> str:
+    """Index entries (the fields of nawa's RepoEntry, minus download_url) for
+    records, as the TOML `nawa repo-update --add-entries` reads. Sorted by file
+    name so the output is deterministic."""
+    lines = []
+    for rec in sorted(records, key=lambda r: r["file"]):
+        lines += [
+            "[[package]]",
+            f"name = {json.dumps(rec['name'])}",
+            f"version = {json.dumps(rec['version'])}",
+            f"rel = {rec['rel']}",
+            f"arch = {json.dumps(rec['arch'])}",
+            f"file = {json.dumps(rec['file'])}",
+            f"sha256 = {json.dumps(rec['sha256'])}",
+            f"size = {rec['size']}",
+            f"installed_size = {rec['installed_size']}",
+            "",
+        ]
+    return "\n".join(lines)
+
+
 def files_of(record: dict) -> dict:
     """-> {raw payload path: 'dir' | 'other'}; what check-file-conflicts consumes."""
     return {item["path"]: item["kind"] for item in record["files"]}
@@ -427,6 +451,12 @@ def cmd_merge(a):
     print(f"catalog {cat.name}: {len(records)} record(s)")
 
 
+def cmd_entries(a):
+    records = [load_record(path) for path in a.records]
+    atomic_write(a.out, entries_toml(records).encode("utf-8"))
+    print(f"entries {a.out}: {len(records)} package(s)")
+
+
 def cmd_verify(a):
     errors, warnings = verify(load_catalog(a.catalog), a.archives, a.index, a.strict)
     for w in warnings:
@@ -459,6 +489,11 @@ def main(argv=None):
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--index", type=Path)
     p.set_defaults(fn=cmd_merge)
+
+    p = sub.add_parser("entries")
+    p.add_argument("records", type=Path, nargs="+")
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_entries)
 
     p = sub.add_parser("verify")
     p.add_argument("--catalog", type=Path, required=True)

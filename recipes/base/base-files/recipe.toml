@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -154,6 +154,11 @@ cat > %{pkgdir}/etc/skel/.bashrc <<'EOF'
 export PS1='\u@\h:\w\$ '
 alias ls='ls --color=auto'
 alias ll='ls -l'
+
+# Load programmable Bash completion in interactive shells.
+if [[ $- == *i* ]] && [[ -r /etc/profile.d/bash_completion.sh ]]; then
+    . /etc/profile.d/bash_completion.sh
+fi
 EOF
 cp %{pkgdir}/etc/skel/.bashrc %{pkgdir}/root/.bashrc
 

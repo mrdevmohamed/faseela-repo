@@ -20,12 +20,15 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 43 system + 8 boot + 94 extra =
-**194 packages**, plus the optional `gui/` category (125 packages, see
+Current set: 10 toolchain + 39 base + 53 system + 8 boot + 94 extra =
+**204 core packages**, plus the optional `gui/` category (125 packages, see
 [gui/README.md](gui/README.md)), the optional `browser/` category (16 packages,
 see [browser/README.md](browser/README.md)), the optional `media/` category (23 packages, see [media/README.md](media/README.md)),
 and the optional `creative/` category (15 packages, see [creative/README.md](creative/README.md)),
 plus the optional `messaging/` category (see [messaging/README.md](messaging/README.md))
+and optional `networking/` category (1 package, see [networking/README.md](networking/README.md));
+plus the opt-in `dev/` category (11 packages). The recipe tree counts **396 recipes** in total.
+`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
 and optional `networking/` category (see [networking/README.md](networking/README.md)),
 plus the optional `security/` category (12 ProjectDiscovery tools; see [security/README.md](security/README.md));
 the recipe tree counts 397 recipes in total.

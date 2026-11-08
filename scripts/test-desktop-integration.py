@@ -382,7 +382,8 @@ assert "no D-Bus" not in readme
 kernel = recipe("boot", "linux")
 assert kernel["package"]["rel"] >= 21, "Bump linux rel when changing portal sandbox requirements"
 kernel_config = kernel["build"]["configure"]
-assert "--enable NAMESPACES --enable USER_NS --enable FUSE_FS" in kernel_config
+for option in ("NAMESPACES", "USER_NS", "FUSE_FS"):
+    assert f"--enable {option}" in kernel_config, f"kernel config no longer enables {option}"
 first_config_line = next(line for line in kernel_config.splitlines() if "--enable FW_LOADER" in line)
 assert first_config_line.endswith("\\\\") is False and first_config_line.endswith("\\"), (
     "Kernel scripts/config command must end with exactly one shell continuation backslash"

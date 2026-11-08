@@ -1,0 +1,23 @@
+# system recipe: passt provides the pasta rootless networking helper.
+[package]
+name = "passt"
+version = "2026_07_16.090d739"
+rel = 1
+arch = ["x86_64"]
+summary = "User-mode networking for namespaces and virtual machines"
+license = ["BSD-3-Clause", "GPL-2.0-or-later"]
+source = "https://passt.top/passt/snapshot/passt-%{version}.tar.gz"
+# SHA-256 verified against the pinned upstream snapshot in NixOS/nixpkgs.
+sha256 = "503e1f91cb52a8c0d04e6671a66063475b8a2d5d0b7fd428aad48ad6ef0443ee"
+
+[depends]
+build = ["make", "gcc"]
+run = []
+
+[build]
+compile = "make prefix=/usr PAGE_SIZE=4096"
+install = """
+make prefix=/usr PAGE_SIZE=4096 DESTDIR="%{pkgdir}" install
+test -x "%{pkgdir}/usr/bin/passt"
+test -x "%{pkgdir}/usr/bin/pasta"
+"""

@@ -61,10 +61,12 @@
 #         document-portal sandbox/mount support.
 # rel 21: fix the EFI_STUB command continuation; the extra backslash was
 #         passed literally to scripts/config and aborted kernel configuration.
+# rel 22: explicitly enable and assert the namespaces, cgroup v2 controllers,
+#         seccomp, veth and bridge support required by rootless/rootful Podman.
 [package]
 name = "linux"
 version = "6.10"
-rel = 21
+rel = 22
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -90,7 +92,14 @@ scripts/config \
     --enable ACPI --enable USB --enable SCSI --enable ATA --enable SATA_PMP \
     --enable INPUT --enable VIRTIO --enable MODULES --enable MODULE_UNLOAD \
     --enable FW_LOADER --enable EFI --enable EFI_STUB \
-    --enable NAMESPACES --enable USER_NS --enable FUSE_FS
+    --enable NAMESPACES --enable USER_NS \
+    --enable PID_NS --enable NET_NS --enable IPC_NS --enable UTS_NS \
+    --enable CGROUPS --enable CGROUP_PIDS --enable MEMCG \
+    --enable CGROUP_SCHED --enable FAIR_GROUP_SCHED \
+    --enable CGROUP_CPUACCT --enable CGROUP_FREEZER \
+    --enable SECCOMP --enable SECCOMP_FILTER \
+    --enable VETH --enable BRIDGE --enable BRIDGE_NETFILTER \
+    --enable FUSE_FS
 
 # Transparent proxy support (v2rayA and other TUN/TPROXY/REDIRECT clients).
 #
@@ -341,9 +350,25 @@ want_config() {
     fi
 }
 
-# XDG Desktop Portal document mounts and Bubblewrap's unprivileged sandbox.
+# Namespaces and cgroup v2 controllers for rootless and rootful containers.
 require_config CONFIG_NAMESPACES y
 require_config CONFIG_USER_NS y
+require_config CONFIG_PID_NS y
+require_config CONFIG_NET_NS y
+require_config CONFIG_IPC_NS y
+require_config CONFIG_UTS_NS y
+require_config CONFIG_CGROUPS y
+require_config CONFIG_CGROUP_PIDS y
+require_config CONFIG_MEMCG y
+require_config CONFIG_CGROUP_SCHED y
+require_config CONFIG_FAIR_GROUP_SCHED y
+require_config CONFIG_CGROUP_CPUACCT y
+require_config CONFIG_CGROUP_FREEZER y
+require_config CONFIG_SECCOMP y
+require_config CONFIG_SECCOMP_FILTER y
+require_config CONFIG_VETH y
+require_config CONFIG_BRIDGE y
+require_config CONFIG_BRIDGE_NETFILTER y
 require_config CONFIG_FUSE_FS y
 
 # Transparent proxy support: fail the kernel build rather than shipping

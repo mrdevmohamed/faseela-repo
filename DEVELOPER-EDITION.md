@@ -67,7 +67,7 @@ into isolated per-user environments.
 | Package | Status |
 |---|---|
 | `git` | Available |
-| `git-lfs`, `gh`, `docker`, `podman`, `buildah`, `skopeo`, `kubectl`, `helm`, `terraform`, `ansible` | Planned |
+| `git-lfs`, `gh`, `docker`, `podman`, `buildah`, `skopeo`, `kubectl`, `helm`, `terraform`, `ansible` | Planned; Podman integration plan: [docs/podman-support.md](docs/podman-support.md) |
 
 Container engines need service, group, rootless-storage and security integration;
 shipping only a binary is not a complete package.

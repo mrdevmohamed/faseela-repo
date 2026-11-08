@@ -11,7 +11,7 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 20
+rel = 21
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]

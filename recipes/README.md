@@ -16,18 +16,19 @@ recipes/
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── security/   optional ProjectDiscovery reconnaissance and security tools (opt-in)
+├── peripherals/ optional hardware integrations such as the Huion tablet control panel (opt-in)
 ├── extra/       general tools, editors, net utils, hw tools, misc libs
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
 Current set: 10 toolchain + 39 base + 54 system + 8 boot + 94 extra =
 **205 core packages**. Optional categories contain 125 GUI, 16 browser, 23
-media, 15 creative, 1 messaging, 1 networking, 12 security and 11 developer
-packages. The recipe tree contains **409 recipes** in total.
+media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral and 11 developer
+packages. The recipe tree contains **410 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; browser, media, creative, messaging, networking,
-security and developer packages remain opt-in.
+security, peripheral and developer packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 

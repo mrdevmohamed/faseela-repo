@@ -151,7 +151,9 @@ def _safe_parts(name: str, where: str):
         raise CatalogError(f"{where}: unsafe archive path {name!r}")
     if name.startswith("/"):
         raise CatalogError(f"{where}: absolute archive path {name!r}")
-    parts = name.split("/")
+    # Tar directory members conventionally end in one slash.
+    normalized = name.rstrip("/")
+    parts = normalized.split("/")
     while parts and parts[0] in ("", "."):
         parts.pop(0)
     if any(part in ("..", "") for part in parts):

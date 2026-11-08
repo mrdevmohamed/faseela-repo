@@ -4,7 +4,7 @@ The package build workflow is defined in **.github/workflows/packages.yml**. It 
 
 ## Automatic builds
 
-A push to **main** or **master** that changes files under **recipes/** triggers the package workflow. The selector identifies recipes changed since the last successful push build and adds the required package targets.
+A push to **main** or **master** that changes files under **recipes/** or changes **groups.toml** triggers the package workflow. The selector identifies recipes changed since the last successful push build. A groups-only change runs a metadata publication without rebuilding current package archives.
 
 A package change that does not affect the built output should not cause a new package payload. If the change alters the package output, increment the recipe **rel** value so the archive identity changes.
 
@@ -59,9 +59,10 @@ At a high level, the publisher:
 6. Checks package payloads for conflicting file ownership.
 7. Plans release shard assignments and creates any required **packages-NNNN** releases.
 8. Uploads new package and recipe snapshot archives.
-9. Creates the signed schema-v3 repository index using Nawa.
-10. Uploads **index.toml** and **index.toml.sig** to **stable-v3**.
-11. Publishes or refreshes the standalone Nawa transition package when required, while leaving the legacy **stable** release unchanged.
+9. Copies and validates **groups.toml**, then creates the signed schema-v3 repository index with its SHA-256 and size reference.
+10. Uploads **groups.toml** to **stable-v3** before the index that authenticates it.
+11. Uploads **index.toml** and **index.toml.sig** to **stable-v3**.
+12. Publishes or refreshes the standalone Nawa transition package when required, while leaving the legacy **stable** release unchanged.
 
 The index is published after the archive uploads so it does not point at assets that have not yet been uploaded.
 

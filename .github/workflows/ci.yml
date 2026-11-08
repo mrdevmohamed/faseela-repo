@@ -31,6 +31,8 @@ jobs:
         run: python3 -I scripts/test-huion-support.py
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
+      - name: Validate package groups against recipes
+        run: python3 -I scripts/check-groups.py
       - name: Bash completion is enabled in default interactive shells
         run: python3 -I scripts/test-bash-completion.py
       - name: Package build recipe regression checks

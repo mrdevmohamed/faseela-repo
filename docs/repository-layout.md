@@ -28,6 +28,7 @@ faseela-repo/
 │   ├── security/
 │   └── dev/
 ├── scripts/
+├── groups.toml
 ├── flavors.toml
 ├── DEVELOPER-EDITION.md
 ├── README.md
@@ -69,6 +70,7 @@ The contents of each category are determined by the current recipe tree. Do not 
 | Path | Role |
 |---|---|
 | **recipes/<category>/<name>/recipe.toml** | Build metadata, source pins, dependencies, build steps, and optional hooks for one package. |
+| **groups.toml** | Published package-group definitions; each group resolves to ordinary recipe names. |
 | **flavors.toml** | Named package selections used by the distribution and build workflow. |
 | **scripts/check-recipes.py** | Offline structural and dependency validation for the recipe tree. |
 | **scripts/recipe-ids.py** | Lists recipes or identifies superseded package archive names. |

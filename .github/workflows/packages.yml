@@ -60,7 +60,7 @@ name: Build packages
 on:
   push:
     branches: [main, master]
-    paths: ["recipes/**"]
+    paths: ["recipes/**", "groups.toml"]
   workflow_dispatch:
     inputs:
       all:
@@ -219,6 +219,7 @@ jobs:
         run: |
           set -euo pipefail
           selection="$RUNNER_TEMP/package-selection.json"
+          base=""
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
             # A pending concurrency run can be replaced by a newer push. Do not
             # diff only github.event.before..github.sha: that would lose recipes
@@ -287,6 +288,15 @@ jobs:
           pkgs="${selected[0]:-}"
           toolchain_pkgs="${selected[1]:-}"
           toolchain_all="${selected[2]:-false}"
+
+          # A groups.toml-only push still needs a signed-index publication.
+          # Selecting the already-published nawa archive runs the publisher;
+          # the incremental build stage skips it when its archive is current.
+          if [[ "$GITHUB_EVENT_NAME" == push && -n "$base" && -z "$pkgs" && -z "$toolchain_pkgs" ]] \
+              && git diff --quiet "$base" "$GITHUB_SHA" -- recipes/; then
+            pkgs="nawa"
+            echo "Only group metadata changed; running the publisher without rebuilding recipes."
+          fi
 
           # Build the current Nawa recipe whenever its standalone transition
           # release lacks the exact archive required by this recipe.
@@ -421,6 +431,7 @@ jobs:
           rm -rf distro/recipes
           cp -a recipes distro/recipes
           cp -a flavors.toml distro/flavors.toml
+          cp -a groups.toml distro/groups.toml
           # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
           # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.
           grep -Fq 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' distro/bootstrap/fetch-nawa.sh || {
@@ -552,7 +563,7 @@ jobs:
           supports_schema_v3() {
             local repo_help
             repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)" || return 1
-            for option in --index-version --locations --recipes-rev; do
+            for option in --index-version --locations --recipes-rev --groups; do
               grep -q -- "$option" <<< "$repo_help" || return 1
             done
           }
@@ -820,9 +831,10 @@ jobs:
           sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
             --out index.toml --index-version 3 --locations /repo/locations.toml \
             --sign --key /root/nawa.sec \
-            --recipes /faseela/recipes --recipes-rev "$rev"
+            --recipes /faseela/recipes --recipes-rev "$rev" \
+            --groups /faseela/groups.toml
           sudo chown -R "$(id -u):$(id -g)" "$repo"
-          [[ -s "$repo/$rfile" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
+          [[ -s "$repo/$rfile" && -s "$repo/groups.toml" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
             || { echo "::error::repo-create did not produce the recipe snapshot and signed schema-v3 index"; exit 1; }
 
           upload() {
@@ -888,7 +900,9 @@ jobs:
               }
             done
 
-          # Publish the v3 index only after all referenced shard assets exist.
+          # Publish group metadata before the index that authenticates its digest.
+          upload "$PKG_V3_TAG" "$repo/groups.toml"
+          # Publish the v3 index only after every referenced asset exists.
           upload "$PKG_V3_TAG" "$repo/index.toml" "$repo/index.toml.sig"
 
           # Remove stale shard assets only after the v3 index points elsewhere.

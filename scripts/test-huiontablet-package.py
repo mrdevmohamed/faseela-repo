@@ -118,6 +118,8 @@ def run():
         desktop = (pkgdir / "usr/share/applications/huiontablet.desktop").read_text(encoding="utf-8")
         check("Exec=/usr/lib/huiontablet/huiontablet.sh manual_launch" in desktop,
               "desktop entry must launch the Huion control panel")
+        check("Icon=/usr/share/icons/huiontablet.png" in desktop,
+              "desktop entry must use the installed vendor icon")
         sway = (pkgdir / "etc/sway/config.d/40-huiontablet.conf").read_text(encoding="utf-8")
         check("exec /usr/lib/huiontablet/huiontablet.sh autostart" in sway,
               "Sway must autostart the Huion control panel when this optional package is installed")

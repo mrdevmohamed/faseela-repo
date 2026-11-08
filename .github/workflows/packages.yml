@@ -24,7 +24,7 @@ name: Build packages
 
 # PACKAGE SELECTION (Actions > Build packages > Run workflow)
 #   all   all recipe categories except toolchain
-#   core           base + system + boot + extra
+#   base + system + boot + extra can be selected by ticking those four category boxes
 #   category boxes select one or more ordinary recipe categories (including peripherals)
 #   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
 #   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
@@ -65,10 +65,6 @@ on:
     inputs:
       all:
         description: "Select all non-toolchain packages across every recipe category"
-        type: boolean
-        default: false
-      core:
-        description: "Select the core set: base + system + boot + extra"
         type: boolean
         default: false
       base:
@@ -198,7 +194,6 @@ jobs:
       - id: s
         env:
           INPUT_ALL: ${{ inputs.all }}
-          INPUT_CORE: ${{ inputs.core }}
           INPUT_BASE: ${{ inputs.base }}
           INPUT_SYSTEM: ${{ inputs.system }}
           INPUT_BOOT: ${{ inputs.boot }}
@@ -273,7 +268,6 @@ jobs:
 
             args=()
             [[ "$INPUT_ALL" == true ]] && args+=(--all)
-            [[ "$INPUT_CORE" == true ]] && args+=(--core)
             [[ "$INPUT_TOOLCHAIN" == true ]] && args+=(--toolchain-all)
             (( ${#categories[@]} == 0 )) || args+=(--categories "${categories[@]}")
             args+=(--packages "$INPUT_PACKAGES" --toolchain-packages "$INPUT_TOOLCHAIN_PACKAGES" \

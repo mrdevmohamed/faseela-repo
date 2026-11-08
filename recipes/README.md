@@ -15,6 +15,7 @@ recipes/
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
+├── security/   optional ProjectDiscovery reconnaissance and security tools (opt-in)
 ├── extra/       general tools, editors, net utils, hw tools, misc libs
 └── dev/         opt-in developer runtimes and toolchains
 ```
@@ -28,6 +29,10 @@ plus the optional `messaging/` category (see [messaging/README.md](messaging/REA
 and optional `networking/` category (1 package, see [networking/README.md](networking/README.md));
 plus the opt-in `dev/` category (11 packages). The recipe tree counts **396 recipes** in total.
 `stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/` and `messaging/` are never part of them).
+and optional `networking/` category (see [networking/README.md](networking/README.md)),
+plus the optional `security/` category (12 ProjectDiscovery tools; see [security/README.md](security/README.md));
+the recipe tree counts 397 recipes in total.
+`stage2`/`stage3` build everything **except** `gui/` unless `WITH_GUI=1` (`browser/`, `media/`, `creative/`, `messaging/` and `security/` are never part of them).
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 

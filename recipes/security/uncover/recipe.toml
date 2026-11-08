@@ -1,0 +1,20 @@
+# ProjectDiscovery uncover command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "uncover"
+version = "1.2.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Search engine powered exposed-host discovery"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/uncover/releases/download/v1.2.1/uncover_1.2.1_linux_amd64.zip"
+sha256 = "72cfa1ceaf72ce499a0ed520b738178a99d369321dbc8e10f01e1dd6e1119322"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "uncover_1.2.1_linux_amd64.zip" -d .
+install -Dm755 uncover %{pkgdir}/usr/bin/uncover
+"""

@@ -1,0 +1,20 @@
+# ProjectDiscovery naabu command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "naabu"
+version = "2.7.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Fast TCP port scanner"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/naabu/releases/download/v2.7.0/naabu_2.7.0_linux_amd64.zip"
+sha256 = "0cc77c0ca32d2f519ffbaa7665bb0e7c88c40753ab22f03551d453a1a823e9f0"
+
+[depends]
+build = ["unzip"]
+run = ["glibc", "libpcap"]
+
+[build]
+install = """
+unzip -oq "naabu_2.7.0_linux_amd64.zip" -d .
+install -Dm755 naabu %{pkgdir}/usr/bin/naabu
+"""

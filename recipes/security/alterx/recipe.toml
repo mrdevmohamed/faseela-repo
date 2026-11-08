@@ -1,0 +1,20 @@
+# ProjectDiscovery alterx command-line tool; pinned upstream Linux amd64 release.
+[package]
+name = "alterx"
+version = "0.1.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Domain permutation generation utility"
+license = ["MIT"]
+source = "https://github.com/projectdiscovery/alterx/releases/download/v0.1.0/alterx_0.1.0_linux_amd64.zip"
+sha256 = "ffae5b25138cb27b58900b9b5849e02d0390385fce404252d32e469f2a0e97ac"
+
+[depends]
+build = ["unzip"]
+run = ["glibc"]
+
+[build]
+install = """
+unzip -oq "alterx_0.1.0_linux_amd64.zip" -d .
+install -Dm755 alterx %{pkgdir}/usr/bin/alterx
+"""

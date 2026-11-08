@@ -1,5 +1,5 @@
 # extra recipe: fastfetch — optional libraries (wayland, drm, ...) are dlopen()ed at run time, no hard deps.
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r fastfetch` pins it.
+# sha256 is an all-zero placeholder until \`python3 scripts/fill-sha256.py -r fastfetch\` pins it.
 [package]
 name = "fastfetch"
 version = "2.30.1"
@@ -17,4 +17,72 @@ run = []
 [build]
 configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_TESTS=OFF"
 compile = "cmake --build build -j %{jobs}"
-install = "DESTDIR=%{pkgdir} cmake --install build"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+
+# Faseela system-wide defaults. A user's ~/.config/fastfetch config takes
+# precedence, so this branding never overwrites personal Fastfetch settings.
+install -d -m755 %{pkgdir}/etc/xdg/fastfetch %{pkgdir}/usr/share/fastfetch/logos
+
+cat > %{pkgdir}/etc/xdg/fastfetch/config.jsonc <<'CONFIG'
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/2.30.1/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "/usr/share/fastfetch/logos/faseela.txt",
+    "color": {
+      "1": "cyan",
+      "2": "white"
+    },
+    "padding": {
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "cyan",
+      "title": "white",
+      "output": "white",
+      "separator": "cyan"
+    },
+    "key": {
+      "type": "string",
+      "width": 10
+    },
+    "brightColor": true
+  },
+  "modules": [
+    "title",
+    "separator",
+    { "type": "os", "key": "OS" },
+    { "type": "host", "key": "Host" },
+    { "type": "kernel", "key": "Kernel" },
+    { "type": "initsystem", "key": "Init" },
+    { "type": "uptime", "key": "Uptime" },
+    { "type": "shell", "key": "Shell" },
+    { "type": "display", "key": "Display" },
+    { "type": "de", "key": "Desktop" },
+    { "type": "wm", "key": "Window" },
+    { "type": "terminal", "key": "Terminal" },
+    { "type": "cpu", "key": "CPU", "showPeCoreCount": true },
+    { "type": "gpu", "key": "GPU" },
+    { "type": "memory", "key": "Memory" },
+    { "type": "disk", "key": "Disk" },
+    "break",
+    "colors"
+  ]
+}
+CONFIG
+
+cat > %{pkgdir}/usr/share/fastfetch/logos/faseela.txt <<'LOGO'
+$1   _______
+$1  |  _____|
+$1  | |____
+$1  |  ____|
+$1  | |
+$1  |_|
+$2  FASEELA
+$1  LINUX / RUNIT
+LOGO
+'''

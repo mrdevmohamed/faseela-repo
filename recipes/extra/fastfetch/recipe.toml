@@ -1,14 +1,23 @@
-# extra recipe: fastfetch — optional libraries (wayland, drm, ...) are dlopen()ed at run time, no hard deps.
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r fastfetch` pins it.
+# extra recipe: Fastfetch, branded for Faseela.
+# Local config and logo files live beside this recipe and are staged by Nawa assets.
 [package]
 name = "fastfetch"
 version = "2.30.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "fastfetch — system information tool (neofetch replacement)"
+summary = "Fastfetch — system information tool with Faseela branding"
 license = ["MIT"]
-source = "https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/%{version}.tar.gz"
+# Fail closed on Nawa versions that predate the recipe-local assets schema.
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "fastfetch"
+url = "https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/%{version}.tar.gz"
 sha256 = "5248311a3d8ce65f6f48756dfc0df9f8922d64f5201ee8d980497d52e924906e"
+strip_components = 1
+
+[assets]
+include = ["config.jsonc", "logos/faseela.txt"]
 
 [depends]
 build = ["cmake", "pkgconf"]
@@ -17,4 +26,8 @@ run = []
 [build]
 configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_TESTS=OFF"
 compile = "cmake --build build -j %{jobs}"
-install = "DESTDIR=%{pkgdir} cmake --install build"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+install -Dm644 "%{assetsdir}/config.jsonc" "%{pkgdir}/etc/xdg/fastfetch/config.jsonc"
+install -Dm644 "%{assetsdir}/logos/faseela.txt" "%{pkgdir}/usr/share/fastfetch/logos/faseela.txt"
+'''

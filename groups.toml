@@ -51,3 +51,12 @@ description = "Podman and the supporting OCI runtime, network, and storage compo
 mandatory = ["podman", "crun", "conmon"]
 default = ["aardvark-dns", "netavark", "fuse-overlayfs", "passt"]
 optional = ["catatonit", "runit-services"]
+
+[[group]]
+schema = 1
+id = "rust-development"
+name = "Rust Development Tools"
+description = "The version-matched Rust compiler, Clippy linter, formatter, and language server."
+mandatory = ["rust"]
+default = ["rust-clippy", "rustfmt"]
+optional = ["rust-analyzer"]

@@ -1,0 +1,44 @@
+# Development recipe: Rust Clippy linting tools (cargo-clippy and clippy-driver) from the matching official Rust release.
+#
+# Keep this component version-locked to the base rust recipe. The official
+# Rust distribution archive contains the component payloads, so no rustup
+# installation or unpinned component download is required.
+[package]
+name = "rust-clippy"
+version = "1.96.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Rust Clippy linting tools (cargo-clippy and clippy-driver)"
+license = ["MIT", "Apache-2.0"]
+source = "https://static.rust-lang.org/dist/rust-%{version}-x86_64-unknown-linux-gnu.tar.xz"
+sha256 = "d29ccb1559a177c4e72291f6e5f629de7fe8885e7521ca47802627544b121e95"
+source_dir = "rust-%{version}-x86_64-unknown-linux-gnu"
+
+[depends]
+build = []
+run = ["rust"]
+
+[slim]
+strip = false
+
+[build]
+install = """
+if [ ! -f ./install.sh ]; then
+    echo "rust-clippy: install.sh not found in $(pwd); contents:" >&2
+    ls -la . >&2
+    exit 1
+fi
+
+# Install only the version-matched Clippy component.
+bash ./install.sh --prefix=/usr --destdir=%{pkgdir} --disable-ldconfig \\
+    --components=clippy-preview
+
+# Do not ship the upstream uninstaller or build-machine install log. Nawa
+# owns installed files and the component manifest is retained for auditing.
+rl=%{pkgdir}/usr/lib/rustlib
+rm -f "$rl/install.log" "$rl/uninstall.sh"
+for f in "$rl"/manifest-*; do
+    [ -f "$f" ] || continue
+    sed -i "s#%{pkgdir}##g" "$f"
+done
+"""

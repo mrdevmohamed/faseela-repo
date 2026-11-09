@@ -6,7 +6,7 @@
 [package]
 name = "rustfmt"
 version = "1.96.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Rust source formatter (rustfmt and cargo-fmt)"
 license = ["MIT", "Apache-2.0"]
@@ -33,10 +33,10 @@ fi
 bash ./install.sh --prefix=/usr --destdir=%{pkgdir} --disable-ldconfig \\
     --components=rustfmt-preview
 
-# Do not ship the upstream uninstaller or build-machine install log. Nawa
-# owns installed files and the component manifest is retained for auditing.
+# Do not ship upstream installer state owned by the base rust package.
+# Keep component manifests for Nawa's file ownership and auditing.
 rl=%{pkgdir}/usr/lib/rustlib
-rm -f "$rl/install.log" "$rl/uninstall.sh"
+rm -f "$rl/install.log" "$rl/uninstall.sh" "$rl/components" "$rl/rust-installer-version"
 for f in "$rl"/manifest-*; do
     [ -f "$f" ] || continue
     sed -i "s#%{pkgdir}##g" "$f"

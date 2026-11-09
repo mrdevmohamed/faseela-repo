@@ -1,0 +1,43 @@
+# gui recipe: emptty — TUI display/login manager, built without PAM.
+[package]
+name = "emptty"
+version = "0.16.1"
+rel = 2
+arch = ["x86_64"]
+summary = "TUI display manager for Wayland and X11 sessions (no PAM)"
+license = ["MIT"]
+# Require Nawa's recipe-local asset support.
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "emptty"
+url = "https://github.com/tvrzna/emptty/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "e85d0658fd793ad97be90af241451a9374b299d9525d2aeb57a6f83f10ad4931"
+strip_components = 1
+
+[assets]
+include = ["conf", "emptty.1", "runit-run", "sway.desktop", "LICENSE"]
+
+[depends]
+build = ["golang", "gcc", "libxcrypt"]
+run = ["gui-session", "libxcrypt", "shadow", "runit", "coreutils", "util-linux"]
+
+[build]
+configure = "go test -tags nopam ./..."
+compile = 'mkdir -p dist && CGO_ENABLED=1 go build -tags nopam -buildvcs=false -ldflags "-X github.com/tvrzna/emptty/src.buildVersion=v%{version}" -o dist/emptty .'
+install = '''
+install -Dm755 dist/emptty "%{pkgdir}/usr/bin/emptty"
+install -Dm644 "%{assetsdir}/conf" "%{pkgdir}/etc/emptty/conf"
+install -Dm644 "%{assetsdir}/emptty.1" "%{pkgdir}/usr/share/man/man1/emptty.1"
+gzip -f "%{pkgdir}/usr/share/man/man1/emptty.1"
+install -Dm755 "%{assetsdir}/runit-run" "%{pkgdir}/etc/sv/emptty/run"
+install -Dm644 "%{assetsdir}/sway.desktop" "%{pkgdir}/usr/share/wayland-sessions/sway.desktop"
+install -Dm644 "%{assetsdir}/LICENSE" "%{pkgdir}/usr/share/licenses/emptty/LICENSE"
+'''
+
+[hooks]
+post_install = '''
+echo "emptty: optional runit service; enable with:"
+echo "  ln -s /etc/sv/emptty /etc/runit/runsvdir/default/emptty"
+echo "emptty: disable with: rm /etc/runit/runsvdir/default/emptty"
+'''

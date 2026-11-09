@@ -16,7 +16,7 @@ source_dir = "rust-%{version}-x86_64-unknown-linux-gnu"
 
 [depends]
 build = []
-run = ["rust"]
+run = ["rust", "rust-src"]
 
 [slim]
 strip = false

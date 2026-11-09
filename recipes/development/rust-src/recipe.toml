@@ -1,17 +1,18 @@
 # Development recipe: Rust standard-library source required by rust-analyzer and IDE tooling.
 #
-# Keep this component version-locked to the base rust recipe. It is installed
-# from the same official Rust distribution archive without Rustup.
+# This is the standalone rust-src component archive. It contains only the
+# rust-src installer component; do not pass --components (that option is for
+# the full Rust distribution installer).
 [package]
 name = "rust-src"
 version = "1.96.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Rust standard library source code for IDE tooling"
 license = ["MIT", "Apache-2.0"]
-source = "https://static.rust-lang.org/dist/rust-%{version}-x86_64-unknown-linux-gnu.tar.xz"
-sha256 = "d29ccb1559a177c4e72291f6e5f629de7fe8885e7521ca47802627544b121e95"
-source_dir = "rust-%{version}-x86_64-unknown-linux-gnu"
+source = "https://static.rust-lang.org/dist/2026-06-30/rust-src-%{version}.tar.xz"
+sha256 = "b343b6553bc772225f6a2b5be5055017f29794dcf4e08020366b27a0a40fc1c2"
+source_dir = "rust-src"
 
 [depends]
 build = []
@@ -23,14 +24,21 @@ strip = false
 [build]
 install = """
 if [ ! -f ./install.sh ]; then
-    echo "rust-src: install.sh not found in $(pwd); contents:" >&2
+    echo "rust-src: standalone component install.sh not found in $(pwd); contents:" >&2
     ls -la . >&2
     exit 1
 fi
 
-# Install only the standard-library source component.
-bash ./install.sh --prefix=/usr --destdir=%{pkgdir} --disable-ldconfig \\
-    --components=rust-src
+# The standalone archive contains only rust-src, so install its default
+# component without asking the installer to select a component by name.
+bash ./install.sh --prefix=/usr --destdir=%{pkgdir} --disable-ldconfig
+
+# Fail early if the component archive did not install the expected source tree.
+src=%{pkgdir}/usr/lib/rustlib/src/rust/library
+if [ ! -d "$src" ] || [ ! -f "$src/Cargo.toml" ]; then
+    echo "rust-src: expected Rust library sources were not installed at $src" >&2
+    exit 1
+fi
 
 # Shared installer state belongs to the base rust package.
 rl=%{pkgdir}/usr/lib/rustlib

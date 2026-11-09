@@ -16,7 +16,7 @@ run = ["gui-session", "libxcrypt", "shadow", "runit", "coreutils"]
 
 [build]
 configure = "go test -tags nopam ./..."
-compile = 'CGO_ENABLED=1 go build -tags nopam -buildvcs=false -ldflags "-X github.com/tvrzna/emptty/src.buildVersion=v%{version}" -o dist/emptty .'
+compile = 'mkdir -p dist && CGO_ENABLED=1 go build -tags nopam -buildvcs=false -ldflags "-X github.com/tvrzna/emptty/src.buildVersion=v%{version}" -o dist/emptty .'
 install = '''
 install -D -m755 dist/emptty %{pkgdir}/usr/bin/emptty
 install -D -m644 res/conf %{pkgdir}/etc/emptty/conf

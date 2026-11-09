@@ -1,18 +1,18 @@
 # Development recipe: Rust standard-library source required by rust-analyzer and IDE tooling.
 #
-# This is the standalone rust-src component archive. It contains only the
-# rust-src installer component; do not pass --components (that option is for
-# the full Rust distribution installer).
+# The standalone rust-src distribution is a pre-laid-out component payload,
+# not a rust-installer bundle. Its archive root contains
+# lib/rustlib/src/rust/; copy that tree into the package image directly.
 [package]
 name = "rust-src"
 version = "1.96.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Rust standard library source code for IDE tooling"
 license = ["MIT", "Apache-2.0"]
 source = "https://static.rust-lang.org/dist/2026-06-30/rust-src-%{version}.tar.xz"
 sha256 = "b343b6553bc772225f6a2b5be5055017f29794dcf4e08020366b27a0a40fc1c2"
-source_dir = "rust-src"
+source_dir = "rust-src-1.96.1"
 
 [depends]
 build = []
@@ -23,28 +23,22 @@ strip = false
 
 [build]
 install = """
-if [ ! -f ./install.sh ]; then
-    echo "rust-src: standalone component install.sh not found in $(pwd); contents:" >&2
-    ls -la . >&2
+src=lib/rustlib/src/rust
+if [ ! -d "$src/library" ] || [ ! -f "$src/library/Cargo.toml" ]; then
+    echo "rust-src: archive does not contain the expected Rust source tree at $src" >&2
+    echo "Archive root: $(pwd)" >&2
+    find . -maxdepth 5 -type f -name Cargo.toml -print >&2
     exit 1
 fi
 
-# The standalone archive contains only rust-src, so install its default
-# component without asking the installer to select a component by name.
-bash ./install.sh --prefix=/usr --destdir=%{pkgdir} --disable-ldconfig
+dest=%{pkgdir}/usr/lib/rustlib/src/rust
+install -d "$dest"
+cp -a "$src/." "$dest/"
 
-# Fail early if the component archive did not install the expected source tree.
-src=%{pkgdir}/usr/lib/rustlib/src/rust/library
-if [ ! -d "$src" ] || [ ! -f "$src/Cargo.toml" ]; then
-    echo "rust-src: expected Rust library sources were not installed at $src" >&2
+# Verify the exact path consumed by rust-analyzer and rustc -Z build-std.
+installed=%{pkgdir}/usr/lib/rustlib/src/rust/library
+if [ ! -d "$installed" ] || [ ! -f "$installed/Cargo.toml" ]; then
+    echo "rust-src: expected Rust library sources were not installed at $installed" >&2
     exit 1
 fi
-
-# Shared installer state belongs to the base rust package.
-rl=%{pkgdir}/usr/lib/rustlib
-rm -f "$rl/install.log" "$rl/uninstall.sh" "$rl/components" "$rl/rust-installer-version"
-for f in "$rl"/manifest-*; do
-    [ -f "$f" ] || continue
-    sed -i "s#%{pkgdir}##g" "$f"
-done
 """

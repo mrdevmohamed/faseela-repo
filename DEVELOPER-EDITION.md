@@ -16,6 +16,7 @@ pass validation.
 |---|---|
 | `developer-base` | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
 | `developer-systems` | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
+| `rust-development` | `rust`, `rust-clippy`, `rustfmt`; optional `rust-analyzer` |
 | `developer-python` | `python`, `pip`, `pipx` |
 | `developer-web` | `nodejs`, `deno` |
 | `developer-debugging` | `gdb`, `strace`, `valgrind` |
@@ -31,7 +32,8 @@ a recipe and its dependency closure still need to be implemented and tested.
 | Package | Status |
 |---|---|
 | `python` | Available |
-| `rust` | Available |
+| `rust` | Available; base compiler and Cargo only |
+| `rust-clippy`, `rustfmt`, `rust-analyzer` | Available as version-matched opt-in components of the official Rust 1.96.1 distribution |
 | `nodejs` 26.13.0, `golang` 1.27.3, `deno` 2.9.8 | Available as opt-in recipes |
 | `zig`, `openjdk`, `php`, `ruby`, `dotnet-sdk`, `bun` | Planned |
 | `lua` | Available |
@@ -122,6 +124,9 @@ Every new package must:
 3. Complete C/C++ toolchain (LLD, LLDB, compiler-rt, libc++, ccache).
 4. Add remaining language runtimes and developer utilities.
 5. Add DevOps/container tooling, databases, then profiling/testing tools.
+
+The `rust-development` group is opt-in; its component recipes are pinned to the same
+Rust release as the base `rust` package and do not require Rustup.
 
 Do not add every developer group to `iso-gui`, `iso-nogui`, `bootstrap`,
 or `rootfs-min`. Users should opt in with commands such as

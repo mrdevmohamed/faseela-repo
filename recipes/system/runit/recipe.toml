@@ -2,7 +2,7 @@
 [package]
 name = "runit"
 version = "2.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "UNIX init scheme with service supervision (runit suite)"
 license = ["BSD-3-Clause"]
@@ -11,10 +11,34 @@ sha256 = "95ef4d2868b978c7179fe47901e5c578e11cf273d292bd6208bd3a7ccb029290"
 source_dir = "admin/runit-%{version}"
 
 [depends]
-build = []
+build = ["patch"]
 run = []
 
 [build]
+prepare = '''
+# Make sv use Faseela's canonical runsvdir by default. The upstream SVDIR
+# environment override remains available and takes precedence.
+cat > .faseela-default-svdir.patch <<'PATCH'
+--- a/src/sv.c
++++ b/src/sv.c
+@@ -33,7 +33,7 @@
+ char *progname;
+ char *action;
+ char *acts;
+-char *varservice ="/service/";
++char *varservice ="/etc/runit/runsvdir/default/";
+ char **service;
+ char **servicex;
+ unsigned int services;
+PATCH
+
+# Fail closed if upstream source has changed instead of silently skipping it.
+patch --dry-run -p1 < .faseela-default-svdir.patch
+patch -p1 < .faseela-default-svdir.patch
+rm -f .faseela-default-svdir.patch
+
+grep -Fq 'char *varservice ="/etc/runit/runsvdir/default/";' src/sv.c
+'''
 compile = "package/compile"
 install = """
 mkdir -p %{pkgdir}/usr/bin

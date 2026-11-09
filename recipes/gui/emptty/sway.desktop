@@ -1,6 +1,0 @@
-[Desktop Entry]
-Name=Sway (Faseela)
-Comment=Wayland session using Faseela's seatd and D-Bus setup
-Exec=/usr/bin/start-sway
-Type=Application
-DesktopNames=sway

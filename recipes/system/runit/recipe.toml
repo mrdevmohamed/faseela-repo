@@ -16,8 +16,8 @@ run = []
 
 [build]
 prepare = '''
-# Use Faseela's canonical runsvdir as sv's compiled-in default. Keep SVDIR
-# support intact so an explicit environment override still takes precedence.
+# Make sv use Faseela's canonical runsvdir by default. The upstream SVDIR
+# environment override remains available and takes precedence.
 cat > .faseela-default-svdir.patch <<'PATCH'
 --- a/src/sv.c
 +++ b/src/sv.c
@@ -30,34 +30,14 @@ cat > .faseela-default-svdir.patch <<'PATCH'
  char **service;
  char **servicex;
  unsigned int services;
---- a/man/sv.8
-+++ b/man/sv.8
-@@ -30,7 +30,7 @@
- .I service
- doesn't start with a dot or slash and doesn't end with a slash, it is
- searched in the default services directory
--.IR /service/ ,
-+.IR /etc/runit/runsvdir/default/ ,
- otherwise relative to the current directory.
- .P
- .I command
-@@ -232,7 +232,7 @@
- .TP
- .B SVDIR
- The environment variable $SVDIR overrides the default services directory
--.IR /service/ .
-+.IR /etc/runit/runsvdir/default/ .
- .TP
- .B SVWAIT
 PATCH
 
-# Fail closed if the upstream source no longer matches the reviewed patch.
+# Fail closed if upstream source has changed instead of silently skipping it.
 patch --dry-run -p1 < .faseela-default-svdir.patch
 patch -p1 < .faseela-default-svdir.patch
 rm -f .faseela-default-svdir.patch
 
 grep -Fq 'char *varservice ="/etc/runit/runsvdir/default/";' src/sv.c
-grep -Fq '.IR /etc/runit/runsvdir/default/ ,' man/sv.8
 '''
 compile = "package/compile"
 install = """

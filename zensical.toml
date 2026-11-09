@@ -1,0 +1,47 @@
+[project]
+site_name = "Faseela Package Repository"
+site_description = "Package recipes, build automation, and the signed binary repository for Faseela."
+site_url = "https://mrdevmohamed.github.io/faseela-repo/"
+repo_url = "https://github.com/mrdevmohamed/faseela-repo"
+edit_uri = "edit/main/docs/"
+site_author = "Faseela Project"
+copyright = "Faseela contributors"
+
+nav = [
+  "index.md",
+  { "Getting started" = "getting-started.md" },
+  { "Repository" = [
+    "repository-layout.md",
+    "package-repository.md",
+    "security.md",
+    "flavors.md",
+  ] },
+  { "Package recipes" = [
+    "recipes/index.md",
+    "recipes/new-recipe.md",
+    "recipes/dependencies.md",
+  ] },
+  { "Build and CI" = [
+    "documentation-site.md",
+    "build-publish.md",
+    "ci.md",
+  ] },
+  { "Contributing" = "contributing.md" },
+  { "Operations and design notes" = [
+    "telegram-notifications.md",
+    "podman-support.md",
+    "package-repository-design.md",
+  ] },
+]
+
+[project.theme]
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.expand",
+  "navigation.path",
+  "navigation.footer",
+  "toc.follow",
+  "content.action.edit",
+  "content.action.view",
+]

@@ -1,0 +1,1077 @@
+name: Build packages
+
+# Builds packages from this repository's recipes. The old `stable` endpoint
+# remains a frozen schema-v1 compatibility endpoint for existing clients.
+# New clients use `stable-v3`: its signed schema-v3 index points to package
+# and recipe archives distributed across `packages-NNNN` Releases.
+#
+#   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable-v3
+#
+# Existing installations can upgrade Nawa from the standalone signed
+# `nawa-transition` release before switching to stable-v3.
+# This repository must be PUBLIC for the URLs to work without a token.
+#
+# Publishing uses this workflow's GITHUB_TOKEN (contents: write); no PAT needed.
+#
+# One-time setup (Settings > Secrets and variables > Actions):
+#   secret   NAWA_SIGN_KEY_B64   base64 of nawa.sec
+#   variable PKG_TAG             old schema-v1 release tag (default stable)
+#   variable PKG_V3_TAG          schema-v3 index release tag (default stable-v3)
+#   variable NAWA_TRANSITION_TAG standalone signed Nawa upgrade (default nawa-transition)
+#   variable DISTRO_REPO         distribution repository (default mrdevmohamed/faseela)
+#   variable DISTRO_REF          distribution tooling ref (default master)
+#
+
+# PACKAGE SELECTION (Actions > Build packages > Run workflow)
+#   all   all recipe categories except toolchain
+#   base + system + boot + extra can be selected by ticking those four category boxes
+#   category boxes select one or more ordinary recipe categories (including peripherals)
+#   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
+#   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
+#   packages       exact recipe names; Toolchain names are rerouted to Bootstrap
+#   flavors        multiple names from flavors.toml, separated by spaces or commas
+#   exclude        recipe names or @categories removed from selected targets
+# Selectors are additive. Pushes automatically select recipes changed by that push.
+# ALL discovers categories from recipes, so new non-toolchain categories join automatically.
+# GitHub Actions has no dynamic multi-select input: checkboxes select categories,
+# while the packages/flavors text fields accept any number of names.
+
+# BUILDING EVERYTHING TAKES LONGER THAN ONE RUN. So the workflow is resumable:
+#   * a package whose archive (name-version-rel) is already in the distributed
+#     package repository is up to date and is skipped; a recipe bump rebuilds it;
+#   * published archives a build needs are installed, not compiled again;
+#   * after `budget` minutes no new package is started, everything built so
+#     far is published, and (auto_continue) the workflow starts itself again
+#     for the rest. A failing package never blocks the others: its dependents
+#     are skipped, all the rest is still built and published, and the run
+#     ends red with the list of what failed.
+#   * archives of an older version of a package are removed once the new one
+#     is published (prune).
+#
+# Build environment: the rootfs of the newest release of DISTRO_REPO
+#   min   faseela-x86_64-rootfs-min.tar.zst     base-devel + nawa, small, NO rust
+#   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust
+#   auto  (default) seed when rust or nawa is in the list, else min
+# Both come from the ISO workflow (release.yml) of DISTRO_REPO, which publishes them in
+# a release (a `v*` tag, or a manual run with `release` ticked; `outputs=core` makes a
+# release with the seed rootfs alone). `auto` falls back to the seed rootfs while no
+# release carries the small one yet. Run that once before the first package build.
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["recipes/**", "groups.toml"]
+  workflow_dispatch:
+    inputs:
+      all:
+        description: "Select all non-toolchain packages across every recipe category"
+        type: boolean
+        default: false
+      base:
+        description: "Select every package in the base category"
+        type: boolean
+        default: false
+      system:
+        description: "Select every package in the system category"
+        type: boolean
+        default: false
+      boot:
+        description: "Select every package in the boot category"
+        type: boolean
+        default: false
+      extra:
+        description: "Select every package in the extra category"
+        type: boolean
+        default: false
+      gui:
+        description: "Select every package in the GUI category"
+        type: boolean
+        default: false
+      peripherals:
+        description: "Select optional hardware integrations such as the Huion tablet control panel"
+        type: boolean
+        default: false
+      browser:
+        description: "Select every package in the browser category"
+        type: boolean
+        default: false
+      media:
+        description: "Select every package in the media category"
+        type: boolean
+        default: false
+      creative:
+        description: "Select every package in the creative category"
+        type: boolean
+        default: false
+      messaging:
+        description: "Select every package in the messaging category"
+        type: boolean
+        default: false
+      networking:
+        description: "Select every package in the networking category"
+        type: boolean
+        default: false
+      security:
+        description: "Select every ProjectDiscovery security tool package"
+        type: boolean
+        default: false
+      toolchain:
+        description: "Rebuild the FULL Toolchain through Bootstrap Stage 3 (safe self-hosting path)"
+        type: boolean
+        default: false
+      packages:
+        description: "Exact recipe names; Toolchain names are automatically routed through Bootstrap"
+        type: string
+        default: ""
+      toolchain_packages:
+        description: "Selected Toolchain recipe names, e.g. glibc gcc (rebuilt with Bootstrap dependency ordering)"
+        type: string
+        default: ""
+      flavors:
+        description: "One or more flavor names from flavors.toml, separated by spaces or commas"
+        type: string
+        default: ""
+      exclude:
+        description: "Optional package names or @categories to remove from selected targets"
+        type: string
+        default: ""
+      dry_run:
+        description: "Resolve and display the package plan without downloading or building anything"
+        type: boolean
+        default: false
+      rootfs:
+        description: "Build environment"
+        type: choice
+        options: [auto, min, seed]
+        default: auto
+      isolation:
+        description: "nawa build isolation"
+        type: choice
+        options: [sandbox, env, closure, none]
+        default: sandbox
+      budget:
+        description: "Minutes after which no NEW package is started (the hard limit of a run is 6 h)"
+        type: string
+        default: "270"
+      auto_continue:
+        description: "When time ran out, start this workflow again for the remaining packages"
+        type: boolean
+        default: true
+      keep_going:
+        description: "Keep building the other packages when one fails"
+        type: boolean
+        default: true
+      prune:
+        description: "Delete superseded versions from the package repository after publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read # select from the last successfully published push, not only the latest push event
+
+# Only one publisher may rewrite the signed index at a time. GitHub may replace
+# an older pending run; the selector below therefore diffs from the last
+# successful push run so the surviving run includes every unpublished recipe change.
+concurrency:
+  group: packages-publish
+  cancel-in-progress: false
+
+jobs:
+  select:
+    name: which packages
+    runs-on: ubuntu-24.04
+    outputs:
+      pkgs: ${{ steps.s.outputs.pkgs }}
+      toolchain_pkgs: ${{ steps.s.outputs.toolchain_pkgs }}
+      toolchain_all: ${{ steps.s.outputs.toolchain_all }}
+      rootfs: ${{ steps.s.outputs.rootfs }}
+      dry_run: ${{ steps.s.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: s
+        env:
+          INPUT_ALL: ${{ inputs.all }}
+          INPUT_BASE: ${{ inputs.base }}
+          INPUT_SYSTEM: ${{ inputs.system }}
+          INPUT_BOOT: ${{ inputs.boot }}
+          INPUT_EXTRA: ${{ inputs.extra }}
+          INPUT_GUI: ${{ inputs.gui }}
+          INPUT_PERIPHERALS: ${{ inputs.peripherals }}
+          INPUT_BROWSER: ${{ inputs.browser }}
+          INPUT_MEDIA: ${{ inputs.media }}
+          INPUT_CREATIVE: ${{ inputs.creative }}
+          INPUT_MESSAGING: ${{ inputs.messaging }}
+          INPUT_NETWORKING: ${{ inputs.networking }}
+          INPUT_SECURITY: ${{ inputs.security }}
+          INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
+          INPUT_TOOLCHAIN_PACKAGES: ${{ inputs.toolchain_packages }}
+          INPUT_PACKAGES: ${{ inputs.packages }}
+          INPUT_FLAVORS: ${{ inputs.flavors }}
+          INPUT_EXCLUDE: ${{ inputs.exclude }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_ROOTFS: ${{ inputs.rootfs || 'auto' }}
+          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+          NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
+        run: |
+          set -euo pipefail
+          selection="$RUNNER_TEMP/package-selection.json"
+          base=""
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            # A pending concurrency run can be replaced by a newer push. Do not
+            # diff only github.event.before..github.sha: that would lose recipes
+            # from the replaced run. Start at the last successful push run.
+            last_successful_push="$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/packages.yml/runs?branch=$GITHUB_REF_NAME&event=push&status=success&per_page=100" \
+              --jq '.workflow_runs[0].head_sha // empty')"
+
+            if [[ -z "$last_successful_push" ]]; then
+              # First package publication on this branch: reconcile the full
+              # recipe tree rather than assuming earlier pushes were processed.
+              echo "::notice::no successful package push found; selecting the complete recipe tree"
+              python3 -I scripts/select-packages.py \
+                --recipes recipes --flavors-file flavors.toml \
+                --all --toolchain-all --output "$selection"
+            else
+              base="$last_successful_push"
+              [[ "$base" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "::error::GitHub returned an invalid last successful package commit: $base"; exit 1;
+              }
+              git cat-file -e "$base^{commit}" 2>/dev/null || {
+                echo "::error::cannot resolve the last successfully published recipe commit $base"; exit 1;
+              }
+              git merge-base --is-ancestor "$base" "$GITHUB_SHA" || {
+                echo "::error::last successful package commit $base is not an ancestor of $GITHUB_SHA; refusing an unsafe partial selection"; exit 1;
+              }
+              echo "Selecting recipe changes from last successful push $base through $GITHUB_SHA."
+              python3 -I scripts/select-packages.py \
+                --recipes recipes --flavors-file flavors.toml \
+                --changed-from "$base" --changed-to "$GITHUB_SHA" \
+                --output "$selection"
+            fi
+          else
+            categories=()
+            [[ "$INPUT_BASE" == true ]] && categories+=(base)
+            [[ "$INPUT_SYSTEM" == true ]] && categories+=(system)
+            [[ "$INPUT_BOOT" == true ]] && categories+=(boot)
+            [[ "$INPUT_EXTRA" == true ]] && categories+=(extra)
+            [[ "$INPUT_GUI" == true ]] && categories+=(gui)
+            [[ "$INPUT_PERIPHERALS" == true ]] && categories+=(peripherals)
+            [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
+            [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
+            [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
+            [[ "$INPUT_MESSAGING" == true ]] && categories+=(messaging)
+            [[ "$INPUT_NETWORKING" == true ]] && categories+=(networking)
+            [[ "$INPUT_SECURITY" == true ]] && categories+=(security)
+
+            args=()
+            [[ "$INPUT_ALL" == true ]] && args+=(--all)
+            [[ "$INPUT_TOOLCHAIN" == true ]] && args+=(--toolchain-all)
+            (( ${#categories[@]} == 0 )) || args+=(--categories "${categories[@]}")
+            args+=(--packages "$INPUT_PACKAGES" --toolchain-packages "$INPUT_TOOLCHAIN_PACKAGES" \
+              --flavors "$INPUT_FLAVORS" --exclude "$INPUT_EXCLUDE")
+            python3 -I scripts/select-packages.py \
+              --recipes recipes --flavors-file flavors.toml "${args[@]}" \
+              --output "$selection"
+          fi
+          mapfile -t selected < <(python3 - "$selection" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          print(" ".join(data["packages"]))
+          print(" ".join(data["toolchain_packages"]))
+          print("true" if data["toolchain_all"] else "false")
+          PY
+          )
+          pkgs="${selected[0]:-}"
+          toolchain_pkgs="${selected[1]:-}"
+          toolchain_all="${selected[2]:-false}"
+
+          # A groups.toml-only push still needs a signed-index publication.
+          # Selecting the already-published nawa archive runs the publisher;
+          # the incremental build stage skips it when its archive is current.
+          if [[ "$GITHUB_EVENT_NAME" == push && -n "$base" && -z "$pkgs" && -z "$toolchain_pkgs" ]] \
+              && git diff --quiet "$base" "$GITHUB_SHA" -- recipes/; then
+            pkgs="nawa"
+            echo "Only group metadata changed; running the publisher without rebuilding recipes."
+          fi
+
+          # Build the current Nawa recipe whenever its standalone transition
+          # release lacks the exact archive required by this recipe.
+          nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
+          transition_needed=0
+          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
+            pkgs+=" nawa"
+            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
+            pkgs="$(echo $pkgs)"
+            transition_needed=1
+            echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
+          fi
+          for p in $pkgs; do
+            [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad package name '$p'"; exit 1; }
+            compgen -G "recipes/*/$p/recipe.toml" >/dev/null || { echo "::error::no recipe named '$p'"; exit 1; }
+            [[ ! -f "recipes/toolchain/$p/recipe.toml" ]] || {
+              echo "::error::$p is a Toolchain recipe and cannot enter the ordinary package build"; exit 1;
+            }
+          done
+          for p in $toolchain_pkgs; do
+            [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad Toolchain package name '$p'"; exit 1; }
+            [[ -f "recipes/toolchain/$p/recipe.toml" ]] || {
+              echo "::error::$p is not a recipe under recipes/toolchain"; exit 1;
+            }
+          done
+          [[ "$toolchain_all" == true || "$toolchain_all" == false ]] || {
+            echo "::error::invalid Toolchain selection mode"; exit 1;
+          }
+
+          # Building the Nawa recipe now bootstraps the pinned source into the seed
+          # rootfs before parsing its multi-source/Cargo recipe. This always
+          # requires the Rust toolchain, even if a previous transition archive exists.
+          if [[ " $pkgs " == *" nawa "* && "$INPUT_ROOTFS" == min ]]; then
+            echo "::error::building nawa from its pinned source requires the seed rootfs (Rust/Cargo); choose rootfs=auto or seed"
+            exit 1
+          fi
+
+          if (( transition_needed )); then
+            if [[ "$INPUT_ROOTFS" == min ]]; then
+              echo "::error::the Nawa transition requires the seed rootfs (Rust is installed there); choose rootfs=auto or seed"
+              exit 1
+            fi
+          fi
+          rootfs="$INPUT_ROOTFS"
+          if [[ "$rootfs" == auto ]]; then
+            rootfs=min
+            for p in $pkgs; do [[ "$p" == rust || "$p" == nawa ]] && rootfs=seed; done
+          fi
+          if [[ "$rootfs" == min ]]; then
+            for p in $pkgs; do
+              [[ "$p" == rust || "$p" == nawa ]] && echo "::warning::$p is in the list but the min rootfs has no rust: it would be compiled first (hours). Use rootfs=seed."
+            done
+          fi
+          echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
+          echo "toolchain_pkgs=$toolchain_pkgs" >> "$GITHUB_OUTPUT"
+          echo "toolchain_all=$toolchain_all" >> "$GITHUB_OUTPUT"
+          echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
+          dry_run="${INPUT_DRY_RUN:-false}"
+          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
+          python3 - "$selection" "$pkgs" "$toolchain_pkgs" "$toolchain_all" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          regular = sys.argv[2].split()
+          toolchain = sys.argv[3].split()
+          print(f"### Package selection: {len(regular)} regular + {len(toolchain)} Toolchain target(s)")
+          print(f"Source: `{data['source']}`")
+          for category, count in data["category_counts"].items():
+              print(f"- {category}: {count}")
+          if data["excluded_count"]:
+              print(f"- Excluded: {', '.join(data['excluded'])}")
+          mode = "FULL Bootstrap rebuild" if sys.argv[4] == "true" else ("Selective Bootstrap rebuild" if toolchain else "Not selected")
+          print(f"- Toolchain mode: {mode}")
+          print(f"- RootFS: `{sys.argv[5]}`")
+          print(f"- Mode: {'DRY RUN (no build started)' if sys.argv[6] == 'true' else 'Build'}")
+          print()
+          print("Regular package targets:")
+          print("`" + " ".join(regular) + "`" if regular else "`none`")
+          print()
+          print("Bootstrap Toolchain targets:")
+          print("`" + " ".join(toolchain) + "`" if toolchain else "`none`")
+          PY
+
+  build:
+    name: build and publish
+    needs: select
+    if: ${{ (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    permissions:
+      contents: write # publishes to this repository's releases
+      actions: write # lets the run start its own continuation
+    env:
+      T: /mnt/pkgroot
+      PKGS: ${{ needs.select.outputs.pkgs }}
+      TOOLCHAIN_PKGS: ${{ needs.select.outputs.toolchain_pkgs }}
+      TOOLCHAIN_ALL: ${{ needs.select.outputs.toolchain_all }}
+      BT: /mnt/faseela-bootstrap
+      ISOLATION: ${{ inputs.isolation || 'sandbox' }}
+      ROOTFS_KIND: ${{ needs.select.outputs.rootfs }}
+      BUDGET_MIN: ${{ inputs.budget || '270' }}
+      KEEP_GOING: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
+      AUTO_CONTINUE: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
+      PRUNE: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
+      PKG_REPO: ${{ github.repository }}
+      PKG_TAG: ${{ vars.PKG_TAG || 'stable' }}
+      PKG_V3_TAG: ${{ vars.PKG_V3_TAG || 'stable-v3' }}
+      NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The chroot helpers (enter-root.sh, sync-repo.sh, build-packages-inner.sh),
+      # profiles/ and fetch-rootfs-seed.sh belong to the distribution and are
+      # shared with its ISO build, so they are not copied here.
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}
+          ref: ${{ vars.DISTRO_REF || 'master' }}
+          path: distro
+
+      # The distribution tooling expects its tree to have a recipes/ directory:
+      # give it THIS repository's recipes (the commit being built).
+      - name: Assemble the build tree (distribution tooling + these recipes)
+        run: |
+          set -euo pipefail
+          rm -rf distro/recipes
+          cp -a recipes distro/recipes
+          cp -a flavors.toml distro/flavors.toml
+          cp -a groups.toml distro/groups.toml
+          # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
+          # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.
+          grep -Fq 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' distro/bootstrap/fetch-nawa.sh || {
+            echo "::error::DISTRO_REF must use recipe-driven Nawa fetching (update Faseela to the revision containing bootstrap/fetch-nawa.sh's recipe pin support)"
+            exit 1
+          }
+          echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check the publishing setup before spending hours building
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAVE_KEY: ${{ secrets.NAWA_SIGN_KEY_B64 != '' }}
+        run: |
+          set -euo pipefail
+          [[ "$HAVE_KEY" == true ]]     || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
+          [[ "$BUDGET_MIN" =~ ^[0-9]+$ ]] || { echo "::error::budget must be a number of minutes"; exit 1; }
+          [[ "$PKG_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid PKG_TAG"; exit 1; }
+          [[ "$PKG_V3_TAG" =~ ^[A-Za-z0-9._-]+$ && "$PKG_V3_TAG" != "$PKG_TAG" ]] || {
+            echo "::error::PKG_V3_TAG must be a safe, distinct release tag"; exit 1;
+          }
+          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
+          if ! gh release view "$PKG_V3_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
+            gh release create "$PKG_V3_TAG" --repo "$PKG_REPO" \
+              --title "Nawa schema-v3 repository" \
+              --notes "Signed schema-v3 index only. Package and recipe archives are stored in packages-NNNN releases. Written by CI, do not edit."
+          fi
+
+      - name: Download the build rootfs from the newest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}
+          ROOTFS_REQUESTED: ${{ inputs.rootfs || 'auto' }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/rootfs"
+          fetch() {   # $1 = min | seed -> sets asset; returns fetch-rootfs-seed.sh's status
+            asset=faseela-x86_64-rootfs-min.tar.zst
+            legacy=mydistro-x86_64-rootfs-min.tar.zst   # releases made before the rename
+            if [[ "$1" == seed ]]; then
+              asset=faseela-x86_64-rootfs.tar.zst
+              legacy=mydistro-x86_64-rootfs.tar.zst
+            fi
+            rc=0
+            # verifies the .sha256 sidecar; exit 3 = no release carries the asset
+            ROOTFS_ASSET="$asset" ROOTFS_LEGACY_ASSET="$legacy" bash distro/scripts/fetch-rootfs-seed.sh "$dir" > /dev/null || rc=$?
+          }
+          fetch "$ROOTFS_KIND"
+          # `auto` picked the small rootfs, but it is a FLAVOR (rootfs-min) that only exists
+          # once the packages are published: before that, the seed rootfs (the bootstrap core
+          # every release carries) is a build environment too.
+          if [[ $rc -eq 3 && "$ROOTFS_KIND" == min && "$ROOTFS_REQUESTED" == auto ]]; then
+            echo "::notice::no release carries the small rootfs yet - building in the seed rootfs instead"
+            ROOTFS_KIND=seed
+            fetch seed
+          fi
+          if [[ $rc -eq 3 ]]; then
+            echo "::error::no release of $GH_REPO carries $asset. Publish one without a tag: faseela > Actions > Build ISO (CD) > Run workflow with outputs=core and release ticked, then re-run this workflow."
+            exit 1
+          elif [[ $rc -ne 0 ]]; then
+            echo "::error::could not fetch/verify $asset (fetch-rootfs-seed.sh exit $rc)"
+            exit "$rc"
+          fi
+          sudo mkdir -p "$T"
+          sudo tar -I zstd -xpf "$dir/$asset" -C "$T" --numeric-owner
+          rm -rf "$dir"
+          df -h /mnt
+          # the build runs /usr/bin/nawa inside this root. A rootfs from a
+          # release made before the dpm -> nawa rename ships /usr/bin/dpm
+          # instead and uses another database layout, so it cannot build.
+          if [[ ! -x "$T/usr/bin/nawa" ]]; then
+            if [[ -x "$T/usr/bin/dpm" ]]; then
+              echo "::error::$asset of the newest release was built before the dpm -> nawa rename (it has /usr/bin/dpm, no /usr/bin/nawa). Publish a new release first: run 'Build ISO (CD)' on a new v* tag - it builds nawa from the pinned source and publishes a rootfs that has it - then re-run this workflow."
+            else
+              echo "::error::$asset of the newest release has no /usr/bin/nawa, so it cannot build packages"
+            fi
+            exit 1
+          fi
+
+
+      - name: Allow unprivileged user namespaces
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 || true
+
+      - name: Prepare the build root
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # network for source downloads inside the root
+          sudo rm -f "$T/etc/resolv.conf"
+          sudo cp -L /etc/resolv.conf "$T/etc/resolv.conf"
+          sudo bash distro/bootstrap/sync-repo.sh "$T"   # recipes + profiles + bootstrap -> $T/faseela
+
+          # sync-repo.sh copies the distribution build inputs, but groups.toml
+          # belongs to this package repository and is assembled beside recipes.
+          # repo-create runs inside the chroot and reads this exact path.
+          [[ -s distro/groups.toml ]] || {
+            echo "::error::the assembled package repository has no groups.toml"
+            exit 1
+          }
+          sudo install -D -m 0644 distro/groups.toml "$T/faseela/groups.toml"
+          sudo cmp -s distro/groups.toml "$T/faseela/groups.toml" || {
+            echo "::error::groups.toml was not copied intact to $T/faseela/groups.toml"
+            exit 1
+          }
+          echo "Verified signed group catalog at $T/faseela/groups.toml."
+
+          sudo bash distro/bootstrap/ensure-chroot-mounts.sh "$T"
+
+          # Build the pinned Nawa client from the seed source before asking
+          # any Nawa binary to parse its own multi-source / Cargo-fetch recipe.
+          # Schema-v3 repo support alone does not imply recipe-schema support.
+          if [[ " $PKGS " == *" nawa "* ]]; then
+            [[ "$ROOTFS_KIND" == seed ]] || {
+              echo "::error::building nawa requires the seed rootfs (Rust/Cargo)"
+              exit 1
+            }
+            echo "Bootstrapping the selected Nawa source with the seed Rust toolchain."
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env HOME=/root PATH=/opt/cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin CARGO_HOME=/root/.cargo /bin/bash -c '
+                set -euo pipefail
+                cd /faseela/nawa
+                [[ -s Cargo.toml && -s Cargo.lock ]] || {
+                  echo "pinned Nawa source is missing Cargo.toml or Cargo.lock" >&2
+                  exit 1
+                }
+                cargo fetch --locked
+                CARGO_NET_OFFLINE=true cargo build --release --offline --locked
+
+                candidate=/usr/bin/.nawa-bootstrap-new
+                rm -f "$candidate"
+                install -m 0755 target/release/nawa "$candidate"
+                "$candidate" --version
+                # This loads and validates recipes/base/nawa/recipe.toml,
+                # including package.sources and [fetch.cargo], without building.
+                "$candidate" --recipes /faseela/recipes deps nawa >/dev/null
+                "$candidate" repo-create --help | grep -q -- --index-version
+                mv -f "$candidate" /usr/bin/nawa
+                /usr/bin/nawa --version
+              '
+            echo "Pinned Nawa source compiled with seed Rust and installed before package builds." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          supports_schema_v3() {
+            local repo_help
+            repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)" || return 1
+            for option in --index-version --locations --recipes-rev --groups; do
+              grep -q -- "$option" <<< "$repo_help" || return 1
+            done
+          }
+
+          # Index-v3 support and recipe-schema support are independent. Load
+          # the real Nawa recipe (multi-source + Cargo fetch) to verify that
+          # this binary understands and validates the current recipe schema.
+          supports_recipe_schema() {
+            local output
+            output="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa \
+              --recipes /faseela/recipes recipe check nawa 2>&1)" || return 1
+            # recipe check exits zero for warnings on old implementations;
+            # require the current schema's known tables/keys with no warnings.
+            grep -Fq 'nawa: recipe check: 1 recipe(s), 0 warning(s)' <<< "$output"
+          }
+
+          supports_nawa_features() {
+            supports_schema_v3 && supports_recipe_schema
+          }
+
+          # Older rootfs releases can carry a Nawa client that predates the
+          # current recipe schema even when its repository-index support is
+          # already up to date. Upgrade locally before package builds.
+          if ! supports_nawa_features; then
+            nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+            transition_dir="$RUNNER_TEMP/nawa-transition"
+            rm -rf "$transition_dir"
+            mkdir -p "$transition_dir"
+            if ! gh release download "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
+                 --pattern "$nawa_archive" --pattern "$nawa_archive.sig" \
+                 --dir "$transition_dir"; then
+              echo "::error::the rootfs has an old Nawa and $NAWA_TRANSITION_TAG does not provide the signed $nawa_archive transition package. Run the Nawa transition build first."
+              exit 1
+            fi
+            [[ -s "$transition_dir/$nawa_archive" && -s "$transition_dir/$nawa_archive.sig" ]] || {
+              echo "::error::the Nawa transition release is missing $nawa_archive or its detached signature"
+              exit 1
+            }
+
+            sudo install -d -m 0755 "$T/tmp/nawa-transition"
+            sudo install -m 0644 "$transition_dir/$nawa_archive" "$T/tmp/nawa-transition/$nawa_archive"
+            sudo install -m 0644 "$transition_dir/$nawa_archive.sig" "$T/tmp/nawa-transition/$nawa_archive.sig"
+
+            # nawa install verifies the detached signature with the
+            # Faseela key already trusted by the build root.
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install --yes \
+              "/tmp/nawa-transition/$nawa_archive"
+            sudo rm -rf "$T/tmp/nawa-transition"
+            rm -rf "$transition_dir"
+
+            supports_nawa_features || {
+              echo "::error::installed Nawa still lacks schema-v3 repository support or current recipe-schema support (nawa recipe check nawa)"
+              exit 1
+            }
+            echo "Nawa upgraded from the signed $NAWA_TRANSITION_TAG transition package before the build." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Keep one small metadata request; archive bytes are fetched from the
+      # public browser URLs, not the per-asset API endpoint (which burns the
+      # installation token's request budget).
+      - name: Read package release metadata
+        id: releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp "repos/$PKG_REPO/releases?per_page=100" > "$RUNNER_TEMP/package-releases.json"
+          python3 -I scripts/distributed-releases.py list \
+            --releases-json "$RUNNER_TEMP/package-releases.json" \
+            --stable-tag "$PKG_TAG" > "$RUNNER_TEMP/published.tsv"
+
+      - name: Fetch the packages already published
+        id: published
+        env:
+          PACKAGE_DOWNLOAD_JOBS: ${{ vars.PACKAGE_DOWNLOAD_JOBS || '4' }}
+          GH_TOKEN: ${{ github.token }} # only used by the last-resort API round
+        run: |
+          set -euo pipefail
+          sudo mkdir -p "$T/build/out"
+          sudo chown "$(id -u):$(id -g)" "$T/build/out"
+
+          # Validate the complete release manifest before starting any download.
+          # The complete set is required by repo-create and the cross-flavor
+          # file-conflict check; fetching only the selected package closure
+          # would silently publish an incomplete repository index.
+          manifest="$RUNNER_TEMP/package-downloads.nul"
+          : > "$manifest"
+          n=0
+          while IFS=$'\t' read -r tag asset; do
+            [[ -n "$asset" ]] || continue
+            [[ "$tag" == "$PKG_TAG" || "$tag" =~ ^packages-[0-9]{4,}$ ]] || {
+              echo "::error::unexpected package storage release: $tag"; exit 1;
+            }
+            [[ "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || {
+              echo "::error::unexpected package archive name: $asset"; exit 1;
+            }
+            printf '%s\0%s\0' "$tag" "$asset" >> "$manifest"
+            n=$((n + 1))
+          done < "$RUNNER_TEMP/published.tsv"
+
+          workers="${PACKAGE_DOWNLOAD_JOBS:-12}"
+          [[ "$workers" =~ ^[0-9]+$ ]] || {
+            echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
+          }
+          workers=$((10#$workers))
+          (( workers >= 1 && workers <= 32 )) || {
+            echo "::error::PACKAGE_DOWNLOAD_JOBS must be an integer from 1 to 32"; exit 1;
+          }
+          # GitHub's public release CDN has returned widespread HTTP 504s
+          # under the previous 12-way fan-out. Keep the effective concurrency
+          # conservative even when the repository variable is set higher.
+          if (( workers > 4 )); then
+            echo "Capping PACKAGE_DOWNLOAD_JOBS from $workers to 4 to avoid release-CDN overload."
+            workers=4
+          fi
+
+          # One asset answering HTTP 500 must not sink the whole run: the CDN
+          # sometimes fails a single file for longer than curl's retry window.
+          # Workers therefore never abort the pool; failed assets are queued
+          # and retried serially after a pause, and the last round goes through
+          # the authenticated API instead of the browser URL. Only assets that
+          # still fail after that are fatal, and they are named.
+          pending="$RUNNER_TEMP/package-downloads.pending"
+          cp "$manifest" "$pending"
+          if (( n > 0 )); then
+            round=0
+            max_rounds=3
+            while [[ -s "$pending" ]]; do
+              jobs="$workers"
+              unset FETCH_VIA_API
+              if (( round > 0 )); then
+                jobs=1
+                left=$(( $(tr -cd '\0' < "$pending" | wc -c) / 2 ))
+                if (( round == max_rounds )); then
+                  export FETCH_VIA_API=1
+                  echo "Final round: fetching $left asset(s) via the authenticated API."
+                else
+                  delay=$(( round * 30 ))
+                  echo "Retry round $round/$max_rounds: $left asset(s) failed, waiting ${delay}s."
+                  sleep "$delay"
+                fi
+              fi
+              failed="$RUNNER_TEMP/package-downloads.failed"
+              : > "$failed"
+              export failed
+              xargs -0 -r -n 2 -P "$jobs" bash -c '
+                bash scripts/fetch-published-package.sh "$1" "$2" \
+                  || printf "%s\0%s\0" "$1" "$2" >> "$failed"
+              ' _ < "$pending"
+              mv -f "$failed" "$pending"
+              (( round < max_rounds )) || break
+              round=$((round + 1))
+            done
+            unset FETCH_VIA_API
+
+            if [[ -s "$pending" ]]; then
+              echo "::error::could not download these published packages after $max_rounds retry rounds:"
+              tr '\0' '\n' < "$pending" | paste - - | while IFS=$'\t' read -r t a; do
+                echo "::error::  $a ($t)"
+              done
+              exit 1
+            fi
+          fi
+
+          echo "published=$n" >> "$GITHUB_OUTPUT"
+          echo "$n archive(s) already published across $PKG_REPO releases"
+          echo "Fetched $n package archives with $workers parallel workers." >> "$GITHUB_STEP_SUMMARY"
+          # Everything newer than this file was built by THIS run.
+          sleep 2
+          sudo touch "$T/build/.run-start"
+
+      - name: Build ordinary packages and Bootstrap Toolchain targets
+        id: build
+        timeout-minutes: 320 # leaves ~35 min of the 355 for publishing and logs
+        run: |
+          set -euo pipefail
+
+          # Toolchain recipes are never sent to build-packages-inner.sh.
+          # Rebuild them through the distribution Stage 1/2/3 bootstrap pipeline.
+          if [[ -n "$TOOLCHAIN_PKGS" ]]; then
+            echo "== Bootstrap Toolchain build: $TOOLCHAIN_PKGS"
+            sudo rm -rf "$BT" /mnt/.faseela-bootstrap.build
+            stage3_packages="$TOOLCHAIN_PKGS"
+            if [[ "$TOOLCHAIN_ALL" == true ]]; then
+              stage3_packages=""
+              echo "Full Toolchain selected: Stage 3 will rebuild the complete set and run self-hosting proofs."
+            fi
+            sudo env STAGE3_PACKAGES="$stage3_packages" STAGE_SET=bootstrap NAWA_JOBS="$(nproc)" \
+              bash distro/bootstrap/build-all.sh --isolation "$ISOLATION" --no-iso --no-rootfs "$BT"
+
+            resolved="$BT/build3/stage3-toolchain-packages.resolved"
+            [[ -s "$resolved" ]] || {
+              echo "::error::Bootstrap did not record its Stage 3 Toolchain output set"
+              exit 1
+            }
+            while IFS= read -r package; do
+              [[ -n "$package" ]] || continue
+              archive="$(find "$BT/build3/out" -maxdepth 1 -type f \
+                -name "$package-[0-9]*.nawa.tar.zst" -print | sort -V | tail -n 1)"
+              [[ -n "$archive" && -s "$archive" ]] || {
+                echo "::error::Stage 3 did not produce the expected archive for $package"
+                exit 1
+              }
+              archive_name="$(basename "$archive")"
+              sudo install -m 0644 "$archive" "$T/build/out/$archive_name"
+              # Install Stage 3 outputs into the package-build root as well:
+              # subsequent ordinary packages must use the updated Toolchain.
+              sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install \
+                --force --allow-unsigned "/build/out/$archive_name"
+              echo "Imported Stage 3 Toolchain archive: $archive_name"
+            done < "$resolved"
+            {
+              echo "### Bootstrap Toolchain outputs"
+              sed 's/^/- /' "$resolved"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Ordinary packages run only after any requested Toolchain update
+          # has been installed into their build root.
+          if [[ -n "$PKGS" ]]; then
+            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env -i \
+              HOME=/root TERM=dumb NAWA_JOBS="$(nproc)" PKGS="$PKGS" ISOLATION="$ISOLATION" \
+              BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
+              bash /faseela/bootstrap/build-packages-inner.sh
+          fi
+      # nawa refuses to install a package that ships a file another one owns, and
+      # an image build only finds out one package at a time. Look at the archives
+      # (the ones just built AND the ones fetched from the release) for every
+      # flavor now. Publishing is not held back (the other packages are fine and
+      # the build took hours), but the run turns red and names the files.
+      - name: No two packages of a flavor may ship the same file
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        run: |
+          python3 -I scripts/test-file-conflicts.py
+          python3 -I scripts/check-file-conflicts.py "$T/build/out"
+
+      # Publish package and recipe archives to immutable storage shards, then
+      # Upload shard archives first; keep the old schema-v1 stable index untouched.
+      # The shard limit is deliberately below GitHub's 1,000-asset release cap.
+      - name: Publish to the distributed package repository
+        id: publish
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          out="$T/build/out"
+          new=()
+          while IFS= read -r -d '' f; do new+=("$f"); done \
+            < <(find "$out" -maxdepth 1 -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
+          echo "new archives: ${#new[@]}"
+          echo "built=${#new[@]}" >> "$GITHUB_OUTPUT"
+
+          repo="$T/repo"
+          sudo rm -rf "$repo"; sudo mkdir -p "$repo"
+          sudo cp -al "$out"/*.nawa.tar.zst "$repo/"
+          sudo chown -R "$(id -u):$(id -g)" "$repo"
+          stale=()
+          if [[ "$PRUNE" == 1 ]]; then
+            mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
+            for s in "${stale[@]}"; do rm -f "$repo/$s"; done
+            if (( ${#stale[@]} )); then printf 'superseded: %s\n' "${stale[@]}"; fi
+          fi
+
+          rev="${GITHUB_SHA}"
+          rfile="recipes-${rev}.recipes.tar.zst"
+          plan="$RUNNER_TEMP/distributed-release-plan.json"
+          locations="$repo/locations.toml"
+          python3 -I scripts/distributed-releases.py plan \
+            --releases-json "$RUNNER_TEMP/package-releases.json" \
+            --repo-dir "$repo" --repository "$PKG_REPO" --stable-tag "$PKG_TAG" \
+            --recipe-file "$rfile" --max-assets 900 \
+            --output "$plan" --manifest "$locations"
+
+          # Create any shard tags before uploading assets to them.
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            if ! gh release view "$tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$PKG_REPO" --title "Faseela package storage $tag" \
+                --notes "Storage shard for the signed Nawa schema-v3 package repository. Do not edit."
+            fi
+          done < <(python3 -I scripts/distributed-releases.py create --plan "$plan")
+
+          printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
+            --out index.toml --index-version 3 --locations /repo/locations.toml \
+            --sign --key /root/nawa.sec \
+            --recipes /faseela/recipes --recipes-rev "$rev" \
+            --groups /faseela/groups.toml
+          sudo chown -R "$(id -u):$(id -g)" "$repo"
+          [[ -s "$repo/$rfile" && -s "$repo/groups.toml" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
+            || { echo "::error::repo-create did not produce the recipe snapshot and signed schema-v3 index"; exit 1; }
+
+          upload() {
+            local tag="$1"; shift
+            local n
+            for n in 1 2 3; do
+              gh release upload "$tag" --repo "$PKG_REPO" --clobber "$@" && return 0
+              echo "upload to $tag attempt $n failed" >&2; sleep $((n * 20))
+            done
+            return 1
+          }
+
+          # Upload every newly assigned archive before publishing its index URL.
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            mapfile -t files < <(python3 -I scripts/distributed-releases.py uploads \
+              --plan "$plan" --repo-dir "$repo" --tag "$tag")
+            (( ${#files[@]} )) || continue
+            for f in "${files[@]}"; do
+              [[ -s "$f" ]] || { echo "::error::missing planned archive $f"; exit 1; }
+            done
+            echo "Uploading ${#files[@]} asset(s) to $tag"
+            upload "$tag" "${files[@]}"
+          done < <(python3 -I - "$plan" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1], encoding="utf-8"))
+          tags = set(plan["create_releases"]) | set(plan["uploads"])
+          for tag in sorted(tags):
+              print(tag)
+          PY
+          )
+
+          # Keep the Nawa client itself installable by old schema-v1 clients.
+          # This separate signed archive can be installed locally without
+          # asking the old client to parse either remote repository index.
+          nawa_archive="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+          [[ -s "$repo/$nawa_archive" ]] || {
+            echo "::error::missing $nawa_archive; the first transition run must build the nawa recipe from the seed rootfs"
+            exit 1
+          }
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa sign \
+            "/repo/$nawa_archive" --key /root/nawa.sec
+          sudo chown "$(id -u):$(id -g)" "$repo/$nawa_archive.sig"
+          if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
+            gh release create "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
+              --title "Nawa client transition package" \
+              --notes "Standalone signed Nawa package for clients that still use the legacy schema-v1 stable index. Download both assets and install the archive locally with: sudo nawa install ./<archive>.nawa.tar.zst. The updated package defaults to stable-v3."
+          fi
+          upload "$NAWA_TRANSITION_TAG" "$repo/$nawa_archive" "$repo/$nawa_archive.sig"
+
+          # Keep only the current Nawa pair in this small transition release.
+          gh api "repos/$PKG_REPO/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' |
+            while IFS= read -r old; do
+              [[ "$old" == "$nawa_archive" || "$old" == "$nawa_archive.sig" ]] && continue
+              gh release delete-asset "$NAWA_TRANSITION_TAG" "$old" --repo "$PKG_REPO" --yes || {
+                echo "::warning::could not remove old transition asset $old"
+              }
+            done
+
+          # Publish group metadata before the index that authenticates its digest.
+          upload "$PKG_V3_TAG" "$repo/groups.toml"
+          # Publish the v3 index only after every referenced asset exists.
+          upload "$PKG_V3_TAG" "$repo/index.toml" "$repo/index.toml.sig"
+
+          # Remove stale shard assets only after the v3 index points elsewhere.
+          while IFS=$'\t' read -r tag asset; do
+            [[ -n "$tag" && -n "$asset" ]] || continue
+            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
+              echo "::warning::could not delete stale asset $tag/$asset"
+            }
+          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
+          # The old $PKG_TAG release is frozen. Keep its archives, index and
+          # detached signatures intact for already-installed schema-v1 clients.
+
+          archive_count="$(python3 -I - "$plan" <<'PY'
+          import json, sys
+          print(json.load(open(sys.argv[1], encoding="utf-8"))["archive_count"])
+          PY
+          )"
+          shard_count="$(python3 -I - "$plan" <<'PY'
+          import json, sys
+          p = json.load(open(sys.argv[1], encoding="utf-8"))
+          print(len(set(p["assignments"].values())))
+          PY
+          )"
+          {
+            echo "### Published schema-v3 index to $PKG_REPO ($PKG_V3_TAG)"
+            echo "Legacy schema-v1 endpoint retained at $PKG_TAG; transition package: $NAWA_TRANSITION_TAG."
+            echo
+            echo "Package archives: $archive_count"
+            echo "New this run: ${#new[@]}"
+            echo "Storage shards used: $shard_count (maximum 900 assets per shard)"
+            echo "Each archive URL is authenticated by the signed index and its SHA-256."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        run: |
+          {
+            echo "### Build report"
+            echo '```'
+            sudo cat "$T/build/report.txt" 2>/dev/null || echo "(no report: the build did not get that far)"
+            sudo cat "$T/build/status" 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Time ran out with packages left: run the workflow again - what was
+      # published now counts as done, so it continues with the rest. Only when
+      # this run made progress, otherwise two runs would loop forever.
+      - name: Continue with the remaining packages
+        if: ${{ always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sudo grep -qx 'INCOMPLETE=1' "$T/build/status" 2>/dev/null || { echo "nothing left over"; exit 0; }
+          if [[ "$AUTO_CONTINUE" != 1 ]]; then
+            echo "::notice::packages are left over - run the workflow again with the same list to continue"
+            exit 0
+          fi
+          gh workflow run packages.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
+            -f packages="$PKGS" -f toolchain=false -f toolchain_packages="" \
+            -f rootfs="$ROOTFS_KIND" -f isolation="$ISOLATION" \
+            -f budget="$BUDGET_MIN" -f keep_going="$([[ $KEEP_GOING == 1 ]] && echo true || echo false)" \
+            -f prune="$([[ $PRUNE == 1 ]] && echo true || echo false)" -f auto_continue=true
+          echo "### Time budget used up: started a continuation run for the rest" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect build logs
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          sudo cp -r "$T"/build/logs ci-logs/ 2>/dev/null || true
+          sudo cp "$T"/build/report.txt "$T"/build/status ci-logs/ 2>/dev/null || true
+          if [[ -d /mnt/.faseela-bootstrap.build/logs ]]; then
+            mkdir -p ci-logs/bootstrap
+            sudo cp -a /mnt/.faseela-bootstrap.build/logs/. ci-logs/bootstrap/
+          fi
+
+          # Nawa writes per-package phase logs directly under build/<package-id>,
+          # not under build/logs. Preserve them for failed packages so the
+          # artifact contains the configure/compile/install error, not only
+          # the short summary.
+          if [[ -s "$T/build/report.txt" ]]; then
+            while IFS= read -r package_id; do
+              [[ -n "$package_id" ]] || continue
+              source_dir="$T/build/$package_id"
+              [[ -d "$source_dir" ]] || continue
+              destination="ci-logs/failed/$package_id"
+              mkdir -p "$destination"
+              while IFS= read -r -d '' log_file; do
+                sudo cp -a "$log_file" "$destination/"
+              done < <(sudo find "$source_dir" -maxdepth 2 -type f -name '*.log' -print0)
+            done < <(awk '$1 == "FAILED" { print $2 }' "$T/build/report.txt")
+          fi
+
+          sudo chown -R "$(id -u):$(id -g)" ci-logs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-build-logs
+          path: ci-logs
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # Publishing already happened above; this just makes the run red.
+      - name: Fail the run if a package failed
+        if: ${{ steps.build.outcome == 'failure' }}
+        run: |
+          echo "::error::some packages failed - see 'Build report' in the run summary. The packages that did build were published."
+          exit 1
+
+  telegram-notify:
+    name: Telegram notification
+    if: ${{ always() }}
+    needs: [select, build]
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Send workflow result to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_RESULTS: select=${{ needs.select.result }},build=${{ needs.build.result }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: python3 -I scripts/notify-telegram.py

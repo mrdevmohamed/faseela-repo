@@ -22,8 +22,6 @@ install -D -m755 dist/emptty %{pkgdir}/usr/bin/emptty
 install -D -m644 res/conf %{pkgdir}/etc/emptty/conf
 install -D -m644 res/emptty.1 %{pkgdir}/usr/share/man/man1/emptty.1
 gzip -f %{pkgdir}/usr/share/man/man1/emptty.1
-
-# Faseela uses runit. Keep the service available but disabled until explicitly enabled.
 install -D -m755 res/runit-run %{pkgdir}/etc/sv/emptty/run
 
 # Emptty discovers Wayland sessions from this directory. Launch through the

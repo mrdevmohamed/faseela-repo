@@ -1,0 +1,62 @@
+[[group]]
+schema = 1
+id = "dev"
+name = "Development Tools"
+description = "Compilers, build tools, language runtimes, editors, and debugging utilities."
+mandatory = ["git", "base-devel"]
+default = ["gcc", "make", "cmake", "ninja", "neovim", "gdb", "nodejs", "golang", "python", "pipx"]
+optional = ["deno", "rust", "llvm", "valgrind", "argcomplete"]
+
+[[group]]
+schema = 1
+id = "desktop"
+name = "Desktop Environment"
+description = "The Faseela Wayland desktop, session integration, and everyday desktop applications."
+mandatory = ["sway", "gui-session", "network-manager", "pipewire", "wireplumber"]
+default = ["foot", "waybar", "pcmanfm", "pavucontrol", "zed", "firefox", "bluez", "polkit"]
+optional = ["grim", "slurp", "swayidle", "swaylock", "wl-clipboard", "mako"]
+
+[[group]]
+schema = 1
+id = "multimedia"
+name = "Multimedia"
+description = "Audio services, media playback, codecs, and media download utilities."
+mandatory = ["pipewire", "wireplumber"]
+default = ["mpv", "ffmpeg", "pavucontrol", "yt-dlp"]
+optional = ["dav1d", "libvpx", "lame", "opus", "x264", "x265"]
+
+[[group]]
+schema = 1
+id = "networking"
+name = "Network Utilities"
+description = "Network configuration, diagnostics, remote access, and VPN clients."
+mandatory = ["network-manager", "openssh"]
+default = ["curl", "wget", "bind-tools", "iperf3", "net-tools", "wireguard-tools", "tcpdump", "nftables"]
+optional = ["nekoray", "v2raya", "podman"]
+
+[[group]]
+schema = 1
+id = "security"
+name = "Security and Reconnaissance"
+description = "ProjectDiscovery reconnaissance, discovery, and HTTP/TLS analysis tools."
+mandatory = ["nuclei", "httpx", "subfinder"]
+default = ["dnsx", "naabu", "katana", "tlsx", "alterx", "asnmap", "proxify"]
+optional = ["uncover", "interactsh-client"]
+
+[[group]]
+schema = 1
+id = "containers"
+name = "Container Host"
+description = "Podman and the supporting OCI runtime, network, and storage components."
+mandatory = ["podman", "crun", "conmon"]
+default = ["aardvark-dns", "netavark", "fuse-overlayfs", "passt"]
+optional = ["catatonit", "runit-services"]
+
+[[group]]
+schema = 1
+id = "rust-development"
+name = "Rust Development Tools"
+description = "The version-matched Rust compiler, Clippy linter, formatter, and language server."
+mandatory = ["rust"]
+default = ["rust-clippy", "rustfmt"]
+optional = ["rust-analyzer"]

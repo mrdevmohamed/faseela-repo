@@ -660,6 +660,7 @@ jobs:
         id: published
         env:
           PACKAGE_DOWNLOAD_JOBS: ${{ vars.PACKAGE_DOWNLOAD_JOBS || '4' }}
+          GH_TOKEN: ${{ github.token }} # only used by the last-resort API round
         run: |
           set -euo pipefail
           sudo mkdir -p "$T/build/out"
@@ -700,25 +701,52 @@ jobs:
             workers=4
           fi
 
+          # One asset answering HTTP 500 must not sink the whole run: the CDN
+          # sometimes fails a single file for longer than curl's retry window.
+          # Workers therefore never abort the pool; failed assets are queued
+          # and retried serially after a pause, and the last round goes through
+          # the authenticated API instead of the browser URL. Only assets that
+          # still fail after that are fatal, and they are named.
+          pending="$RUNNER_TEMP/package-downloads.pending"
+          cp "$manifest" "$pending"
           if (( n > 0 )); then
-            xargs -0 -r -n 2 -P "$workers" bash -euo pipefail -c '
-              tag="$1"
-              asset="$2"
-              url="https://github.com/$PKG_REPO/releases/download/$tag/$asset"
-              part="$T/build/out/$asset.part"
-              trap '\''rm -f "$part"'\'' EXIT
+            round=0
+            max_rounds=3
+            while [[ -s "$pending" ]]; do
+              jobs="$workers"
+              unset FETCH_VIA_API
+              if (( round > 0 )); then
+                jobs=1
+                left=$(( $(tr -cd '\0' < "$pending" | wc -c) / 2 ))
+                if (( round == max_rounds )); then
+                  export FETCH_VIA_API=1
+                  echo "Final round: fetching $left asset(s) via the authenticated API."
+                else
+                  delay=$(( round * 30 ))
+                  echo "Retry round $round/$max_rounds: $left asset(s) failed, waiting ${delay}s."
+                  sleep "$delay"
+                fi
+              fi
+              failed="$RUNNER_TEMP/package-downloads.failed"
+              : > "$failed"
+              export failed
+              xargs -0 -r -n 2 -P "$jobs" bash -c '
+                bash scripts/fetch-published-package.sh "$1" "$2" \
+                  || printf "%s\0%s\0" "$1" "$2" >> "$failed"
+              ' _ < "$pending"
+              mv -f "$failed" "$pending"
+              (( round < max_rounds )) || break
+              round=$((round + 1))
+            done
+            unset FETCH_VIA_API
 
-              echo "Downloading $asset ($tag)"
-              curl --fail --location --silent --show-error \
-                --retry 8 --retry-all-errors --retry-delay 5 --retry-max-time 300 \
-                --connect-timeout 30 --max-time 1800 --output "$part" "$url"
-              [[ -s "$part" ]] || {
-                echo "::error::downloaded asset is empty: $asset" >&2
-                exit 1
-              }
-              mv -f "$part" "$T/build/out/$asset"
-              trap - EXIT
-            ' _ < "$manifest"
+            if [[ -s "$pending" ]]; then
+              echo "::error::could not download these published packages after $max_rounds retry rounds:"
+              tr '\0' '\n' < "$pending" | paste - - | while IFS=$'\t' read -r t a; do
+                echo "::error::  $a ($t)"
+              done
+              exit 1
+            fi
           fi
 
           echo "published=$n" >> "$GITHUB_OUTPUT"

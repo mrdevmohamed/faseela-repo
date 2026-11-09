@@ -5,7 +5,7 @@
 [package]
 name = "runit-services"
 version = "0.4"
-rel = 13
+rel = 14
 arch = ["x86_64"]
 summary = "runit stage scripts and supervised service tree"
 license = ["MIT"]
@@ -17,6 +17,10 @@ run = ["runit", "eudev", "util-linux", "iproute2", "dhcpcd", "sysklogd", "cronie
 [build]
 install = '''
 install -d -m755 %{pkgdir}/etc/runit %{pkgdir}/etc/sv %{pkgdir}/etc/runit/runsvdir/default
+
+# runit sv defaults to /service when SVDIR is unset. Keep the standard
+# command-line interface working while runsvdir supervises the Faseela path.
+ln -s /etc/runit/runsvdir/default %{pkgdir}/service
 
 # --- runit stages -----------------------------------------------------------
 cat > %{pkgdir}/etc/runit/1 <<'EOF'

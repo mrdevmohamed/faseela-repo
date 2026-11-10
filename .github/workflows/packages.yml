@@ -25,7 +25,8 @@ name: Build packages
 # PACKAGE SELECTION (Actions > Build packages > Run workflow)
 #   all   all recipe categories except toolchain
 #   base + system + boot + extra can be selected by ticking those four category boxes
-#   category boxes select ordinary categories including peripherals, xorg and xfce
+#   category boxes select ordinary categories (including the Xorg and Xfce desktops)
+#   messaging and peripheral packages are selected by exact package name or flavor (e.g. iso-gui-telegram, iso-gui-huion)
 #   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
 #   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
 #   packages       exact recipe names; Toolchain names are rerouted to Bootstrap
@@ -95,10 +96,6 @@ on:
         description: "Select every package in the Xfce category"
         type: boolean
         default: false
-      peripherals:
-        description: "Select optional hardware integrations such as the Huion tablet control panel"
-        type: boolean
-        default: false
       browser:
         description: "Select every package in the browser category"
         type: boolean
@@ -109,10 +106,6 @@ on:
         default: false
       creative:
         description: "Select every package in the creative category"
-        type: boolean
-        default: false
-      messaging:
-        description: "Select every package in the messaging category"
         type: boolean
         default: false
       networking:
@@ -209,11 +202,9 @@ jobs:
           INPUT_GUI: ${{ inputs.gui }}
           INPUT_XORG: ${{ inputs.xorg }}
           INPUT_XFCE: ${{ inputs.xfce }}
-          INPUT_PERIPHERALS: ${{ inputs.peripherals }}
           INPUT_BROWSER: ${{ inputs.browser }}
           INPUT_MEDIA: ${{ inputs.media }}
           INPUT_CREATIVE: ${{ inputs.creative }}
-          INPUT_MESSAGING: ${{ inputs.messaging }}
           INPUT_NETWORKING: ${{ inputs.networking }}
           INPUT_SECURITY: ${{ inputs.security }}
           INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
@@ -271,11 +262,9 @@ jobs:
             [[ "$INPUT_GUI" == true ]] && categories+=(gui)
             [[ "$INPUT_XORG" == true ]] && categories+=(xorg)
             [[ "$INPUT_XFCE" == true ]] && categories+=(xfce)
-            [[ "$INPUT_PERIPHERALS" == true ]] && categories+=(peripherals)
             [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
             [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
             [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
-            [[ "$INPUT_MESSAGING" == true ]] && categories+=(messaging)
             [[ "$INPUT_NETWORKING" == true ]] && categories+=(networking)
             [[ "$INPUT_SECURITY" == true ]] && categories+=(security)
 

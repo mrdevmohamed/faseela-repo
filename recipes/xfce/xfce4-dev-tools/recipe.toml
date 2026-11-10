@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-dev-tools"
 version = "4.20.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Xfce development tools (xdt-autogen, xdt-gen-visibility, m4 macros)"
 license = ["GPL-2.0-or-later"]
@@ -10,7 +10,7 @@ source = "https://archive.xfce.org/src/xfce/xfce4-dev-tools/4.20/xfce4-dev-tools
 sha256 = "1fba39a08a0ecc771eaa3a3b6e4272a4f0b9e7c67d0f66e780cd6090cd4466aa"
 
 [depends]
-build = ["pkgconf", "libxslt", "meson"]
+build = ["pkgconf", "libxslt", "meson", "glib"]
 run = []
 
 [build]

@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-whiskermenu-plugin"
 version = "2.9.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Whisker Menu panel plugin (application menu with search)"
 license = ["GPL-2.0-or-later"]
@@ -10,8 +10,8 @@ source = "https://archive.xfce.org/src/panel-plugins/xfce4-whiskermenu-plugin/2.
 sha256 = "e2f28c066709bdcfe30236307026a562ec9aed790f9929a4e40aa411a5c7e3de"
 
 [depends]
-build = ["cmake", "pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "garcon", "exo"]
-run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme", "garcon", "exo"]
+build = ["cmake", "pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "gtk-layer-shell", "glib", "garcon", "exo"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "gtk-layer-shell", "glib", "hicolor-icon-theme", "garcon", "exo"]
 
 [build]
 # AccountsService is an optional upstream integration and is not part of Faseela.

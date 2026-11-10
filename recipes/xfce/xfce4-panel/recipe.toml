@@ -17,6 +17,6 @@ build = ["meson", "ninja", "pkgconf", "xfce4-dev-tools", "garcon", "libxfce4ui",
 run = ["garcon", "libxfce4ui", "libxfce4windowing", "exo", "xfconf", "gtk3", "glib", "cairo", "hicolor-icon-theme"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false -D vala=false -D dbusmenu=disabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vala=disabled -D dbusmenu=disabled"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build'''

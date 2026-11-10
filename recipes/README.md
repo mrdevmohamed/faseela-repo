@@ -21,10 +21,10 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 54 system + 8 boot + 94 extra =
-**205 core packages**. Optional categories contain 125 GUI, 16 browser, 23
+Current set: 10 toolchain + 39 base + 54 system + 8 boot + 95 extra =
+**206 core packages**. Optional categories contain 125 GUI, 16 browser, 23
 media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral and 11 developer
-packages. The recipe tree contains **410 recipes** in total.
+packages. The recipe tree contains **411 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; browser, media, creative, messaging, networking,

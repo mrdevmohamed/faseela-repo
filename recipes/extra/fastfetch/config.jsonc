@@ -5,8 +5,8 @@
     "source": "/usr/share/fastfetch/logos/faseela.txt",
     "color": {
       "1": "green",
-      "2": "cyan",
-      "3": "white"
+      "2": "white",
+      "3": "yellow"
     },
     "padding": {
       "right": 3
@@ -15,10 +15,10 @@
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "cyan",
-      "title": "white",
+      "keys": "green",
+      "title": "yellow",
       "output": "white",
-      "separator": "green"
+      "separator": "yellow"
     },
     "key": {
       "type": "string",

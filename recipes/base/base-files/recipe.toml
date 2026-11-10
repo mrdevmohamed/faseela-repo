@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -167,7 +167,10 @@ NAME="faseela"
 PRETTY_NAME="faseela 0.4"
 ID=faseela
 VERSION_ID="0.4"
-ANSI_COLOR="0;36"
+ANSI_COLOR="0;32"
+LOGO=faseela
+HOME_URL="https://mrdevmohamed.github.io/faseela/"
+BUG_REPORT_URL="https://github.com/mrdevmohamed/faseela/issues"
 EOF
 
 # permissions that must not be inherited from the build umask

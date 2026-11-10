@@ -2,7 +2,7 @@
 [package]
 name = "xfdesktop"
 version = "4.20.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce desktop manager (wallpaper, desktop icons and right-click menu)"
 license = ["GPL-2.0-or-later"]
@@ -10,8 +10,8 @@ source = "https://archive.xfce.org/src/xfce/xfdesktop/4.20/xfdesktop-4.20.2.tar.
 sha256 = "1d9bd76015fb6e9aca05e73cd998c7c66ed4fc8c10b626e08fc2eb7c39df3f7b"
 
 [depends]
-build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "glib", "cairo", "libX11", "xorgproto"]
-run = ["libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "glib", "cairo"]
+build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo", "libX11", "xorgproto"]
+run = ["libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

@@ -14,6 +14,6 @@ build = ["meson", "ninja", "pkgconf", "xfce4-dev-tools", "glib", "gtk3", "gdk-pi
 run = ["glib", "gtk3", "gdk-pixbuf", "libdisplay-info", "libX11", "wayland"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false -D vala=false -D tests=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vala=disabled -D tests=false"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build'''

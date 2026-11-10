@@ -20,4 +20,8 @@ run = ["mesa", "libepoxy", "libdrm", "libXfont2", "libxkbfile", "libxshmfence", 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xorg=true -D suid_wrapper=false -D xvfb=false -D xnest=false -D xephyr=false -D glx=true -D dri3=true -D drm=true -D udev=true -D xdmcp=true -D xdm-auth-1=false -D secure-rpc=false -D systemd_logind=false -D libunwind=false -D sha1=libcrypto -D xace=false -D xselinux=false -D docs=false -D devel-docs=false -D docs-pdf=false"
 compile = "ninja -C build"
-install = '''DESTDIR=%{pkgdir} meson install -C build'''
+install = '''DESTDIR=%{pkgdir} meson install -C build
+# Xwayland already owns this shared informational file; avoid a file-ownership
+# collision when both Xwayland (Sway) and Xorg (Xfce) are installed.
+rm -f %{pkgdir}/usr/lib/xorg/protocol.txt
+'''

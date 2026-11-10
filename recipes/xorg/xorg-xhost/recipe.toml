@@ -2,11 +2,12 @@
 [package]
 name = "xorg-xhost"
 version = "1.0.10"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X11 server access control utility"
 license = ["MIT"]
 source = "https://xorg.freedesktop.org/archive/individual/app/xhost-1.0.10.tar.xz"
+source_dir = "xhost-%{version}"
 sha256 = "a8afd70059479c712948b895e41c35a4a8bfcede3ba2d5a4b855c88bbb725be1"
 
 [depends]

@@ -2,11 +2,12 @@
 [package]
 name = "xorg-xset"
 version = "1.2.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 user preference utility (bell, mouse, font paths)"
 license = ["MIT"]
 source = "https://xorg.freedesktop.org/archive/individual/app/xset-1.2.6.tar.xz"
+source_dir = "xset-%{version}"
 sha256 = "623837349ea887bc003f01ee2e4b6b8ddd9c2774f632c6d70eead1b56306b695"
 
 [depends]

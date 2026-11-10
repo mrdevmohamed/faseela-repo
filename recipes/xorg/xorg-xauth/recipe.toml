@@ -2,11 +2,12 @@
 [package]
 name = "xorg-xauth"
 version = "1.1.5"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X authority file utility (manages .Xauthority cookies)"
 license = ["MIT"]
 source = "https://xorg.freedesktop.org/archive/individual/app/xauth-1.1.5.tar.xz"
+source_dir = "xauth-%{version}"
 sha256 = "a4000e2f441facebf569026bedecc23ba262cc6927be52070abe0002625cfbe0"
 
 [depends]

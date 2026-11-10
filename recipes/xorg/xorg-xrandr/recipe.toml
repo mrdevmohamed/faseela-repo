@@ -2,11 +2,12 @@
 [package]
 name = "xorg-xrandr"
 version = "1.5.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X11 RandR display configuration utility"
 license = ["MIT"]
 source = "https://xorg.freedesktop.org/archive/individual/app/xrandr-1.5.4.tar.xz"
+source_dir = "xrandr-%{version}"
 sha256 = "2cafccb2aaf2491a4068676117a0d4f90ab307724b96fffc54cd1da953779400"
 
 [depends]

@@ -25,7 +25,7 @@ name: Build packages
 # PACKAGE SELECTION (Actions > Build packages > Run workflow)
 #   all   all recipe categories except toolchain
 #   base + system + boot + extra can be selected by ticking those four category boxes
-#   category boxes select one or more ordinary recipe categories (including peripherals)
+#   category boxes select ordinary categories including peripherals, xorg and xfce
 #   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
 #   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
 #   packages       exact recipe names; Toolchain names are rerouted to Bootstrap
@@ -85,6 +85,14 @@ on:
         default: false
       gui:
         description: "Select every package in the GUI category"
+        type: boolean
+        default: false
+      xorg:
+        description: "Select every package in the X.Org category"
+        type: boolean
+        default: false
+      xfce:
+        description: "Select every package in the Xfce category"
         type: boolean
         default: false
       peripherals:
@@ -199,6 +207,8 @@ jobs:
           INPUT_BOOT: ${{ inputs.boot }}
           INPUT_EXTRA: ${{ inputs.extra }}
           INPUT_GUI: ${{ inputs.gui }}
+          INPUT_XORG: ${{ inputs.xorg }}
+          INPUT_XFCE: ${{ inputs.xfce }}
           INPUT_PERIPHERALS: ${{ inputs.peripherals }}
           INPUT_BROWSER: ${{ inputs.browser }}
           INPUT_MEDIA: ${{ inputs.media }}
@@ -259,6 +269,8 @@ jobs:
             [[ "$INPUT_BOOT" == true ]] && categories+=(boot)
             [[ "$INPUT_EXTRA" == true ]] && categories+=(extra)
             [[ "$INPUT_GUI" == true ]] && categories+=(gui)
+            [[ "$INPUT_XORG" == true ]] && categories+=(xorg)
+            [[ "$INPUT_XFCE" == true ]] && categories+=(xfce)
             [[ "$INPUT_PERIPHERALS" == true ]] && categories+=(peripherals)
             [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
             [[ "$INPUT_MEDIA" == true ]] && categories+=(media)

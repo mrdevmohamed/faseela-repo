@@ -152,7 +152,8 @@ the default ISO and the Sway flavor:
   `xf86-input-libinput` input driver, the X client libraries Xfce needs that
   were not already shipped for Xwayland (`libXdmcp`, `libpciaccess`,
   `libXinerama`, `libXmu`, `libXres`, `libXpresent`, `libXt`, and the XCB
-  cursor library). Xorg uses udev and the SUID wrapper path, not systemd-logind.
+  cursor library). Xorg is built without a SUID wrapper; rootless seat
+  management still needs libseat integration with Faseela's seatd.
 * **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
   (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
   `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop
@@ -161,7 +162,9 @@ the default ISO and the Sway flavor:
   applications and panel plugins. The `xfce-session` meta-package pulls in
   the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
   LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
-  they use Linux-PAM without systemd modules and run under runit.
+  they use Linux-PAM without systemd modules. The LightDM runit service is
+  shipped but not pre-enabled because its X-server child currently inherits
+  the daemon's root UID; rootless LightDM remains pending.
 
 Everything is built X11-only (the upstream Wayland backends of libxfce4ui,
 the panel, xfdesktop and the terminal are disabled), reuses the packaged

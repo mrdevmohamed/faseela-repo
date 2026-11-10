@@ -21,9 +21,11 @@ required by `xfce-session`; it can be installed separately.
   `ristretto`, `xfce4-taskmanager`, and `xfce4-screenshooter`.
 * **Panel plugins**: Whisker Menu, PulseAudio, CPU graph, netload,
   systemload, battery, genmon, clipman, diskperf, and sensors.
-* **Display manager**: LightDM 1.33.1 and `lightdm-gtk-greeter`.
-  Authentication is provided by the standalone `linux-pam` package;
-  its logind/elogind integrations are disabled for Faseela's runit system.
+* **Display manager**: LightDM 1.33.1 and `lightdm-gtk-greeter` are
+  packaged with standalone Linux-PAM. LightDM's runit service is not
+  pre-enabled because its current X-server launch path inherits the daemon's
+  root UID. Rootless LightDM requires a separate unprivileged X-server
+  launcher and Xorg seat-management integration.
 
 ## Build choices
 
@@ -43,5 +45,6 @@ nawa --recipes recipes deps xfce-session
 ```
 
 For Xorg device access, add the user to `video,render,input,audio`.
-Installing `lightdm` and `lightdm-gtk-greeter` enables the graphical
-login service; neither package is a dependency of the Xfce session meta-package.
+Installing `lightdm` and `lightdm-gtk-greeter` does not enable the service.
+Do not enable LightDM while rootless Xorg integration is pending; start the
+Xfce session from a user-owned TTY once Xorg has working seat access.

@@ -4,7 +4,7 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -59,8 +59,10 @@ account   required pam_unix.so
 password  required pam_deny.so
 session   required pam_unix.so
 PAM
-# runit service: lightdm needs the system D-Bus first
-install -d -m755 %{pkgdir}/etc/sv/lightdm %{pkgdir}/etc/runit/runsvdir/default
+# runit service: shipped for manual enablement only. LightDM currently launches
+# its X server as the daemon user (root); do not auto-enable until the rootless
+# Xorg/seatd launch path is implemented and tested.
+install -d -m755 %{pkgdir}/etc/sv/lightdm
 cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 #!/bin/sh
 # LightDM needs the system D-Bus (upower, accounts, ConsoleKit alternates).
@@ -69,7 +71,6 @@ cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 exec lightdm
 RUN
 chmod 755 %{pkgdir}/etc/sv/lightdm/run
-ln -s /etc/sv/lightdm %{pkgdir}/etc/runit/runsvdir/default/lightdm
 '''
 
 [hooks]

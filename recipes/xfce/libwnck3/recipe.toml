@@ -2,7 +2,7 @@
 [package]
 name = "libwnck3"
 version = "43.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Window Navigator Construction Kit for GTK 3 (libwnck-3 API)"
 license = ["LGPL-2.0-or-later"]
@@ -15,6 +15,6 @@ build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "libX11", "libXres", "xorg
 run = ["glib", "gtk3", "libX11", "libXres"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D startup_notification=disabled -D introspection=false -D gtk_doc=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D startup_notification=disabled -D introspection=disabled -D gtk_doc=false"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build'''

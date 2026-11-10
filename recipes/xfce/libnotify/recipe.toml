@@ -2,7 +2,7 @@
 [package]
 name = "libnotify"
 version = "0.8.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Desktop notification library (client side of org.freedesktop.Notifications)"
 license = ["LGPL-2.1-or-later"]
@@ -14,6 +14,6 @@ build = ["meson", "ninja", "pkgconf", "glib", "gdk-pixbuf"]
 run = ["glib", "gdk-pixbuf"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=false -D man=false -D gtk_doc=false -D docbook_docs=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=disabled -D man=false -D gtk_doc=false -D docbook_docs=disabled"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build'''

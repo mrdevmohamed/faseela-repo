@@ -6,7 +6,7 @@
 [package]
 name = "xorg-server"
 version = "21.1.25"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "The X.Org X server (modesetting DDX, DRI3/GLX)"
 license = ["MIT"]
@@ -18,6 +18,6 @@ build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libXau", "libXdmcp
 run = ["mesa", "libepoxy", "libdrm", "libXfont2", "libxkbfile", "libxshmfence", "pixman", "libpciaccess", "libxcvt", "eudev", "dbus", "xkbcomp", "xkeyboard-config", "libXau", "libXdmcp"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xorg=true -D xvfb=false -D xnest=false -D xephyr=false -D glx=true -D dri3=true -D drm=true -D udev=true -D xdmcp=true -D xdm-auth-1=false -D secure-rpc=false -D systemd_logind=false -D libunwind=false -D sha1=libcrypto -D xace=false -D xselinux=false -D docs=false -D devel-docs=false -D docs-pdf=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xorg=true -D suid_wrapper=true -D xvfb=false -D xnest=false -D xephyr=false -D glx=true -D dri3=true -D drm=true -D udev=true -D xdmcp=true -D xdm-auth-1=false -D secure-rpc=false -D systemd_logind=false -D libunwind=false -D sha1=libcrypto -D xace=false -D xselinux=false -D docs=false -D devel-docs=false -D docs-pdf=false"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build'''

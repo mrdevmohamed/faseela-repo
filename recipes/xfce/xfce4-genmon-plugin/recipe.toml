@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-genmon-plugin"
 version = "4.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Generic monitor panel plugin (renders command output and icons)"
 license = ["LGPL-2.1-or-later"]
@@ -14,6 +14,6 @@ build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3
 run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

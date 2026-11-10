@@ -4,29 +4,18 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "Xfce desktop session: LightDM + Xorg, Xfce 4.20 core, apps and panel plugins"
+summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
 source = ""
 
 [depends]
-build = ["shadow"]
-run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "lightdm", "lightdm-gtk-greeter", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "tumbler", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "xfce4-terminal", "mousepad", "ristretto", "xfce4-taskmanager", "xfce4-screenshooter", "xfce4-notifyd", "xfce4-power-manager", "xfce4-whiskermenu-plugin", "xfce4-pulseaudio-plugin", "xfce4-cpugraph-plugin", "xfce4-netload-plugin", "xfce4-systemload-plugin", "xfce4-battery-plugin", "xfce4-genmon-plugin", "xfce4-clipman-plugin", "xfce4-diskperf-plugin", "xfce4-sensors-plugin", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "pipewire", "wireplumber", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "pavucontrol", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+build = []
+run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "pipewire", "wireplumber", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
-# --- LightDM seat configuration ---------------------------------------------
-# greeter-session picks lightdm-gtk-greeter; user-session must match the
-# basename of /usr/share/xsessions/xfce.desktop shipped by xfce4-session.
-install -d -m755 %{pkgdir}/etc/lightdm/lightdm.conf.d
-cat > %{pkgdir}/etc/lightdm/lightdm.conf.d/00-faseela.conf <<'LIGHTDM'
-[Seat:*]
-greeter-session=lightdm-gtk-greeter
-user-session=xfce
-LIGHTDM
-chmod 644 %{pkgdir}/etc/lightdm/lightdm.conf.d/00-faseela.conf
-
 # --- Xorg keyboard layout: US + Arabic, Alt+Shift toggles --------------------
 # Xorg reads /etc/X11/xorg.conf.d/*.conf at server start; this mirrors the
 # gui-session sway drop-in so both desktops behave the same.
@@ -44,12 +33,14 @@ chmod 644 %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-keyboard.conf
 
 [hooks]
 post_install = '''
-# Xtrans requires the shared X11 socket directory to be root-owned and sticky.
-mkdir -p /tmp/.X11-unix
-chown root:root /tmp/.X11-unix
-chmod 1777 /tmp/.X11-unix
-
-echo "xfce-session: the lightdm runit service is enabled by default;"
-echo "xfce-session: Xfce starts at the graphical prompt (lightdm-gtk-greeter)."
-echo "xfce-session: switch keyboard layouts with Alt+Shift (US / Arabic)."
+for socket_dir in /tmp/.X11-unix /tmp/.ICE-unix; do
+    mkdir -p "$socket_dir"
+    chown root:root "$socket_dir"
+    chmod 1777 "$socket_dir"
+done
+for group in video render input audio; do
+    /usr/libexec/faseela/ensure-system-account group "$group"
+done
+echo "xfce-session: add your user to video,render,input,audio for Xorg device access."
+echo "xfce-session: LightDM is optional; install lightdm and lightdm-gtk-greeter for a graphical login."
 '''

@@ -2,7 +2,7 @@
 [package]
 name = "libxfce4ui"
 version = "4.20.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Xfce GUI widgets and dialog library (libxfce4ui-2, libxfce4kbd-private-3)"
 license = ["LGPL-2.0-or-later"]
@@ -14,6 +14,6 @@ build = ["pkgconf", "libxfce4util", "xfconf", "gtk3", "glib"]
 run = ["libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

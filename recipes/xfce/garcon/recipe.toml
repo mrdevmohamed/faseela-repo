@@ -2,7 +2,7 @@
 [package]
 name = "garcon"
 version = "4.20.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Xfce menu implementation (freedesktop.org menu specification)"
 license = ["LGPL-2.0-or-later"]
@@ -14,6 +14,6 @@ build = ["pkgconf", "libxfce4ui", "libxfce4util", "gtk3", "glib"]
 run = ["libxfce4ui", "libxfce4util", "gtk3", "glib", "shared-mime-info"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

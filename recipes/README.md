@@ -11,8 +11,8 @@ recipes/
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
-├── xfce/        optional Xfce 4.20 desktop applications and libraries, session integration (opt-in, on top of xorg/)
-├── xorg/        optional X11 display stack: Xorg server, input driver, LightDM display manager (opt-in)
+├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
+├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
@@ -23,10 +23,10 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 54 system + 8 boot + 94 extra =
-**205 core packages**. Optional categories contain 125 GUI, 16 browser, 30
-Xfce, 10 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 11 developer packages. The recipe tree contains **456
+Current set: 10 toolchain + 39 base + 55 system + 8 boot + 95 extra =
+**207 core packages**. Optional categories contain 127 GUI, 16 browser, 43
+Xfce, 17 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
+1 peripheral and 15 developer packages. The recipe tree contains **478
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
@@ -92,7 +92,7 @@ libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
 
 **boot** — linux; efibootmgr → grub → busybox
 
-**extra** — 94 general-purpose packages covering development/build
+**extra** — 95 general-purpose packages covering development/build
 utilities, network diagnostics, editors, hardware inspection, storage tools,
 compression and command-line productivity. The live ISO's `iso-nogui` flavor
 includes this category; inspect the current inventory with
@@ -151,38 +151,29 @@ the default ISO and the Sway flavor:
   udev hotplug, setuid-root classic seat path, no systemd), the
   `xf86-input-libinput` input driver, the X client libraries Xfce needs that
   were not already shipped for Xwayland (`libXdmcp`, `libpciaccess`,
-  `libXres`, `libXpresent`, `libwnck`, `libxklavier`), and the display
-  manager: **LightDM** 1.32 with the **lightdm-gtk-greeter** GTK 3 login UI.
-  The `lightdm` recipe ships a runit service (`/etc/sv/lightdm`, enabled by
-  default) and `lightdm.conf` wired to the `xfce` session and the
-  `lightdm-gtk-greeter` greeter.
+  `libXinerama`, `libXmu`, `libXres`, `libXpresent`, `libXt`, and the XCB
+  cursor library). Xorg uses udev and the SUID wrapper path, not systemd-logind.
 * **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
   (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
   `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop
   components (`xfwm4`, `xfce4-panel`, `xfdesktop`, `xfce4-session`,
   `xfce4-settings`, `xfce4-appfinder`, `xfce4-power-manager`, `thunar`), the
-  applications (`xfce4-terminal`, `xfce4-notifyd`, `mousepad`, `ristretto`,
-  `xfce4-taskmanager`, `xfce4-screenshooter`), panel plugins (Whisker Menu,
-  cpugraph, netload, battery, PulseAudio) and the
-  **`xfce4-session-integration`** package, which pulls the whole session
-  together (fonts, icons, XDG portals, keyboard layouts `us,ara` with
-  Alt+Shift switching, `/etc/profile.d/xfce-session.sh` for `startxfce4`
-  from a tty, PipeWire/NetworkManager/polkit wiring) the same way
-  `gui-session` does for Sway.
+  applications and panel plugins. The `xfce-session` meta-package pulls in
+  the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
+  LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
+  they use Linux-PAM without systemd modules and run under runit.
 
 Everything is built X11-only (the upstream Wayland backends of libxfce4ui,
 the panel, xfdesktop and the terminal are disabled), reuses the packaged
 GTK3/mesa/dbus/polkit/pipewire stack, and needs no systemd: session power
 actions go through polkit's shadow backend, UPower and PipeWire keep their
-D-Bus/runit activation. Sources come from archive.xfce.org, xorg.freedesktop.org
-and GNOME mirrors; LightDM and libxklavier use Debian `.orig` tarballs (the
-upstream launchpad URLs were retired). Every sha256 was pinned from the
-downloaded tarball.
+D-Bus/runit activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
+upstream GitHub releases. SHA-256 pins are recorded in each recipe.
 
-Images: `iso-xfce` (Xfce + Xorg + LightDM) and `iso-xfce-nodm` (Xfce on a tty,
-`startxfce4`). Build order for one package or the whole closure:
+The `iso-xfce` flavor includes Xfce, Xorg, LightDM and the standard desktop
+applications. Build order for the session meta-package:
 
 ```
-python3 scripts/check-recipes.py xfce4-session-integration
-nawa --recipes recipes deps-all | tr ' ' '\n' | grep -E '^(xfce|xorg)/'
+python3 scripts/check-recipes.py xfce-session
+nawa --recipes recipes deps xfce-session
 ```

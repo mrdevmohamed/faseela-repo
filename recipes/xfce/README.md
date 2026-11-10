@@ -1,58 +1,47 @@
 # recipes/xfce — the Xfce 4.20 desktop (X11)
 
-The complete Xfce desktop on top of the `xorg/` display layer: core
-libraries, the desktop components, the applications, the panel plugins and
-the session-integration package that ties them to Faseela's services
-(PipeWire, NetworkManager, polkit, UPower, runit).
+The Xfce desktop, its applications and panel plugins, plus LightDM and its
+GTK greeter. The Xorg server and client utilities live in `recipes/xorg/`.
+The `xfce-session` meta-package supplies the core X11/Xfce runtime closure
+and Faseela's keyboard-layout configuration.
 
-Opt-in: nothing here is built unless you ask for it. Images: `iso-xfce`
-(with LightDM) and `iso-xfce-nodm` (startxfce4 from a tty).
+Everything is opt-in. The supported image is `iso-xfce`, which includes
+Xorg, Xfce, LightDM and the standard desktop applications. LightDM is not
+required by `xfce-session`; it can be installed separately.
 
 ## Layout
 
-* **Support libraries** (also used outside Xfce): `vte` 0.76 (GTK 3 terminal
-  widget), `libnotify` 0.8, `gtksourceview` 4.8 (GTK 3 syntax highlighting).
-* **Xfce core**: `libxfce4util` → `xfconf` → `libxfce4windowing` →
-  `libxfce4ui` → `exo` / `garcon` / `tumbler` → `thunar`, `xfwm4`,
+* **Support libraries**: `vte` (GTK 3 terminal widget), `libnotify`,
+  `gtksourceview4`, `libexif`, and the Xfce libraries.
+* **Xfce core**: `libxfce4util`, `xfconf`, `libxfce4windowing`,
+  `libxfce4ui`, `exo`, `garcon`, `tumbler`, `thunar`, `xfwm4`,
   `xfce4-panel`, `xfce4-session`, `xfce4-settings`, `xfdesktop`,
-  `xfce4-appfinder`, `xfce4-power-manager`.
+  and `xfce4-appfinder`.
 * **Applications**: `xfce4-terminal`, `xfce4-notifyd`, `mousepad`,
-  `ristretto`, `xfce4-taskmanager`, `xfce4-screenshooter`.
-* **Panel plugins**: `xfce4-whiskermenu-plugin`, `xfce4-cpugraph-plugin`,
-  `xfce4-netload-plugin`, `xfce4-battery-plugin`,
-  `xfce4-pulseaudio-plugin`.
-* **Integration**: `xfce4-session-integration` — the Xfce counterpart of
-  `gui-session`: run-dependency closure of the session plus the small
-  configuration the recipe installs (XDG portal selection, `us,ara`
-  keyboard layouts with Alt+Shift switching, font rendering defaults,
-  `/etc/profile.d/xfce-session.sh`, the X11 socket preflight).
+  `ristretto`, `xfce4-taskmanager`, and `xfce4-screenshooter`.
+* **Panel plugins**: Whisker Menu, PulseAudio, CPU graph, netload,
+  systemload, battery, genmon, clipman, diskperf, and sensors.
+* **Display manager**: LightDM 1.33.1 and `lightdm-gtk-greeter`.
+  Authentication is provided by the standalone `linux-pam` package;
+  its logind/elogind integrations are disabled for Faseela's runit system.
 
 ## Build choices
 
-* Everything is built **X11-only**: the upstream Wayland backends of
-  libxfce4ui, xfce4-panel, xfdesktop, xfce4-terminal and xfwm4's wayland
-  compositor mode are disabled (`-D wayland=disabled` / `--disable-wayland`).
-  The desktop runs on the real Xorg server from `xorg/`.
-* `xfce4-panel` and `libxfce4util` need `xdt-gen-visibility`; the release
-  tarballs ship it in `xfce4-dev-tools/`, so the configure step prepends
-  that directory to `PATH` instead of packaging xfce4-dev-tools.
-* Introspection/vala/gir/vapi are off everywhere (gobject-introspection is
-  not packaged); gtk-doc, tests and docs are off.
-* gvfs, libexif, libstartup-notification, keybinder, accountsservice,
-  gspell, libutempter, libsoup and Qt are not packaged: the matching
-  features are disabled and noted per recipe.
-* intltool (xfce4-settings era recipes that still use autotools +
-  IT_PROG_INTLTOOL, and lightdm-gtk-greeter) is satisfied with the same
-  source-tree stub trick used by `pcmanfm`/`libfm` in `gui/`.
-* Sources come from archive.xfce.org (4.20 series) with pinned sha256.
+* Xfce is built for X11. The Xorg server and `xf86-input-libinput` are
+  supplied by the separate `xorg/` category.
+* Introspection, Vala bindings, documentation and tests are disabled where
+  the upstream project exposes those build options.
+* `xfce4-dev-tools` supplies the Xfce build macros needed by the core
+  libraries and panel.
+* Sources use upstream release archives with pinned SHA-256 checksums.
 
 ## Trying it
 
 ```
-python3 scripts/check-recipes.py xfce4-session-integration   # build order
-nawa --recipes recipes deps xfce4-session-integration        # same, via nawa
+python3 scripts/check-recipes.py xfce-session
+nawa --recipes recipes deps xfce-session
 ```
 
-After installing on a running system: add your user to
-`video,render,input,audio`, then either run `startxfce4` from a tty or let
-the pre-enabled `lightdm` runit service show the GTK greeter.
+For Xorg device access, add the user to `video,render,input,audio`.
+Installing `lightdm` and `lightdm-gtk-greeter` enables the graphical
+login service; neither package is a dependency of the Xfce session meta-package.

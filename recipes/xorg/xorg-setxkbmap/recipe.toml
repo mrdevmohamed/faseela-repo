@@ -2,7 +2,7 @@
 [package]
 name = "xorg-setxkbmap"
 version = "1.3.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 keyboard layout configuration utility"
 license = ["MIT"]
@@ -10,10 +10,10 @@ source = "https://xorg.freedesktop.org/archive/individual/app/setxkbmap-1.3.5.ta
 sha256 = "360193cecc93f906d8383a8fb5c1f3a7eed35e6ced0e118a64ee56ae13c88cac"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "libxkbfile", "libX11", "xorgproto"]
+build = ["pkgconf", "libxkbfile", "libX11", "xorgproto"]
 run = ["libxkbfile", "libX11", "xkeyboard-config"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
-compile = "ninja -C build"
-install = '''DESTDIR=%{pkgdir} meson install -C build'''
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

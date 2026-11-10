@@ -5,19 +5,19 @@
 [package]
 name = "lightdm-gtk-greeter"
 version = "2.0.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "LightDM GTK+ greeter (login screen for LightDM)"
 license = ["GPL-2.0-or-later"]
-source = "https://codeload.github.com/Xubuntu/lightdm-gtk-greeter/tar.gz/refs/tags/lightdm-gtk-greeter-%{version}"
-sha256 = "a2ea9f0cc5dd8d2a4d81ff45ccc10498513ecec2f24437024abdb6ba016e702c"
-source_dir = "lightdm-gtk-greeter-lightdm-gtk-greeter-%{version}"
+source = "https://github.com/Xubuntu/lightdm-gtk-greeter/releases/download/lightdm-gtk-greeter-%{version}/lightdm-gtk-greeter-%{version}.tar.gz"
+sha256 = "c8fdf198aa9a3f9d0dad0b48dfe23c2277b79107e8fcfc62965290f1081f645d"
+source_dir = "lightdm-gtk-greeter-%{version}"
 
 [depends]
 build = ["pkgconf", "lightdm", "gtk3", "libxklavier", "libX11", "glib"]
 run = ["lightdm", "gtk3", "libxklavier", "libX11", "glib", "hicolor-icon-theme", "dejavu-fonts"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=lib --disable-static --disable-libindicator"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-libindicator"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

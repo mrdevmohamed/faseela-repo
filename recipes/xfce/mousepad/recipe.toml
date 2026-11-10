@@ -2,7 +2,7 @@
 [package]
 name = "mousepad"
 version = "0.6.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Xfce text editor (simple and fast, based on gtksourceview-4)"
 license = ["GPL-2.0-or-later"]
@@ -14,6 +14,6 @@ build = ["pkgconf", "gtksourceview4", "gtk3", "glib"]
 run = ["gtksourceview4", "gtk3", "glib", "hicolor-icon-theme"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

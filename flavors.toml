@@ -11,7 +11,7 @@
 #
 # Keys of a [flavor.NAME] table
 #   summary   one line
-#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative messaging networking security peripherals)
+#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative messaging networking security peripherals xorg xfce)
 #   extends   other flavors whose packages are included too
 #   exclude   packages left out of the result (nothing else is dropped)
 #   closure   "run"   (default) add every [depends].run dependency, transitively:
@@ -63,16 +63,12 @@ extends = ["iso-nogui"]
 include = ["@gui", "firefox"]
 exclude = ["zed"]
 
-# Optional Xfce desktop on a real Xorg server. The Xorg stack and the Xfce
-# desktop live in their own recipe categories (@xorg, @xfce); iso-nogui already
-# provides the base system, so this flavor only adds the graphical session.
-# LightDM is supervised by runit (service shipped by the lightdm package) and
-# starts the lightdm-gtk-greeter; the keyboard layout drop-in (US + Arabic,
-# Alt+Shift) comes from xfce-session.
+# Optional Xfce desktop on Xorg. Select the runtime session, LightDM,
+# greeter and standard applications; optional panel plugins stay out.
 [flavor.iso-xfce]
-summary = "live ISO with the Xfce 4.20 desktop on Xorg, LightDM login, PipeWire audio, NetworkManager, Bluetooth and polkit"
+summary = "live ISO with Xfce 4.20 on Xorg and LightDM login"
 extends = ["iso-nogui"]
-include = ["@xorg", "@xfce"]
+include = ["xfce-session", "lightdm", "lightdm-gtk-greeter", "xfce4-terminal", "mousepad", "ristretto", "xfce4-taskmanager", "xfce4-screenshooter", "xfce4-notifyd", "xfce4-power-manager", "xfce4-whiskermenu-plugin", "xfce4-pulseaudio-plugin", "tumbler", "pavucontrol"]
 
 # Backwards-compatible flavor name for existing build workflow invocations.
 [flavor.iso-gui-firefox]

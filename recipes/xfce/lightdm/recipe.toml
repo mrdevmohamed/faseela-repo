@@ -87,9 +87,9 @@ account   required pam_unix.so
 password  required pam_deny.so
 session   required pam_unix.so
 PAM
-# runit service: shipped for manual enablement only. LightDM currently launches
-# its X server as the daemon user (root); do not auto-enable until the rootless
-# Xorg/seatd launch path is implemented and tested.
+# Keep the service manual-enable only until the classic root-run Xorg path has
+# passed an installed-system login test. This initial path does not require
+# Xorg.wrap, rootless Xorg, or systemd-logind. See docs/xfce-lightdm.md.
 install -d -m755 %{pkgdir}/etc/sv/lightdm
 cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 #!/bin/sh

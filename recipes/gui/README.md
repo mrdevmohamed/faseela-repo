@@ -197,7 +197,7 @@ keyring during a tty login.
   sway's default `wmenu-run`).
 * Wallpaper: `swaybg` is packaged (PNG and solid colours only, no gdk-pixbuf).
   sway's stock `output * bg ...` line is commented out by the sway recipe;
-  `gui-session` installs `/usr/share/backgrounds/faseela/default.png` and the
+  `faseela-branding` installs `/usr/share/backgrounds/faseela/default.png` and `gui-session` the
   drop-in `/etc/sway/config.d/10-wallpaper.conf` that sets it. To change it,
   edit that drop-in or use `~/.config/sway/config`.
 * `foot` is built without grapheme clustering and without a utmp backend.

@@ -3,7 +3,7 @@
 [package]
 name = "fastfetch"
 version = "2.30.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Fastfetch — system information tool with Faseela branding"
 license = ["MIT"]

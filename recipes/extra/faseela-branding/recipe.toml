@@ -1,0 +1,64 @@
+# extra recipe: faseela-branding — the Faseela visual identity (app icon, marks, default wallpaper).
+# Pure assets, nothing is compiled. The files are exported from faseela/branding
+# (branding/build.sh --sync) and staged here through Nawa's recipe-local assets.
+[package]
+name = "faseela-branding"
+version = "1.0"
+rel = 1
+arch = ["x86_64"]
+source_date_epoch = 1767225600
+summary = "Faseela visual identity: icon theme entry, logo marks and default wallpaper"
+license = ["MIT"]
+# Require Nawa's recipe-local asset support.
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[assets]
+include = [
+  "assets/icons/faseela.svg",
+  "assets/icons/faseela-16.png",
+  "assets/icons/faseela-22.png",
+  "assets/icons/faseela-24.png",
+  "assets/icons/faseela-32.png",
+  "assets/icons/faseela-48.png",
+  "assets/icons/faseela-64.png",
+  "assets/icons/faseela-128.png",
+  "assets/icons/faseela-256.png",
+  "assets/icons/faseela-512.png",
+  "assets/mark/mark-dark.svg",
+  "assets/mark/mark-light.svg",
+  "assets/mark/mark-mono.svg",
+  "assets/wallpaper-1920x1080.png",
+  "assets/wallpaper-2560x1440.png",
+]
+
+[depends]
+build = []
+run = []
+
+[build]
+install = '''
+# --- icon theme entry "faseela" (os-release LOGO=faseela resolves to it) -------
+for s in 16 22 24 32 48 64 128 256 512; do
+    install -Dm644 "%{assetsdir}/assets/icons/faseela-$s.png" \
+        "%{pkgdir}/usr/share/icons/hicolor/${s}x${s}/apps/faseela.png"
+done
+install -Dm644 "%{assetsdir}/assets/icons/faseela.svg" \
+    "%{pkgdir}/usr/share/icons/hicolor/scalable/apps/faseela.svg"
+install -Dm644 "%{assetsdir}/assets/icons/faseela-256.png" \
+    "%{pkgdir}/usr/share/pixmaps/faseela.png"
+
+# --- bare logo marks for docs, bars, splash screens -----------------------------
+#     dark = for light backgrounds, light = for dark ones, mono = one colour
+for m in dark light mono; do
+    install -Dm644 "%{assetsdir}/assets/mark/mark-$m.svg" \
+        "%{pkgdir}/usr/share/faseela/branding/mark-$m.svg"
+done
+
+# --- wallpapers: default.png is what gui-session's sway drop-in points at ------
+install -Dm644 "%{assetsdir}/assets/wallpaper-2560x1440.png" \
+    "%{pkgdir}/usr/share/backgrounds/faseela/default.png"
+install -Dm644 "%{assetsdir}/assets/wallpaper-1920x1080.png" \
+    "%{pkgdir}/usr/share/backgrounds/faseela/faseela-1920x1080.png"
+install -Dm644 "%{assetsdir}/assets/wallpaper-2560x1440.png" \
+    "%{pkgdir}/usr/share/backgrounds/faseela/faseela-2560x1440.png"
+'''

@@ -6,7 +6,7 @@
 [package]
 name = "xorg-server"
 version = "21.1.25"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "The X.Org X server (modesetting DDX, DRI3/GLX)"
 license = ["MIT"]

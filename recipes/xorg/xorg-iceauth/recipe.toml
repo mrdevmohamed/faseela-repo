@@ -1,0 +1,20 @@
+# xorg recipe: xorg-iceauth — X11 ICE session authority utility
+[package]
+name = "xorg-iceauth"
+version = "1.0.11"
+rel = 1
+arch = ["x86_64"]
+summary = "X11 ICE session authority utility"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/app/iceauth-%{version}.tar.xz"
+sha256 = "9d633cf0d4d1d98e3ef02d18660372958b60a67016e8a72cd04093a8d8f8d4e9"
+source_dir = "iceauth-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libICE", "xorgproto"]
+run = ["libICE"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

@@ -18,6 +18,7 @@ This repository is the package layer of the distribution. It does not contain th
 - **Adding or changing a package:** read [Package recipes](recipes/index.md), [Writing a recipe](recipes/new-recipe.md), and [Contributing](contributing.md).
 - **Understanding image package sets:** read [Flavors](flavors.md).
 - **Understanding package groups:** read [Package groups](groups.md).
+- **Xfce and LightDM:** read [Xfce/LightDM display-manager design](xfce-lightdm.md) for the initial root-run Xorg model, manual service testing, and the future rootless-Xorg work.
 - **Understanding CI and publishing:** read [Build and publishing](build-publish.md) and [CI checks](ci.md).
 
 ## Repository endpoints

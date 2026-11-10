@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-power-manager"
 version = "4.20.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce power manager (brightness, suspend, battery status service)"
 license = ["GPL-2.0-or-later"]
@@ -15,5 +15,7 @@ run = ["libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "upower", "polkit
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --enable-polkit"
-compile = "make -j%{jobs}"
+# Keep generated D-Bus code compatible with Faseela's GLib 2.82 baseline.
+compile = '''find . -type f -name '*.c' -exec sed -i 's/g_variant_builder_init_static/g_variant_builder_init/g' {} +
+make -j%{jobs}'''
 install = '''make DESTDIR=%{pkgdir} install'''

@@ -1,0 +1,19 @@
+# xorg recipe: xorg-xmodmap — X11 key and pointer button modifier map utility
+[package]
+name = "xorg-xmodmap"
+version = "1.0.12"
+rel = 1
+arch = ["x86_64"]
+summary = "X11 key and pointer button modifier map utility"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/app/xmodmap-1.0.12.tar.xz"
+sha256 = "fc54b9b5bbf2ae58ba8f9d42bd051c41c7438377400c42c17d7496d19e1bb3ce"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto"]
+run = ["libX11"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

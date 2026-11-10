@@ -1,0 +1,19 @@
+# xfce recipe: libxfce4windowing — Windowing abstraction library for Xfce
+[package]
+name = "libxfce4windowing"
+version = "4.20.7"
+rel = 1
+arch = ["x86_64"]
+summary = "Windowing abstraction library for Xfce (X11 and Wayland backends)"
+license = ["LGPL-2.1-or-later"]
+source = "https://archive.xfce.org/src/xfce/libxfce4windowing/4.20/libxfce4windowing-4.20.7.tar.bz2"
+sha256 = "01320b279648ab5b13263f8d260bc5958be599e1eaac77c4503598dfcf96c8bb"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "xfce4-dev-tools", "glib", "gtk3", "gdk-pixbuf", "libdisplay-info", "libX11", "wayland", "wayland-protocols", "xorgproto"]
+run = ["glib", "gtk3", "gdk-pixbuf", "libdisplay-info", "libX11", "wayland"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false -D vala=false -D tests=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

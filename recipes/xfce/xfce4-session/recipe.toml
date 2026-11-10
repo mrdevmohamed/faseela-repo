@@ -1,0 +1,22 @@
+# xfce recipe: xfce4-session — Xfce session manager
+# ships startxfce4, /etc/xdg/xfce4/xinitrc and
+# /usr/share/xsessions/xfce.desktop; startxfce4 wraps the session in dbus-
+# run-session when no session bus exists
+[package]
+name = "xfce4-session"
+version = "4.20.4"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce session manager (startxfce4, session save/restore, logout dialog)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfce4-session/4.20/xfce4-session-4.20.4.tar.bz2"
+sha256 = "805c373378d080754d69dd2f20db95cdc066c89a4f024a41435ca0d66571c402"
+
+[depends]
+build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "libxfce4util", "xfconf", "libwnck3", "gtk3", "glib", "libX11", "xorgproto", "dbus"]
+run = ["libxfce4ui", "libxfce4windowing", "libxfce4util", "xfconf", "libwnck3", "gtk3", "glib", "libX11", "dbus", "xfwm4", "xfdesktop", "xfce4-settings", "xfce4-appfinder", "xfce4-panel"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

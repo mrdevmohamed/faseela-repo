@@ -20,6 +20,8 @@ faseela-repo/
 │   ├── boot/
 │   ├── extra/
 │   ├── gui/
+│   ├── xorg/
+│   ├── xfce/
 │   ├── browser/
 │   ├── media/
 │   ├── creative/
@@ -55,6 +57,8 @@ recipes/
 | **boot** | Kernel and boot-related packages. |
 | **extra** | General-purpose command-line tools, editors, diagnostics, and utilities. |
 | **gui** | Optional graphical desktop stack and desktop services. |
+| **xorg** | The X.Org X server, its input driver, and the X client utilities — the display stack the Xfce session runs on. |
+| **xfce** | The Xfce desktop (core, applications, panel plugins), LightDM and its greeter, and the Xfce session integration package. |
 | **browser** | Optional browser packages and their supporting libraries. |
 | **media** | Optional media playback, codecs, and related libraries. |
 | **creative** | Optional desktop applications from the Storytold Craft collection. |

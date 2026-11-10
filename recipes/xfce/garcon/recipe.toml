@@ -1,0 +1,19 @@
+# xfce recipe: garcon — Xfce menu implementation
+[package]
+name = "garcon"
+version = "4.20.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce menu implementation (freedesktop.org menu specification)"
+license = ["LGPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/garcon/4.20/garcon-4.20.0.tar.bz2"
+sha256 = "7fb8517c12309ca4ddf8b42c34bc0c315e38ea077b5442bfcc4509415feada8f"
+
+[depends]
+build = ["pkgconf", "libxfce4ui", "libxfce4util", "gtk3", "glib"]
+run = ["libxfce4ui", "libxfce4util", "gtk3", "glib", "shared-mime-info"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

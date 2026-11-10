@@ -1,0 +1,20 @@
+# xfce recipe: xfce4-screenshooter — Xfce screenshot utility
+# 1.11 series no longer needs libsoup (the imgur uploader was removed)
+[package]
+name = "xfce4-screenshooter"
+version = "1.11.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce screenshot utility (panel plugin, dialog and xfce4-screenshooter CLI)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/apps/xfce4-screenshooter/1.11/xfce4-screenshooter-1.11.1.tar.bz2"
+sha256 = "d94c4a37ac9b26f6d73214bdc254624a4ede4e111bee8d34e689f8f04c37d34d"
+
+[depends]
+build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "exo", "gtk3", "glib", "pango"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "exo", "gtk3", "glib", "pango"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

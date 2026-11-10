@@ -1,0 +1,19 @@
+# xfce recipe: xfce4-appfinder — Xfce application finder
+[package]
+name = "xfce4-appfinder"
+version = "4.20.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce application finder (menu search and program launcher)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfce4-appfinder/4.20/xfce4-appfinder-4.20.0.tar.bz2"
+sha256 = "82ca82f77dc83e285db45438c2fe31df445148aa986ffebf2faabee4af9e7304"
+
+[depends]
+build = ["pkgconf", "garcon", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib"]
+run = ["garcon", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

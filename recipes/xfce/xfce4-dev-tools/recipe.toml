@@ -1,0 +1,19 @@
+# xfce recipe: xfce4-dev-tools — Xfce development tools
+[package]
+name = "xfce4-dev-tools"
+version = "4.20.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce development tools (xdt-autogen, xdt-gen-visibility, m4 macros)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfce4-dev-tools/4.20/xfce4-dev-tools-4.20.0.tar.bz2"
+sha256 = "1fba39a08a0ecc771eaa3a3b6e4272a4f0b9e7c67d0f66e780cd6090cd4466aa"
+
+[depends]
+build = ["pkgconf"]
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --disable-static "
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

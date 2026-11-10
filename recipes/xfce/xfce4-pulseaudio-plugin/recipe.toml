@@ -1,0 +1,19 @@
+# xfce recipe: xfce4-pulseaudio-plugin — PulseAudio volume control panel plugin
+[package]
+name = "xfce4-pulseaudio-plugin"
+version = "0.4.9"
+rel = 1
+arch = ["x86_64"]
+summary = "PulseAudio volume control panel plugin (launches pavucontrol as mixer)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/panel-plugins/xfce4-pulseaudio-plugin/0.4/xfce4-pulseaudio-plugin-0.4.9.tar.bz2"
+sha256 = "a0807615fb2848d0361b7e4568a44f26d189fda48011c7ba074986c8bfddc99a"
+
+[depends]
+build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libpulse", "exo"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme", "libpulse", "exo", "pavucontrol"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

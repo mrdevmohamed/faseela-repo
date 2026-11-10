@@ -1,0 +1,21 @@
+# xorg recipe: xf86-input-libinput — X.Org input driver based on libinput
+# builds against the xorg-server SDK; must rebuild when xorg-server's rel
+# changes
+[package]
+name = "xf86-input-libinput"
+version = "1.5.0"
+rel = 1
+arch = ["x86_64"]
+summary = "X.Org input driver based on libinput"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/driver/xf86-input-libinput-1.5.0.tar.xz"
+sha256 = "2524c35f196554ea11aef3bba1cf324759454e1d49f98ac026ace2f6003580e6"
+
+[depends]
+build = ["pkgconf", "xorg-server", "libinput"]
+run = ["libinput"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --disable-static "
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

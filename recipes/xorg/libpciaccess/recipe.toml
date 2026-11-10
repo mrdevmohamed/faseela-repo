@@ -1,0 +1,19 @@
+# xorg recipe: libpciaccess — Generic PCI access library
+[package]
+name = "libpciaccess"
+version = "0.19"
+rel = 1
+arch = ["x86_64"]
+summary = "Generic PCI access library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libpciaccess-0.19.tar.xz"
+sha256 = "3c55aa86c82e54a4e3109786f0463530d53b36b6d1cfd14616454f985dd2aa43"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

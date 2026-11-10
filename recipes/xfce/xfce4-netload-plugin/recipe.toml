@@ -1,0 +1,19 @@
+# xfce recipe: xfce4-netload-plugin — Network load monitor panel plugin
+[package]
+name = "xfce4-netload-plugin"
+version = "1.4.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Network load monitor panel plugin"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/panel-plugins/xfce4-netload-plugin/1.4/xfce4-netload-plugin-1.4.2.tar.bz2"
+sha256 = "a2041338408b2670f8debe57fcec6af539f704659eba853943c1524936ebabeb"
+
+[depends]
+build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

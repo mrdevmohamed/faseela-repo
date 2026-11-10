@@ -1,0 +1,22 @@
+# xfce recipe: xfce4-panel — Xfce desktop panel
+# 4.20.8 carries both autotools and meson; the meson build is used here (it
+# drives xdt-gen-visibility from xfce4-dev-tools). The libdbusmenu feature
+# is disabled for a deterministic build
+[package]
+name = "xfce4-panel"
+version = "4.20.8"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce desktop panel (taskbar, plugins, application menu)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfce4-panel/4.20/xfce4-panel-4.20.8.tar.bz2"
+sha256 = "d69cb1f377953aeb1fb9bdbcef12c246bea66586e3f2868f3b758e0e8ce3d3fe"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "xfce4-dev-tools", "garcon", "libxfce4ui", "libxfce4windowing", "exo", "xfconf", "gtk3", "glib", "cairo", "libX11", "xorgproto"]
+run = ["garcon", "libxfce4ui", "libxfce4windowing", "exo", "xfconf", "gtk3", "glib", "cairo", "hicolor-icon-theme"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false -D vala=false -D dbusmenu=disabled"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

@@ -1,0 +1,20 @@
+# xfce recipe: gtksourceview4 — GTK 3 syntax highlighting text widget
+[package]
+name = "gtksourceview4"
+version = "4.8.4"
+rel = 1
+arch = ["x86_64"]
+summary = "GTK 3 syntax highlighting text widget (gtksourceview-4 API)"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gtksourceview/4.8/gtksourceview-4.8.4.tar.xz"
+sha256 = "7ec9d18fb283d1f84a3a3eff3b7a72b09a10c9c006597b3fbabbb5958420a87d"
+source_dir = "gtksourceview-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "libxml2", "fribidi"]
+run = ["glib", "gtk3", "libxml2", "fribidi"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D glade_catalog=disabled -D install_tests=false -D gir=false -D vapi=false -D gtk_doc=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

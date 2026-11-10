@@ -63,6 +63,17 @@ extends = ["iso-nogui"]
 include = ["@gui", "firefox"]
 exclude = ["zed"]
 
+# Optional Xfce desktop on a real Xorg server. The Xorg stack and the Xfce
+# desktop live in their own recipe categories (@xorg, @xfce); iso-nogui already
+# provides the base system, so this flavor only adds the graphical session.
+# LightDM is supervised by runit (service shipped by the lightdm package) and
+# starts the lightdm-gtk-greeter; the keyboard layout drop-in (US + Arabic,
+# Alt+Shift) comes from xfce-session.
+[flavor.iso-xfce]
+summary = "live ISO with the Xfce 4.20 desktop on Xorg, LightDM login, PipeWire audio, NetworkManager, Bluetooth and polkit"
+extends = ["iso-nogui"]
+include = ["@xorg", "@xfce"]
+
 # Backwards-compatible flavor name for existing build workflow invocations.
 [flavor.iso-gui-firefox]
 summary = "compatibility alias for iso-gui (includes Firefox ESR)"

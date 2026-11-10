@@ -1,0 +1,19 @@
+# xorg recipe: xcb-util-cursor — XCB cursor library
+[package]
+name = "xcb-util-cursor"
+version = "0.1.6"
+rel = 1
+arch = ["x86_64"]
+summary = "XCB cursor library (libxcb-cursor)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/xcb-util-cursor-0.1.6.tar.xz"
+sha256 = "fdeb8bd127873519be5cc70dcd0d3b5d33b667877200f9925a59fdcad8f7a933"
+
+[depends]
+build = ["pkgconf", "libxcb", "xcb-util-image", "xcb-util-renderutil"]
+run = ["libxcb", "xcb-util-image", "xcb-util-renderutil"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --disable-static "
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

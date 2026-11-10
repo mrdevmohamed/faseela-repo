@@ -1,0 +1,19 @@
+# xorg recipe: libXres — X11 Resource extension client library
+[package]
+name = "libXres"
+version = "1.2.3"
+rel = 1
+arch = ["x86_64"]
+summary = "X11 Resource extension client library"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/lib/libXres-1.2.3.tar.xz"
+sha256 = "d2de8f5401d6c86a8992791654547eb8def585dfdc0c08cc16e24ef6aeeb69dc"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto"]
+run = ["libX11"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

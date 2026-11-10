@@ -1,0 +1,19 @@
+# xfce recipe: libexif — EXIF metadata parsing library
+[package]
+name = "libexif"
+version = "0.6.25"
+rel = 1
+arch = ["x86_64"]
+summary = "EXIF metadata parsing library (EXIF/IPTC tags of JPEG images)"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/libexif/libexif/releases/download/v%{version}/libexif-%{version}.tar.xz"
+sha256 = "62f74cf3bf673a6e24d2de68f6741643718541f83aca5947e76e3978c25dce83"
+
+[depends]
+build = ["pkgconf"]
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --disable-static "
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

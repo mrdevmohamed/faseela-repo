@@ -1,0 +1,41 @@
+# xfce recipe: lightdm — LightDM display manager
+# no Qt bindings (--disable-liblightdm-qt5/6); the greeter user account is
+# required because lightdm-gtk-greeter runs unprivileged
+[package]
+name = "lightdm"
+version = "1.33.1"
+rel = 1
+arch = ["x86_64"]
+summary = "LightDM display manager (X11 greeters and user sessions)"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
+sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
+
+[depends]
+build = ["pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto"]
+run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "xorg-server", "xorg-xauth", "shadow", "coreutils"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --disable-tests --disable-libaudit --disable-gtk-doc --disable-liblightdm-qt5 --disable-liblightdm-qt6 --with-greeter-user=lightdm --with-greeter-session=lightdm-gtk-greeter"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+# data directories the daemon and greeter write into
+install -d -m755 %{pkgdir}/var/lib/lightdm %{pkgdir}/var/cache/lightdm
+install -d -m755 %{pkgdir}/var/log/lightdm
+# runit service: lightdm needs the system D-Bus first
+install -d -m755 %{pkgdir}/etc/sv/lightdm %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
+#!/bin/sh
+# LightDM needs the system D-Bus (upower, accounts, ConsoleKit alternates).
+# Exit so runsv retries and `sv status` shows the flapping instead of hanging.
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+exec lightdm
+RUN
+chmod 755 %{pkgdir}/etc/sv/lightdm/run
+ln -s /etc/sv/lightdm %{pkgdir}/etc/runit/runsvdir/default/lightdm
+'''
+
+[hooks]
+post_install = '''/usr/libexec/faseela/ensure-system-account user lightdm lightdm "LightDM display manager" /var/lib/lightdm /usr/bin/false
+install -d -m755 -o lightdm -g lightdm /var/lib/lightdm /var/cache/lightdm
+'''

@@ -1,0 +1,19 @@
+# xfce recipe: xfce4-sensors-plugin — Hardware sensors panel plugin
+[package]
+name = "xfce4-sensors-plugin"
+version = "1.4.5"
+rel = 1
+arch = ["x86_64"]
+summary = "Hardware sensors panel plugin (libsensors, ACPI and hddtemp sources)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/panel-plugins/xfce4-sensors-plugin/1.4/xfce4-sensors-plugin-1.4.5.tar.bz2"
+sha256 = "f69fdf79b7f76d2a81724828124a6fce76803a9122a4c82de8f3dfa3efbb179a"
+
+[depends]
+build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "lm-sensors"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme", "lm-sensors"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

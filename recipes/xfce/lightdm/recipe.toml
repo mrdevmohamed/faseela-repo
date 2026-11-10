@@ -49,7 +49,7 @@ compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install
 # The LightDM session wrapper is shipped in the source tree's tests/src.
 # LightDM invokes it for every greeter and user session.
-install -D -m 0755 tests/src/lightdm-session \\
+install -D -m 0755 tests/src/lightdm-session \
     %{pkgdir}/usr/bin/lightdm-session
 # data directories the daemon and greeter write into
 install -d -m755 %{pkgdir}/var/lib/lightdm %{pkgdir}/var/cache/lightdm

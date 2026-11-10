@@ -5,7 +5,7 @@
 [package]
 name = "lightdm-gtk-greeter"
 version = "2.0.9"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "LightDM GTK+ greeter (login screen for LightDM)"
 license = ["GPL-2.0-or-later"]
@@ -14,7 +14,7 @@ sha256 = "c8fdf198aa9a3f9d0dad0b48dfe23c2277b79107e8fcfc62965290f1081f645d"
 source_dir = "lightdm-gtk-greeter-%{version}"
 
 [depends]
-build = ["pkgconf", "lightdm", "gtk3", "libxklavier", "libX11", "glib"]
+build = ["pkgconf", "lightdm", "gtk3", "libxklavier", "libX11", "glib", "xfce4-dev-tools"]
 run = ["lightdm", "gtk3", "libxklavier", "libX11", "glib", "hicolor-icon-theme", "dejavu-fonts"]
 
 [build]

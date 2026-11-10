@@ -1,13 +1,13 @@
 # extra recipe: libxslt — XSLT processing library and xsltproc utility
 [package]
 name = "libxslt"
-version = "1.1.45"
-rel = 1
+version = "1.1.42"
+rel = 2
 arch = ["x86_64"]
 summary = "libxslt — XSLT processing library and xsltproc utility"
 license = ["MIT"]
 source = "https://download.gnome.org/sources/libxslt/1.1/libxslt-%{version}.tar.xz"
-sha256 = "9acfe68419c4d06a45c550321b3212762d92f41465062ca4ea19e632ee5d216e"
+sha256 = "85ca62cac0d41fc77d3f6033da9df6fd73d20ea2fc18b0a3609ffb4110e1baeb"
 
 [depends]
 build = ["pkgconf", "libxml2"]

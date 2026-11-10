@@ -1,13 +1,13 @@
-# extra recipe: faseela-branding — the Faseela visual identity (app icon, marks, default wallpaper).
+# extra recipe: faseela-branding — the Faseela visual identity (app icon, marks, default wallpaper, GRUB theme).
 # Pure assets, nothing is compiled. The files are exported from faseela/branding
 # (branding/build.sh --sync) and staged here through Nawa's recipe-local assets.
 [package]
 name = "faseela-branding"
 version = "1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 source_date_epoch = 1767225600
-summary = "Faseela visual identity: icon theme entry, logo marks and default wallpaper"
+summary = "Faseela visual identity: icon theme entry, logo marks, default wallpaper and GRUB theme"
 license = ["MIT"]
 # Require Nawa's recipe-local asset support.
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
@@ -29,6 +29,10 @@ include = [
   "assets/mark/mark-mono.svg",
   "assets/wallpaper-1920x1080.png",
   "assets/wallpaper-2560x1440.png",
+  "assets/grub/theme.txt",
+  "assets/grub/background.png",
+  "assets/grub/logo.png",
+  "assets/grub/select_c.png",
 ]
 
 [depends]
@@ -61,4 +65,10 @@ install -Dm644 "%{assetsdir}/assets/wallpaper-1920x1080.png" \
     "%{pkgdir}/usr/share/backgrounds/faseela/faseela-1920x1080.png"
 install -Dm644 "%{assetsdir}/assets/wallpaper-2560x1440.png" \
     "%{pkgdir}/usr/share/backgrounds/faseela/faseela-2560x1440.png"
+
+# --- GRUB theme: bootstrap/mkiso.sh and install.sh copy this tree to <boot>/grub/themes
+for f in theme.txt background.png logo.png select_c.png; do
+    install -Dm644 "%{assetsdir}/assets/grub/$f" \
+        "%{pkgdir}/usr/share/grub/themes/faseela/$f"
+done
 '''

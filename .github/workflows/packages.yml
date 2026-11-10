@@ -25,8 +25,8 @@ name: Build packages
 # PACKAGE SELECTION (Actions > Build packages > Run workflow)
 #   all   all recipe categories except toolchain
 #   base + system + boot + extra can be selected by ticking those four category boxes
-#   category boxes select ordinary categories (including the Xorg and Xfce desktops)
-#   messaging and peripheral packages are selected by exact package name or flavor (e.g. iso-gui-telegram, iso-gui-huion)
+#   category boxes include Xorg, Xfce and peripherals
+#   messaging/networking packages can be selected by exact name or flavor (e.g. iso-gui-telegram, iso-gui-nekoray)
 #   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
 #   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
 #   packages       exact recipe names; Toolchain names are rerouted to Bootstrap
@@ -96,6 +96,10 @@ on:
         description: "Select every package in the Xfce category"
         type: boolean
         default: false
+      peripherals:
+        description: "Select optional hardware integrations such as the Huion tablet control panel"
+        type: boolean
+        default: false
       browser:
         description: "Select every package in the browser category"
         type: boolean
@@ -106,10 +110,6 @@ on:
         default: false
       creative:
         description: "Select every package in the creative category"
-        type: boolean
-        default: false
-      networking:
-        description: "Select every package in the networking category"
         type: boolean
         default: false
       security:
@@ -205,7 +205,7 @@ jobs:
           INPUT_BROWSER: ${{ inputs.browser }}
           INPUT_MEDIA: ${{ inputs.media }}
           INPUT_CREATIVE: ${{ inputs.creative }}
-          INPUT_NETWORKING: ${{ inputs.networking }}
+          INPUT_PERIPHERALS: ${{ inputs.peripherals }}
           INPUT_SECURITY: ${{ inputs.security }}
           INPUT_TOOLCHAIN: ${{ inputs.toolchain }}
           INPUT_TOOLCHAIN_PACKAGES: ${{ inputs.toolchain_packages }}
@@ -265,7 +265,7 @@ jobs:
             [[ "$INPUT_BROWSER" == true ]] && categories+=(browser)
             [[ "$INPUT_MEDIA" == true ]] && categories+=(media)
             [[ "$INPUT_CREATIVE" == true ]] && categories+=(creative)
-            [[ "$INPUT_NETWORKING" == true ]] && categories+=(networking)
+            [[ "$INPUT_PERIPHERALS" == true ]] && categories+=(peripherals)
             [[ "$INPUT_SECURITY" == true ]] && categories+=(security)
 
             args=()

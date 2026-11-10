@@ -14,6 +14,7 @@ flavor. The `iso-xfce` flavor selects the Xorg runtime through
 |---|---|
 | `xorg-server` | Xorg 21.1 server with glamor/DRI3 and udev hotplug |
 | `xf86-input-libinput` | libinput keyboard, pointer and touchpad driver |
+| `xorg-iceauth` | X11 ICE session authority utility |
 | `libXdmcp` | X Display Manager Control Protocol client library |
 | `libXinerama` | Xinerama extension library |
 | `libXmu` | X11 miscellaneous utility library |

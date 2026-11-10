@@ -4,7 +4,7 @@
 [package]
 name = "thunar"
 version = "4.20.10"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce file manager (Thunar, with volume/trash integration through GIO)"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -17,5 +17,8 @@ run = ["exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbu
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
-compile = "make -j%{jobs}"
+# The bundled GDBus stubs use g_variant_builder_init_static (GLib 2.84).
+# Faseela deliberately stays on GLib 2.82; the older init API is equivalent.
+compile = '''find . -type f -name '*.c' -exec sed -i 's/g_variant_builder_init_static/g_variant_builder_init/g' {} +
+make -j%{jobs}'''
 install = '''make DESTDIR=%{pkgdir} install'''

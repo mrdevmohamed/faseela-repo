@@ -1,8 +1,11 @@
 # xfce recipe: xfdesktop — Xfce desktop manager
+# The default wallpaper is the Faseela one (faseela-branding). Upstream defaults to
+# /usr/share/backgrounds/xfce/xfce-x.svg, an SVG, which cannot be loaded without an
+# SVG pixbuf loader (gdk-pixbuf here is PNG/JPEG only) and left the desktop black
 [package]
 name = "xfdesktop"
 version = "4.20.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Xfce desktop manager (wallpaper, desktop icons and right-click menu)"
 license = ["GPL-2.0-or-later"]
@@ -11,9 +14,9 @@ sha256 = "1d9bd76015fb6e9aca05e73cd998c7c66ed4fc8c10b626e08fc2eb7c39df3f7b"
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo", "libX11", "xorgproto"]
-run = ["libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo"]
+run = ["faseela-branding", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --with-default-backdrop-filename=/usr/share/backgrounds/faseela/default.png"
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install'''

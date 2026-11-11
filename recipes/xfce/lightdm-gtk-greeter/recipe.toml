@@ -5,7 +5,7 @@
 [package]
 name = "lightdm-gtk-greeter"
 version = "2.0.9"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "LightDM GTK+ greeter (login screen for LightDM)"
 license = ["GPL-2.0-or-later"]
@@ -15,9 +15,20 @@ source_dir = "lightdm-gtk-greeter-%{version}"
 
 [depends]
 build = ["pkgconf", "lightdm", "gtk3", "libxklavier", "libX11", "glib", "xfce4-dev-tools"]
-run = ["lightdm", "gtk3", "libxklavier", "libX11", "glib", "hicolor-icon-theme", "dejavu-fonts"]
+run = ["faseela-branding", "lightdm", "gtk3", "libxklavier", "libX11", "glib", "hicolor-icon-theme", "dejavu-fonts"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-libindicator"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-static --disable-libindicator"
 compile = "make -j%{jobs}"
-install = '''make DESTDIR=%{pkgdir} install'''
+install = '''make DESTDIR=%{pkgdir} install
+# Without --sysconfdir=/etc the greeter looked in /usr/etc/lightdm. The drop-in below
+# is read from <sysconfdir>/lightdm/lightdm-gtk-greeter.conf.d/*.conf. The icon is the
+# hicolor "faseela" entry (PNG sizes) from faseela-branding, used as the default avatar.
+install -d -m755 %{pkgdir}/etc/lightdm/lightdm-gtk-greeter.conf.d
+cat > %{pkgdir}/etc/lightdm/lightdm-gtk-greeter.conf.d/50-faseela.conf <<'GREETER'
+[greeter]
+background=/usr/share/backgrounds/faseela/default.png
+default-user-image=#faseela
+GREETER
+chmod 644 %{pkgdir}/etc/lightdm/lightdm-gtk-greeter.conf.d/50-faseela.conf
+'''

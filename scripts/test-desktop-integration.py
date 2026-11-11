@@ -118,15 +118,16 @@ for required in (
     assert required in desktop_install, (
         f"desktop-file-utils must install the Nawa transaction trigger: {required}"
     )
-assert "update-desktop-database -q /usr/share/applications" in recipe(
-    "xfce", "xfce-session"
-)["hooks"]["post_install"]
+xfce_session_hooks = recipe("xfce", "xfce-session").get("hooks", {})
+assert "update-desktop-database" not in xfce_session_hooks.get("post_install", ""), (
+    "xfce-session must not repeat the MIME refresh owned by desktop-file-utils' Nawa transaction hook"
+)
 
 # XFCE must start the same audio supervisor and establish a private runtime dir
 # before the desktop is launched from LightDM (which has no pam_systemd).
 xfce_session = recipe("xfce", "xfce-session")
-assert xfce_session["package"]["rel"] >= 9, (
-    "Bump xfce-session rel when removing its duplicate Xfconf profile"
+assert xfce_session["package"]["rel"] >= 12, (
+    "Bump xfce-session rel when completing XFCE desktop runtime dependencies"
 )
 require_deps("xfce", "xfce-session", "run", {"audio-session"})
 xfce_session_install = xfce_session["build"]["install"]
@@ -386,7 +387,7 @@ for flag in ("-D udisks2=true", "-D gudev=true", "-D logind=false",
     assert flag in gvfs_configure, f"GVfs must provide UDisks2 volume monitoring without systemd: {flag}"
 
 thunar = recipe("xfce", "thunar")
-require_deps("xfce", "thunar", "run", {"gvfs"})
+require_deps("xfce", "thunar", "run", {"gvfs", "tumbler"})
 thunar_volman = recipe("xfce", "thunar-volman")
 require_deps("xfce", "thunar-volman", "run", {"thunar", "gvfs", "udisks2", "dbus"})
 require_deps("xfce", "xfce-session", "run", {"thunar", "thunar-volman", "gvfs", "udisks2"})
@@ -406,6 +407,65 @@ xfce_group = next(group for group in tomllib.loads(
 assert "thunar-volman" in xfce_group["default"]
 assert "thunar-volman" not in xfce_group["optional"]
 
+# The default XFCE profile must carry the complete desktop integration set.
+xfce_default = set(xfce_group["default"])
+for package_name in (
+    "xfce4-power-manager", "xfce4-notifyd", "xfce4-screenshooter",
+    "xfce4-clipman-plugin", "network-manager-applet", "tumbler",
+    "thunar-archive-plugin", "xarchiver",
+):
+    assert package_name in xfce_default, f"{package_name} must be a default XFCE package"
+assert "xfce4-clipman-plugin" not in xfce_group["optional"], (
+    "Clipman is part of the default clipboard experience, not an optional-only plugin"
+)
+
+network_applet = recipe("gui", "network-manager-applet")
+assert network_applet["package"]["version"] == "1.36.0"
+assert re.fullmatch(r"[0-9a-f]{64}", network_applet["package"]["sha256"])
+require_deps("gui", "network-manager-applet", "run", {
+    "network-manager", "libnma", "libsecret", "gnome-keyring", "dbus", "polkit",
+})
+applet_install = network_applet["build"]["install"]
+for required in (
+    "etc/xdg/autostart/nm-applet.desktop",
+    "Exec=nm-applet",
+):
+    assert required in applet_install, f"NetworkManager applet autostart validation missing: {required}"
+
+libnma = recipe("gui", "libnma")
+assert libnma["package"]["version"] == "1.10.6"
+require_deps("gui", "libnma", "run", {"gtk3", "gcr", "iso-codes", "network-manager"})
+libsecret = recipe("gui", "libsecret")
+assert libsecret["package"]["version"] == "0.20.5"
+require_deps("gui", "libsecret", "run", {"glib", "libgcrypt"})
+
+notifyd = recipe("xfce", "xfce4-notifyd")
+require_deps("xfce", "xfce4-notifyd", "run", {"dbus"})
+tumbler = recipe("xfce", "tumbler")
+require_deps("xfce", "tumbler", "run", {"dbus"})
+
+archive_plugin = recipe("xfce", "thunar-archive-plugin")
+assert archive_plugin["package"]["version"] == "0.6.0"
+assert re.fullmatch(r"[0-9a-f]{64}", archive_plugin["package"]["sha256"])
+require_deps("xfce", "thunar-archive-plugin", "run", {"thunar", "xarchiver"})
+xarchiver = recipe("xfce", "xarchiver")
+assert xarchiver["package"]["version"] == "0.5.4.27"
+assert re.fullmatch(r"[0-9a-f]{64}", xarchiver["package"]["sha256"])
+require_deps("xfce", "xarchiver", "run", {"tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"})
+require_deps("xfce", "xfce-session", "run", {
+    "xfce4-power-manager", "xfce4-notifyd", "xfce4-screenshooter",
+    "xfce4-clipman-plugin", "network-manager-applet", "tumbler",
+    "thunar-archive-plugin", "xarchiver",
+})
+xfce_flavor = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))["flavor"]["iso-xfce"]
+for package_name in (
+    "xfce4-clipman-plugin", "network-manager-applet",
+    "thunar-archive-plugin", "xarchiver",
+):
+    assert package_name in xfce_flavor["include"], (
+        f"iso-xfce must include {package_name}"
+    )
+
 # Parse the actual shell snippets embedded in the affected recipes. This
 # catches broken TOML multiline strings and shell quoting before package CI.
 for category, package_name in (
@@ -417,6 +477,7 @@ for category, package_name in (
     ("xfce", "lightdm"),
     ("xfce", "xfce-polkit"),
     ("xfce", "xfce-session"),
+    ("gui", "network-manager-applet"),
     ("xfce", "xfce4-session"),
 ):
     recipe_install_script = recipe(category, package_name)["build"]["install"]

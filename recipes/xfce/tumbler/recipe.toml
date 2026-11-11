@@ -1,0 +1,21 @@
+# xfce recipe: tumbler — D-Bus thumbnailing service for Thunar
+# the ffmpegthumbnailer and gstreamer plugins auto-disable (no gstreamer in
+# the recipe tree); image, JPEG, font and directory thumbnailers are built
+[package]
+name = "tumbler"
+version = "4.20.2"
+rel = 2
+arch = ["x86_64"]
+summary = "D-Bus thumbnailing service for Thunar (image, JPEG, font, directory plugins)"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://archive.xfce.org/src/xfce/tumbler/4.20/tumbler-4.20.2.tar.bz2"
+sha256 = "aa77fd90a88b83467cd8d2b39d80e4518ba2903d2e4ca50d32d1b96996685015"
+
+[depends]
+build = ["pkgconf", "libxfce4util", "glib", "gdk-pixbuf", "freetype", "libjpeg-turbo"]
+run = ["libxfce4util", "glib", "gdk-pixbuf", "freetype", "libjpeg-turbo"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

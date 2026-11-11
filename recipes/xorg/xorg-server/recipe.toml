@@ -1,0 +1,27 @@
+# xorg recipe: xorg-server — The X.Org X server
+# full Xorg for the Xfce session. No Xwayland here: sway sessions use the
+# separate standalone xwayland package (24.1 series). No Xvfb/Xnest/Xephyr
+# DDXes, no systemd-logind (runit system), no SELinux/audit. GLX and DRI3
+# through the Mesa GLX ABI (mesa is built with glx=dri, glvnd=disabled).
+[package]
+name = "xorg-server"
+version = "21.1.25"
+rel = 4
+arch = ["x86_64"]
+summary = "The X.Org X server (modesetting DDX, DRI3/GLX)"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/xserver/xorg-server-21.1.25.tar.xz"
+sha256 = "6ad4e3c7b59a309b32c92e5c15ce1267110f9e13f1ac78da62361a628da1a0eb"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libXau", "libXdmcp", "libXfont2", "libxkbfile", "libxshmfence", "pixman", "libdrm", "mesa", "libepoxy", "libpciaccess", "libxcvt", "font-util", "eudev", "openssl", "dbus"]
+run = ["mesa", "libepoxy", "libdrm", "libXfont2", "libxkbfile", "libxshmfence", "pixman", "libpciaccess", "libxcvt", "eudev", "dbus", "xkbcomp", "xkeyboard-config", "libXau", "libXdmcp"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xorg=true -D suid_wrapper=false -D xvfb=false -D xnest=false -D xephyr=false -D glx=true -D dri3=true -D drm=true -D udev=true -D xdmcp=true -D xdm-auth-1=false -D secure-rpc=false -D systemd_logind=false -D libunwind=false -D sha1=libcrypto -D xace=false -D xselinux=false -D docs=false -D devel-docs=false -D docs-pdf=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+# Xwayland already owns this shared informational file; avoid a file-ownership
+# collision when both Xwayland (Sway) and Xorg (Xfce) are installed.
+rm -f %{pkgdir}/usr/lib/xorg/protocol.txt
+'''

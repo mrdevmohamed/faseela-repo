@@ -1,0 +1,122 @@
+# xfce recipe: lightdm — LightDM display manager
+# no Qt bindings (--disable-liblightdm-qt5/6); the greeter user account is
+# required because lightdm-gtk-greeter runs unprivileged
+[package]
+name = "lightdm"
+version = "1.33.1"
+rel = 8
+arch = ["x86_64"]
+summary = "LightDM display manager (X11 greeters and user sessions)"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
+source_dir = "lightdm-%{version}"
+sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto", "linux-pam", "libgcrypt"]
+run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "elogind", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+
+[build]
+configure = '''set -eu
+# The signed release tarball does not ship a generated configure script.
+# Keep optional documentation, GIR/Vala bindings, Yelp help and translations
+# out of this lean build; the daemon, PAM integration and GObject client library
+# remain enabled.
+sed -i \
+  -e '/^GTK_DOC_CHECK$/d' \
+  -e '/^GOBJECT_INTROSPECTION_CHECK/d' \
+  -e '/^VAPIGEN_CHECK/d' \
+  -e '/^YELP_HELP_INIT/d' \
+  -e '/^IT_PROG_INTLTOOL/d' \
+  -e '/^doc\/Makefile$/d' \
+  -e '/^help\/Makefile$/d' \
+  -e '/^po\/Makefile.in$/d' \
+  configure.ac
+sed -i 's/^SUBDIRS += data po src doc help$/SUBDIRS += data src/' Makefile.am
+sed -i '/^if HAVE_INTROSPECTION$/,/^endif$/d; /^if ENABLE_VAPIGEN$/,/^endif$/d' liblightdm-gobject/Makefile.am
+sed -i \
+  -e '/^polkitdir =/d' \
+  -e '/^polkit_in_files =/d' \
+  -e '/^polkit_DATA =/d' \
+  -e '/^@INTLTOOL_POLICY_RULE@$/d' \
+  -e 's/$(polkit_in_files)//' \
+  -e 's/$(polkit_DATA)//' \
+  data/Makefile.am
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --disable-tests --disable-libaudit --disable-liblightdm-qt5 --disable-liblightdm-qt6 --with-greeter-user=lightdm --with-greeter-session=lightdm-gtk-greeter
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+# The LightDM session wrapper is shipped in the source tree's tests/src.
+# LightDM invokes it for every greeter and user session.
+install -D -m 0755 tests/src/lightdm-session \
+    %{pkgdir}/usr/bin/lightdm-session
+# data directories the daemon and greeter write into
+install -d -m755 %{pkgdir}/var/lib/lightdm %{pkgdir}/var/cache/lightdm
+install -d -m755 %{pkgdir}/var/log/lightdm
+install -d -m755 %{pkgdir}/etc/lightdm/lightdm.conf.d
+cat > %{pkgdir}/etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf <<'LIGHTDM'
+[Seat:*]
+greeter-session=lightdm-gtk-greeter
+user-session=xfce
+LIGHTDM
+chmod 644 %{pkgdir}/etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
+
+# PAM services for runit: use elogind's session module, never pam_systemd.
+install -d -m755 %{pkgdir}/etc/pam.d
+cat > %{pkgdir}/etc/pam.d/lightdm <<'PAM'
+#%PAM-1.0
+auth      required pam_nologin.so
+auth      required pam_env.so
+auth      required pam_unix.so
+account   required pam_unix.so
+password  required pam_unix.so
+session   required pam_unix.so
+session   optional pam_elogind.so class=user type=x11 desktop=xfce
+PAM
+cat > %{pkgdir}/etc/pam.d/lightdm-greeter <<'PAM'
+#%PAM-1.0
+auth      required pam_env.so
+auth      required pam_permit.so
+account   required pam_permit.so
+password  required pam_deny.so
+session   required pam_unix.so
+session   optional pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter
+PAM
+cat > %{pkgdir}/etc/pam.d/lightdm-autologin <<'PAM'
+#%PAM-1.0
+auth      required pam_succeed_if.so shell notin /sbin/nologin:/usr/sbin/nologin:/bin/false:/usr/bin/false
+auth      required pam_nologin.so
+auth      required pam_env.so
+auth      required pam_permit.so
+account   required pam_unix.so
+password  required pam_deny.so
+session   required pam_unix.so
+session   optional pam_elogind.so class=user type=x11 desktop=xfce
+PAM
+# Keep the service manual-enable only until the classic root-run Xorg path has
+# passed an installed-system login test. This initial path does not require
+# Xorg.wrap or rootless Xorg. Elogind supplies login1 tracking, not Xorg privilege handling.
+install -d -m755 %{pkgdir}/etc/sv/lightdm
+cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
+#!/bin/sh
+# LightDM uses the login1 D-Bus API; pam_elogind opens and closes each PAM session.
+# Exit so runsv retries and `sv status` shows the flapping instead of hanging.
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+# /tmp is cleared at boot, so the post_install-time creation of these dirs is not
+# enough. Without /tmp/.ICE-unix the Xfce session logs "_IceTransmkdir: ERROR:
+# euid != 0, directory /tmp/.ICE-unix will not be created" (session manager ICE
+# sockets are created by an unprivileged user and cannot make the directory).
+for d in /tmp/.X11-unix /tmp/.ICE-unix; do
+    install -d -m1777 -o root -g root "$d"
+done
+exec lightdm
+RUN
+chmod 755 %{pkgdir}/etc/sv/lightdm/run
+'''
+
+[hooks]
+post_install = '''/usr/libexec/faseela/ensure-system-account user lightdm lightdm "LightDM display manager" /var/lib/lightdm /usr/bin/false
+install -d -m755 -o lightdm -g lightdm /var/lib/lightdm /var/cache/lightdm
+install -d -m750 -o lightdm -g lightdm /var/lib/lightdm-data
+'''

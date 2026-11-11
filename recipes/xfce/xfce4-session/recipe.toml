@@ -1,0 +1,87 @@
+# xfce recipe: xfce4-session — Xfce session manager
+# ships startxfce4, /etc/xdg/xfce4/xinitrc and
+# /usr/share/xsessions/xfce.desktop; startxfce4 wraps the session in dbus-
+# run-session when no session bus exists
+[package]
+name = "xfce4-session"
+version = "4.20.4"
+rel = 8
+arch = ["x86_64"]
+summary = "Xfce session manager (startxfce4, session save/restore, logout dialog)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfce4-session/4.20/xfce4-session-4.20.4.tar.bz2"
+sha256 = "805c373378d080754d69dd2f20db95cdc066c89a4f024a41435ca0d66571c402"
+
+[depends]
+build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "libxfce4util", "xfconf", "libwnck3", "gtk3", "glib", "libX11", "libSM", "xorgproto", "xorg-iceauth", "dbus"]
+run = ["libxfce4ui", "libxfce4windowing", "libxfce4util", "xfconf", "libwnck3", "gtk3", "glib", "libX11", "libSM", "xorg-iceauth", "dbus", "xfwm4", "xfdesktop", "xfce4-settings", "xfce4-appfinder", "xfce4-panel"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''
+set -eu
+make DESTDIR=%{pkgdir} install
+
+# LightDM runs without systemd-logind on Faseela. Give every Xfce session a
+# private runtime directory before PipeWire and other user services start.
+install -d -m755 %{pkgdir}/usr/bin
+cat > %{pkgdir}/usr/bin/faseela-start-xfce4 <<'STARTXFCE'
+#!/bin/sh
+uid=$(id -u)
+if [ -z "$XDG_RUNTIME_DIR" ]; then
+    runtime_dir="/run/user/$uid"
+    if [ ! -d "$runtime_dir" ] || [ ! -O "$runtime_dir" ]; then
+        runtime_dir="/tmp/runtime-$uid"
+        if [ ! -d "$runtime_dir" ]; then
+            (umask 077 && mkdir "$runtime_dir") 2>/dev/null || true
+        fi
+        [ -d "$runtime_dir" ] && [ -O "$runtime_dir" ] || {
+            echo "faseela-start-xfce4: cannot create a private runtime directory" >&2
+            exit 1
+        }
+        chmod 700 "$runtime_dir"
+    fi
+    XDG_RUNTIME_DIR="$runtime_dir"
+fi
+[ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
+    echo "faseela-start-xfce4: invalid XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR" >&2
+    exit 1
+}
+export XDG_RUNTIME_DIR
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=XFCE
+exec /usr/bin/startxfce4 "$@"
+STARTXFCE
+chmod 755 %{pkgdir}/usr/bin/faseela-start-xfce4
+
+# Keep the upstream Xfce session entry, but route its Exec through the
+# Faseela runtime wrapper. Fail the package build if upstream changes it.
+desktop_file="%{pkgdir}/usr/share/xsessions/xfce.desktop"
+test -f "$desktop_file"
+grep -Fqx 'Exec=startxfce4' "$desktop_file" || {
+    echo "xfce4-session: expected Exec=startxfce4 in xfce.desktop" >&2
+    exit 1
+}
+sed -i 's|^Exec=startxfce4$|Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4|' "$desktop_file"
+grep -Fqx 'Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4' "$desktop_file"
+
+# GNOME Keyring's Secret Service and selected GNOME compatibility services
+# are used by XFCE without systemd. Update the upstream Xfconf default in
+# place; this file is owned by xfce4-session, not the xfce-session meta package.
+xfconf_file="%{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml"
+test -s "$xfconf_file"
+if grep -Fq 'name="LaunchGNOME"' "$xfconf_file"; then
+    # Preserve an upstream value when already enabled; otherwise switch it on.
+    sed -i 's|<property name="LaunchGNOME" type="bool" value="false"/>|<property name="LaunchGNOME" type="bool" value="true"/>|' "$xfconf_file"
+elif grep -Fq '<property name="compat" type="empty">' "$xfconf_file"; then
+    sed -i '/<property name="compat" type="empty">/a\    <property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file"
+else
+    # xfce4-session 4.20.4 ships no compat group in its default XML.
+    sed -i '/<\/channel>/i\  <property name="compat" type="empty">\n    <property name="LaunchGNOME" type="bool" value="true"/>\n  </property>' "$xfconf_file"
+fi
+grep -Fq '<property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file" || {
+    echo "xfce4-session: could not enable Xfconf /compat/LaunchGNOME" >&2
+    exit 1
+}
+'''

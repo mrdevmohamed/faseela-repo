@@ -4,7 +4,7 @@
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "System D-Bus service and messagebus account for runit systems"
 license = ["MIT"]
@@ -29,4 +29,12 @@ ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus
 [hooks]
 post_install = '''
 /usr/libexec/faseela/ensure-system-account user messagebus messagebus "D-Bus Message Bus" /nonexistent /usr/bin/false
+# System-bus activation (UPower and any other on-demand system service) goes
+# through this helper. dbus-daemon refuses it with "The permission of the setuid
+# helper is not correct" unless it is root:messagebus and setuid (4750). An
+# unprivileged package build cannot set that, so it is done here on the target.
+if [ -e /usr/libexec/dbus-daemon-launch-helper ]; then
+    chown root:messagebus /usr/libexec/dbus-daemon-launch-helper
+    chmod 4750 /usr/libexec/dbus-daemon-launch-helper
+fi
 '''

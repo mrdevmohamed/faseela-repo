@@ -1,0 +1,80 @@
+# xfce recipe: xfce-session — Xfce desktop session: LightDM + Xorg, Xfce 4.20 core, apps and panel plugins
+# meta package in the gui-session style: no upstream source, only
+# configuration and service wiring on top of the real packages
+[package]
+name = "xfce-session"
+version = "0.1"
+rel = 10
+arch = ["x86_64"]
+summary = "Xfce 4.20 X11 session integration and core desktop components"
+license = ["MIT"]
+source = ""
+
+[depends]
+build = []
+run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "gvfs", "udisks2", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "elogind", "xfce-polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[build]
+install = '''
+# --- Xorg keyboard layout: US + Arabic, Alt+Shift toggles --------------------
+# Xorg reads /etc/X11/xorg.conf.d/*.conf at server start; this mirrors the
+# gui-session sway drop-in so both desktops behave the same.
+install -d -m755 %{pkgdir}/etc/X11/xorg.conf.d
+cat > %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-keyboard.conf <<'KBD'
+Section "InputClass"
+    Identifier "faseela-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "us,ara"
+    Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+KBD
+chmod 644 %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-keyboard.conf
+
+# Xfce's XDG autostart launches the shared per-user audio supervisor.
+install -d -m755 %{pkgdir}/etc/xdg/autostart
+cat > %{pkgdir}/etc/xdg/autostart/faseela-audio-session.desktop <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Faseela Audio Session
+Comment=Start PipeWire audio services for this desktop session
+Exec=/usr/bin/faseela-audio-session
+TryExec=/usr/bin/faseela-audio-session
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+DESKTOP
+chmod 644 %{pkgdir}/etc/xdg/autostart/faseela-audio-session.desktop
+
+# Keep Thunar's extension host running for thunar-volman. The extension
+# listens to GVfs volume-monitor events; GVfs talks to UDisks2 over the
+# session/system D-Bus buses to discover, mount and unmount removable media.
+cat > %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop <<'THUNAR'
+[Desktop Entry]
+Type=Application
+Name=Thunar Volume Manager
+Comment=Keep Thunar's removable-volume integration active
+Exec=thunar --daemon
+TryExec=thunar
+Terminal=false
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+THUNAR
+chmod 644 %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop
+'''
+
+[hooks]
+post_install = '''
+for socket_dir in /tmp/.X11-unix /tmp/.ICE-unix; do
+    mkdir -p "$socket_dir"
+    chown root:root "$socket_dir"
+    chmod 1777 "$socket_dir"
+done
+
+for group in video render input audio; do
+    /usr/libexec/faseela/ensure-system-account group "$group"
+done
+
+echo "xfce-session: add your user to video,render,input,audio for Xorg device access."
+echo "xfce-session: LightDM is optional; install lightdm and lightdm-gtk-greeter for a graphical login."
+'''

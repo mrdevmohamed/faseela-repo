@@ -49,6 +49,8 @@ jobs:
         run: python3 -I scripts/test-podman-support.py
       - name: Package selection and multi-select regression checks
         run: python3 -I scripts/test-package-selection.py
+      - name: Incremental pull request package cache regression checks
+        run: python3 -I scripts/test-pr-build-cache.py
       - name: creative recipes install bin/share and usr payload layouts
         run: python3 -I scripts/test-creative-recipes.py
       - name: flavors.toml resolves (every flavor, every dependency)

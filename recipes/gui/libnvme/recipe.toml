@@ -1,0 +1,20 @@
+# gui recipe: libnvme — NVMe library required by libblockdev and UDisks2.
+[package]
+name = "libnvme"
+version = "1.16.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Library for NVMe device management"
+license = ["LGPL-2.1-only"]
+source = "https://files.pythonhosted.org/packages/ec/62/a4c0ef8f03c19da6a7ff52793cc6bfd0cd4417e6105386dc983c3386f0f5/libnvme-%{version}.tar.gz"
+sha256 = "16e4537f289de775ec9200b2e088125454a82fc1b0474ee6b8832841553bb8ad"
+source_dir = "libnvme-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "json-c"]
+run = ["json-c"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D python=disabled -D openssl=disabled -D libdbus=disabled -D json-c=enabled -D keyutils=disabled -D liburing=disabled -D tests=false -D examples=false -D docs=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

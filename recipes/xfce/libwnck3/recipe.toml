@@ -1,0 +1,20 @@
+# xfce recipe: libwnck3 — Window Navigator Construction Kit for GTK 3
+[package]
+name = "libwnck3"
+version = "43.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Window Navigator Construction Kit for GTK 3 (libwnck-3 API)"
+license = ["LGPL-2.0-or-later"]
+source = "https://download.gnome.org/sources/libwnck/43/libwnck-43.3.tar.xz"
+sha256 = "6af8ac41a8f067ade1d3caaed254a83423b5f61ad3f7a460fcacbac2e192bdf7"
+source_dir = "libwnck-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "libX11", "libXres", "xorgproto"]
+run = ["glib", "gtk3", "libX11", "libXres"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D startup_notification=disabled -D introspection=disabled -D gtk_doc=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

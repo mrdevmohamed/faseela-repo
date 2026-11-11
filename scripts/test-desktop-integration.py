@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import re
+import subprocess
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +33,7 @@ assert "exec dbus-run-session -- sh -c" in install_script, (
     "Sway must run inside a user D-Bus session for Secret Service activation"
 )
 assert session["package"]["rel"] >= 15, "Bump gui-session rel for XDG portal integration"
-assert "procps-ng" in session["depends"]["run"], "Audio session helper requires pgrep"
+require_deps("gui", "gui-session", "run", {"audio-session"})
 assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
@@ -79,11 +80,331 @@ for name in ("fuse3", "json-glib", "bubblewrap"):
     assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
         r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
     ), f"{name} must have a SHA-256 field"
-assert "pipewire-pulse" in install_script
-assert "pulse/native" in install_script
-assert "pgrep -u" in install_script
-assert "wireplumber" in install_script
+audio_session = recipe("gui", "audio-session")
+audio_install = audio_session["build"]["install"]
+assert audio_session["package"]["rel"] >= 2, (
+    "Bump audio-session rel when fixing desktop-session lifetime detection"
+)
+require_deps("gui", "audio-session", "run", {"pipewire", "wireplumber", "procps-ng", "coreutils"})
+for required in ("pipewire-pulse", "pulse/native", "pgrep -u", "wireplumber"):
+    assert required in audio_install, f"audio-session must manage: {required}"
+assert 'case "${XDG_CURRENT_DESKTOP:-}" in' in audio_install
+assert "*XFCE*) session_process=xfce4-session ;;" in audio_install, (
+    "The audio helper must stay alive for an XFCE session, not look for Sway"
+)
+assert "*sway*|*Sway*) session_process=sway ;;" in audio_install
+assert "unsupported desktop session" in audio_install
 assert "exec /usr/bin/faseela-audio-session" in install_script
+
+# XFCE must start the same audio supervisor and establish a private runtime dir
+# before the desktop is launched from LightDM (which has no pam_systemd).
+xfce_session = recipe("xfce", "xfce-session")
+assert xfce_session["package"]["rel"] >= 9, (
+    "Bump xfce-session rel when removing its duplicate Xfconf profile"
+)
+require_deps("xfce", "xfce-session", "run", {"audio-session"})
+xfce_session_install = xfce_session["build"]["install"]
+assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" not in xfce_session_install, (
+    "The Xfconf channel file belongs to xfce4-session; the meta package must not ship a duplicate"
+)
+assert "xfconf-query" not in xfce_session.get("hooks", {}).get("post_install", ""), (
+    "Package post_install must not start xfconf-query outside a user D-Bus session"
+)
+xfce_install = xfce_session_install
+assert "OnlyShowIn=XFCE;" in xfce_install
+assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
+xfce4_session = recipe("xfce", "xfce4-session")
+assert xfce4_session["package"]["rel"] >= 8
+xfce4_install = xfce4_session["build"]["install"]
+assert "Exec=startxfce4" in xfce4_install
+assert "/tmp/runtime-$uid" in xfce4_install
+assert "chmod 700" in xfce4_install
+assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install
+assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" in xfce4_install
+assert '<property name="LaunchGNOME" type="bool" value="true"/>' in xfce4_install
+assert "elif grep -Fq '<property name=\"compat\" type=\"empty\">'" in xfce4_install
+assert "sed -i '/<\\/channel>/i" in xfce4_install
+assert "xfconf_file" in xfce4_install and "sed -i" in xfce4_install, (
+    "xfce4-session must update the upstream-owned Xfconf profile in place"
+)
+lightdm = recipe("xfce", "lightdm")
+assert not re.search(
+    r"^\s*(?:auth|account|password|session)\s+\S+\s+pam_systemd\.so",
+    lightdm["build"]["install"],
+    re.MULTILINE,
+), "LightDM PAM must not load pam_systemd"
+
+# LightDM, elogind and Polkit must use one login1 session-tracking backend.
+assert lightdm["package"]["rel"] >= 8
+lightdm_install = lightdm["build"]["install"]
+assert "pam_elogind.so class=user type=x11 desktop=xfce" in lightdm_install
+assert "pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
+require_deps("xfce", "lightdm", "run", {"elogind"})
+require_deps("xfce", "xfce-session", "run", {"elogind", "xfce-polkit"})
+
+polkit = recipe("gui", "polkit")
+assert polkit["package"]["rel"] >= 5, "Bump Polkit rel when wiring logind_dep into polkitd"
+require_deps("gui", "polkit", "build", {"elogind"})
+require_deps("gui", "polkit", "run", {"elogind"})
+assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
+polkit_prepare = polkit["build"].get("prepare", "")
+assert "dependencies: [libpolkit_gobject_dep, logind_dep]" in polkit_prepare, (
+    "Polkit's polkitd executable must receive libelogind include and link flags directly"
+)
+assert "src/polkitbackend/meson.build" in polkit_prepare
+polkit_prepare_syntax = subprocess.run(
+    ["bash", "-n"], input=polkit_prepare, text=True, capture_output=True, check=False
+)
+assert polkit_prepare_syntax.returncode == 0, (
+    f"polkit prepare patch has invalid shell syntax: {polkit_prepare_syntax.stderr}"
+)
+
+elogind = recipe("gui", "elogind")
+assert elogind["package"]["version"] == "257.16"
+assert elogind["package"]["rel"] >= 4, "Bump elogind rel when restoring PAM's local NSS lookup through UserDatabase"
+assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
+require_deps("gui", "elogind", "build", {
+    "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
+    "linux-pam", "util-linux", "python-jinja2", "python-markupsafe",
+})
+require_deps("gui", "elogind", "run", {
+    "acl", "libcap", "eudev", "linux-pam", "util-linux",
+    "dbus-system", "runit", "coreutils",
+})
+for flag in (
+    "-Dcgroup-controller=elogind",
+    "-Dpam=enabled",
+    "-Dpamlibdir=/usr/lib/security",
+    "-Dpolkit=disabled",
+    "-Dnss-elogind=false",
+    "-Duserdb=true",
+    "-Dvarlink=true",
+    "-Ddefault-kill-user-processes=false",
+    "-Dsysvinit-path=''",
+    "-Dsysvrcnd-path=''",
+):
+    assert flag in elogind["build"]["configure"], (
+        f"elogind must use the standalone runit/PAM configuration: {flag}"
+    )
+elogind_prepare = elogind["build"]["prepare"]
+assert "043d7fe5de1b151054735450f23a6ab1b4e31e0f" in elogind_prepare
+assert "get_option('userdb') != false" in elogind_prepare
+assert "ENABLE_USERDB || ENABLE_NSS_ELOGIND" in elogind_prepare, (
+    "UserDatabase must retain its local libc NSS fallback without installing the nss-elogind module"
+)
+assert "get_option('nss-elogind') != false or get_option('userdb') != false" in elogind_prepare
+assert "src/shared/userdb.c" in elogind_prepare
+prepare_syntax = subprocess.run(
+    ["bash", "-n"], input=elogind_prepare, text=True, capture_output=True, check=False
+)
+assert prepare_syntax.returncode == 0, (
+    f"elogind prepare backport script has invalid shell syntax: {prepare_syntax.stderr}"
+)
+
+elogind_install = elogind["build"]["install"]
+for required in (
+    "/usr/lib/elogind/elogind",
+    "/usr/lib/elogind/elogind-userdbd",
+    "/usr/lib/elogind/elogind-userwork",
+    "/usr/lib/security/pam_elogind.so",
+    "libelogind.pc",
+    "org.freedesktop.login1.service",
+    "Exec=/usr/lib/elogind/elogind --daemon",
+    "/etc/sv/elogind",
+    "/etc/runit/runsvdir/default/elogind",
+    "/etc/sv/elogind-userdbd",
+    "exec /usr/lib/elogind/elogind-userdbd",
+    "/etc/runit/runsvdir/default/elogind-userdbd",
+):
+    assert required in elogind_install, (
+        f"elogind install must provide/validate: {required}"
+    )
+
+jinja = recipe("media", "python-jinja2")
+assert jinja["package"]["version"] == "3.1.6"
+assert jinja["package"]["sha256"] == "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337"
+require_deps("media", "python-jinja2", "run", {"python", "python-markupsafe"})
+markupsafe = recipe("gui", "python-markupsafe")
+assert markupsafe["package"]["version"] == "3.0.2"
+require_deps("gui", "python-markupsafe", "run", {"python"})
+xfce_polkit = recipe("xfce", "xfce-polkit")
+assert xfce_polkit["package"]["version"] == "0.3"
+polkit_configure_ac = (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets/upstream/configure.ac").read_text(encoding="utf-8")
+assert "AM_INIT_AUTOMAKE([foreign])" in polkit_configure_ac, (
+    "xfce-polkit is a small Autotools project without GNU standard files; "
+    "use Automake foreign strictness to avoid requiring AUTHORS/NEWS/ChangeLog/README"
+)
+assert xfce_polkit["package"]["source_date_epoch"] == 1767225600, (
+    "asset-only xfce-polkit builds must pin SOURCE_DATE_EPOCH for reproducible packages"
+)
+assert "workdir" not in xfce_polkit["package"], (
+    "xfce-polkit uses recipe-local assets and the default source workspace; "
+    "workdir is valid only with [[package.sources]]"
+)
+require_deps("xfce", "xfce-polkit", "build", {
+    "autoconf", "automake", "pkgconf", "glib", "libxfce4ui", "polkit",
+})
+require_deps("xfce", "xfce-polkit", "run", {"glib", "libxfce4ui", "polkit"})
+for asset in xfce_polkit["assets"]["include"]:
+    assert asset.startswith("assets/upstream/"), (
+        f"xfce-polkit asset include must match the recipe-root layout: {asset}"
+    )
+    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / asset).is_file(), (
+        f"missing xfce-polkit upstream asset: {asset}"
+    )
+assert "assets/upstream/xfce-polkit.desktop.in" in xfce_polkit["assets"]["include"]
+for required in (
+    "usr/libexec/xfce-polkit",
+    "etc/xdg/autostart/xfce-polkit.desktop",
+    "OnlyShowIn=XFCE;",
+):
+    assert required in xfce_polkit["build"]["install"], (
+        f"XFCE Polkit agent must be installed and scoped to XFCE: {required}"
+    )
+
+# Removable storage is integrated through system D-Bus -> UDisks2 -> GVfs.
+libblockdev = recipe("gui", "libblockdev")
+assert libblockdev["package"]["version"] == "3.5.0"
+assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
+require_deps("gui", "libblockdev", "build", {
+    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "libbytesize", "libnvme", "cryptsetup", "keyutils",
+})
+require_deps("gui", "libblockdev", "run", {
+    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm",
+})
+libblockdev_configure = libblockdev["build"]["configure"]
+for flag in (
+    "--with-part", "--with-fs", "--with-loop", "--with-swap",
+    "--with-crypto", "--with-mdraid", "--with-nvme", "--without-escrow",
+    "--without-lvm",
+):
+    assert flag in libblockdev_configure, (
+        f"libblockdev must enable UDisks2's mandatory plugins and omit escrow/LVM: {flag}"
+    )
+for flag in (
+    "--without-btrfs", "--without-dm", "--without-lvm", "--without-lvm_dbus",
+    "--without-mpath", "--without-smart", "--without-smartmontools", "--without-tools",
+):
+    assert flag in libblockdev_configure, (
+        f"libblockdev should keep this optional storage stack disabled: {flag}"
+    )
+assert "--without-swap" not in libblockdev_configure, (
+    "UDisks2 requires libblockdev-swap for its daemon"
+)
+assert "--without-loop" not in libblockdev_configure, (
+    "UDisks2 requires libblockdev-loop for its Loop interface"
+)
+assert "--without-mdraid" not in libblockdev_configure, (
+    "UDisks2 2.11.2 requires libblockdev-mdraid"
+)
+assert "--without-nvme" not in libblockdev_configure, (
+    "UDisks2 2.11.2 requires libblockdev-nvme"
+)
+
+libbytesize = recipe("gui", "libbytesize")
+assert libbytesize["package"]["version"] == "2.12"
+assert re.fullmatch(r"[0-9a-f]{64}", libbytesize["package"]["sha256"])
+require_deps("gui", "libbytesize", "build", {"gettext", "pcre2", "python"})
+require_deps("gui", "libbytesize", "run", {"pcre2"})
+
+libnvme = recipe("gui", "libnvme")
+assert libnvme["package"]["version"] == "1.16.2"
+assert re.fullmatch(r"[0-9a-f]{64}", libnvme["package"]["sha256"])
+require_deps("gui", "libnvme", "build", {"meson", "ninja", "pkgconf", "json-c"})
+require_deps("gui", "libnvme", "run", {"json-c"})
+
+keyutils = recipe("system", "keyutils")
+assert keyutils["package"]["version"] == "1.6.3"
+assert re.fullmatch(r"[0-9a-f]{64}", keyutils["package"]["sha256"])
+
+udisks2 = recipe("gui", "udisks2")
+assert udisks2["package"]["version"] == "2.11.2"
+assert re.fullmatch(r"[0-9a-f]{64}", udisks2["package"]["sha256"])
+require_deps("gui", "udisks2", "run", {"dbus-system", "polkit", "libblockdev", "libgudev"})
+udisks_configure = udisks2["build"]["configure"]
+for flag in (
+    "--with-systemdsystemunitdir=no", "--with-tmpfilesdir=no",
+    "--with-udevdir=/usr/lib/udev", "--disable-smart",
+):
+    assert flag in udisks_configure, (
+        f"UDisks2 must use Faseela's non-systemd paths and avoid unavailable optional SMART: {flag}"
+    )
+udisks_install = udisks2["build"]["install"]
+for required in (
+    "org.freedesktop.UDisks2.service",
+    "org.freedesktop.UDisks2.conf",
+    "org.freedesktop.UDisks2.policy",
+    "80-udisks2.rules",
+    "Exec=/usr/libexec/udisks2/udisksd",
+    "sed -i '/^SystemdService=/d'",
+    "! grep -q '^SystemdService='",
+    "check_mount_policy org.freedesktop.udisks2.filesystem-mount yes",
+    "check_mount_policy org.freedesktop.udisks2.filesystem-mount-system auth_admin_keep",
+    "<allow_any>auth_admin",
+    "<allow_inactive>auth_admin",
+):
+    assert required in udisks_install, f"UDisks2 install must provide/validate: {required}"
+assert "runit" not in udisks2["depends"]["run"], (
+    "UDisks2 is activated by dbus-system and must not get a duplicate runit daemon"
+)
+
+gvfs = recipe("xfce", "gvfs")
+assert gvfs["package"]["version"] == "1.56.3"
+assert re.fullmatch(r"[0-9a-f]{64}", gvfs["package"]["sha256"])
+require_deps("xfce", "gvfs", "run", {"dbus", "udisks2", "libgudev", "fuse3", "gsettings-desktop-schemas"})
+gvfs_configure = gvfs["build"]["configure"]
+for flag in ("-D udisks2=true", "-D gudev=true", "-D logind=false",
+             "-D systemduserunitdir=no", "-D tmpfilesdir=no"):
+    assert flag in gvfs_configure, f"GVfs must provide UDisks2 volume monitoring without systemd: {flag}"
+
+thunar = recipe("xfce", "thunar")
+require_deps("xfce", "thunar", "run", {"gvfs"})
+thunar_volman = recipe("xfce", "thunar-volman")
+require_deps("xfce", "thunar-volman", "run", {"thunar", "gvfs", "udisks2", "dbus"})
+require_deps("xfce", "xfce-session", "run", {"thunar", "thunar-volman", "gvfs", "udisks2"})
+assert thunar_volman["package"]["rel"] >= 3
+xfce_install = xfce_session["build"]["install"]
+for required in (
+    "thunar-daemon.desktop",
+    "Exec=thunar --daemon",
+    "TryExec=thunar",
+    "OnlyShowIn=XFCE;",
+    "chmod 644 %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop",
+):
+    assert required in xfce_install, f"Xfce must autostart the Thunar volume-manager host: {required}"
+xfce_group = next(group for group in tomllib.loads(
+    (ROOT / "groups.toml").read_text(encoding="utf-8")
+)["group"] if group["id"] == "xfce")
+assert "thunar-volman" in xfce_group["default"]
+assert "thunar-volman" not in xfce_group["optional"]
+
+# Parse the actual shell snippets embedded in the affected recipes. This
+# catches broken TOML multiline strings and shell quoting before package CI.
+for category, package_name in (
+    ("gui", "audio-session"),
+    ("gui", "udisks2"),
+    ("gui", "elogind"),
+    ("media", "python-jinja2"),
+    ("gui", "python-markupsafe"),
+    ("xfce", "lightdm"),
+    ("xfce", "xfce-polkit"),
+    ("xfce", "xfce-session"),
+    ("xfce", "xfce4-session"),
+):
+    recipe_install_script = recipe(category, package_name)["build"]["install"]
+    result = subprocess.run(
+        ["bash", "-n"],
+        input=recipe_install_script,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"{package_name} install script has invalid shell syntax: {result.stderr}"
+    )
+
 
 # --- desktop session packages added with the wlr portal, panel and fonts ----
 # Every autostarted program must be a run dependency of the session package:
@@ -159,6 +480,12 @@ assert "org.kde.StatusNotifierWatcher.service" not in install_script, (
 assert "Exec=/usr/bin/waybar" not in install_script
 assert session["package"]["rel"] >= 21, "Bump gui-session rel for single-instance Waybar startup"
 assert session["package"]["rel"] >= 22, "Bump gui-session rel when changing Xwayland startup"
+assert session["package"]["rel"] >= 27, (
+    "Bump gui-session rel when transferring faseela-audio-session ownership"
+)
+assert "cat > %{pkgdir}/usr/bin/faseela-audio-session" not in install_script, (
+    "gui-session must not own the helper now provided by audio-session"
+)
 assert "xwayland force" in install_script, (
     "Start Xwayland immediately so X11-only Qt applications can use the XCB platform"
 )

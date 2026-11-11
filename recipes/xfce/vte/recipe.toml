@@ -1,0 +1,21 @@
+# xfce recipe: vte — Terminal widget library for GTK 3
+# the tarball vendors its meson subprojects (simdutf, fast_float, fmt), so
+# the build needs no network
+[package]
+name = "vte"
+version = "0.84.1"
+rel = 4
+arch = ["x86_64"]
+summary = "Terminal widget library for GTK 3 (vte-2.91 API)"
+license = ["LGPL-3.0-or-later", "GPL-3.0-or-later"]
+source = "https://download.gnome.org/sources/vte/0.84/vte-0.84.1.tar.xz"
+sha256 = "aca1caa8478aebcdbb1d67897fb3511eb7601debae6810e16a15b6fa25f31ac8"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "cairo", "pango", "fribidi", "pcre2", "lz4"]
+run = ["glib", "gtk3", "cairo", "pango", "fribidi", "pcre2", "lz4"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtk3=true -D gtk4=false -D gnutls=false -D icu=false -D _systemd=false -D docs=false -D gir=false -D vapi=false -D glade=false -D app=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

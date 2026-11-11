@@ -1,0 +1,20 @@
+# xorg recipe: xorg-xrdb — X11 resource database utility
+[package]
+name = "xorg-xrdb"
+version = "1.2.3"
+rel = 2
+arch = ["x86_64"]
+summary = "X11 resource database utility"
+license = ["MIT"]
+source = "https://xorg.freedesktop.org/archive/individual/app/xrdb-1.2.3.tar.xz"
+source_dir = "xrdb-%{version}"
+sha256 = "c88f560243278c896ce4fc92ae5a45a2b505a316ffa427fe55b02e5d5914c4e4"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libXmu", "libX11", "xorgproto"]
+run = ["libXmu", "libX11"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

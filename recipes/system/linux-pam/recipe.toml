@@ -1,0 +1,24 @@
+# system recipe: linux-pam — Pluggable Authentication Modules
+# Standalone PAM implementation for LightDM. Elogind ships pam_elogind.so
+# separately; this package does not ship systemd or elogind PAM modules.
+[package]
+name = "linux-pam"
+version = "1.7.3"
+rel = 1
+arch = ["x86_64"]
+summary = "Linux Pluggable Authentication Modules"
+license = ["BSD-3-Clause", "GPL-2.0-or-later"]
+source = "https://github.com/linux-pam/linux-pam/releases/download/v%{version}/Linux-PAM-%{version}.tar.xz"
+sha256 = "2ce4765fd49df6693771ef2941f81e33d8ee14b94a81a5c7b369aa3b137b85a5"
+source_dir = "Linux-PAM-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "libxcrypt"]
+run = ["libxcrypt"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D docs=disabled -D audit=disabled -D econf=disabled -D logind=disabled -D elogind=disabled -D selinux=disabled -D nis=disabled -D i18n=disabled -D openssl=disabled -D examples=false -D xtests=false -D pam_userdb=disabled -D pam_lastlog=disabled -D pam_unix=enabled"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+chmod 4755 %{pkgdir}/usr/sbin/unix_chkpwd
+'''

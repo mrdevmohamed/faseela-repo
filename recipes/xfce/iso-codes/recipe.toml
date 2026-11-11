@@ -1,0 +1,19 @@
+# xfce recipe: iso-codes — ISO country, language and currency codes
+[package]
+name = "iso-codes"
+version = "4.20.1"
+rel = 1
+arch = ["x86_64"]
+summary = "ISO country, language and currency codes (names for libxklavier layouts)"
+license = ["LGPL-2.1-or-later"]
+source = "https://deb.debian.org/debian/pool/main/i/iso-codes/iso-codes_%{version}.orig.tar.xz"
+sha256 = "5d551f3ddb32548c4321e9011720fd97751af0107592f79ebffc939bd32f2268"
+
+[depends]
+build = ["meson", "ninja", "pkgconf"]
+run = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build'''

@@ -9,8 +9,10 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
+├── gui/         optional Wayland desktop and shared services: sway, PipeWire, NetworkManager, BlueZ, elogind, polkit, ... (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
+├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
+├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
@@ -21,14 +23,15 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 54 system + 8 boot + 95 extra =
-**206 core packages**. Optional categories contain 125 GUI, 16 browser, 23
-media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral and 11 developer
-packages. The recipe tree contains **411 recipes** in total.
+Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
+**209 core packages**. Optional categories contain 133 GUI, 16 browser, 45
+Xfce, 18 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
+1 peripheral and 15 developer packages. The recipe tree contains **489
+recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; browser, media, creative, messaging, networking,
-security, peripheral and developer packages remain opt-in.
+security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
@@ -89,7 +92,7 @@ libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
 
 **boot** — linux; efibootmgr → grub → busybox
 
-**extra** — 94 general-purpose packages covering development/build
+**extra** — 95 general-purpose packages covering development/build
 utilities, network diagnostics, editors, hardware inspection, storage tools,
 compression and command-line productivity. The live ISO's `iso-nogui` flavor
 includes this category; inspect the current inventory with
@@ -114,8 +117,9 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 (extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
 and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 
-**gui, desktop services** — dbus-system → polkit / bluez / network-manager;
-pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;
+**gui, desktop services** — dbus-system → elogind → polkit; bluez and
+network-manager; pipewire → wireplumber. Elogind provides login1 and PAM
+session tracking while runit remains PID 1. NetworkManager uses wpa_supplicant and replaces dhcpcd;
 PipeWire and WirePlumber start in the user's Sway session.
 
 Verify any dependency chain — or the complete recipe graph — with:
@@ -138,3 +142,46 @@ background components in Faseela's Sway session.
 Build it directly with `nawa build huiontablet` or include it in an image with
 the `iso-gui-huion` flavor. The normal `iso-gui` flavor deliberately excludes
 this proprietary, device-specific application.
+
+## The Xfce / Xorg desktop (opt-in)
+
+Two more opt-in categories form a complete X11 desktop, kept strictly out of
+the default ISO and the Sway flavor:
+
+* **`xorg/`** — the display layer: `xorg-server` 21.1 (Xorg with glamor/DRI3,
+  udev hotplug, setuid-root classic seat path, no systemd), the
+  `xf86-input-libinput` input driver, the X client libraries Xfce needs that
+  were not already shipped for Xwayland (`libXdmcp`, `libpciaccess`,
+  `libXinerama`, `libXmu`, `libXres`, `libXpresent`, `libXt`, and the XCB
+  cursor library). Xorg is built without a SUID wrapper; rootless seat
+  management still needs libseat integration with Faseela's seatd.
+* **`gui/`** — shared storage services: `libblockdev` supplies UDisks2's
+  filesystem and partition operations; `udisks2` is activated on demand by
+  the system D-Bus and integrates with polkit and eudev without a systemd or
+  dedicated runit service.
+* **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
+  (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
+  `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop
+  components (`xfwm4`, `xfce4-panel`, `xfdesktop`, `xfce4-session`,
+  `xfce4-settings`, `xfce4-appfinder`, `xfce4-power-manager`, `thunar`), the
+  applications and panel plugins. The `xfce-session` meta-package pulls in
+  the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
+  LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
+  they use Linux-PAM with `pam_elogind.so` and no systemd modules. The LightDM runit service is
+  shipped but not pre-enabled because its X-server child currently inherits
+  the daemon's root UID; rootless LightDM remains pending.
+
+Everything is built X11-only (the upstream Wayland backends of libxfce4ui,
+the panel, xfdesktop and the terminal are disabled), reuses the packaged
+GTK3/mesa/dbus/polkit/pipewire stack, and needs no systemd: session power
+actions go through polkit's shadow backend, UPower and PipeWire keep their
+D-Bus/runit activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
+upstream GitHub releases. SHA-256 pins are recorded in each recipe.
+
+The `iso-xfce` flavor includes Xfce, Xorg, LightDM and the standard desktop
+applications. Build order for the session meta-package:
+
+```
+python3 scripts/check-recipes.py xfce-session
+nawa --recipes recipes deps xfce-session
+```

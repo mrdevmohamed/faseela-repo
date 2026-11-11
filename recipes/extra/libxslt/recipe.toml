@@ -1,0 +1,19 @@
+# extra recipe: libxslt — XSLT processing library and xsltproc utility
+[package]
+name = "libxslt"
+version = "1.1.42"
+rel = 2
+arch = ["x86_64"]
+summary = "libxslt — XSLT processing library and xsltproc utility"
+license = ["MIT"]
+source = "https://download.gnome.org/sources/libxslt/1.1/libxslt-%{version}.tar.xz"
+sha256 = "85ca62cac0d41fc77d3f6033da9df6fd73d20ea2fc18b0a3609ffb4110e1baeb"
+
+[depends]
+build = ["pkgconf", "libxml2"]
+run = ["libxml2"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --without-python"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

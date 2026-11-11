@@ -1,0 +1,19 @@
+# xfce recipe: xfwm4 — Xfce window manager
+[package]
+name = "xfwm4"
+version = "4.20.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Xfce window manager (compositing, X11 session)"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/xfwm4/4.20/xfwm4-4.20.0.tar.bz2"
+sha256 = "a58b63e49397aa0d8d1dcf0636be93c8bb5926779aef5165e0852890190dcf06"
+
+[depends]
+build = ["pkgconf", "libxfce4ui", "libxfce4util", "xfconf", "libwnck3", "libXinerama", "gtk3", "glib", "libX11", "xorgproto"]
+run = ["libxfce4ui", "libxfce4util", "xfconf", "libwnck3", "libXinerama", "gtk3", "glib", "libX11"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --enable-xsync --enable-render --enable-randr --enable-compositor"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

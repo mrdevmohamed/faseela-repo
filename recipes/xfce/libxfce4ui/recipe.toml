@@ -1,0 +1,19 @@
+# xfce recipe: libxfce4ui — Xfce GUI widgets and dialog library
+[package]
+name = "libxfce4ui"
+version = "4.20.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Xfce GUI widgets and dialog library (libxfce4ui-2, libxfce4kbd-private-3)"
+license = ["LGPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/xfce/libxfce4ui/4.20/libxfce4ui-4.20.2.tar.bz2"
+sha256 = "5d3d67b1244a10cee0e89b045766c05fe1035f7938f0410ac6a3d8222b5df907"
+
+[depends]
+build = ["pkgconf", "libxfce4util", "xfconf", "gtk3", "glib"]
+run = ["libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install'''

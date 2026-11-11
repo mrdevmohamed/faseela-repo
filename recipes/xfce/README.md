@@ -20,9 +20,17 @@ required by `xfce-session`; it can be installed separately.
   `xfce4-panel`, `xfce4-session`, `xfce4-settings`, `xfdesktop`,
   and `xfce4-appfinder`.
 * **Applications**: `xfce4-terminal`, `xfce4-notifyd`, `mousepad`,
-  `ristretto`, `xfce4-taskmanager`, and `xfce4-screenshooter`.
-* **Panel plugins**: Whisker Menu, PulseAudio, CPU graph, netload,
-  systemload, battery, genmon, clipman, diskperf, and sensors.
+  `ristretto`, `xfce4-taskmanager`, `xfce4-screenshooter`, and
+  `xarchiver`.
+* **Panel plugins**: Whisker Menu, PulseAudio, Clipman (clipboard history),
+  CPU graph, netload, systemload, battery, genmon, diskperf, and sensors.
+* **Network integration**: `network-manager-applet` provides the tray applet
+  and connection editor. Its XDG autostart entry launches it in the XFCE
+  session; `libnma` and `libsecret` supply its GTK and credential-store
+  interfaces.
+* **Thunar integration**: `tumbler` provides thumbnails, while
+  `thunar-archive-plugin` adds create/extract actions backed by `xarchiver`.
+  Archive command-line helpers are declared as Xarchiver runtime dependencies.
 * **Display manager**: LightDM 1.33.1 and `lightdm-gtk-greeter` are
   packaged with standalone Linux-PAM. LightDM's runit service is not
   pre-enabled because its current X-server launch path inherits the daemon's
@@ -115,3 +123,16 @@ The Xfce session already starts a per-user D-Bus session with
 `dbus-run-session`. GVfs session services are therefore activated on that
 bus, while UDisks2 is activated by the system bus. No systemd-logind or
 systemd user service is required.
+
+## Desktop autostart and cache handling
+
+The upstream XDG autostart entries start the XFCE power manager,
+NetworkManager applet, and Clipman in the desktop session. The notification
+daemon and Tumbler are activated on demand by the session D-Bus. The
+screenshooter and archive plugin are launched by XFCE/Thunar when requested.
+
+The `desktop-file-utils` package owns the Nawa transaction hook for MIME
+and desktop-entry caches. The hook checks that the relevant cache directories
+exist and runs after package transactions that change desktop metadata;
+`xfce-session` deliberately does not force a second cache rebuild on every
+installation.

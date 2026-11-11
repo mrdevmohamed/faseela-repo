@@ -215,6 +215,12 @@ assert "org.kde.StatusNotifierWatcher.service" not in install_script, (
 assert "Exec=/usr/bin/waybar" not in install_script
 assert session["package"]["rel"] >= 21, "Bump gui-session rel for single-instance Waybar startup"
 assert session["package"]["rel"] >= 22, "Bump gui-session rel when changing Xwayland startup"
+assert session["package"]["rel"] >= 27, (
+    "Bump gui-session rel when transferring faseela-audio-session ownership"
+)
+assert "cat > %{pkgdir}/usr/bin/faseela-audio-session" not in install_script, (
+    "gui-session must not own the helper now provided by audio-session"
+)
 assert "xwayland force" in install_script, (
     "Start Xwayland immediately so X11-only Qt applications can use the XCB platform"
 )

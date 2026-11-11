@@ -5,7 +5,7 @@
 [package]
 name = "xfce4-session"
 version = "4.20.4"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "Xfce session manager (startxfce4, session save/restore, logout dialog)"
 license = ["GPL-2.0-or-later"]
@@ -63,6 +63,6 @@ grep -Fqx 'Exec=startxfce4' "$desktop_file" || {
     echo "xfce4-session: expected Exec=startxfce4 in xfce.desktop" >&2
     exit 1
 }
-sed -i 's|^Exec=startxfce4$|Exec=/usr/bin/faseela-start-xfce4|' "$desktop_file"
-grep -Fqx 'Exec=/usr/bin/faseela-start-xfce4' "$desktop_file"
+sed -i 's|^Exec=startxfce4$|Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4|' "$desktop_file"
+grep -Fqx 'Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4' "$desktop_file"
 '''

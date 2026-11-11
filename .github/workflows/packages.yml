@@ -792,16 +792,28 @@ jobs:
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
           mkdir -p "$cache_dir"
-          previous_run="$(gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" | \
-            jq -r --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
-            '[.workflow_runs[] | select((.id | tostring) != $current) | select(any(.pull_requests[]?; .number == $pr))] | sort_by(.created_at) | last | .id // empty')"
-          if [[ -n "$previous_run" ]]; then
-            echo "Restoring package archives from previous PR run $previous_run."
-            gh run download "$previous_run" --repo "$PKG_REPO" --name pr-package-cache --dir "$cache_dir" || {
-              echo "::notice::the previous PR run has no reusable package-cache artifact"
-            }
-          else
-            echo "No earlier package verification run exists for this PR."
+          mapfile -t candidate_runs < <(
+            gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" |
+              jq -r --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
+              '[.workflow_runs[] | select((.id | tostring) != $current) | select(any(.pull_requests[]?; .number == $pr))] | sort_by(.created_at) | reverse | .[].id'
+          )
+          restored_artifact=0
+          for previous_run in "${candidate_runs[@]}"; do
+            candidate_dir="$RUNNER_TEMP/pr-package-cache-$previous_run"
+            rm -rf "$candidate_dir"
+            mkdir -p "$candidate_dir"
+            echo "Checking package cache artifact from PR run $previous_run."
+            if gh run download "$previous_run" --repo "$PKG_REPO" --name pr-package-cache --dir "$candidate_dir"; then
+              cp -a "$candidate_dir/." "$cache_dir/"
+              rm -rf "$candidate_dir"
+              restored_artifact=1
+              echo "Restored the newest available package cache from PR run $previous_run."
+              break
+            fi
+            rm -rf "$candidate_dir"
+          done
+          if [[ "$restored_artifact" != 1 ]]; then
+            echo "No earlier PR run has a reusable package-cache artifact; starting with published packages only."
           fi
           python3 -I scripts/pr-build-cache.py restore \
             --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out"

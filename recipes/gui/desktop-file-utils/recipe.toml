@@ -2,7 +2,7 @@
 [package]
 name = "desktop-file-utils"
 version = "0.29"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Utilities for desktop entries and MIME application database"
 license = ["GPL-2.0-or-later"]
@@ -27,11 +27,11 @@ cat > %{pkgdir}/usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh <<'TRI
 #!/bin/sh
 set -eu
 
-if command -v update-mime-database >/dev/null 2>&1; then
+if [ -d /usr/share/mime ] && command -v update-mime-database >/dev/null 2>&1; then
     update-mime-database /usr/share/mime
 fi
 
-if command -v update-desktop-database >/dev/null 2>&1; then
+if [ -d /usr/share/applications ] && command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database -q /usr/share/applications
 fi
 TRIGGER
@@ -39,4 +39,4 @@ chmod 755 %{pkgdir}/usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh
 '''
 
 [hooks]
-post_install = "update-desktop-database -q /usr/share/applications"
+post_install = "if [ -d /usr/share/applications ]; then update-desktop-database -q /usr/share/applications; fi"

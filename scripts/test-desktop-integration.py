@@ -452,6 +452,16 @@ xarchiver = recipe("xfce", "xarchiver")
 assert xarchiver["package"]["version"] == "0.5.4.27"
 assert re.fullmatch(r"[0-9a-f]{64}", xarchiver["package"]["sha256"])
 require_deps("xfce", "xarchiver", "run", {"tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"})
+xarchiver_configure_check = subprocess.run(
+    ["bash", "-n"],
+    input=xarchiver["build"]["configure"],
+    text=True,
+    capture_output=True,
+    check=False,
+)
+assert xarchiver_configure_check.returncode == 0, (
+    f"Xarchiver configure stub has invalid shell syntax: {xarchiver_configure_check.stderr}"
+)
 require_deps("xfce", "xfce-session", "run", {
     "xfce4-power-manager", "xfce4-notifyd", "xfce4-screenshooter",
     "xfce4-clipman-plugin", "network-manager-applet", "tumbler",

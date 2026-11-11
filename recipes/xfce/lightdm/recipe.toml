@@ -4,7 +4,7 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -100,6 +100,13 @@ cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 # LightDM needs the system D-Bus (upower, accounts, ConsoleKit alternates).
 # Exit so runsv retries and `sv status` shows the flapping instead of hanging.
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+# /tmp is cleared at boot, so the post_install-time creation of these dirs is not
+# enough. Without /tmp/.ICE-unix the Xfce session logs "_IceTransmkdir: ERROR:
+# euid != 0, directory /tmp/.ICE-unix will not be created" (session manager ICE
+# sockets are created by an unprivileged user and cannot make the directory).
+for d in /tmp/.X11-unix /tmp/.ICE-unix; do
+    install -d -m1777 -o root -g root "$d"
+done
 exec lightdm
 RUN
 chmod 755 %{pkgdir}/etc/sv/lightdm/run

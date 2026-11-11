@@ -189,7 +189,7 @@ for asset in xfce_polkit["assets"]["include"]:
     assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / asset).is_file(), (
         f"missing xfce-polkit upstream asset: {asset}"
     )
-assert "upstream/xfce-polkit.desktop.in" in xfce_polkit["assets"]["include"]
+assert "assets/upstream/xfce-polkit.desktop.in" in xfce_polkit["assets"]["include"]
 for required in (
     "usr/libexec/xfce-polkit",
     "etc/xdg/autostart/xfce-polkit.desktop",

@@ -1,0 +1,29 @@
+# xfce recipe: gvfs — GIO virtual filesystem and removable-volume support.
+# Version 1.56.x supports the repository's GLib 2.82; 1.58.x requires a newer
+# GLib and must not be selected until the core GLib package is upgraded.
+# Keep the UDisks2/GUdev volume monitor and FUSE support; disable unrelated
+# online-account, remote-share, mobile-device and systemd integrations.
+[package]
+name = "gvfs"
+version = "1.56.3"
+rel = 1
+arch = ["x86_64"]
+summary = "GIO virtual filesystem backends and UDisks2 removable-volume monitor"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/gvfs/1.56/gvfs-%{version}.tar.xz"
+sha256 = "7b99f64a33437cb97987ac47a91cce73593994a9f1940f51661fa5eee0b42deb"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gsettings-desktop-schemas", "dbus", "libgudev", "fuse3", "udisks2"]
+run = ["glib", "gsettings-desktop-schemas", "dbus", "libgudev", "fuse3", "udisks2", "shared-mime-info"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D systemduserunitdir=no -D tmpfilesdir=no -D admin=false -D afc=false -D afp=false -D archive=false -D burn=false -D cdda=false -D dnssd=false -D goa=false -D google=false -D gphoto2=false -D http=false -D mtp=false -D nfs=false -D onedrive=false -D sftp=false -D smb=false -D udisks2=true -D wsdd=false -D bluray=false -D fuse=true -D gcr=false -D gcrypt=false -D gudev=true -D keyring=false -D logind=false -D libusb=false -D deprecated_apis=false -D devel_utils=false -D installed_tests=false -D man=false -D unit_tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = '''
+glib-compile-schemas /usr/share/glib-2.0/schemas
+gio-querymodules /usr/lib/gio/modules
+'''

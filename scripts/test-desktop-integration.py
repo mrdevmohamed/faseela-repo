@@ -171,6 +171,11 @@ assert "runit" not in consolekit2["depends"]["run"], (
 
 xfce_polkit = recipe("xfce", "xfce-polkit")
 assert xfce_polkit["package"]["version"] == "0.3"
+polkit_configure_ac = (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets/upstream/configure.ac").read_text(encoding="utf-8")
+assert "AM_INIT_AUTOMAKE([foreign])" in polkit_configure_ac, (
+    "xfce-polkit is a small Autotools project without GNU standard files; "
+    "use Automake foreign strictness to avoid requiring AUTHORS/NEWS/ChangeLog/README"
+)
 assert xfce_polkit["package"]["source_date_epoch"] == 1767225600, (
     "asset-only xfce-polkit builds must pin SOURCE_DATE_EPOCH for reproducible packages"
 )

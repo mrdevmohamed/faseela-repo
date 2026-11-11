@@ -70,9 +70,15 @@ for socket_dir in /tmp/.X11-unix /tmp/.ICE-unix; do
     chown root:root "$socket_dir"
     chmod 1777 "$socket_dir"
 done
+
 for group in video render input audio; do
     /usr/libexec/faseela/ensure-system-account group "$group"
 done
+
+xfconf-query -c xfce4-session \
+  -p /compat/LaunchGNOME \
+  --create -t bool -s true
+  
 echo "xfce-session: add your user to video,render,input,audio for Xorg device access."
 echo "xfce-session: LightDM is optional; install lightdm and lightdm-gtk-greeter for a graphical login."
 '''

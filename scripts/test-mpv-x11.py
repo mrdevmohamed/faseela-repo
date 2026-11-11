@@ -30,7 +30,7 @@ for section in ("build", "run"):
     missing = x11_runtime - set(mpv["depends"][section])
     assert not missing, f"mpv {section} dependencies missing: {sorted(missing)}"
 
-present = recipe("recipes/gui/libXpresent/recipe.toml")
+present = recipe("recipes/xorg/libXpresent/recipe.toml")
 assert present["package"]["version"] == "1.0.2"
 assert present["package"]["sha256"] == (
     "4e5b21b4812206a4b223013606ae31170502c1043038777a1ef8f70c09d37602"

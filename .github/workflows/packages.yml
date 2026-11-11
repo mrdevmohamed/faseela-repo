@@ -784,10 +784,10 @@ jobs:
           sudo touch "$T/build/.run-start"
 
       - name: Restore previous package builds from this pull request
-        if: \${{ github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        if: ${{ github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
         env:
-          GH_TOKEN: \${{ github.token }}
-          PR_NUMBER: \${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
@@ -861,7 +861,7 @@ jobs:
               bash /faseela/bootstrap/build-packages-inner.sh
           fi
       - name: Save reusable package builds for this pull request
-        if: \${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
         run: |
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
@@ -871,15 +871,15 @@ jobs:
             --since "$T/build/.run-start"
 
       - uses: actions/upload-artifact@v4
-        if: \${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
         with:
           name: pr-package-cache
-          path: \${{ runner.temp }}/pr-package-cache
+          path: ${{ runner.temp }}/pr-package-cache
           if-no-files-found: ignore
           retention-days: 14
 
       - name: Fail PR verification when the build time budget is exhausted
-        if: \${{ github.event_name == 'pull_request' && steps.build.outcome == 'success' }}
+        if: ${{ github.event_name == 'pull_request' && steps.build.outcome == 'success' }}
         run: |
           if [[ -s "$T/build/status" ]] && grep -qx 'INCOMPLETE=1' "$T/build/status"; then
             echo "::error::PR package verification reached its time budget before every changed package was built."

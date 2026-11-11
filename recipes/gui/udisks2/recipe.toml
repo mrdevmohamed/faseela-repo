@@ -1,0 +1,52 @@
+# gui recipe: udisks2 — storage daemon used by GVfs and Thunar.
+# UDisks2 is activated by the existing system D-Bus daemon. Do not add a
+# second runit service or install systemd units on this runit-based system.
+[package]
+name = "udisks2"
+version = "2.11.2"
+rel = 1
+arch = ["x86_64"]
+summary = "D-Bus storage management service for disks and removable media"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://github.com/storaged-project/udisks/releases/download/udisks-%{version}/udisks-%{version}.tar.bz2"
+sha256 = "18630a8aad806bea0bc626ce97e71e50ec82c742956ac1c834a4275f8f22207b"
+source_dir = "udisks-%{version}"
+
+[depends]
+build = ["pkgconf", "gettext", "glib", "libgudev", "polkit", "libblockdev", "eudev", "util-linux", "e2fsprogs"]
+run = ["dbus-system", "polkit", "glib", "libgudev", "libblockdev", "eudev", "util-linux", "e2fsprogs"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --localstatedir=/var --disable-gtk-doc --disable-man --enable-daemon --with-udevdir=/usr/lib/udev --with-systemdsystemunitdir=no --with-tmpfilesdir=no"
+compile = "make -j%{jobs}"
+install = '''
+set -eu
+make DESTDIR=%{pkgdir} install
+
+# System D-Bus starts udisksd on demand. Remove the systemd-only activation
+# hint from the upstream descriptor so dbus-daemon uses its Exec command.
+service="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.UDisks2.service"
+daemon="%{pkgdir}/usr/libexec/udisks2/udisksd"
+policy="%{pkgdir}/usr/share/dbus-1/system.d/org.freedesktop.UDisks2.conf"
+polkit="%{pkgdir}/usr/share/polkit-1/actions/org.freedesktop.UDisks2.policy"
+rules="%{pkgdir}/usr/lib/udev/rules.d/80-udisks2.rules"
+
+test -x "$daemon"
+test -s "$service"
+test -s "$policy"
+test -s "$polkit"
+test -s "$rules"
+sed -i '/^SystemdService=/d' "$service"
+grep -Fqx 'Name=org.freedesktop.UDisks2' "$service"
+grep -Fqx 'Exec=/usr/libexec/udisks2/udisksd' "$service"
+grep -Fqx 'User=root' "$service"
+! grep -q '^SystemdService=' "$service"
+'''
+
+[hooks]
+post_install = '''
+# Refresh device rules and re-enumerate block devices for the new monitor.
+udevadm control --reload-rules 2>/dev/null || true
+udevadm trigger --subsystem-match=block 2>/dev/null || true
+udevadm settle 2>/dev/null || true
+'''

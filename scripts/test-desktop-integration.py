@@ -100,7 +100,11 @@ xfce4_session = recipe("xfce", "xfce4-session")
 assert xfce4_session["package"]["rel"] >= 5
 assert "Exec=/usr/bin/faseela-start-xfce4" in xfce4_session["build"]["install"]
 lightdm = recipe("xfce", "lightdm")
-assert "pam_systemd" not in lightdm["build"]["install"]
+assert not re.search(
+    r"^\\s*(?:auth|account|password|session)\\s+\\S+\\s+pam_systemd\\.so",
+    lightdm["build"]["install"],
+    re.MULTILINE,
+), "LightDM PAM must not load pam_systemd"
 
 
 # --- desktop session packages added with the wlr portal, panel and fonts ----

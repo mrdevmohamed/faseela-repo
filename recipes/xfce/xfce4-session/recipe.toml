@@ -71,11 +71,17 @@ grep -Fqx 'Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4' "$desktop_file
 # place; this file is owned by xfce4-session, not the xfce-session meta package.
 xfconf_file="%{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml"
 test -s "$xfconf_file"
-if grep -Fq '<property name="LaunchGNOME" type="bool" value="false"/>' "$xfconf_file"; then
+if grep -Fq 'name="LaunchGNOME"' "$xfconf_file"; then
+    # Preserve an upstream value when already enabled; otherwise switch it on.
     sed -i 's|<property name="LaunchGNOME" type="bool" value="false"/>|<property name="LaunchGNOME" type="bool" value="true"/>|' "$xfconf_file"
+elif grep -Fq '<property name="compat" type="empty">' "$xfconf_file"; then
+    sed -i '/<property name="compat" type="empty">/a\    <property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file"
+else
+    # xfce4-session 4.20.4 ships no compat group in its default XML.
+    sed -i '/<\\/channel>/i\  <property name="compat" type="empty">\n    <property name="LaunchGNOME" type="bool" value="true"/>\n  </property>' "$xfconf_file"
 fi
 grep -Fq '<property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file" || {
-    echo "xfce4-session: upstream Xfconf profile has no expected LaunchGNOME property" >&2
+    echo "xfce4-session: could not enable Xfconf /compat/LaunchGNOME" >&2
     exit 1
 }
 '''

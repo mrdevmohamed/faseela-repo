@@ -5,7 +5,7 @@
 [package]
 name = "xarchiver"
 version = "0.5.4.27"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GTK archive manager for common tar, zip, xz and 7z formats"
 license = ["GPL-2.0-or-later"]
@@ -21,17 +21,17 @@ run = ["gtk3", "glib", "gdk-pixbuf", "hicolor-icon-theme", "xdg-utils", "tar", "
 configure = '''
 stub=$PWD/.intltool-stub
 mkdir -p "$stub/XML"
-printf '%s\n' '#!/bin/sh' 'echo "intltool-update (intltool) 0.51.0"' > "$stub/intltool-update"
-printf '%s\n' '#!/bin/sh' 'exit 0' > "$stub/intltool-extract"
+printf '%s\\n' '#!/bin/sh' 'echo "intltool-update (intltool) 0.51.0"' > "$stub/intltool-update"
+printf '%s\\n' '#!/bin/sh' 'exit 0' > "$stub/intltool-extract"
 cat > "$stub/intltool-merge" <<'IM'
 #!/bin/sh
 in= out=
 for a in "$@"; do in=$out; out=$a; done
-sed -e 's/^_\([A-Za-z]*\)=/\\1=/' -e 's/_\(name\\|label\\|tooltip\)=/\\1=/g' "$in" > "$out"
+sed -e 's/^_\\([A-Za-z]*\\)=/\\1=/' -e 's/_\\(name\\|label\\|tooltip\\)=/\\1=/g' "$in" > "$out"
 IM
 chmod +x "$stub/intltool-update" "$stub/intltool-extract" "$stub/intltool-merge"
-printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > "$stub/XML/Parser.pm"
-PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --disable-static --disable-nls
+printf 'package XML::Parser;\\n$VERSION = "2.47";\\n1;\\n' > "$stub/XML/Parser.pm"
+PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --disable-static --disable-nls --disable-doc
 '''
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

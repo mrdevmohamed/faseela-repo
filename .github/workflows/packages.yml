@@ -62,10 +62,13 @@ on:
   push:
     branches: [main, master]
     paths: ["recipes/**", "groups.toml"]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ["recipes/**"]
   workflow_dispatch:
     inputs:
       all:
-        description: "Select all non-toolchain packages across every recipe category"
+        description: "WARNING: Selects every non-toolchain package (hundreds). For a few changes, use Packages instead."
         type: boolean
         default: false
       base:
@@ -214,6 +217,8 @@ jobs:
           INPUT_EXCLUDE: ${{ inputs.exclude }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
           INPUT_ROOTFS: ${{ inputs.rootfs || 'auto' }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
           NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
@@ -253,6 +258,26 @@ jobs:
                 --changed-from "$base" --changed-to "$GITHUB_SHA" \
                 --output "$selection"
             fi
+          elif [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            base="$PR_BASE_SHA"
+            head="$PR_HEAD_SHA"
+            [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "::error::pull request base/head SHA is invalid"; exit 1;
+            }
+            git cat-file -e "$base^{commit}" 2>/dev/null || {
+              echo "::error::cannot resolve pull request base commit $base"; exit 1;
+            }
+            git cat-file -e "$head^{commit}" 2>/dev/null || {
+              echo "::error::cannot resolve pull request head commit $head"; exit 1;
+            }
+            git merge-base --is-ancestor "$base" "$head" || {
+              echo "::error::pull request head is not based on the supplied base commit"; exit 1;
+            }
+            echo "Pull request verification: selecting only recipes changed between $base and $head."
+            python3 -I scripts/select-packages.py \
+              --recipes recipes --flavors-file flavors.toml \
+              --changed-from "$base" --changed-to "$head" \
+              --output "$selection"
           else
             categories=()
             [[ "$INPUT_BASE" == true ]] && categories+=(base)
@@ -390,7 +415,7 @@ jobs:
   build:
     name: build and publish
     needs: select
-    if: ${{ (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:
@@ -404,7 +429,7 @@ jobs:
       BT: /mnt/faseela-bootstrap
       ISOLATION: ${{ inputs.isolation || 'sandbox' }}
       ROOTFS_KIND: ${{ needs.select.outputs.rootfs }}
-      BUDGET_MIN: ${{ inputs.budget || '270' }}
+      BUDGET_MIN: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       KEEP_GOING: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       AUTO_CONTINUE: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
       PRUNE: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
@@ -442,6 +467,7 @@ jobs:
           echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check the publishing setup before spending hours building
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           GH_TOKEN: ${{ github.token }}
           HAVE_KEY: ${{ secrets.NAWA_SIGN_KEY_B64 != '' }}
@@ -757,6 +783,29 @@ jobs:
           sleep 2
           sudo touch "$T/build/.run-start"
 
+      - name: Restore previous package builds from this pull request
+        if: \${{ github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        env:
+          GH_TOKEN: \${{ github.token }}
+          PR_NUMBER: \${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          cache_dir="$RUNNER_TEMP/pr-package-cache"
+          mkdir -p "$cache_dir"
+          previous_run="$(gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" \
+            --jq --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
+            '[.workflow_runs[] | select((.id | tostring) != $current) | select(any(.pull_requests[]?; .number == $pr))] | sort_by(.created_at) | last | .id // empty')"
+          if [[ -n "$previous_run" ]]; then
+            echo "Restoring package archives from previous PR run $previous_run."
+            gh run download "$previous_run" --repo "$PKG_REPO" --name pr-package-cache --dir "$cache_dir" || {
+              echo "::notice::the previous PR run has no reusable package-cache artifact"
+            }
+          else
+            echo "No earlier package verification run exists for this PR."
+          fi
+          python3 -I scripts/pr-build-cache.py restore \
+            --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out"
+
       - name: Build ordinary packages and Bootstrap Toolchain targets
         id: build
         timeout-minutes: 320 # leaves ~35 min of the 355 for publishing and logs
@@ -811,6 +860,33 @@ jobs:
               BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
               bash /faseela/bootstrap/build-packages-inner.sh
           fi
+      - name: Save reusable package builds for this pull request
+        if: \${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        run: |
+          set -euo pipefail
+          cache_dir="$RUNNER_TEMP/pr-package-cache"
+          mkdir -p "$cache_dir"
+          python3 -I scripts/pr-build-cache.py save \
+            --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out" \
+            --since "$T/build/.run-start"
+
+      - uses: actions/upload-artifact@v4
+        if: \${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        with:
+          name: pr-package-cache
+          path: \${{ runner.temp }}/pr-package-cache
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Fail PR verification when the build time budget is exhausted
+        if: \${{ github.event_name == 'pull_request' && steps.build.outcome == 'success' }}
+        run: |
+          if [[ -s "$T/build/status" ]] && grep -qx 'INCOMPLETE=1' "$T/build/status"; then
+            echo "::error::PR package verification reached its time budget before every changed package was built."
+            grep '^DEFERRED ' "$T/build/report.txt" || true
+            exit 1
+          fi
+
       # nawa refuses to install a package that ships a file another one owns, and
       # an image build only finds out one package at a time. Look at the archives
       # (the ones just built AND the ones fetched from the release) for every
@@ -827,7 +903,7 @@ jobs:
       # The shard limit is deliberately below GitHub's 1,000-asset release cap.
       - name: Publish to the distributed package repository
         id: publish
-        if: ${{ always() && steps.published.conclusion == 'success' }}
+        if: ${{ github.event_name != 'pull_request' && always() && steps.published.conclusion == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
           SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
@@ -995,7 +1071,7 @@ jobs:
       # published now counts as done, so it continues with the rest. Only when
       # this run made progress, otherwise two runs would loop forever.
       - name: Continue with the remaining packages
-        if: ${{ always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
+        if: ${{ github.event_name != 'pull_request' && always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -1054,7 +1130,11 @@ jobs:
       - name: Fail the run if a package failed
         if: ${{ steps.build.outcome == 'failure' }}
         run: |
-          echo "::error::some packages failed - see 'Build report' in the run summary. The packages that did build were published."
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            echo "::error::some changed packages failed - see Build report and the pr-package-cache artifact."
+          else
+            echo "::error::some packages failed - see Build report in the run summary. Packages that succeeded were published."
+          fi
           exit 1
 
   telegram-notify:

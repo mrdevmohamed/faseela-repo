@@ -1,0 +1,20 @@
+# extra recipe: libsndfile — sampled-audio file I/O library for PulseAudio clients.
+[package]
+name = "libsndfile"
+version = "1.2.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Library for reading and writing sampled audio files"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/libsndfile/libsndfile/releases/download/%{version}/libsndfile-%{version}.tar.xz"
+sha256 = "3799ca9924d3125038880367bf1468e53a1b7e3686a934f098b7e1d286cdb80e"
+source_dir = "libsndfile-%{version}"
+
+[depends]
+build = ["cmake", "ninja", "python"]
+run = []
+
+[build]
+configure = "cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_PROGRAMS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DENABLE_EXTERNAL_LIBS=OFF -DENABLE_MPEG=OFF -DENABLE_EXPERIMENTAL=OFF -DENABLE_CPACK=OFF"
+compile = "cmake --build build --parallel %{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

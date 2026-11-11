@@ -162,7 +162,7 @@ require_deps("xfce", "xfce-polkit", "build", {
 })
 require_deps("xfce", "xfce-polkit", "run", {"glib", "libxfce4ui", "polkit"})
 for asset in xfce_polkit["assets"]["include"]:
-    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / asset).is_file(), (
+    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets" / asset).is_file(), (
         f"missing xfce-polkit upstream asset: {asset}"
     )
 assert "OnlyShowIn=XFCE;" in xfce_polkit["build"]["prepare"]

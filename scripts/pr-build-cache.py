@@ -213,7 +213,7 @@ def save_cache(
 
     # Only packages that completed BOTH build and installation are reusable.
     # An archive can exist even when nawa fails while installing it.
-    successfully_built = set(re.findall(r"^BUILT\\s+([A-Za-z0-9][A-Za-z0-9._+-]*)\\b", report, re.MULTILINE))
+    successfully_built = set(re.findall(r"^BUILT\s+([A-Za-z0-9][A-Za-z0-9._+-]*)\b", report, re.MULTILINE))
     by_archive = {recipe.archive: recipe for recipe in recipes.values()}
 
     added = 0

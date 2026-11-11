@@ -1,19 +1,20 @@
 # xfce recipe: thunar — Xfce file manager
-# no gvfs in the recipe tree: local trash works through GIO's built-in
-# implementation and volumes through GIO's Unix volume monitor
+# GVfs supplies the GIO volume monitor and its UDisks2 backend for removable
+# storage. Keep it as a runtime dependency so Thunar can discover mounted
+# volumes, remote locations and removable devices through the session bus.
 [package]
 name = "thunar"
 version = "4.20.10"
-rel = 3
+rel = 4
 arch = ["x86_64"]
-summary = "Xfce file manager (Thunar, with volume/trash integration through GIO)"
+summary = "Xfce file manager with GVfs removable-volume integration"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
 source = "https://archive.xfce.org/src/xfce/thunar/4.20/thunar-4.20.10.tar.bz2"
 sha256 = "a5a32b51028dc821155e44cdec025fe70398bae193c619ae6ba8b1babf6f49f1"
 
 [depends]
 build = ["pkgconf", "exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbuf", "pango"]
-run = ["exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbuf", "pango", "shared-mime-info", "hicolor-icon-theme"]
+run = ["exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbuf", "pango", "gvfs", "shared-mime-info", "hicolor-icon-theme"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

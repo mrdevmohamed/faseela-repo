@@ -89,8 +89,6 @@ for group in video render input audio; do
     /usr/libexec/faseela/ensure-system-account group "$group"
 done
 
-
-  
 echo "xfce-session: add your user to video,render,input,audio for Xorg device access."
 echo "xfce-session: LightDM is optional; install lightdm and lightdm-gtk-greeter for a graphical login."
 '''

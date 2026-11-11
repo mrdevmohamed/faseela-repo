@@ -1,10 +1,11 @@
 # gui recipe: libblockdev — block-device and filesystem operations for UDisks2.
-# Build the filesystem, partition, loop and swap plugins required by UDisks2.
-# Optional RAID, LVM, encryption, NVMe and SMART plugins stay disabled.
+# UDisks2 2.11.2 requires part, loop, swap, mdraid, filesystem, crypto and NVMe.
+# Keep Btrfs, LVM, multipath and SMART optional; disable crypto escrow to avoid
+# pulling NSS/volume_key into the base storage stack.
 [package]
 name = "libblockdev"
 version = "3.5.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Library for low-level block-device, partition and filesystem operations"
 license = ["LGPL-2.1-or-later"]
@@ -12,10 +13,10 @@ source = "https://github.com/storaged-project/libblockdev/releases/download/%{ve
 sha256 = "bccd30e6b5d11504de60d9889ff6a2a25b07a4ec8f04070f2387e168301b3e3a"
 
 [depends]
-build = ["pkgconf", "glib", "eudev", "kmod", "util-linux", "e2fsprogs"]
-run = ["glib", "eudev", "kmod", "util-linux", "e2fsprogs"]
+build = ["pkgconf", "glib", "eudev", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils"]
+run = ["glib", "eudev", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --with-part --with-fs --without-btrfs --without-crypto --without-dm --with-loop --without-lvm --without-lvm_dbus --without-mdraid --without-mpath --with-swap --without-nvdimm --without-nvme --without-smart --without-smartmontools --without-tools --without-s390 --without-python3 --without-gtk-doc --disable-introspection --disable-tests"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --with-part --with-fs --without-btrfs --with-loop --with-crypto --without-escrow --without-dm --without-lvm --without-lvm_dbus --with-mdraid --without-mpath --with-swap --without-nvdimm --with-nvme --without-smart --without-smartmontools --without-tools --without-s390 --without-python3 --without-gtk-doc --disable-introspection --disable-tests"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

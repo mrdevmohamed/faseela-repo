@@ -259,6 +259,21 @@ class RealRecipeTreeTests(unittest.TestCase):
         self.assertNotIn("creative", plan["category_counts"])
         self.assertEqual(plan["toolchain_packages"], [])
 
+    def test_pull_requests_build_only_changed_recipes_and_never_publish(self):
+        root = Path(__file__).resolve().parent.parent
+        workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+        self.assertIn("  pull_request:", workflow)
+        self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
+        self.assertIn("Restore previous package builds from this pull request", workflow)
+        self.assertIn("pr-build-cache.py restore", workflow)
+        self.assertIn("pr-build-cache.py save", workflow)
+        self.assertIn("name: pr-package-cache", workflow)
+        self.assertIn(
+            "if: ${{ github.event_name != 'pull_request' && always() && steps.published.conclusion == 'success' }}",
+            workflow,
+        )
+        self.assertIn("Selects every non-toolchain package (hundreds)", workflow)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

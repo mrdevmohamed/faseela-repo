@@ -14,6 +14,6 @@ build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "libxfce4util", "thunar"]
 run = ["gtk3", "glib", "libxfce4util", "thunar", "hicolor-icon-theme", "xarchiver"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --buildtype=release"
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=lib/xfce4 --sysconfdir=/etc --localstatedir=/var --buildtype=release"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

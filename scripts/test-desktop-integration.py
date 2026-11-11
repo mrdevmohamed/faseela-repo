@@ -99,8 +99,22 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 # XFCE must start the same audio supervisor and establish a private runtime dir
 # before the desktop is launched from LightDM (which has no pam_systemd).
 xfce_session = recipe("xfce", "xfce-session")
+assert xfce_session["package"]["rel"] >= 8, (
+    "Bump xfce-session rel when moving GNOME compatibility defaults into the system Xfconf profile"
+)
 require_deps("xfce", "xfce-session", "run", {"audio-session"})
-xfce_install = xfce_session["build"]["install"]
+xfce_session_install = xfce_session["build"]["install"]
+for required in (
+    "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml",
+    '<property name="LaunchGNOME" type="bool" value="true"/>',
+):
+    assert required in xfce_session_install, (
+        f"xfce-session must ship its system Xfconf default: {required}"
+    )
+assert "xfconf-query" not in xfce_session.get("hooks", {}).get("post_install", ""), (
+    "Package post_install must not start xfconf-query outside a user D-Bus session"
+)
+xfce_install = xfce_session_install
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
 xfce4_session = recipe("xfce", "xfce4-session")
@@ -169,7 +183,10 @@ require_deps("xfce", "xfce-polkit", "build", {
 })
 require_deps("xfce", "xfce-polkit", "run", {"glib", "libxfce4ui", "polkit"})
 for asset in xfce_polkit["assets"]["include"]:
-    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets" / asset).is_file(), (
+    assert asset.startswith("assets/upstream/"), (
+        f"xfce-polkit asset include must match the recipe-root layout: {asset}"
+    )
+    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / asset).is_file(), (
         f"missing xfce-polkit upstream asset: {asset}"
     )
 assert "upstream/xfce-polkit.desktop.in" in xfce_polkit["assets"]["include"]

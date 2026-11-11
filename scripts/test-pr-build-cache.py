@@ -35,6 +35,7 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         self.cache_dir = self.root / "cache"
         self.out_dir = self.root / "out"
         self.marker = self.root / "run-start"
+        self.report = self.root / "report.txt"
         add_recipe(self.recipes, "base", "libfoo")
         app = add_recipe(self.recipes, "extra", "demo-app", build=("libfoo",))
         (app / "assets").mkdir()
@@ -50,11 +51,12 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         path = self.out_dir / name
         path.write_bytes(payload)
         os.utime(path, (time.time(), time.time()))
+        self.report.write_text(f"BUILT    {name.removesuffix('.nawa.tar.zst')}  (0 min into the run)\\n", encoding="utf-8")
         return path
 
     def test_save_and_restore_successful_build(self):
         self.write_archive()
-        added, total = cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        added, total = cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         self.assertEqual((added, total), (1, 1))
         (self.out_dir / "demo-app-1.0-1.nawa.tar.zst").unlink()
         restored, rejected = cache.restore_cache(self.recipes, self.cache_dir, self.out_dir)
@@ -66,7 +68,7 @@ class PullRequestPackageCacheTests(unittest.TestCase):
 
     def test_recipe_asset_change_invalidates_cached_archive(self):
         self.write_archive()
-        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         (self.out_dir / "demo-app-1.0-1.nawa.tar.zst").unlink()
 
         asset = self.recipes / "extra" / "demo-app" / "assets" / "patch.diff"
@@ -77,7 +79,7 @@ class PullRequestPackageCacheTests(unittest.TestCase):
 
     def test_build_dependency_change_invalidates_dependent_archive(self):
         self.write_archive()
-        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         (self.out_dir / "demo-app-1.0-1.nawa.tar.zst").unlink()
 
         dependency_asset = self.recipes / "base" / "libfoo" / "new-source.patch"
@@ -87,23 +89,32 @@ class PullRequestPackageCacheTests(unittest.TestCase):
 
     def test_does_not_overwrite_archive_already_fetched_from_repository(self):
         self.write_archive()
-        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         existing = self.out_dir / "demo-app-1.0-1.nawa.tar.zst"
         existing.write_bytes(b"published archive")
         restored, rejected = cache.restore_cache(self.recipes, self.cache_dir, self.out_dir)
         self.assertEqual((restored, rejected), (0, 0))
         self.assertEqual(existing.read_bytes(), b"published archive")
 
+    def test_does_not_cache_archive_when_install_failed(self):
+        self.write_archive()
+        self.report.write_text("FAILED   demo-app-1.0-1\\n", encoding="utf-8")
+        added, total = cache.save_cache(
+            self.recipes, self.cache_dir, self.out_dir, self.marker, self.report,
+        )
+        self.assertEqual((added, total), (0, 0))
+        self.assertFalse((self.cache_dir / "demo-app-1.0-1.nawa.tar.zst").exists())
+
     def test_save_ignores_archives_older_than_build_start(self):
         self.write_archive()
         os.utime(self.marker, (time.time() + 10, time.time() + 10))
-        added, total = cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        added, total = cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         self.assertEqual((added, total), (0, 0))
         self.assertFalse((self.cache_dir / "demo-app-1.0-1.nawa.tar.zst").exists())
 
     def test_recipe_release_change_invalidates_cached_archive(self):
         self.write_archive()
-        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker)
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         (self.out_dir / "demo-app-1.0-1.nawa.tar.zst").unlink()
 
         app_recipe = self.recipes / "extra" / "demo-app" / "recipe.toml"

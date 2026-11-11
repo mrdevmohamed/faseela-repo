@@ -82,9 +82,18 @@ for name in ("fuse3", "json-glib", "bubblewrap"):
     ), f"{name} must have a SHA-256 field"
 audio_session = recipe("gui", "audio-session")
 audio_install = audio_session["build"]["install"]
+assert audio_session["package"]["rel"] >= 2, (
+    "Bump audio-session rel when fixing desktop-session lifetime detection"
+)
 require_deps("gui", "audio-session", "run", {"pipewire", "wireplumber", "procps-ng", "coreutils"})
 for required in ("pipewire-pulse", "pulse/native", "pgrep -u", "wireplumber"):
     assert required in audio_install, f"audio-session must manage: {required}"
+assert 'case "${XDG_CURRENT_DESKTOP:-}" in' in audio_install
+assert "*XFCE*) session_process=xfce4-session ;;" in audio_install, (
+    "The audio helper must stay alive for an XFCE session, not look for Sway"
+)
+assert "*sway*|*Sway*) session_process=sway ;;" in audio_install
+assert "unsupported desktop session" in audio_install
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
 # XFCE must start the same audio supervisor and establish a private runtime dir

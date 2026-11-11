@@ -183,6 +183,7 @@ def save_cache(
     cache_dir: Path,
     out_dir: Path,
     since_file: Path,
+    report_file: Path,
 ) -> tuple[int, int]:
     recipes = load_recipes(recipes_root)
     keys = build_keys(recipes)
@@ -205,12 +206,25 @@ def save_cache(
             "build_key": keys[recipe.name],
         }
 
+    try:
+        report = report_file.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CacheError(f"build report is missing: {report_file}") from exc
+
+    # Only packages that completed BOTH build and installation are reusable.
+    # An archive can exist even when nawa fails while installing it.
+    successfully_built = set(re.findall(r"^BUILT\\s+([A-Za-z0-9][A-Za-z0-9._+-]*)\\b", report, re.MULTILINE))
+    by_archive = {recipe.archive: recipe for recipe in recipes.values()}
+
     added = 0
-    for archive_path in sorted(out_dir.glob("*.nawa.tar.zst")):
-        if not archive_path.is_file() or archive_path.stat().st_mtime_ns <= since_ns:
+    for archive_name in sorted(by_archive):
+        recipe = by_archive[archive_name]
+        if recipe.archive.removesuffix(".nawa.tar.zst") not in successfully_built:
             continue
-        recipe = next((item for item in recipes.values() if item.archive == archive_path.name), None)
-        if recipe is None:
+        archive_path = out_dir / recipe.archive
+        if not archive_path.is_file() or archive_path.stat().st_size == 0:
+            continue
+        if archive_path.stat().st_mtime_ns <= since_ns:
             continue
         target = cache_dir / recipe.archive
         shutil.copy2(archive_path, target)
@@ -246,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--out-dir", type=Path, required=True)
         if name == "save":
             command.add_argument("--since", type=Path, required=True)
+            command.add_argument("--report", type=Path, required=True)
     args = parser.parse_args(argv)
 
     try:
@@ -253,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
             restored, rejected = restore_cache(args.recipes, args.cache_dir, args.out_dir)
             print(f"PR package cache: restored {restored} archive(s); rejected {rejected} stale or invalid entrie(s).")
         else:
-            added, total = save_cache(args.recipes, args.cache_dir, args.out_dir, args.since)
+            added, total = save_cache(args.recipes, args.cache_dir, args.out_dir, args.since, args.report)
             print(f"PR package cache: saved {added} new archive(s); {total} reusable archive(s) retained.")
         return 0
     except (CacheError, OSError) as exc:

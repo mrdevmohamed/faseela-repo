@@ -119,10 +119,10 @@ for category, package_name in (
     ("xfce", "xfce-session"),
     ("xfce", "xfce4-session"),
 ):
-    install_script = recipe(category, package_name)["build"]["install"]
+    recipe_install_script = recipe(category, package_name)["build"]["install"]
     result = subprocess.run(
         ["bash", "-n"],
-        input=install_script,
+        input=recipe_install_script,
         text=True,
         capture_output=True,
         check=False,

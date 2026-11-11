@@ -100,6 +100,7 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 # reverse application index that GIO/Thunar consumes.
 desktop_file_utils = recipe("gui", "desktop-file-utils")
 assert desktop_file_utils["package"]["version"] == "0.29"
+assert desktop_file_utils["package"]["rel"] >= 2
 assert re.fullmatch(r"[0-9a-f]{64}", desktop_file_utils["package"]["sha256"])
 require_deps("gui", "desktop-file-utils", "build", {"meson", "ninja", "pkgconf", "glib"})
 require_deps("xfce", "xfce-session", "run", {"desktop-file-utils"})

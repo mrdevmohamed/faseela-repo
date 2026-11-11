@@ -24,9 +24,9 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 55 system + 8 boot + 96 extra =
-**207 core packages**. Optional categories contain 127 GUI, 16 browser, 43
+**207 core packages**. Optional categories contain 129 GUI, 16 browser, 44
 Xfce, 17 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 15 developer packages. The recipe tree contains **479
+1 peripheral and 15 developer packages. The recipe tree contains **482
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
@@ -154,6 +154,10 @@ the default ISO and the Sway flavor:
   `libXinerama`, `libXmu`, `libXres`, `libXpresent`, `libXt`, and the XCB
   cursor library). Xorg is built without a SUID wrapper; rootless seat
   management still needs libseat integration with Faseela's seatd.
+* **`gui/`** — shared storage services: `libblockdev` supplies UDisks2's
+  filesystem and partition operations; `udisks2` is activated on demand by
+  the system D-Bus and integrates with polkit and eudev without a systemd or
+  dedicated runit service.
 * **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
   (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
   `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop

@@ -161,7 +161,7 @@ assert polkit_prepare_syntax.returncode == 0, (
 
 elogind = recipe("gui", "elogind")
 assert elogind["package"]["version"] == "257.16"
-assert elogind["package"]["rel"] >= 3, "Bump elogind rel when backporting the v257.16 NSS/userdb build fix"
+assert elogind["package"]["rel"] >= 4, "Bump elogind rel when restoring PAM's local NSS lookup through UserDatabase"
 assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
 require_deps("gui", "elogind", "build", {
     "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
@@ -176,6 +176,9 @@ for flag in (
     "-Dpam=enabled",
     "-Dpamlibdir=/usr/lib/security",
     "-Dpolkit=disabled",
+    "-Dnss-elogind=false",
+    "-Duserdb=true",
+    "-Dvarlink=true",
     "-Ddefault-kill-user-processes=false",
     "-Dsysvinit-path=''",
     "-Dsysvrcnd-path=''",
@@ -186,7 +189,10 @@ for flag in (
 elogind_prepare = elogind["build"]["prepare"]
 assert "043d7fe5de1b151054735450f23a6ab1b4e31e0f" in elogind_prepare
 assert "get_option('userdb') != false" in elogind_prepare
-assert "ENABLE_NSS_ELOGIND" in elogind_prepare
+assert "ENABLE_USERDB || ENABLE_NSS_ELOGIND" in elogind_prepare, (
+    "UserDatabase must retain its local libc NSS fallback without installing the nss-elogind module"
+)
+assert "get_option('nss-elogind') != false or get_option('userdb') != false" in elogind_prepare
 assert "src/shared/userdb.c" in elogind_prepare
 prepare_syntax = subprocess.run(
     ["bash", "-n"], input=elogind_prepare, text=True, capture_output=True, check=False
@@ -198,12 +204,17 @@ assert prepare_syntax.returncode == 0, (
 elogind_install = elogind["build"]["install"]
 for required in (
     "/usr/lib/elogind/elogind",
+    "/usr/lib/elogind/elogind-userdbd",
+    "/usr/lib/elogind/elogind-userwork",
     "/usr/lib/security/pam_elogind.so",
     "libelogind.pc",
     "org.freedesktop.login1.service",
     "Exec=/usr/lib/elogind/elogind --daemon",
     "/etc/sv/elogind",
     "/etc/runit/runsvdir/default/elogind",
+    "/etc/sv/elogind-userdbd",
+    "exec /usr/lib/elogind/elogind-userdbd",
+    "/etc/runit/runsvdir/default/elogind-userdbd",
 ):
     assert required in elogind_install, (
         f"elogind install must provide/validate: {required}"

@@ -158,7 +158,7 @@ UDisks2 follows the same system-bus activation model for removable storage.
 Its D-Bus service descriptor points directly to `/usr/libexec/udisks2/udisksd`;
 the systemd-only `SystemdService` key is removed during package installation.
 The daemon uses polkit for authorization, libgudev/eudev for device discovery,
-and libblockdev's filesystem and partition plugins. It is not installed as an
+and libblockdev's filesystem, partition, loop and swap plugins. It is not installed as an
 additional runit service. Xfce's GVfs package enables its UDisks2 volume
 monitor, while the Thunar daemon hosts the `thunar-volman` extension.
 

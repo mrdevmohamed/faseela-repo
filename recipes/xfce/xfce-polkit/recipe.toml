@@ -9,7 +9,6 @@ arch = ["x86_64"]
 summary = "PolicyKit authentication agent for Xfce sessions"
 license = ["GPL-2.0-or-later"]
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
-workdir = "xfce-polkit"
 
 [depends]
 build = ["autoconf", "automake", "pkgconf", "glib", "libxfce4ui", "polkit"]

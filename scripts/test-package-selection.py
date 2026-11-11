@@ -266,6 +266,9 @@ class RealRecipeTreeTests(unittest.TestCase):
         self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
         self.assertIn("Restore previous package builds from this pull request", workflow)
         self.assertIn("pr-build-cache.py restore", workflow)
+        self.assertIn("for previous_run in", workflow)
+        self.assertIn("reverse | .[].id", workflow)
+        self.assertIn("gh run download", workflow)
         self.assertIn("pr-build-cache.py save", workflow)
         self.assertIn("name: pr-package-cache", workflow)
         self.assertIn(

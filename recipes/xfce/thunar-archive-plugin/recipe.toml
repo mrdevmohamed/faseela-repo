@@ -1,0 +1,19 @@
+# xfce recipe: thunar-archive-plugin — archive actions in Thunar context menus
+[package]
+name = "thunar-archive-plugin"
+version = "0.6.0"
+rel = 1
+arch = ["x86_64"]
+summary = "Create and extract archives from Thunar context menus"
+license = ["GPL-2.0-only"]
+source = "https://archive.xfce.org/src/thunar-plugins/thunar-archive-plugin/0.6/thunar-archive-plugin-0.6.0.tar.xz"
+sha256 = "692708cd047c7a552f2f85fe2ee32f19c7d5be5bf695d0288e8cadf50289db06"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "libxfce4util", "thunar"]
+run = ["gtk3", "glib", "libxfce4util", "thunar", "hicolor-icon-theme", "xarchiver"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

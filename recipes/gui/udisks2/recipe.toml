@@ -4,7 +4,7 @@
 [package]
 name = "udisks2"
 version = "2.11.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "D-Bus storage management service for disks and removable media"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -17,7 +17,9 @@ build = ["pkgconf", "gettext", "glib", "libgudev", "polkit", "libblockdev", "eud
 run = ["dbus-system", "polkit", "glib", "libgudev", "libblockdev", "eudev", "util-linux", "e2fsprogs"]
 
 [build]
-configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --localstatedir=/var --disable-gtk-doc --disable-man --enable-daemon --with-udevdir=/usr/lib/udev --with-systemdsystemunitdir=no --with-tmpfilesdir=no"
+# SMART is optional in UDisks2; disable it because libblockdev deliberately
+# omits the SMART plugin. The daemon still gets all mandatory storage plugins.
+configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --localstatedir=/var --disable-gtk-doc --disable-man --enable-daemon --disable-smart --with-udevdir=/usr/lib/udev --with-systemdsystemunitdir=no --with-tmpfilesdir=no"
 compile = "make -j%{jobs}"
 install = '''
 set -eu

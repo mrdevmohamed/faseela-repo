@@ -17,7 +17,26 @@ run = ["glib"]
 [build]
 configure = "meson setup build --prefix=/usr --buildtype=release"
 compile = "ninja -C build"
-install = "DESTDIR=%{pkgdir} meson install -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+
+# Nawa runs these distribution triggers once after each package transaction,
+# so every newly installed/removed application updates the shared databases.
+install -d -m755 %{pkgdir}/usr/lib/nawa/transaction-hooks.d
+cat > %{pkgdir}/usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh <<'TRIGGER'
+#!/bin/sh
+set -eu
+
+if command -v update-mime-database >/dev/null 2>&1; then
+    update-mime-database /usr/share/mime
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q /usr/share/applications
+fi
+TRIGGER
+chmod 755 %{pkgdir}/usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh
+'''
 
 [hooks]
 post_install = "update-desktop-database -q /usr/share/applications"

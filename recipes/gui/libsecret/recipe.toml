@@ -1,0 +1,21 @@
+# gui recipe: libsecret — Secret Service client library
+# Keep this on the 0.20 ABI line: the newer 0.21 series requires a GLib
+# baseline newer than Faseela's current GLib 2.82.
+[package]
+name = "libsecret"
+version = "0.20.5"
+rel = 1
+arch = ["x86_64"]
+summary = "Library for accessing the Secret Service API"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/libsecret/0.20/libsecret-0.20.5.tar.xz"
+sha256 = "3fb3ce340fcd7db54d87c893e69bfc2b1f6e4d4b279065ffe66dac9f0fd12b4d"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "libgcrypt"]
+run = ["glib", "libgcrypt"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dmanpage=false -Dgtk_doc=false -Dvapi=false -Dintrospection=false -Dcrypto=libgcrypt"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

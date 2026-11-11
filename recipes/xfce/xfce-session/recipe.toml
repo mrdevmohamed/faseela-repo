@@ -4,7 +4,7 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
@@ -12,7 +12,7 @@ source = ""
 
 [depends]
 build = []
-run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "gvfs", "udisks2", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -44,6 +44,23 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 DESKTOP
 chmod 644 %{pkgdir}/etc/xdg/autostart/faseela-audio-session.desktop
+
+# Keep Thunar's extension host running for thunar-volman. The extension
+# listens to GVfs volume-monitor events; GVfs talks to UDisks2 over the
+# session/system D-Bus buses to discover, mount and unmount removable media.
+cat > %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop <<'THUNAR'
+[Desktop Entry]
+Type=Application
+Name=Thunar Volume Manager
+Comment=Keep Thunar's removable-volume integration active
+Exec=thunar --daemon
+TryExec=thunar
+Terminal=false
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+THUNAR
+chmod 644 %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop
 '''
 
 [hooks]

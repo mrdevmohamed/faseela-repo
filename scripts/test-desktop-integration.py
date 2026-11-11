@@ -157,6 +157,10 @@ assert "runit" not in consolekit2["depends"]["run"], (
 
 xfce_polkit = recipe("xfce", "xfce-polkit")
 assert xfce_polkit["package"]["version"] == "0.3"
+assert "workdir" not in xfce_polkit["package"], (
+    "xfce-polkit uses recipe-local assets and the default source workspace; "
+    "workdir is valid only with [[package.sources]]"
+)
 require_deps("xfce", "xfce-polkit", "build", {
     "autoconf", "automake", "pkgconf", "glib", "libxfce4ui", "polkit",
 })

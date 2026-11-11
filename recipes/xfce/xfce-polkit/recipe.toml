@@ -6,6 +6,7 @@ name = "xfce-polkit"
 version = "0.3"
 rel = 1
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "PolicyKit authentication agent for Xfce sessions"
 license = ["GPL-2.0-or-later"]
 source = "local:/nawa-schema-2-requires-a-newer-nawa"

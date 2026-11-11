@@ -99,18 +99,14 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 # XFCE must start the same audio supervisor and establish a private runtime dir
 # before the desktop is launched from LightDM (which has no pam_systemd).
 xfce_session = recipe("xfce", "xfce-session")
-assert xfce_session["package"]["rel"] >= 8, (
-    "Bump xfce-session rel when moving GNOME compatibility defaults into the system Xfconf profile"
+assert xfce_session["package"]["rel"] >= 9, (
+    "Bump xfce-session rel when removing its duplicate Xfconf profile"
 )
 require_deps("xfce", "xfce-session", "run", {"audio-session"})
 xfce_session_install = xfce_session["build"]["install"]
-for required in (
-    "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml",
-    '<property name="LaunchGNOME" type="bool" value="true"/>',
-):
-    assert required in xfce_session_install, (
-        f"xfce-session must ship its system Xfconf default: {required}"
-    )
+assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" not in xfce_session_install, (
+    "The Xfconf channel file belongs to xfce4-session; the meta package must not ship a duplicate"
+)
 assert "xfconf-query" not in xfce_session.get("hooks", {}).get("post_install", ""), (
     "Package post_install must not start xfconf-query outside a user D-Bus session"
 )
@@ -118,12 +114,17 @@ xfce_install = xfce_session_install
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
 xfce4_session = recipe("xfce", "xfce4-session")
-assert xfce4_session["package"]["rel"] >= 6
+assert xfce4_session["package"]["rel"] >= 8
 xfce4_install = xfce4_session["build"]["install"]
 assert "Exec=startxfce4" in xfce4_install
 assert "/tmp/runtime-$uid" in xfce4_install
 assert "chmod 700" in xfce4_install
 assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install
+assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" in xfce4_install
+assert '<property name="LaunchGNOME" type="bool" value="true"/>' in xfce4_install
+assert "xfconf_file" in xfce4_install and "sed -i" in xfce4_install, (
+    "xfce4-session must update the upstream-owned Xfconf profile in place"
+)
 lightdm = recipe("xfce", "lightdm")
 assert not re.search(
     r"^\s*(?:auth|account|password|session)\s+\S+\s+pam_systemd\.so",

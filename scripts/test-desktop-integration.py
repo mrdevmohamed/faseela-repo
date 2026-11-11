@@ -104,6 +104,15 @@ assert re.fullmatch(r"[0-9a-f]{64}", desktop_file_utils["package"]["sha256"])
 require_deps("gui", "desktop-file-utils", "build", {"meson", "ninja", "pkgconf", "glib"})
 require_deps("xfce", "xfce-session", "run", {"desktop-file-utils"})
 assert "update-desktop-database" in desktop_file_utils["hooks"]["post_install"]
+desktop_install = desktop_file_utils["build"]["install"]
+for required in (
+    "usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh",
+    "update-mime-database /usr/share/mime",
+    "update-desktop-database -q /usr/share/applications",
+):
+    assert required in desktop_install, (
+        f"desktop-file-utils must install the Nawa transaction trigger: {required}"
+    )
 assert "update-desktop-database -q /usr/share/applications" in recipe(
     "xfce", "xfce-session"
 )["hooks"]["post_install"]

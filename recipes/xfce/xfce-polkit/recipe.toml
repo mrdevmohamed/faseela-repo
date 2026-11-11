@@ -17,27 +17,27 @@ run = ["glib", "libxfce4ui", "polkit"]
 
 [assets]
 include = [
-  "upstream/configure.ac",
-  "upstream/Makefile.am",
-  "upstream/src/Makefile.am",
-  "upstream/src/xfce-polkit.c",
-  "upstream/src/xfce-polkit-listener.c",
-  "upstream/src/xfce-polkit-listener.h",
-  "upstream/xfce-polkit.desktop.in",
-  "upstream/LICENSE",
+  "assets/upstream/configure.ac",
+  "assets/upstream/Makefile.am",
+  "assets/upstream/src/Makefile.am",
+  "assets/upstream/src/xfce-polkit.c",
+  "assets/upstream/src/xfce-polkit-listener.c",
+  "assets/upstream/src/xfce-polkit-listener.h",
+  "assets/upstream/xfce-polkit.desktop.in",
+  "assets/upstream/LICENSE",
 ]
 
 [build]
 prepare = '''set -eu
 install -d -m755 %{srcdir}/src
-install -m644 %{assetsdir}/upstream/configure.ac %{srcdir}/configure.ac
-install -m644 %{assetsdir}/upstream/Makefile.am %{srcdir}/Makefile.am
-install -m644 %{assetsdir}/upstream/src/Makefile.am %{srcdir}/src/Makefile.am
-install -m644 %{assetsdir}/upstream/src/xfce-polkit.c %{srcdir}/src/xfce-polkit.c
-install -m644 %{assetsdir}/upstream/src/xfce-polkit-listener.c %{srcdir}/src/xfce-polkit-listener.c
-install -m644 %{assetsdir}/upstream/src/xfce-polkit-listener.h %{srcdir}/src/xfce-polkit-listener.h
-install -m644 %{assetsdir}/upstream/xfce-polkit.desktop.in %{srcdir}/xfce-polkit.desktop.in
-install -m644 %{assetsdir}/upstream/LICENSE %{srcdir}/LICENSE
+install -m644 %{assetsdir}/assets/upstream/configure.ac %{srcdir}/configure.ac
+install -m644 %{assetsdir}/assets/upstream/Makefile.am %{srcdir}/Makefile.am
+install -m644 %{assetsdir}/assets/upstream/src/Makefile.am %{srcdir}/src/Makefile.am
+install -m644 %{assetsdir}/assets/upstream/src/xfce-polkit.c %{srcdir}/src/xfce-polkit.c
+install -m644 %{assetsdir}/assets/upstream/src/xfce-polkit-listener.c %{srcdir}/src/xfce-polkit-listener.c
+install -m644 %{assetsdir}/assets/upstream/src/xfce-polkit-listener.h %{srcdir}/src/xfce-polkit-listener.h
+install -m644 %{assetsdir}/assets/upstream/xfce-polkit.desktop.in %{srcdir}/xfce-polkit.desktop.in
+install -m644 %{assetsdir}/assets/upstream/LICENSE %{srcdir}/LICENSE
 '''
 configure = '''set -eu
 autoreconf -fi

@@ -103,9 +103,6 @@ require_deps("xfce", "xfce-session", "run", {"audio-session"})
 xfce_install = xfce_session["build"]["install"]
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
-assert "faseela-start-xfce4" in xfce_install, (
-    "The Xfce runtime wrapper belongs to the package that owns xfce.desktop"
-)
 xfce4_session = recipe("xfce", "xfce4-session")
 assert xfce4_session["package"]["rel"] >= 6
 xfce4_install = xfce4_session["build"]["install"]

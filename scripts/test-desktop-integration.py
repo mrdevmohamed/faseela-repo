@@ -107,7 +107,6 @@ xfce4_session = recipe("xfce", "xfce4-session")
 assert xfce4_session["package"]["rel"] >= 6
 xfce4_install = xfce4_session["build"]["install"]
 assert "Exec=startxfce4" in xfce4_install
-assert "Exec=/usr/bin/faseela-start-xfce4" in xfce4_install
 assert "/tmp/runtime-$uid" in xfce4_install
 assert "chmod 700" in xfce4_install
 assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install

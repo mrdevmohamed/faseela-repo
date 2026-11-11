@@ -61,6 +61,30 @@ Inspect LightDM and Xorg logs before considering automatic enablement. A
 successful package build or the existence of `/etc/sv/lightdm` is not proof
 that the graphical login works.
 
+## ConsoleKit2 session tracking and PolicyKit
+
+Faseela uses ConsoleKit2 1.2.7 as the session/seat tracking backend; it does
+not use systemd-logind. LightDM registers its sessions with ConsoleKit2 over
+the system D-Bus, and ConsoleKit2 supplies the session state and
+`XDG_RUNTIME_DIR`. Its D-Bus service is activated on demand, with no separate
+runit service. The packaged D-Bus policy grants LightDM's
+`OpenSessionWithParameters` method explicitly while retaining the upstream
+method-by-method restrictions for the rest of the ConsoleKit API.
+
+Polkit is built with `-Dsession_tracking=ConsoleKit`, so it can make
+authorization decisions against the active ConsoleKit session. The
+`xfce-polkit` authentication agent is installed as an XDG autostart entry
+scoped to `OnlyShowIn=XFCE;`; it starts inside the logged-in user's desktop
+session and presents graphical authentication prompts. The private runtime
+directory fallback remains available for sessions started outside LightDM.
+
+UDisks2 retains its upstream PolicyKit distinction: normal removable-volume
+mounts are available to the active local session, while inactive/remote
+callers require administrator authentication. Devices classified by UDisks2
+as system devices (normally fixed, non-removable disks) retain the stricter
+administrator challenge even for an active session. This does not grant mount
+access to every logged-in or remote user.
+
 ## Future rootless Xorg work
 
 Rootless Xorg is a separate follow-up. It requires a deliberately designed and

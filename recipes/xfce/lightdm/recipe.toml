@@ -4,7 +4,7 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -14,7 +14,7 @@ sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
 
 [depends]
 build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto", "linux-pam", "libgcrypt"]
-run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "consolekit2", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
 
 [build]
 configure = '''set -eu
@@ -97,7 +97,7 @@ PAM
 install -d -m755 %{pkgdir}/etc/sv/lightdm
 cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 #!/bin/sh
-# LightDM needs the system D-Bus (upower, accounts, ConsoleKit alternates).
+# LightDM registers user sessions with ConsoleKit2 over the system D-Bus.
 # Exit so runsv retries and `sv status` shows the flapping instead of hanging.
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 # /tmp is cleared at boot, so the post_install-time creation of these dirs is not

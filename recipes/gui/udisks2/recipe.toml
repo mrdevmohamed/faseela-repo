@@ -4,7 +4,7 @@
 [package]
 name = "udisks2"
 version = "2.11.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "D-Bus storage management service for disks and removable media"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -43,6 +43,22 @@ grep -Fqx 'Name=org.freedesktop.UDisks2' "$service"
 grep -Fqx 'Exec=/usr/libexec/udisks2/udisksd' "$service"
 grep -Fqx 'User=root' "$service"
 ! grep -q '^SystemdService=' "$service"
+
+# Preserve UDisks2's upstream, session-aware authorization defaults.
+check_mount_policy() {
+    action="$1"
+    active_value="$2"
+    awk -v wanted_action="$action" -v wanted_active="$active_value" '
+        index($0, "<action id=\"" wanted_action "\">") { in_action = 1 }
+        in_action && index($0, "<allow_any>auth_admin</allow_any>") { any_ok = 1 }
+        in_action && index($0, "<allow_inactive>auth_admin</allow_inactive>") { inactive_ok = 1 }
+        in_action && index($0, "<allow_active>" wanted_active "</allow_active>") { active_ok = 1 }
+        in_action && index($0, "</action>") { in_action = 0 }
+        END { exit !(any_ok && inactive_ok && active_ok) }
+    ' "$polkit"
+}
+check_mount_policy org.freedesktop.udisks2.filesystem-mount yes
+check_mount_policy org.freedesktop.udisks2.filesystem-mount-system auth_admin_keep
 '''
 
 [hooks]

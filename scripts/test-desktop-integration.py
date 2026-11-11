@@ -117,6 +117,64 @@ assert not re.search(
     re.MULTILINE,
 ), "LightDM PAM must not load pam_systemd"
 
+# LightDM, ConsoleKit2 and Polkit must use the same session-tracking backend.
+require_deps("xfce", "lightdm", "run", {"consolekit2"})
+require_deps("xfce", "xfce-session", "run", {"consolekit2", "xfce-polkit"})
+polkit = recipe("gui", "polkit")
+assert "-Dsession_tracking=ConsoleKit" in polkit["build"]["configure"]
+
+consolekit2 = recipe("system", "consolekit2")
+assert consolekit2["package"]["version"] == "1.2.7"
+assert re.fullmatch(r"[0-9a-f]{64}", consolekit2["package"]["sha256"])
+require_deps("system", "consolekit2", "run", {
+    "dbus-system", "glib", "polkit", "libdrm", "eudev",
+})
+for flag in (
+    "--with-rundir=/run",
+    "--with-dbus-sys=/usr/share/dbus-1/system.d",
+    "--with-systemdsystemunitdir=no",
+    "--disable-pam-module",
+    "--enable-introspection=no",
+):
+    assert flag in consolekit2["build"]["configure"], (
+        f"ConsoleKit2 must use the non-systemd LightDM session path: {flag}"
+    )
+consolekit_install = consolekit2["build"]["install"]
+for required in (
+    "org.freedesktop.ConsoleKit.service",
+    "ConsoleKit.conf",
+    "org.freedesktop.consolekit.policy",
+    "OpenSessionWithParameters",
+    "Exec=/usr/sbin/console-kit-daemon --no-daemon",
+    "! grep -q '^SystemdService='",
+):
+    assert required in consolekit_install, (
+        f"ConsoleKit2 install must provide/validate: {required}"
+    )
+assert "runit" not in consolekit2["depends"]["run"], (
+    "ConsoleKit2 is system-D-Bus activated; do not install a second daemon service"
+)
+
+xfce_polkit = recipe("xfce", "xfce-polkit")
+assert xfce_polkit["package"]["version"] == "0.3"
+require_deps("xfce", "xfce-polkit", "build", {
+    "autoconf", "automake", "pkgconf", "glib", "libxfce4ui", "polkit",
+})
+require_deps("xfce", "xfce-polkit", "run", {"glib", "libxfce4ui", "polkit"})
+for asset in xfce_polkit["assets"]["include"]:
+    assert (ROOT / "recipes" / "xfce" / "xfce-polkit" / asset).is_file(), (
+        f"missing xfce-polkit upstream asset: {asset}"
+    )
+assert "OnlyShowIn=XFCE;" in xfce_polkit["build"]["prepare"]
+for required in (
+    "usr/libexec/xfce-polkit",
+    "etc/xdg/autostart/xfce-polkit.desktop",
+    "OnlyShowIn=XFCE;",
+):
+    assert required in xfce_polkit["build"]["install"], (
+        f"XFCE Polkit agent must be installed and scoped to XFCE: {required}"
+    )
+
 # Removable storage is integrated through system D-Bus -> UDisks2 -> GVfs.
 libblockdev = recipe("gui", "libblockdev")
 assert libblockdev["package"]["version"] == "3.5.0"
@@ -195,6 +253,10 @@ for required in (
     "Exec=/usr/libexec/udisks2/udisksd",
     "sed -i '/^SystemdService=/d'",
     "! grep -q '^SystemdService='",
+    "check_mount_policy org.freedesktop.udisks2.filesystem-mount yes",
+    "check_mount_policy org.freedesktop.udisks2.filesystem-mount-system auth_admin_keep",
+    "<allow_any>auth_admin",
+    "<allow_inactive>auth_admin",
 ):
     assert required in udisks_install, f"UDisks2 install must provide/validate: {required}"
 assert "runit" not in udisks2["depends"]["run"], (
@@ -236,6 +298,9 @@ assert "thunar-volman" not in xfce_group["optional"]
 for category, package_name in (
     ("gui", "audio-session"),
     ("gui", "udisks2"),
+    ("system", "consolekit2"),
+    ("xfce", "lightdm"),
+    ("xfce", "xfce-polkit"),
     ("xfce", "xfce-session"),
     ("xfce", "xfce4-session"),
 ):

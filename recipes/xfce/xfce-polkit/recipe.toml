@@ -1,0 +1,64 @@
+# xfce recipe: graphical PolicyKit authentication agent for Xfce.
+# Upstream v0.3 sources are vendored as recipe-local assets; the autostart file
+# is scoped to XFCE, and no unverified source archive checksum is used.
+[package]
+name = "xfce-polkit"
+version = "0.3"
+rel = 1
+arch = ["x86_64"]
+summary = "PolicyKit authentication agent for Xfce sessions"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+workdir = "xfce-polkit"
+
+[depends]
+build = ["autoconf", "automake", "pkgconf", "glib", "libxfce4ui", "polkit"]
+run = ["glib", "libxfce4ui", "polkit"]
+
+[assets]
+include = [
+  "upstream/configure.ac",
+  "upstream/Makefile.am",
+  "upstream/src/Makefile.am",
+  "upstream/src/xfce-polkit.c",
+  "upstream/src/xfce-polkit-listener.c",
+  "upstream/src/xfce-polkit-listener.h",
+  "upstream/xfce-polkit.desktop.in",
+  "upstream/LICENSE",
+]
+
+[build]
+prepare = '''set -eu
+install -d -m755 %{srcdir}/src
+install -m644 %{assetsdir}/upstream/configure.ac %{srcdir}/configure.ac
+install -m644 %{assetsdir}/upstream/Makefile.am %{srcdir}/Makefile.am
+install -m644 %{assetsdir}/upstream/src/Makefile.am %{srcdir}/src/Makefile.am
+install -m644 %{assetsdir}/upstream/src/xfce-polkit.c %{srcdir}/src/xfce-polkit.c
+install -m644 %{assetsdir}/upstream/src/xfce-polkit-listener.c %{srcdir}/src/xfce-polkit-listener.c
+install -m644 %{assetsdir}/upstream/src/xfce-polkit-listener.h %{srcdir}/src/xfce-polkit-listener.h
+install -m644 %{assetsdir}/upstream/xfce-polkit.desktop.in %{srcdir}/xfce-polkit.desktop.in
+install -m644 %{assetsdir}/upstream/LICENSE %{srcdir}/LICENSE
+'''
+configure = '''set -eu
+autoreconf -fi
+./configure \
+  --prefix=/usr \
+  --libdir=/usr/lib \
+  --libexecdir=/usr/libexec \
+  --sysconfdir=/etc \
+  --localstatedir=/var \
+  --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''set -eu
+make DESTDIR=%{pkgdir} install
+install -D -m644 LICENSE %{pkgdir}/usr/share/licenses/xfce-polkit/LICENSE
+
+desktop="%{pkgdir}/etc/xdg/autostart/xfce-polkit.desktop"
+agent="%{pkgdir}/usr/libexec/xfce-polkit"
+test -x "$agent"
+test -s "$desktop"
+grep -Fqx 'Exec=/usr/libexec/xfce-polkit' "$desktop"
+grep -Fqx 'OnlyShowIn=XFCE;' "$desktop"
+! grep -q '^NotShowIn=' "$desktop"
+'''

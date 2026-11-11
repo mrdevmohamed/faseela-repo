@@ -1,0 +1,59 @@
+# system recipe: ConsoleKit2 session/seat tracking for non-systemd desktops.
+[package]
+name = "consolekit2"
+version = "1.2.7"
+rel = 1
+arch = ["x86_64"]
+summary = "ConsoleKit2 session and seat tracking service"
+license = ["GPL-2.0-or-later"]
+source = "https://deb.debian.org/debian/pool/main/c/consolekit2/consolekit2_1.2.7.orig.tar.gz"
+sha256 = "cc6f4ff07b1de0c98ed9aed730f52b10d1d3dd76849f449e55ce31bd0dfdb554"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "xfce4-dev-tools", "glib", "dbus", "libX11", "zlib", "polkit", "libdrm", "eudev"]
+run = ["glib", "dbus-system", "libX11", "zlib", "polkit", "libdrm", "eudev"]
+
+[build]
+prepare = '''set -eu
+NOCONFIGURE=1 ./autogen.sh
+'''
+configure = '''set -eu
+./configure \
+  --prefix=/usr \
+  --libdir=/usr/lib \
+  --libexecdir=/usr/libexec \
+  --sbindir=/usr/sbin \
+  --sysconfdir=/etc \
+  --localstatedir=/var \
+  --with-rundir=/run \
+  --with-dbus-sys=/usr/share/dbus-1/system.d \
+  --with-systemdsystemunitdir=no \
+  --disable-pam-module \
+  --disable-docbook-docs \
+  --enable-introspection=no \
+  --enable-udev-acl=no
+'''
+compile = "make -j%{jobs}"
+install = '''set -eu
+make DESTDIR=%{pkgdir} install
+
+service="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.ConsoleKit.service"
+bus_policy="%{pkgdir}/usr/share/dbus-1/system.d/ConsoleKit.conf"
+daemon="%{pkgdir}/usr/sbin/console-kit-daemon"
+polkit_policy="%{pkgdir}/usr/share/polkit-1/actions/org.freedesktop.consolekit.policy"
+
+test -x "$daemon"
+test -s "$service"
+test -s "$bus_policy"
+test -s "$polkit_policy"
+
+# LightDM 1.33.x calls OpenSessionWithParameters; grant only this Manager API.
+grep -Fq 'send_member="OpenSession"/>' "$bus_policy"
+sed -i '/send_member="OpenSession"\/>/a\    <allow send_destination="org.freedesktop.ConsoleKit" send_interface="org.freedesktop.ConsoleKit.Manager" send_member="OpenSessionWithParameters"/>' "$bus_policy"
+grep -Fq 'send_member="OpenSessionWithParameters"' "$bus_policy"
+
+grep -Fqx 'Name=org.freedesktop.ConsoleKit' "$service"
+grep -Fqx 'Exec=/usr/sbin/console-kit-daemon --no-daemon' "$service"
+grep -Fqx 'User=root' "$service"
+! grep -q '^SystemdService=' "$service"
+'''

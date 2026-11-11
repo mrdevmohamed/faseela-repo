@@ -4,7 +4,8 @@ The Xfce desktop, its applications and panel plugins, plus LightDM and its
 GTK greeter. The Xorg server and client utilities live in `recipes/xorg/`.
 The `xfce-session` meta-package supplies the core X11/Xfce runtime closure,
 Faseela's keyboard-layout configuration, shared per-user PipeWire startup,
-and removable-storage integration through GVfs and UDisks2.
+ConsoleKit2 session tracking, the XFCE Polkit agent, and removable-storage
+integration through GVfs and UDisks2.
 
 Everything is opt-in. The supported image is `iso-xfce`, which includes
 Xorg, Xfce, LightDM and the standard desktop applications. LightDM is not
@@ -58,17 +59,31 @@ autostart entry starts PipeWire, WirePlumber and `pipewire-pulse` as the
 logged-in user; the same supervisor is used by Sway, so the two desktops do
 not maintain separate audio startup implementations.
 
-LightDM is built without systemd-logind and its PAM stack does not create
-`XDG_RUNTIME_DIR`. The Xfce session entry therefore launches
-`faseela-start-xfce4`, which reuses `/run/user/<uid>` when it exists and
-otherwise creates a private mode-0700 `/tmp/runtime-<uid>` directory before
-starting `startxfce4`. This gives PipeWire and desktop clients a shared
-per-user socket location without introducing a systemd dependency.
+LightDM is built without systemd-logind and its PAM stack does not load
+`pam_systemd`. LightDM registers each login with ConsoleKit2 over the system
+D-Bus; ConsoleKit2 provides the per-user `XDG_RUNTIME_DIR` used by the
+tracked session and by Polkit's active-session checks. The Xfce launcher
+keeps a private mode-0700 `/tmp/runtime-<uid>` fallback for sessions started
+outside LightDM. This preserves PipeWire's shared per-user socket location
+without introducing a systemd dependency.
 
 Users who need direct ALSA device access must belong to the `audio` group.
 After installing the desktop, add the account to `audio` and log out/in so
 the new group membership applies.
 
+
+## Session tracking and Polkit authentication
+
+LightDM creates and closes graphical sessions through ConsoleKit2 on the
+system D-Bus. The ConsoleKit2 service is activated on demand; it does not
+need a permanent runit service or systemd-logind. Polkit is built with
+`-Dsession_tracking=ConsoleKit`, allowing authorization decisions to
+identify an active local desktop session.
+
+The `xfce-polkit` authentication agent is installed in
+`/etc/xdg/autostart` with `OnlyShowIn=XFCE;`. XFCE starts it for each user
+session, allowing graphical tools such as Thunar/UDisks2 clients to display
+PolicyKit authentication prompts.
 
 ## Removable storage and D-Bus integration
 
@@ -79,7 +94,13 @@ extension can react to devices reported by GVfs.
 
 GVfs is built with its GUdev and UDisks2 volume-monitor backends and FUSE
 support. UDisks2 supplies the system storage API and performs authorized
-mount, unmount and device operations through polkit. The system D-Bus daemon
+mount, unmount and device operations through polkit. UDisks2 keeps its
+upstream session-aware policy: a normal removable-volume mount is allowed
+only to the active local session; inactive or remote callers require
+administrator authentication. Devices classified by UDisks2 as system
+devices (normally fixed, non-removable disks) use the separate
+`filesystem-mount-system` action and retain an administrator challenge even
+for the active session. No blanket mount permission is added for all users. The system D-Bus daemon
 (`dbus-system`) is supervised by runit; it activates `udisksd` on demand
 from `org.freedesktop.UDisks2.service`. The package removes the upstream
 `SystemdService` activation hint and does not install a systemd unit or a

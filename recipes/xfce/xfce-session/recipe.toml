@@ -4,7 +4,7 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
@@ -12,7 +12,7 @@ source = ""
 
 [depends]
 build = []
-run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "pipewire", "wireplumber", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "shared-mime-info", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -29,6 +29,54 @@ Section "InputClass"
 EndSection
 KBD
 chmod 644 %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-keyboard.conf
+
+# LightDM does not provide XDG_RUNTIME_DIR when built without logind/PAM
+# systemd integration. Start Xfce through a user-owned wrapper that creates
+# a private fallback directory when /run/user/<uid> is unavailable.
+install -d -m755 %{pkgdir}/usr/bin
+cat > %{pkgdir}/usr/bin/faseela-start-xfce4 <<'STARTXFCE'
+#!/bin/sh
+uid=$(id -u)
+if [ -z "$XDG_RUNTIME_DIR" ]; then
+    runtime_dir="/run/user/$uid"
+    if [ ! -d "$runtime_dir" ] || [ ! -O "$runtime_dir" ]; then
+        runtime_dir="/tmp/runtime-$uid"
+        if [ ! -d "$runtime_dir" ]; then
+            (umask 077 && mkdir "$runtime_dir") 2>/dev/null || true
+        fi
+        [ -d "$runtime_dir" ] && [ -O "$runtime_dir" ] || {
+            echo "faseela-start-xfce4: cannot create a private runtime directory" >&2
+            exit 1
+        }
+        chmod 700 "$runtime_dir" || exit 1
+    fi
+    XDG_RUNTIME_DIR="$runtime_dir"
+fi
+[ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
+    echo "faseela-start-xfce4: invalid XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR" >&2
+    exit 1
+}
+export XDG_RUNTIME_DIR
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=XFCE
+exec /usr/bin/startxfce4 "$@"
+STARTXFCE
+chmod 755 %{pkgdir}/usr/bin/faseela-start-xfce4
+
+# Xfce's XDG autostart launches the shared per-user audio supervisor.
+install -d -m755 %{pkgdir}/etc/xdg/autostart
+cat > %{pkgdir}/etc/xdg/autostart/faseela-audio-session.desktop <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Faseela Audio Session
+Comment=Start PipeWire audio services for this desktop session
+Exec=/usr/bin/faseela-audio-session
+TryExec=/usr/bin/faseela-audio-session
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+DESKTOP
+chmod 644 %{pkgdir}/etc/xdg/autostart/faseela-audio-session.desktop
 '''
 
 [hooks]

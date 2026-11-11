@@ -2,14 +2,14 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 25
+rel = 26
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "procps-ng", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -116,71 +116,6 @@ exec waybar
 # Create the XDG user directories (~/Desktop, ~/Downloads, ...) once
 exec xdg-user-dirs-update
 DESKTOP
-
-# --- per-user PipeWire stack: idempotent Sway session entry point ------------
-install -d -m755 %{pkgdir}/usr/bin
-cat > %{pkgdir}/usr/bin/faseela-audio-session <<'AUDIOSESSION'
-#!/bin/sh
-# Start PipeWire, WirePlumber and the PulseAudio compatibility server as user.
-uid=$(id -u)
-pw_pid= wp_pid= pp_pid=
-cleanup() {
-    [ -z "$pp_pid" ] || kill "$pp_pid" 2>/dev/null
-    [ -z "$wp_pid" ] || kill "$wp_pid" 2>/dev/null
-    [ -z "$pw_pid" ] || kill "$pw_pid" 2>/dev/null
-}
-trap cleanup EXIT INT TERM
-if [ -z "$XDG_RUNTIME_DIR" ]; then
-    XDG_RUNTIME_DIR="/run/user/$uid"
-    [ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
-        echo "faseela-audio-session: no user runtime directory; log in through a session manager" >&2
-        exit 1
-    }
-    export XDG_RUNTIME_DIR
-fi
-[ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
-    echo "faseela-audio-session: invalid XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR" >&2
-    exit 1
-}
-
-# Start each daemon only when its endpoint/process is not already present.
-if [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && ! pgrep -u "$uid" -x pipewire >/dev/null 2>&1; then
-    pipewire >/dev/null 2>&1 & pw_pid=$!
-fi
-i=0
-while [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && [ "$i" -lt 50 ]; do
-    sleep 0.1
-    i=$((i + 1))
-done
-[ -S "$XDG_RUNTIME_DIR/pipewire-0" ] || {
-    echo "faseela-audio-session: PipeWire native socket did not appear" >&2
-    exit 1
-}
-
-if ! pgrep -u "$uid" -x wireplumber >/dev/null 2>&1; then
-    wireplumber >/dev/null 2>&1 & wp_pid=$!
-fi
-if [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && ! pgrep -u "$uid" -x pipewire-pulse >/dev/null 2>&1; then
-    pipewire-pulse >/dev/null 2>&1 & pp_pid=$!
-fi
-i=0
-while [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && [ "$i" -lt 50 ]; do
-    sleep 0.1
-    i=$((i + 1))
-done
-[ -S "$XDG_RUNTIME_DIR/pulse/native" ] || {
-    echo "faseela-audio-session: PulseAudio-compatible socket did not appear" >&2
-    exit 1
-}
-
-# Keep the daemons scoped to a directly launched Sway session. When invoked
-# through start-sway, that launcher owns cleanup and this helper owns no PIDs.
-while pgrep -u "$uid" -x sway >/dev/null 2>&1; do
-    sleep 1
-done
-exit 0
-AUDIOSESSION
-chmod 755 %{pkgdir}/usr/bin/faseela-audio-session
 
 # --- start-sway: launch a Sway session from a text console ------------------
 install -d -m755 %{pkgdir}/usr/bin

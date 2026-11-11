@@ -1,0 +1,93 @@
+# gui recipe: audio-session — shared per-user PipeWire session startup
+# Used by Sway and Xfce. LightDM has no logind integration, so the Xfce
+# launcher supplies a safe per-user XDG_RUNTIME_DIR before the session starts.
+[package]
+name = "audio-session"
+version = "0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Shared per-user PipeWire, WirePlumber and PulseAudio-compatible session startup"
+license = ["MIT"]
+source = ""
+
+[depends]
+build = []
+run = ["pipewire", "wireplumber", "procps-ng", "coreutils"]
+
+[build]
+install = '''
+install -d -m755 %{pkgdir}/usr/bin
+cat > %{pkgdir}/usr/bin/faseela-audio-session <<'AUDIOSESSION'
+#!/bin/sh
+# Start PipeWire, WirePlumber and pipewire-pulse as the logged-in user.
+uid=$(id -u)
+pw_pid= wp_pid= pp_pid=
+cleanup() {
+    [ -z "$pp_pid" ] || kill "$pp_pid" 2>/dev/null
+    [ -z "$wp_pid" ] || kill "$wp_pid" 2>/dev/null
+    [ -z "$pw_pid" ] || kill "$pw_pid" 2>/dev/null
+}
+trap cleanup EXIT INT TERM
+
+if [ -z "$XDG_RUNTIME_DIR" ]; then
+    XDG_RUNTIME_DIR="/run/user/$uid"
+    if [ ! -d "$XDG_RUNTIME_DIR" ] || [ ! -O "$XDG_RUNTIME_DIR" ]; then
+        XDG_RUNTIME_DIR="/tmp/runtime-$uid"
+        if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+            (umask 077 && mkdir "$XDG_RUNTIME_DIR") 2>/dev/null || true
+        fi
+        [ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
+            echo "faseela-audio-session: cannot create a private runtime directory" >&2
+            exit 1
+        }
+        chmod 700 "$XDG_RUNTIME_DIR" || exit 1
+    fi
+    export XDG_RUNTIME_DIR
+fi
+[ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
+    echo "faseela-audio-session: invalid XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR" >&2
+    exit 1
+}
+
+# Start each daemon only when its endpoint/process is not already present.
+if [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && ! pgrep -u "$uid" -x pipewire >/dev/null 2>&1; then
+    pipewire >/dev/null 2>&1 & pw_pid=$!
+fi
+i=0
+while [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ] && [ "$i" -lt 50 ]; do
+    sleep 0.1
+    i=$((i + 1))
+done
+[ -S "$XDG_RUNTIME_DIR/pipewire-0" ] || {
+    echo "faseela-audio-session: PipeWire native socket did not appear" >&2
+    exit 1
+}
+
+if ! pgrep -u "$uid" -x wireplumber >/dev/null 2>&1; then
+    wireplumber >/dev/null 2>&1 & wp_pid=$!
+fi
+if [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && ! pgrep -u "$uid" -x pipewire-pulse >/dev/null 2>&1; then
+    pipewire-pulse >/dev/null 2>&1 & pp_pid=$!
+fi
+i=0
+while [ ! -S "$XDG_RUNTIME_DIR/pulse/native" ] && [ "$i" -lt 50 ]; do
+    sleep 0.1
+    i=$((i + 1))
+done
+[ -S "$XDG_RUNTIME_DIR/pulse/native" ] || {
+    echo "faseela-audio-session: PulseAudio-compatible socket did not appear" >&2
+    exit 1
+}
+
+# Keep the daemons scoped to the desktop session that launched this helper.
+session_process=sway
+case "${XDG_CURRENT_DESKTOP:-}" in
+    *XFCE*) session_process=xfce4-session ;;
+esac
+while pgrep -u "$uid" -x "$session_process" >/dev/null 2>&1; do
+    sleep 1
+done
+exit 0
+AUDIOSESSION
+chmod 755 %{pkgdir}/usr/bin/faseela-audio-session
+'''

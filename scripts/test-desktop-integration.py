@@ -32,7 +32,7 @@ assert "exec dbus-run-session -- sh -c" in install_script, (
     "Sway must run inside a user D-Bus session for Secret Service activation"
 )
 assert session["package"]["rel"] >= 15, "Bump gui-session rel for XDG portal integration"
-assert "procps-ng" in session["depends"]["run"], "Audio session helper requires pgrep"
+require_deps("gui", "gui-session", "run", {"audio-session"})
 assert "faseela-audio-session" in install_script
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
@@ -79,11 +79,29 @@ for name in ("fuse3", "json-glib", "bubblewrap"):
     assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
         r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
     ), f"{name} must have a SHA-256 field"
-assert "pipewire-pulse" in install_script
-assert "pulse/native" in install_script
-assert "pgrep -u" in install_script
-assert "wireplumber" in install_script
+audio_session = recipe("gui", "audio-session")
+audio_install = audio_session["build"]["install"]
+require_deps("gui", "audio-session", "run", {"pipewire", "wireplumber", "procps-ng", "coreutils"})
+for required in ("pipewire-pulse", "pulse/native", "pgrep -u", "wireplumber"):
+    assert required in audio_install, f"audio-session must manage: {required}"
 assert "exec /usr/bin/faseela-audio-session" in install_script
+
+# XFCE must start the same audio supervisor and establish a private runtime dir
+# before the desktop is launched from LightDM (which has no pam_systemd).
+xfce_session = recipe("xfce", "xfce-session")
+require_deps("xfce", "xfce-session", "run", {"audio-session"})
+xfce_install = xfce_session["build"]["install"]
+assert "OnlyShowIn=XFCE;" in xfce_install
+assert "Exec=/usr/bin/faseela-audio-session" in xfce_install
+assert "faseela-start-xfce4" in xfce_install
+assert "/tmp/runtime-$uid" in xfce_install
+assert "chmod 700" in xfce_install
+xfce4_session = recipe("xfce", "xfce4-session")
+assert xfce4_session["package"]["rel"] >= 5
+assert "Exec=/usr/bin/faseela-start-xfce4" in xfce4_session["build"]["install"]
+lightdm = recipe("xfce", "lightdm")
+assert "pam_systemd" not in lightdm["build"]["install"]
+
 
 # --- desktop session packages added with the wlr portal, panel and fonts ----
 # Every autostarted program must be a run dependency of the session package:

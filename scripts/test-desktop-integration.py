@@ -122,6 +122,8 @@ assert "chmod 700" in xfce4_install
 assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install
 assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" in xfce4_install
 assert '<property name="LaunchGNOME" type="bool" value="true"/>' in xfce4_install
+assert "elif grep -Fq '<property name=\"compat\" type=\"empty\">'" in xfce4_install
+assert "sed -i '/<\\/channel>/i" in xfce4_install
 assert "xfconf_file" in xfce4_install and "sed -i" in xfce4_install, (
     "xfce4-session must update the upstream-owned Xfconf profile in place"
 )

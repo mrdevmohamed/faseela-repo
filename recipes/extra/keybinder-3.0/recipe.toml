@@ -1,0 +1,20 @@
+# extra recipe: keybinder-3.0 — global keyboard shortcut support for GTK 3/X11.
+[package]
+name = "keybinder-3.0"
+version = "0.3.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Library for registering global keyboard shortcuts in GTK 3 applications"
+license = ["MIT"]
+source = "https://github.com/kupferlauncher/keybinder/releases/download/keybinder-3.0-v%{version}/keybinder-3.0-%{version}.tar.gz"
+sha256 = "e6e3de4e1f3b201814a956ab8f16dfc8a262db1937ff1eee4d855365398c6020"
+source_dir = "keybinder-3.0-%{version}"
+
+[depends]
+build = ["pkgconf", "gtk3"]
+run = ["gtk3"]
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-gtk-doc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

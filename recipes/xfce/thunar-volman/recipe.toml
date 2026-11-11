@@ -2,16 +2,16 @@
 [package]
 name = "thunar-volman"
 version = "4.20.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
-summary = "Thunar volume manager (automatic handling of removable media)"
+summary = "Thunar volume manager for automatic removable-media handling"
 license = ["GPL-2.0-or-later"]
 source = "https://archive.xfce.org/src/xfce/thunar-volman/4.20/thunar-volman-4.20.0.tar.bz2"
 sha256 = "b0dad852959b515b8fbfd1ed552e362340347d26d5246e7f1b973027131eb1da"
 
 [depends]
 build = ["pkgconf", "exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libgudev"]
-run = ["exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libgudev", "eudev"]
+run = ["thunar", "gvfs", "udisks2", "dbus", "exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libgudev", "eudev"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

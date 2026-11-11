@@ -2,6 +2,7 @@
 """Regression tests for scripts/pr-build-cache.py."""
 import importlib.util
 import os
+import sys
 import tempfile
 import time
 import unittest
@@ -10,6 +11,7 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().with_name("pr-build-cache.py")
 spec = importlib.util.spec_from_file_location("pr_build_cache", SCRIPT)
 cache = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = cache
 spec.loader.exec_module(cache)
 
 

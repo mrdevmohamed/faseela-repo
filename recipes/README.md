@@ -9,7 +9,7 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop: sway, PipeWire, NetworkManager, BlueZ, polkit, ... (opt-in)
+├── gui/         optional Wayland desktop and shared services: sway, PipeWire, NetworkManager, BlueZ, elogind, polkit, ... (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
 ├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
@@ -23,10 +23,10 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 55 system + 8 boot + 96 extra =
-**207 core packages**. Optional categories contain 129 GUI, 16 browser, 44
+Current set: 10 toolchain + 39 base + 54 system + 8 boot + 96 extra =
+**207 core packages**. Optional categories contain 131 GUI, 16 browser, 44
 Xfce, 17 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 15 developer packages. The recipe tree contains **482
+1 peripheral and 15 developer packages. The recipe tree contains **483
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
@@ -117,8 +117,9 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 (extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
 and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 
-**gui, desktop services** — dbus-system → polkit / bluez / network-manager;
-pipewire → wireplumber. NetworkManager uses wpa_supplicant and replaces dhcpcd;
+**gui, desktop services** — dbus-system → elogind → polkit; bluez and
+network-manager; pipewire → wireplumber. Elogind provides login1 and PAM
+session tracking while runit remains PID 1. NetworkManager uses wpa_supplicant and replaces dhcpcd;
 PipeWire and WirePlumber start in the user's Sway session.
 
 Verify any dependency chain — or the complete recipe graph — with:
@@ -166,7 +167,7 @@ the default ISO and the Sway flavor:
   applications and panel plugins. The `xfce-session` meta-package pulls in
   the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
   LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
-  they use Linux-PAM without systemd modules. The LightDM runit service is
+  they use Linux-PAM with `pam_elogind.so` and no systemd modules. The LightDM runit service is
   shipped but not pre-enabled because its X-server child currently inherits
   the daemon's root UID; rootless LightDM remains pending.
 

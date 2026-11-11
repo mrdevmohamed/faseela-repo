@@ -134,44 +134,61 @@ assert not re.search(
     re.MULTILINE,
 ), "LightDM PAM must not load pam_systemd"
 
-# LightDM, ConsoleKit2 and Polkit must use the same session-tracking backend.
-require_deps("xfce", "lightdm", "run", {"consolekit2"})
-require_deps("xfce", "xfce-session", "run", {"consolekit2", "xfce-polkit"})
-polkit = recipe("gui", "polkit")
-assert "-Dsession_tracking=ConsoleKit" in polkit["build"]["configure"]
+# LightDM, elogind and Polkit must use one login1 session-tracking backend.
+assert lightdm["package"]["rel"] >= 8
+lightdm_install = lightdm["build"]["install"]
+assert "pam_elogind.so class=user type=x11 desktop=xfce" in lightdm_install
+assert "pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
+require_deps("xfce", "lightdm", "run", {"elogind"})
+require_deps("xfce", "xfce-session", "run", {"elogind", "xfce-polkit"})
 
-consolekit2 = recipe("system", "consolekit2")
-assert consolekit2["package"]["version"] == "1.2.7"
-assert re.fullmatch(r"[0-9a-f]{64}", consolekit2["package"]["sha256"])
-require_deps("system", "consolekit2", "run", {
-    "dbus-system", "glib", "polkit", "libdrm", "eudev",
+polkit = recipe("gui", "polkit")
+assert polkit["package"]["rel"] >= 4
+require_deps("gui", "polkit", "build", {"elogind"})
+require_deps("gui", "polkit", "run", {"elogind"})
+assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
+
+elogind = recipe("gui", "elogind")
+assert elogind["package"]["version"] == "257.16"
+assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
+require_deps("gui", "elogind", "build", {
+    "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
+    "linux-pam", "util-linux", "python-jinja2",
+})
+require_deps("gui", "elogind", "run", {
+    "acl", "libcap", "eudev", "linux-pam", "util-linux",
+    "dbus-system", "runit", "coreutils",
 })
 for flag in (
-    "--with-rundir=/run",
-    "--with-dbus-sys=/usr/share/dbus-1/system.d",
-    "--with-systemdsystemunitdir=no",
-    "--disable-pam-module",
-    "--enable-introspection=no",
+    "-Dcgroup-controller=elogind",
+    "-Dpam=enabled",
+    "-Dpamlibdir=/usr/lib/security",
+    "-Dpolkit=disabled",
+    "-Ddefault-kill-user-processes=false",
+    "-Dsysvinit-path=''",
+    "-Dsysvrcnd-path=''",
 ):
-    assert flag in consolekit2["build"]["configure"], (
-        f"ConsoleKit2 must use the non-systemd LightDM session path: {flag}"
+    assert flag in elogind["build"]["configure"], (
+        f"elogind must use the standalone runit/PAM configuration: {flag}"
     )
-consolekit_install = consolekit2["build"]["install"]
+elogind_install = elogind["build"]["install"]
 for required in (
-    "org.freedesktop.ConsoleKit.service",
-    "ConsoleKit.conf",
-    "org.freedesktop.consolekit.policy",
-    "OpenSessionWithParameters",
-    "Exec=/usr/sbin/console-kit-daemon --no-daemon",
-    "! grep -q '^SystemdService='",
+    "/usr/lib/elogind/elogind",
+    "/usr/lib/security/pam_elogind.so",
+    "libelogind.pc",
+    "org.freedesktop.login1.service",
+    "Exec=/usr/lib/elogind/elogind --daemon",
+    "/etc/sv/elogind",
+    "/etc/runit/runsvdir/default/elogind",
 ):
-    assert required in consolekit_install, (
-        f"ConsoleKit2 install must provide/validate: {required}"
+    assert required in elogind_install, (
+        f"elogind install must provide/validate: {required}"
     )
-assert "runit" not in consolekit2["depends"]["run"], (
-    "ConsoleKit2 is system-D-Bus activated; do not install a second daemon service"
-)
 
+jinja = recipe("gui", "python-jinja2")
+assert jinja["package"]["version"] == "3.1.6"
+assert jinja["package"]["sha256"] == "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
+require_deps("gui", "python-jinja2", "run", {"python", "python-markupsafe"})
 xfce_polkit = recipe("xfce", "xfce-polkit")
 assert xfce_polkit["package"]["version"] == "0.3"
 polkit_configure_ac = (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets/upstream/configure.ac").read_text(encoding="utf-8")
@@ -330,7 +347,8 @@ assert "thunar-volman" not in xfce_group["optional"]
 for category, package_name in (
     ("gui", "audio-session"),
     ("gui", "udisks2"),
-    ("system", "consolekit2"),
+    ("gui", "elogind"),
+    ("gui", "python-jinja2"),
     ("xfce", "lightdm"),
     ("xfce", "xfce-polkit"),
     ("xfce", "xfce-session"),

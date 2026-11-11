@@ -1,0 +1,77 @@
+# gui recipe: elogind — standalone login1 session and seat manager for runit.
+# It provides libelogind and pam_elogind.so; systemd is not installed.
+[package]
+name = "elogind"
+version = "257.16"
+rel = 1
+arch = ["x86_64"]
+summary = "Standalone login1 session and seat manager for non-systemd systems"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "https://github.com/elogind/elogind/archive/refs/tags/v%{version}.tar.gz"
+source_dir = "elogind-%{version}"
+sha256 = "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev", "linux-pam", "util-linux", "python-jinja2"]
+run = ["acl", "libcap", "eudev", "linux-pam", "util-linux", "dbus-system", "runit", "coreutils"]
+
+[build]
+configure = '''set -eu
+meson setup build \
+  --prefix=/usr \
+  --libdir=lib \
+  --libexecdir=/usr/lib/elogind \
+  --sysconfdir=/etc \
+  --localstatedir=/var \
+  --buildtype=release \
+  -Dacl=enabled \
+  -Dpam=enabled \
+  -Dpamlibdir=/usr/lib/security \
+  -Dpamconfdir=no \
+  -Ddbuspolicydir=/usr/share/dbus-1/system.d \
+  -Dpolkit=disabled \
+  -Dcgroup-controller=elogind \
+  -Ddefault-kill-user-processes=false \
+  -Ddev-kvm-mode=0660 \
+  -Dnss-elogind=false \
+  -Duserdb=false \
+  -Dvarlink=false \
+  -Dman=disabled \
+  -Dhtml=disabled \
+  -Dtranslations=false \
+  -Dtests=false \
+  -Dinstall-sysconfdir=true \
+  -Dsysvinit-path='' \
+  -Dsysvrcnd-path=''
+'''
+compile = "ninja -C build"
+install = '''set -eu
+DESTDIR=%{pkgdir} meson install -C build
+
+daemon="%{pkgdir}/usr/lib/elogind/elogind"
+pam_module="%{pkgdir}/usr/lib/security/pam_elogind.so"
+pc_file="%{pkgdir}/usr/lib/pkgconfig/libelogind.pc"
+dbus_service="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.login1.service"
+dbus_policy="%{pkgdir}/usr/share/dbus-1/system.d/org.freedesktop.login1.conf"
+
+test -x "$daemon"
+test -s "$pam_module"
+test -s "$pc_file"
+test -s "$dbus_service"
+test -s "$dbus_policy"
+grep -Fqx 'Name=org.freedesktop.login1' "$dbus_service"
+grep -Fqx 'Exec=/usr/lib/elogind/elogind --daemon' "$dbus_service"
+grep -Fqx 'User=root' "$dbus_service"
+
+# Run elogind in the foreground under runit. The system D-Bus activation file
+# remains available as a fallback for clients that request login1 directly.
+install -d -m755 %{pkgdir}/etc/sv/elogind %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/elogind/run <<'RUN'
+#!/bin/sh
+exec 2>&1
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+exec /usr/lib/elogind/elogind
+RUN
+chmod 755 %{pkgdir}/etc/sv/elogind/run
+ln -s /etc/sv/elogind %{pkgdir}/etc/runit/runsvdir/default/elogind
+'''

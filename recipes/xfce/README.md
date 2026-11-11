@@ -4,7 +4,7 @@ The Xfce desktop, its applications and panel plugins, plus LightDM and its
 GTK greeter. The Xorg server and client utilities live in `recipes/xorg/`.
 The `xfce-session` meta-package supplies the core X11/Xfce runtime closure,
 Faseela's keyboard-layout configuration, shared per-user PipeWire startup,
-ConsoleKit2 session tracking, the XFCE Polkit agent, and removable-storage
+elogind session tracking, the XFCE Polkit agent, and removable-storage
 integration through GVfs and UDisks2.
 
 Everything is opt-in. The supported image is `iso-xfce`, which includes
@@ -59,13 +59,12 @@ autostart entry starts PipeWire, WirePlumber and `pipewire-pulse` as the
 logged-in user; the same supervisor is used by Sway, so the two desktops do
 not maintain separate audio startup implementations.
 
-LightDM is built without systemd-logind and its PAM stack does not load
-`pam_systemd`. LightDM registers each login with ConsoleKit2 over the system
-D-Bus; ConsoleKit2 provides the per-user `XDG_RUNTIME_DIR` used by the
-tracked session and by Polkit's active-session checks. The Xfce launcher
-keeps a private mode-0700 `/tmp/runtime-<uid>` fallback for sessions started
-outside LightDM. This preserves PipeWire's shared per-user socket location
-without introducing a systemd dependency.
+Faseela does not use systemd. LightDM uses the login1 D-Bus API provided by
+elogind, and its PAM stacks load `pam_elogind.so` (never `pam_systemd`) to
+register the user and greeter sessions. Elogind creates the per-user
+`XDG_RUNTIME_DIR` used by PipeWire and Polkit. The Xfce launcher keeps a
+private mode-0700 `/tmp/runtime-<uid>` fallback only for sessions started
+outside PAM/elogind, such as a direct start from a TTY.
 
 Users who need direct ALSA device access must belong to the `audio` group.
 After installing the desktop, add the account to `audio` and log out/in so
@@ -74,11 +73,17 @@ the new group membership applies.
 
 ## Session tracking and Polkit authentication
 
-LightDM creates and closes graphical sessions through ConsoleKit2 on the
-system D-Bus. The ConsoleKit2 service is activated on demand; it does not
-need a permanent runit service or systemd-logind. Polkit is built with
-`-Dsession_tracking=ConsoleKit`, allowing authorization decisions to
-identify an active local desktop session.
+LightDM's login1 client discovers seats through the system D-Bus, while
+`pam_elogind.so` creates and closes the greeter and user sessions. Elogind is
+supervised by runit and also provides D-Bus activation; it does not require
+systemd. Polkit is built with `-Dsession_tracking=elogind` and links against
+`libelogind`, allowing authorization decisions to identify an active local
+desktop session.
+
+The elogind build disables its optional direct Polkit backend to avoid a
+build-time dependency cycle; Polkit itself uses `libelogind` for session
+tracking. XFCE power-action authorization through login1 must still be
+verified on an installed system.
 
 The `xfce-polkit` authentication agent is installed in
 `/etc/xdg/autostart` with `OnlyShowIn=XFCE;`. XFCE starts it for each user

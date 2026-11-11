@@ -4,7 +4,7 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -14,7 +14,7 @@ sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
 
 [depends]
 build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto", "linux-pam", "libgcrypt"]
-run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "consolekit2", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "elogind", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
 
 [build]
 configure = '''set -eu
@@ -62,7 +62,7 @@ user-session=xfce
 LIGHTDM
 chmod 644 %{pkgdir}/etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
 
-# PAM services for runit: no pam_systemd module is loaded.
+# PAM services for runit: use elogind's session module, never pam_systemd.
 install -d -m755 %{pkgdir}/etc/pam.d
 cat > %{pkgdir}/etc/pam.d/lightdm <<'PAM'
 #%PAM-1.0
@@ -72,6 +72,7 @@ auth      required pam_unix.so
 account   required pam_unix.so
 password  required pam_unix.so
 session   required pam_unix.so
+session   optional pam_elogind.so class=user type=x11 desktop=xfce
 PAM
 cat > %{pkgdir}/etc/pam.d/lightdm-greeter <<'PAM'
 #%PAM-1.0
@@ -80,6 +81,7 @@ auth      required pam_permit.so
 account   required pam_permit.so
 password  required pam_deny.so
 session   required pam_unix.so
+session   optional pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter
 PAM
 cat > %{pkgdir}/etc/pam.d/lightdm-autologin <<'PAM'
 #%PAM-1.0
@@ -90,14 +92,15 @@ auth      required pam_permit.so
 account   required pam_unix.so
 password  required pam_deny.so
 session   required pam_unix.so
+session   optional pam_elogind.so class=user type=x11 desktop=xfce
 PAM
 # Keep the service manual-enable only until the classic root-run Xorg path has
 # passed an installed-system login test. This initial path does not require
-# Xorg.wrap, rootless Xorg, or systemd-logind. See docs/xfce-lightdm.md.
+# Xorg.wrap or rootless Xorg. Elogind supplies login1 tracking, not Xorg privilege handling.
 install -d -m755 %{pkgdir}/etc/sv/lightdm
 cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
 #!/bin/sh
-# LightDM registers user sessions with ConsoleKit2 over the system D-Bus.
+# LightDM uses the login1 D-Bus API; pam_elogind opens and closes each PAM session.
 # Exit so runsv retries and `sv status` shows the flapping instead of hanging.
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 # /tmp is cleared at boot, so the post_install-time creation of these dirs is not

@@ -7,8 +7,9 @@ started by its runit service as root and launches the X server with the
 privileges required by this model.
 
 This is an intentional first implementation choice. It does **not** claim that
-rootless Xorg is supported, and it does not make LightDM depend on
-systemd-logind or systemd.
+rootless Xorg is supported. It does not require systemd: LightDM and Polkit
+use elogind's standalone login1 interface for session tracking, while Xorg
+remains independent of logind.
 
 ### Why this model
 
@@ -28,7 +29,7 @@ selected desktop session runs as the logged-in user.
 
 The presence of `seatd` and membership in the `seat` group do not, by
 themselves, make this Xorg server rootless. The initial root-run Xorg path does
-not use seatd as a substitute for systemd-logind. Keep seatd available for
+not use seatd as a substitute for elogind session tracking. Keep seatd available for
 sessions and components that use it (including the existing Wayland setup).
 
 ### Service policy
@@ -61,29 +62,45 @@ Inspect LightDM and Xorg logs before considering automatic enablement. A
 successful package build or the existence of `/etc/sv/lightdm` is not proof
 that the graphical login works.
 
-## ConsoleKit2 session tracking and PolicyKit
+## Elogind session tracking and PolicyKit
 
-Faseela uses ConsoleKit2 1.2.7 as the session/seat tracking backend; it does
-not use systemd-logind. LightDM registers its sessions with ConsoleKit2 over
-the system D-Bus, and ConsoleKit2 supplies the session state and
-`XDG_RUNTIME_DIR`. Its D-Bus service is activated on demand, with no separate
-runit service. The packaged D-Bus policy grants LightDM's
-`OpenSessionWithParameters` method explicitly while retaining the upstream
-method-by-method restrictions for the rest of the ConsoleKit API.
+Faseela uses **elogind 257.16** as its standalone login1 session and seat
+manager. PID 1 and service supervision remain **runit**; no systemd daemon or
+systemd unit is installed. Elogind is supervised by the
+`/etc/sv/elogind` runit service and also ships the standard
+`org.freedesktop.login1` system-D-Bus activation descriptor.
 
-Polkit is built with `-Dsession_tracking=ConsoleKit`, so it can make
-authorization decisions against the active ConsoleKit session. The
-`xfce-polkit` authentication agent is installed as an XDG autostart entry
-scoped to `OnlyShowIn=XFCE;`; it starts inside the logged-in user's desktop
-session and presents graphical authentication prompts. The private runtime
-directory fallback remains available for sessions started outside LightDM.
+LightDM 1.33.1 already contains a login1 D-Bus client for seat discovery and
+session activation. Its PAM service stacks load `pam_elogind.so` to register
+the greeter and user sessions:
 
-UDisks2 retains its upstream PolicyKit distinction: normal removable-volume
-mounts are available to the active local session, while inactive/remote
+- `lightdm` and `lightdm-autologin` create `class=user`,
+  `type=x11`, `desktop=xfce` sessions.
+- `lightdm-greeter` creates a separate `class=greeter` session.
+
+Elogind owns the session lifecycle and creates `XDG_RUNTIME_DIR` under
+`/run/user/<uid>`. The PAM module is supplied by the elogind package; the
+Linux-PAM recipe stays independent of any init system. No
+`pam_systemd.so` module is loaded.
+
+Polkit is built with `-Dsession_tracking=elogind` and links against
+`libelogind`, so it can identify the active local session when authorizing
+desktop requests. The `xfce-polkit` authentication agent is installed as an
+XDG autostart entry scoped to `OnlyShowIn=XFCE;`; it starts inside the
+logged-in user's desktop session and displays authentication prompts.
+
+The elogind build disables its optional direct Polkit backend to avoid a
+build-time dependency cycle: Polkit itself depends on `libelogind` for
+session tracking. This covers active-session authorization for clients such
+as UDisks2; XFCE shutdown/reboot authorization through login1 remains a
+separate installed-system check.
+
+UDisks2 keeps its upstream PolicyKit distinction: normal removable-volume
+mounts are available to the active local session, while inactive or remote
 callers require administrator authentication. Devices classified by UDisks2
 as system devices (normally fixed, non-removable disks) retain the stricter
-administrator challenge even for an active session. This does not grant mount
-access to every logged-in or remote user.
+administrator challenge even for an active session. The XFCE agent presents
+that challenge; no blanket mount permission is added.
 
 ## Future rootless Xorg work
 

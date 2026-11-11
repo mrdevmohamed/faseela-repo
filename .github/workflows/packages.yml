@@ -178,7 +178,7 @@ permissions:
 # an older pending run; the selector below therefore diffs from the last
 # successful push run so the surviving run includes every unpublished recipe change.
 concurrency:
-  group: packages-publish
+  group: ${{ github.event_name == 'pull_request' && format('packages-pr-{0}', github.event.pull_request.number) || 'packages-publish' }}
   cancel-in-progress: false
 
 jobs:
@@ -335,7 +335,7 @@ jobs:
           )"
           [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
           transition_needed=0
-          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
+          if [[ "$GITHUB_EVENT_NAME" != pull_request ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
             pkgs+=" nawa"
             pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
             pkgs="$(echo $pkgs)"
@@ -792,8 +792,8 @@ jobs:
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
           mkdir -p "$cache_dir"
-          previous_run="$(gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" \
-            --jq --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
+          previous_run="$(gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" | \
+            jq -r --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
             '[.workflow_runs[] | select((.id | tostring) != $current) | select(any(.pull_requests[]?; .number == $pr))] | sort_by(.created_at) | last | .id // empty')"
           if [[ -n "$previous_run" ]]; then
             echo "Restoring package archives from previous PR run $previous_run."

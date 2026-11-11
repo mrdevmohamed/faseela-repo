@@ -154,6 +154,14 @@ system D-Bus through
 with runit. UPower does not need a permanently running runit service; its
 `libgudev` and `libusb` dependencies provide device discovery and USB support.
 
+UDisks2 follows the same system-bus activation model for removable storage.
+Its D-Bus service descriptor points directly to `/usr/libexec/udisks2/udisksd`;
+the systemd-only `SystemdService` key is removed during package installation.
+The daemon uses polkit for authorization, libgudev/eudev for device discovery,
+and libblockdev's filesystem and partition plugins. It is not installed as an
+additional runit service. Xfce's GVfs package enables its UDisks2 volume
+monitor, while the Thunar daemon hosts the `thunar-volman` extension.
+
 Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. Sway starts one Waybar process for the session; Waybar is not registered for D-Bus activation, because `Exec=waybar` could launch a second independent status bar when the name is not owned yet. Start Telegram after the session bar is running so its tray icon can register with that existing watcher.
 
 The wlr portal backend (ScreenCast through PipeWire), the notification daemon

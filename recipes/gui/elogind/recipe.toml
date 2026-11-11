@@ -3,7 +3,7 @@
 [package]
 name = "elogind"
 version = "257.16"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Standalone login1 session and seat manager for non-systemd systems"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -12,7 +12,7 @@ source_dir = "elogind-%{version}"
 sha256 = "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev", "linux-pam", "util-linux", "python-jinja2"]
+build = ["meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev", "linux-pam", "util-linux", "python-jinja2", "python-markupsafe"]
 run = ["acl", "libcap", "eudev", "linux-pam", "util-linux", "dbus-system", "runit", "coreutils"]
 
 [build]

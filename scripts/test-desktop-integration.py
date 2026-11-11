@@ -150,10 +150,11 @@ assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
 
 elogind = recipe("gui", "elogind")
 assert elogind["package"]["version"] == "257.16"
+assert elogind["package"]["rel"] >= 2, "Bump elogind rel when adding its missing Python build dependency"
 assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
 require_deps("gui", "elogind", "build", {
     "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
-    "linux-pam", "util-linux", "python-jinja2",
+    "linux-pam", "util-linux", "python-jinja2", "python-markupsafe",
 })
 require_deps("gui", "elogind", "run", {
     "acl", "libcap", "eudev", "linux-pam", "util-linux",
@@ -187,8 +188,11 @@ for required in (
 
 jinja = recipe("media", "python-jinja2")
 assert jinja["package"]["version"] == "3.1.6"
-assert jinja["package"]["sha256"] == "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
+assert jinja["package"]["sha256"] == "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337"
 require_deps("media", "python-jinja2", "run", {"python", "python-markupsafe"})
+markupsafe = recipe("gui", "python-markupsafe")
+assert markupsafe["package"]["version"] == "3.0.2"
+require_deps("gui", "python-markupsafe", "run", {"python"})
 xfce_polkit = recipe("xfce", "xfce-polkit")
 assert xfce_polkit["package"]["version"] == "0.3"
 polkit_configure_ac = (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets/upstream/configure.ac").read_text(encoding="utf-8")
@@ -349,7 +353,7 @@ for category, package_name in (
     ("gui", "udisks2"),
     ("gui", "elogind"),
     ("media", "python-jinja2"),
-    ("gui", "python-jinja2"),
+    ("gui", "python-markupsafe"),
     ("xfce", "lightdm"),
     ("xfce", "xfce-polkit"),
     ("xfce", "xfce-session"),

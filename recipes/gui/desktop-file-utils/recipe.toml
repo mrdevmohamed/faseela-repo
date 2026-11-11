@@ -2,7 +2,7 @@
 [package]
 name = "desktop-file-utils"
 version = "0.29"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Utilities for desktop entries and MIME application database"
 license = ["GPL-2.0-or-later"]

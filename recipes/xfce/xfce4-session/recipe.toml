@@ -5,7 +5,7 @@
 [package]
 name = "xfce4-session"
 version = "4.20.4"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "Xfce session manager (startxfce4, session save/restore, logout dialog)"
 license = ["GPL-2.0-or-later"]
@@ -65,4 +65,17 @@ grep -Fqx 'Exec=startxfce4' "$desktop_file" || {
 }
 sed -i 's|^Exec=startxfce4$|Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4|' "$desktop_file"
 grep -Fqx 'Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4' "$desktop_file"
+
+# GNOME Keyring's Secret Service and selected GNOME compatibility services
+# are used by XFCE without systemd. Update the upstream Xfconf default in
+# place; this file is owned by xfce4-session, not the xfce-session meta package.
+xfconf_file="%{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml"
+test -s "$xfconf_file"
+if grep -Fq '<property name="LaunchGNOME" type="bool" value="false"/>' "$xfconf_file"; then
+    sed -i 's|<property name="LaunchGNOME" type="bool" value="false"/>|<property name="LaunchGNOME" type="bool" value="true"/>|' "$xfconf_file"
+fi
+grep -Fq '<property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file" || {
+    echo "xfce4-session: upstream Xfconf profile has no expected LaunchGNOME property" >&2
+    exit 1
+}
 '''

@@ -104,7 +104,9 @@ assert desktop_file_utils["package"]["rel"] >= 3
 assert re.fullmatch(r"[0-9a-f]{64}", desktop_file_utils["package"]["sha256"])
 require_deps("gui", "desktop-file-utils", "build", {"meson", "ninja", "pkgconf", "glib"})
 require_deps("xfce", "xfce-session", "run", {"desktop-file-utils"})
-assert "update-desktop-database" in desktop_file_utils["hooks"]["post_install"]
+desktop_post_install = desktop_file_utils["hooks"]["post_install"]
+assert "[ -d /usr/share/applications ]" in desktop_post_install
+assert "update-desktop-database -q /usr/share/applications" in desktop_post_install
 desktop_install = desktop_file_utils["build"]["install"]
 for required in (
     "usr/lib/nawa/transaction-hooks.d/10-desktop-mime-cache.sh",

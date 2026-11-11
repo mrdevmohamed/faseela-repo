@@ -4,7 +4,7 @@
 [package]
 name = "udisks2"
 version = "2.11.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "D-Bus storage management service for disks and removable media"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]

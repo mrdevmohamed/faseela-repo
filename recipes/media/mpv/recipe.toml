@@ -1,29 +1,28 @@
-# media recipe: mpv — command-line media player (Wayland, or straight on the console via DRM/KMS)
+# media recipe: mpv — media player for X11, Wayland, or a text console via DRM/KMS
 # `-D auto_features=disabled`: only the features listed here are built, so a library that happens
 # to be installed never changes the result.
-#   video  vo=gpu-next / gpu (libplacebo + EGL) on Wayland, vo=drm on a text console,
+#   video  vo=gpu-next / gpu (EGL) on X11 and Wayland, vo=drm on a text console,
 #          vo=wlshm / vo=null need no GPU
-#   hwdec  VA-API (--hwdec=vaapi) when a VA driver is installed; software decoding otherwise
+#   hwdec  VA-API through DRM/Wayland when a driver is installed; software decoding otherwise
 #   drm    needs libdisplay-info (meson.build: required whenever -D drm=enabled)
 #   audio  ALSA directly (no pulse/pipewire)
 #   lua   Lua 5.2 (recipe `lua52`, linked statically): on-screen controller (osc.lua), stats,
 #         console. The `lua` recipe is 5.4, which mpv does not support.
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r mpv` pins it.
 [package]
 name = "mpv"
 version = "0.40.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
-summary = "mpv — command-line media player (Wayland / DRM, ALSA)"
+summary = "mpv — media player (X11 / Wayland / DRM, ALSA)"
 license = ["GPL-2.0-or-later"]
 source = "https://github.com/mpv-player/mpv/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "10a0f4654f62140a6dd4d380dcf0bbdbdcf6e697556863dc499c296182f081a3"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva", "libdisplay-info"]
-run = ["ffmpeg", "libass", "libplacebo", "wayland", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "fontconfig", "libva", "libdisplay-info"]
+build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
+run = ["ffmpeg", "libass", "libplacebo", "wayland", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "fontconfig", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D auto_features=disabled -D cplayer=true -D libmpv=false -D tests=false -D build-date=false -D manpage-build=disabled -D html-build=disabled -D pdf-build=disabled -D lua=lua52 -D javascript=disabled -D zlib=enabled -D iconv=enabled -D libarchive=enabled -D jpeg=enabled -D alsa=enabled -D wayland=enabled -D gl=enabled -D egl=enabled -D egl-wayland=enabled -D drm=enabled -D gbm=enabled -D egl-drm=enabled -D x11=disabled -D vulkan=disabled -D vaapi=enabled -D vaapi-drm=enabled -D vaapi-wayland=enabled -D vdpau=disabled -D pulse=disabled -D pipewire=disabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D auto_features=disabled -D cplayer=true -D libmpv=false -D tests=false -D build-date=false -D manpage-build=disabled -D html-build=disabled -D pdf-build=disabled -D lua=lua52 -D javascript=disabled -D zlib=enabled -D iconv=enabled -D libarchive=enabled -D jpeg=enabled -D alsa=enabled -D wayland=enabled -D gl=enabled -D egl=enabled -D egl-wayland=enabled -D x11=enabled -D egl-x11=enabled -D drm=enabled -D gbm=enabled -D egl-drm=enabled -D vulkan=disabled -D vaapi=enabled -D vaapi-drm=enabled -D vaapi-wayland=enabled -D vdpau=disabled -D pulse=disabled -D pipewire=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

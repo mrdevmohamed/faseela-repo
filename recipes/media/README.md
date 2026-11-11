@@ -38,8 +38,7 @@ Build with *Build packages* → `mpv`, `ffmpeg`, `@media`, or
 `ALL` / `@all` does not include `@media`, same as `@gui` and `@browser`.
 The `iso-gui-zed` flavor gets the Vulkan loader and Mesa's lavapipe ICD through
 Zed/Mesa runtime dependencies; the SPIR-V and glslang packages are build-only
-dependencies and are not pulled into the installed ISO. mpv needs the `gui/`
-stack (Wayland, Mesa), ffmpeg does not.
+dependencies and are not pulled into the installed ISO. mpv needs the `gui/` stack (X11 client libraries, Wayland, Mesa), ffmpeg does not.
 
 ## First build
 
@@ -65,7 +64,7 @@ stack (Wayland, Mesa), ffmpeg does not.
 ## Using it
 
 ```
-mpv file.mkv                    # in a Wayland session (sway): vo=gpu-next
+mpv file.mkv                    # in XFCE/Xorg or Sway/Wayland: select an EGL GPU context automatically
 mpv --vo=drm file.mkv           # straight on a text console, no compositor (user in group video)
 mpv --vo=wlshm file.mkv         # no GPU rendering at all: slow, but works anywhere Wayland does
 mpv --hwdec=vaapi file.mkv      # hardware decoding (AMD: mesa, Intel: intel-media-driver)
@@ -109,7 +108,7 @@ heavy: try `--vo=gpu --profile=fast`, or `--vo=wlshm` for plain playback.
 * **x265 is a multilib build** (12- and 10-bit static libs linked into the
   8-bit shared one) in a single recipe; it also passes
   `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` for cmake 4.
-* **No audio server** (ALSA only) and **no X11 output** (Wayland and DRM only).
+* **No audio server** (ALSA only; no PulseAudio/PipeWire output backend).
 * **Licenses**: x264 and x265 are GPL, so ffmpeg is built with
   `--enable-gpl --enable-version3` and its binaries are GPL-3.0-or-later
   (drop x264, x265 and `--enable-gpl` for an LGPL-3.0 build). mpv is GPL.

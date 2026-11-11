@@ -868,7 +868,7 @@ jobs:
           mkdir -p "$cache_dir"
           python3 -I scripts/pr-build-cache.py save \
             --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out" \
-            --since "$T/build/.run-start"
+            --since "$T/build/.run-start" --report "$T/build/report.txt"
 
       - uses: actions/upload-artifact@v4
         if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}

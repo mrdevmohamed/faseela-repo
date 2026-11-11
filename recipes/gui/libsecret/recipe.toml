@@ -16,6 +16,6 @@ build = ["meson", "ninja", "pkgconf", "glib", "libgcrypt"]
 run = ["glib", "libgcrypt"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dmanpage=false -Dgtk_doc=false -Dvapi=false -Dintrospection=false -Dcrypto=libgcrypt"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dmanpage=false -Dgtk_doc=false -Dvapi=false -Dintrospection=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

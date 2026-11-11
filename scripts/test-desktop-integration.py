@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import re
+import subprocess
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,18 +94,42 @@ require_deps("xfce", "xfce-session", "run", {"audio-session"})
 xfce_install = xfce_session["build"]["install"]
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-session" in xfce_install
-assert "faseela-start-xfce4" in xfce_install
-assert "/tmp/runtime-$uid" in xfce_install
-assert "chmod 700" in xfce_install
+assert "faseela-start-xfce4" not in xfce_install, (
+    "The Xfce runtime wrapper belongs to the package that owns xfce.desktop"
+)
 xfce4_session = recipe("xfce", "xfce4-session")
-assert xfce4_session["package"]["rel"] >= 5
-assert "Exec=/usr/bin/faseela-start-xfce4" in xfce4_session["build"]["install"]
+assert xfce4_session["package"]["rel"] >= 6
+xfce4_install = xfce4_session["build"]["install"]
+assert "Exec=startxfce4" in xfce4_install
+assert "Exec=/usr/bin/faseela-start-xfce4" in xfce4_install
+assert "/tmp/runtime-$uid" in xfce4_install
+assert "chmod 700" in xfce4_install
+assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install
 lightdm = recipe("xfce", "lightdm")
 assert not re.search(
-    r"^\\s*(?:auth|account|password|session)\\s+\\S+\\s+pam_systemd\\.so",
+    r"^\s*(?:auth|account|password|session)\s+\S+\s+pam_systemd\.so",
     lightdm["build"]["install"],
     re.MULTILINE,
 ), "LightDM PAM must not load pam_systemd"
+
+# Parse the actual shell snippets embedded in the affected recipes. This
+# catches broken TOML multiline strings and shell quoting before package CI.
+for category, package_name in (
+    ("gui", "audio-session"),
+    ("xfce", "xfce-session"),
+    ("xfce", "xfce4-session"),
+):
+    install_script = recipe(category, package_name)["build"]["install"]
+    result = subprocess.run(
+        ["bash", "-n"],
+        input=install_script,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"{package_name} install script has invalid shell syntax: {result.stderr}"
+    )
 
 
 # --- desktop session packages added with the wlr portal, panel and fonts ----

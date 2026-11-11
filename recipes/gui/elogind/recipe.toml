@@ -3,7 +3,7 @@
 [package]
 name = "elogind"
 version = "257.16"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Standalone login1 session and seat manager for non-systemd systems"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -57,16 +57,17 @@ def wrap_nss_iterator(path, record_decl, end_call, label):
     if end_call not in block:
         raise SystemExit(f"{path}: {label} NSS iterator block did not contain {end_call}")
     replacement = (
-        "#if ENABLE_NSS_ELOGIND /// elogind: no NSS enumeration when nss-elogind is disabled\n"
+        "#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: retain local NSS enumeration for UserDatabase\n"
         + block
-        + "\n#endif // ENABLE_NSS_ELOGIND"
+        + "\n#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"
     )
     data = data[:matches[0].start()] + replacement + data[matches[0].end():]
     target.write_text(data, encoding="utf-8")
 
 
-# The varlink UserDatabase generated source and user-record display helpers
-# are required only when elogind's userdb daemon is enabled.
+# The UserDatabase sources are required by the userdb daemon. The NSS record
+# adapter is also used by its local-account fallback, even when the optional
+# nss-elogind module is disabled.
 replace_once(
     "meson.build",
     """#if 1 /// elogind: userdb and nss-elogind need real varlink support
@@ -121,7 +122,7 @@ replace_once(
     """if get_option('nss-elogind') != false
 \tshared_sources += files('user-record-nss.c')
 endif""",
-    """if get_option('nss-elogind') != false
+    """if get_option('nss-elogind') != false or get_option('userdb') != false
 \tshared_sources += files('user-record-nss.c')
 endif
 
@@ -134,45 +135,46 @@ if get_option('userdb') != false
 endif"""
 )
 
-# Do not emit NSS client calls unless nss-elogind is enabled.
+# PAM and elogind-userdbd need the normal libc NSS fallback when userdb is
+# enabled, even when the optional nss-elogind module itself is disabled.
 replace_once(
     "src/shared/userdb.c",
     "                        r = nss_user_record_by_name(name, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);",
-    """#if ENABLE_NSS_ELOGIND /// elogind: no NSS synthesis when nss-elogind is disabled; behave as not-found
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase must retain the local libc NSS fallback without the optional NSS module
                         r = nss_user_record_by_name(name, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);
-#else // ENABLE_NSS_ELOGIND
+#else // ENABLE_USERDB || ENABLE_NSS_ELOGIND
                         r = -ESRCH;
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 replace_once(
     "src/shared/userdb.c",
     "                        r = nss_user_record_by_uid(uid, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);",
-    """#if ENABLE_NSS_ELOGIND /// elogind: no NSS synthesis when nss-elogind is disabled; behave as not-found
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase must retain the local libc NSS fallback without the optional NSS module
                         r = nss_user_record_by_uid(uid, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);
-#else // ENABLE_NSS_ELOGIND
+#else // ENABLE_USERDB || ENABLE_NSS_ELOGIND
                         r = -ESRCH;
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 replace_once(
     "src/shared/userdb.c",
     "                        r = nss_group_record_by_name(name, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);",
-    """#if ENABLE_NSS_ELOGIND /// elogind: no NSS synthesis when nss-elogind is disabled; behave as not-found
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase must retain the local libc NSS fallback without the optional NSS module
                         r = nss_group_record_by_name(name, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);
-#else // ENABLE_NSS_ELOGIND
+#else // ENABLE_USERDB || ENABLE_NSS_ELOGIND
                         r = -ESRCH;
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 replace_once(
     "src/shared/userdb.c",
     "                        r = nss_group_record_by_gid(gid, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);",
-    """#if ENABLE_NSS_ELOGIND /// elogind: no NSS synthesis when nss-elogind is disabled; behave as not-found
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase must retain the local libc NSS fallback without the optional NSS module
                         r = nss_group_record_by_gid(gid, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);
-#else // ENABLE_NSS_ELOGIND
+#else // ENABLE_USERDB || ENABLE_NSS_ELOGIND
                         r = -ESRCH;
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 
-# These NSS iterators must not compile when the NSS module is disabled.
+# Keep local NSS iterators available to UserDatabase even without the NSS module.
 wrap_nss_iterator(
     "src/shared/userdb.c",
     "struct passwd *pw;",
@@ -190,27 +192,27 @@ replace_once(
     "src/shared/userdb.c",
     """                setpwent();
                 iterator->nss_iterating = true;""",
-    """#if ENABLE_NSS_ELOGIND /// elogind: skip NSS enumeration when nss-elogind is disabled
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase needs local NSS enumeration
                 setpwent();
                 iterator->nss_iterating = true;
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 replace_count(
     "src/shared/userdb.c",
     """                setgrent();
                 iterator->nss_iterating = true;""",
-    """#if ENABLE_NSS_ELOGIND /// elogind: skip NSS enumeration when nss-elogind is disabled
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase needs local NSS enumeration
                 setgrent();
                 iterator->nss_iterating = true;
-#endif // ENABLE_NSS_ELOGIND""",
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND""",
     3
 )
 replace_once(
     "src/shared/userdb.c",
     """                (void) nss_group_record_by_name(name, false, &gr);""",
-    """#if ENABLE_NSS_ELOGIND /// elogind: skip NSS group lookup when nss-elogind is disabled
+    """#if ENABLE_USERDB || ENABLE_NSS_ELOGIND /// elogind: UserDatabase needs local NSS group lookup
                 (void) nss_group_record_by_name(name, false, &gr);
-#endif // ENABLE_NSS_ELOGIND"""
+#endif // ENABLE_USERDB || ENABLE_NSS_ELOGIND"""
 )
 
 # The UserDatabase varlink IDL is not compiled when userdb is disabled.
@@ -257,8 +259,8 @@ meson setup build \
   -Ddefault-kill-user-processes=false \
   -Ddev-kvm-mode=0660 \
   -Dnss-elogind=false \
-  -Duserdb=false \
-  -Dvarlink=false \
+  -Duserdb=true \
+  -Dvarlink=true \
   -Dman=disabled \
   -Dhtml=disabled \
   -Dtranslations=false \
@@ -272,12 +274,16 @@ install = '''set -eu
 DESTDIR=%{pkgdir} meson install -C build
 
 daemon="%{pkgdir}/usr/lib/elogind/elogind"
+userdbd="%{pkgdir}/usr/lib/elogind/elogind-userdbd"
+userwork="%{pkgdir}/usr/lib/elogind/elogind-userwork"
 pam_module="%{pkgdir}/usr/lib/security/pam_elogind.so"
 pc_file="%{pkgdir}/usr/lib/pkgconfig/libelogind.pc"
 dbus_service="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.login1.service"
 dbus_policy="%{pkgdir}/usr/share/dbus-1/system.d/org.freedesktop.login1.conf"
 
 test -x "$daemon"
+test -x "$userdbd"
+test -x "$userwork"
 test -s "$pam_module"
 test -s "$pc_file"
 test -s "$dbus_service"
@@ -297,4 +303,16 @@ exec /usr/lib/elogind/elogind
 RUN
 chmod 755 %{pkgdir}/etc/sv/elogind/run
 ln -s /etc/sv/elogind %{pkgdir}/etc/runit/runsvdir/default/elogind
+
+# Run the UserDatabase Varlink multiplexer under runit. Its worker uses the
+# system's normal NSS configuration (Faseela defaults to local files) to
+# resolve real passwd/group entries for pam_elogind.
+install -d -m755 %{pkgdir}/etc/sv/elogind-userdbd
+cat > %{pkgdir}/etc/sv/elogind-userdbd/run <<'RUN'
+#!/bin/sh
+exec 2>&1
+exec /usr/lib/elogind/elogind-userdbd
+RUN
+chmod 755 %{pkgdir}/etc/sv/elogind-userdbd/run
+ln -s /etc/sv/elogind-userdbd %{pkgdir}/etc/runit/runsvdir/default/elogind-userdbd
 '''

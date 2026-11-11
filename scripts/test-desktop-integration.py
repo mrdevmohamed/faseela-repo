@@ -123,10 +123,13 @@ assert libblockdev["package"]["version"] == "3.5.0"
 assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
 require_deps("gui", "libblockdev", "build", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
 require_deps("gui", "libblockdev", "run", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
-for flag in ("--with-part", "--with-fs", "--with-loop", "--without-lvm", "--without-crypto"):
+for flag in ("--with-part", "--with-fs", "--with-loop", "--with-swap", "--without-lvm", "--without-crypto"):
     assert flag in libblockdev["build"]["configure"], (
         f"libblockdev must provide the needed removable-media plugins without optional storage stacks: {flag}"
     )
+assert "--without-swap" not in libblockdev["build"]["configure"], (
+    "UDisks2 requires libblockdev-swap for its daemon"
+)
 assert "--without-loop" not in libblockdev["build"]["configure"], (
     "UDisks2 requires libblockdev-loop for its Loop interface"
 )

@@ -4,7 +4,7 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
@@ -29,20 +29,6 @@ Section "InputClass"
 EndSection
 KBD
 chmod 644 %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-keyboard.conf
-
-# Xfce session defaults are shipped as a system Xfconf profile. Package
-# hooks run outside a user session, so xfconf-query would try to start a D-Bus
-# session without a machine-id and fail the package transaction.
-install -d -m755 %{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml
-cat > %{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml <<'XFCONF'
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="xfce4-session" version="1.0">
-  <property name="compat" type="empty">
-    <property name="LaunchGNOME" type="bool" value="true"/>
-  </property>
-</channel>
-XFCONF
-chmod 644 %{pkgdir}/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml
 
 # Xfce's XDG autostart launches the shared per-user audio supervisor.
 install -d -m755 %{pkgdir}/etc/xdg/autostart

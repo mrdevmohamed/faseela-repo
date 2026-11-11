@@ -143,10 +143,21 @@ require_deps("xfce", "lightdm", "run", {"elogind"})
 require_deps("xfce", "xfce-session", "run", {"elogind", "xfce-polkit"})
 
 polkit = recipe("gui", "polkit")
-assert polkit["package"]["rel"] >= 4
+assert polkit["package"]["rel"] >= 5, "Bump Polkit rel when wiring logind_dep into polkitd"
 require_deps("gui", "polkit", "build", {"elogind"})
 require_deps("gui", "polkit", "run", {"elogind"})
 assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
+polkit_prepare = polkit["build"].get("prepare", "")
+assert "dependencies: [libpolkit_gobject_dep, logind_dep]" in polkit_prepare, (
+    "Polkit's polkitd executable must receive libelogind include and link flags directly"
+)
+assert "src/polkitbackend/meson.build" in polkit_prepare
+polkit_prepare_syntax = subprocess.run(
+    ["bash", "-n"], input=polkit_prepare, text=True, capture_output=True, check=False
+)
+assert polkit_prepare_syntax.returncode == 0, (
+    f"polkit prepare patch has invalid shell syntax: {polkit_prepare_syntax.stderr}"
+)
 
 elogind = recipe("gui", "elogind")
 assert elogind["package"]["version"] == "257.16"

@@ -2,7 +2,7 @@
 [package]
 name = "polkit"
 version = "126"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "PolicyKit authorization framework and privileged action helper"
 license = ["GPL-2.0-or-later"]
@@ -14,6 +14,32 @@ build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt", "
 run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "coreutils", "elogind"]
 
 [build]
+prepare = '''set -eu
+# Polkit 126 selects libelogind for session tracking, but its polkitd target
+# does not inherit that dependency from the static backend library. The daemon
+# itself includes systemd/sd-daemon.h and calls sd_notify(), so give the target
+# the selected logind dependency directly (headers + link flags).
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("src/polkitbackend/meson.build")
+data = path.read_text(encoding="utf-8")
+old = """  dependencies: libpolkit_gobject_dep,
+  c_args: c_flags,
+  link_with: libpolkit_backend,
+"""
+new = """  dependencies: [libpolkit_gobject_dep, logind_dep],
+  c_args: c_flags,
+  link_with: libpolkit_backend,
+"""
+count = data.count(old)
+if count != 1:
+    raise SystemExit(
+        f"Polkit 126 polkitd dependency block: expected exactly one match, found {count}"
+    )
+path.write_text(data.replace(old, new, 1), encoding="utf-8")
+PY
+'''
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=elogind -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
 compile = "ninja -C build"
 install = '''

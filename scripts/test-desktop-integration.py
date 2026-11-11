@@ -121,26 +121,71 @@ assert not re.search(
 libblockdev = recipe("gui", "libblockdev")
 assert libblockdev["package"]["version"] == "3.5.0"
 assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
-require_deps("gui", "libblockdev", "build", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
-require_deps("gui", "libblockdev", "run", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
-for flag in ("--with-part", "--with-fs", "--with-loop", "--with-swap", "--without-lvm", "--without-crypto"):
-    assert flag in libblockdev["build"]["configure"], (
-        f"libblockdev must provide the needed removable-media plugins without optional storage stacks: {flag}"
+require_deps("gui", "libblockdev", "build", {
+    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "libbytesize", "libnvme", "cryptsetup", "keyutils",
+})
+require_deps("gui", "libblockdev", "run", {
+    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm",
+})
+libblockdev_configure = libblockdev["build"]["configure"]
+for flag in (
+    "--with-part", "--with-fs", "--with-loop", "--with-swap",
+    "--with-crypto", "--with-mdraid", "--with-nvme", "--without-escrow",
+    "--without-lvm",
+):
+    assert flag in libblockdev_configure, (
+        f"libblockdev must enable UDisks2's mandatory plugins and omit escrow/LVM: {flag}"
     )
-assert "--without-swap" not in libblockdev["build"]["configure"], (
+for flag in (
+    "--without-btrfs", "--without-dm", "--without-lvm", "--without-lvm_dbus",
+    "--without-mpath", "--without-smart", "--without-smartmontools", "--without-tools",
+):
+    assert flag in libblockdev_configure, (
+        f"libblockdev should keep this optional storage stack disabled: {flag}"
+    )
+assert "--without-swap" not in libblockdev_configure, (
     "UDisks2 requires libblockdev-swap for its daemon"
 )
-assert "--without-loop" not in libblockdev["build"]["configure"], (
+assert "--without-loop" not in libblockdev_configure, (
     "UDisks2 requires libblockdev-loop for its Loop interface"
 )
+assert "--without-mdraid" not in libblockdev_configure, (
+    "UDisks2 2.11.2 requires libblockdev-mdraid"
+)
+assert "--without-nvme" not in libblockdev_configure, (
+    "UDisks2 2.11.2 requires libblockdev-nvme"
+)
+
+libbytesize = recipe("gui", "libbytesize")
+assert libbytesize["package"]["version"] == "2.12"
+assert re.fullmatch(r"[0-9a-f]{64}", libbytesize["package"]["sha256"])
+require_deps("gui", "libbytesize", "build", {"gettext", "pcre2", "python"})
+require_deps("gui", "libbytesize", "run", {"pcre2"})
+
+libnvme = recipe("gui", "libnvme")
+assert libnvme["package"]["version"] == "1.16.2"
+assert re.fullmatch(r"[0-9a-f]{64}", libnvme["package"]["sha256"])
+require_deps("gui", "libnvme", "build", {"meson", "ninja", "pkgconf", "json-c"})
+require_deps("gui", "libnvme", "run", {"json-c"})
+
+keyutils = recipe("system", "keyutils")
+assert keyutils["package"]["version"] == "1.6.3"
+assert re.fullmatch(r"[0-9a-f]{64}", keyutils["package"]["sha256"])
 
 udisks2 = recipe("gui", "udisks2")
 assert udisks2["package"]["version"] == "2.11.2"
 assert re.fullmatch(r"[0-9a-f]{64}", udisks2["package"]["sha256"])
 require_deps("gui", "udisks2", "run", {"dbus-system", "polkit", "libblockdev", "libgudev"})
 udisks_configure = udisks2["build"]["configure"]
-for flag in ("--with-systemdsystemunitdir=no", "--with-tmpfilesdir=no", "--with-udevdir=/usr/lib/udev"):
-    assert flag in udisks_configure, f"UDisks2 must use Faseela's non-systemd paths: {flag}"
+for flag in (
+    "--with-systemdsystemunitdir=no", "--with-tmpfilesdir=no",
+    "--with-udevdir=/usr/lib/udev", "--disable-smart",
+):
+    assert flag in udisks_configure, (
+        f"UDisks2 must use Faseela's non-systemd paths and avoid unavailable optional SMART: {flag}"
+    )
 udisks_install = udisks2["build"]["install"]
 for required in (
     "org.freedesktop.UDisks2.service",

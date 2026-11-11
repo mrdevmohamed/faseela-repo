@@ -150,7 +150,7 @@ assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
 
 elogind = recipe("gui", "elogind")
 assert elogind["package"]["version"] == "257.16"
-assert elogind["package"]["rel"] >= 2, "Bump elogind rel when adding its missing Python build dependency"
+assert elogind["package"]["rel"] >= 3, "Bump elogind rel when backporting the v257.16 NSS/userdb build fix"
 assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
 require_deps("gui", "elogind", "build", {
     "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
@@ -172,6 +172,18 @@ for flag in (
     assert flag in elogind["build"]["configure"], (
         f"elogind must use the standalone runit/PAM configuration: {flag}"
     )
+elogind_prepare = elogind["build"]["prepare"]
+assert "043d7fe5de1b151054735450f23a6ab1b4e31e0f" in elogind_prepare
+assert "get_option('userdb') != false" in elogind_prepare
+assert "ENABLE_NSS_ELOGIND" in elogind_prepare
+assert "src/shared/userdb.c" in elogind_prepare
+prepare_syntax = subprocess.run(
+    ["bash", "-n"], input=elogind_prepare, text=True, capture_output=True, check=False
+)
+assert prepare_syntax.returncode == 0, (
+    f"elogind prepare backport script has invalid shell syntax: {prepare_syntax.stderr}"
+)
+
 elogind_install = elogind["build"]["install"]
 for required in (
     "/usr/lib/elogind/elogind",

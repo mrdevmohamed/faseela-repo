@@ -117,10 +117,74 @@ assert not re.search(
     re.MULTILINE,
 ), "LightDM PAM must not load pam_systemd"
 
+# Removable storage is integrated through system D-Bus -> UDisks2 -> GVfs.
+libblockdev = recipe("gui", "libblockdev")
+assert libblockdev["package"]["version"] == "3.5.0"
+assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
+require_deps("gui", "libblockdev", "build", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
+require_deps("gui", "libblockdev", "run", {"glib", "eudev", "kmod", "util-linux", "e2fsprogs"})
+for flag in ("--with-part", "--with-fs", "--without-lvm", "--without-crypto"):
+    assert flag in libblockdev["build"]["configure"], (
+        f"libblockdev must provide the needed removable-media plugins without optional storage stacks: {flag}"
+    )
+
+udisks2 = recipe("gui", "udisks2")
+assert udisks2["package"]["version"] == "2.11.2"
+assert re.fullmatch(r"[0-9a-f]{64}", udisks2["package"]["sha256"])
+require_deps("gui", "udisks2", "run", {"dbus-system", "polkit", "libblockdev", "libgudev"})
+udisks_configure = udisks2["build"]["configure"]
+for flag in ("--with-systemdsystemunitdir=no", "--with-tmpfilesdir=no", "--with-udevdir=/usr/lib/udev"):
+    assert flag in udisks_configure, f"UDisks2 must use Faseela's non-systemd paths: {flag}"
+udisks_install = udisks2["build"]["install"]
+for required in (
+    "org.freedesktop.UDisks2.service",
+    "org.freedesktop.UDisks2.conf",
+    "org.freedesktop.UDisks2.policy",
+    "80-udisks2.rules",
+    "Exec=/usr/libexec/udisks2/udisksd",
+    "sed -i '/^SystemdService=/d'",
+    "! grep -q '^SystemdService='",
+):
+    assert required in udisks_install, f"UDisks2 install must provide/validate: {required}"
+assert "runit" not in udisks2["depends"]["run"], (
+    "UDisks2 is activated by dbus-system and must not get a duplicate runit daemon"
+)
+
+gvfs = recipe("xfce", "gvfs")
+assert gvfs["package"]["version"] == "1.56.3"
+assert re.fullmatch(r"[0-9a-f]{64}", gvfs["package"]["sha256"])
+require_deps("xfce", "gvfs", "run", {"dbus", "udisks2", "libgudev", "fuse3", "gsettings-desktop-schemas"})
+gvfs_configure = gvfs["build"]["configure"]
+for flag in ("-D udisks2=true", "-D gudev=true", "-D logind=false",
+             "-D systemduserunitdir=no", "-D tmpfilesdir=no"):
+    assert flag in gvfs_configure, f"GVfs must provide UDisks2 volume monitoring without systemd: {flag}"
+
+thunar = recipe("xfce", "thunar")
+require_deps("xfce", "thunar", "run", {"gvfs"})
+thunar_volman = recipe("xfce", "thunar-volman")
+require_deps("xfce", "thunar-volman", "run", {"thunar", "gvfs", "udisks2", "dbus"})
+require_deps("xfce", "xfce-session", "run", {"thunar", "thunar-volman", "gvfs", "udisks2"})
+assert thunar_volman["package"]["rel"] >= 3
+xfce_install = xfce_session["build"]["install"]
+for required in (
+    "thunar-daemon.desktop",
+    "Exec=thunar --daemon",
+    "TryExec=thunar",
+    "OnlyShowIn=XFCE;",
+    "chmod 644 %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop",
+):
+    assert required in xfce_install, f"Xfce must autostart the Thunar volume-manager host: {required}"
+xfce_group = next(group for group in tomllib.loads(
+    (ROOT / "groups.toml").read_text(encoding="utf-8")
+)["group"] if group["id"] == "xfce")
+assert "thunar-volman" in xfce_group["default"]
+assert "thunar-volman" not in xfce_group["optional"]
+
 # Parse the actual shell snippets embedded in the affected recipes. This
 # catches broken TOML multiline strings and shell quoting before package CI.
 for category, package_name in (
     ("gui", "audio-session"),
+    ("gui", "udisks2"),
     ("xfce", "xfce-session"),
     ("xfce", "xfce4-session"),
 ):

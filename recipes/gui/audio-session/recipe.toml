@@ -4,7 +4,7 @@
 [package]
 name = "audio-session"
 version = "0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Shared per-user PipeWire, WirePlumber and PulseAudio-compatible session startup"
 license = ["MIT"]
@@ -80,9 +80,17 @@ done
 }
 
 # Keep the daemons scoped to the desktop session that launched this helper.
-session_process=sway
+# Bind the helper lifetime to the desktop session that launched it.
+# Do not default to Sway: doing so makes XFCE start audio and then immediately
+# kill the daemons when no Sway process exists.
+session_process=
 case "${XDG_CURRENT_DESKTOP:-}" in
     *XFCE*) session_process=xfce4-session ;;
+    *sway*|*Sway*) session_process=sway ;;
+    *)
+        echo "faseela-audio-session: unsupported desktop session: ${XDG_CURRENT_DESKTOP:-unset}" >&2
+        exit 1
+        ;;
 esac
 while pgrep -u "$uid" -x "$session_process" >/dev/null 2>&1; do
     sleep 1

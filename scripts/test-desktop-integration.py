@@ -185,10 +185,10 @@ for required in (
         f"elogind install must provide/validate: {required}"
     )
 
-jinja = recipe("gui", "python-jinja2")
+jinja = recipe("media", "python-jinja2")
 assert jinja["package"]["version"] == "3.1.6"
 assert jinja["package"]["sha256"] == "0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"
-require_deps("gui", "python-jinja2", "run", {"python", "python-markupsafe"})
+require_deps("media", "python-jinja2", "run", {"python", "python-markupsafe"})
 xfce_polkit = recipe("xfce", "xfce-polkit")
 assert xfce_polkit["package"]["version"] == "0.3"
 polkit_configure_ac = (ROOT / "recipes" / "xfce" / "xfce-polkit" / "assets/upstream/configure.ac").read_text(encoding="utf-8")
@@ -348,6 +348,7 @@ for category, package_name in (
     ("gui", "audio-session"),
     ("gui", "udisks2"),
     ("gui", "elogind"),
+    ("media", "python-jinja2"),
     ("gui", "python-jinja2"),
     ("xfce", "lightdm"),
     ("xfce", "xfce-polkit"),

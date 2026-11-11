@@ -21,8 +21,8 @@ run = ["gtk3", "glib", "gdk-pixbuf", "hicolor-icon-theme", "xdg-utils", "tar", "
 configure = '''
 stub=$PWD/.intltool-stub
 mkdir -p "$stub/XML"
-printf '#!/bin/sh\\necho "intltool-update (intltool) 0.51.0"\\n' > "$stub/intltool-update"
-printf '#!/bin/sh\\nexit 0\\n' > "$stub/intltool-extract"
+printf '%s\\n' '#!/bin/sh' 'echo "intltool-update (intltool) 0.51.0"' > "$stub/intltool-update"
+printf '%s\\n' '#!/bin/sh' 'exit 0' > "$stub/intltool-extract"
 cat > "$stub/intltool-merge" <<'IM'
 #!/bin/sh
 in= out=

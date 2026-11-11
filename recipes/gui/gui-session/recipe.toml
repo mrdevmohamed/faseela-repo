@@ -2,7 +2,7 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 26
+rel = 27
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]

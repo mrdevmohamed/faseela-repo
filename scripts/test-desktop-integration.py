@@ -96,6 +96,18 @@ assert "*sway*|*Sway*) session_process=sway ;;" in audio_install
 assert "unsupported desktop session" in audio_install
 assert "exec /usr/bin/faseela-audio-session" in install_script
 
+# Desktop files advertise MIME handlers; desktop-file-utils builds the
+# reverse application index that GIO/Thunar consumes.
+desktop_file_utils = recipe("gui", "desktop-file-utils")
+assert desktop_file_utils["package"]["version"] == "0.29"
+assert re.fullmatch(r"[0-9a-f]{64}", desktop_file_utils["package"]["sha256"])
+require_deps("gui", "desktop-file-utils", "build", {"meson", "ninja", "pkgconf", "glib"})
+require_deps("xfce", "xfce-session", "run", {"desktop-file-utils"})
+assert "update-desktop-database" in desktop_file_utils["hooks"]["post_install"]
+assert "update-desktop-database -q /usr/share/applications" in recipe(
+    "xfce", "xfce-session"
+)["hooks"]["post_install"]
+
 # XFCE must start the same audio supervisor and establish a private runtime dir
 # before the desktop is launched from LightDM (which has no pam_systemd).
 xfce_session = recipe("xfce", "xfce-session")

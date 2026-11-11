@@ -38,8 +38,7 @@ Build with *Build packages* → `mpv`, `ffmpeg`, `@media`, or
 `ALL` / `@all` does not include `@media`, same as `@gui` and `@browser`.
 The `iso-gui-zed` flavor gets the Vulkan loader and Mesa's lavapipe ICD through
 Zed/Mesa runtime dependencies; the SPIR-V and glslang packages are build-only
-dependencies and are not pulled into the installed ISO. mpv needs the `gui/`
-stack (Wayland, Mesa), ffmpeg does not.
+dependencies and are not pulled into the installed ISO. mpv needs the `gui/` stack (X11 client libraries, Wayland, Mesa), ffmpeg does not.
 
 ## First build
 

@@ -78,7 +78,7 @@ elif grep -Fq '<property name="compat" type="empty">' "$xfconf_file"; then
     sed -i '/<property name="compat" type="empty">/a\    <property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file"
 else
     # xfce4-session 4.20.4 ships no compat group in its default XML.
-    sed -i '/<\\/channel>/i\  <property name="compat" type="empty">\n    <property name="LaunchGNOME" type="bool" value="true"/>\n  </property>' "$xfconf_file"
+    sed -i '/<\/channel>/i\  <property name="compat" type="empty">\n    <property name="LaunchGNOME" type="bool" value="true"/>\n  </property>' "$xfconf_file"
 fi
 grep -Fq '<property name="LaunchGNOME" type="bool" value="true"/>' "$xfconf_file" || {
     echo "xfce4-session: could not enable Xfconf /compat/LaunchGNOME" >&2

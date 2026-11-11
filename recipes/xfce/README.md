@@ -3,7 +3,8 @@
 The Xfce desktop, its applications and panel plugins, plus LightDM and its
 GTK greeter. The Xorg server and client utilities live in `recipes/xorg/`.
 The `xfce-session` meta-package supplies the core X11/Xfce runtime closure,
-Faseela's keyboard-layout configuration, and shared per-user PipeWire startup.
+Faseela's keyboard-layout configuration, shared per-user PipeWire startup,
+and removable-storage integration through GVfs and UDisks2.
 
 Everything is opt-in. The supported image is `iso-xfce`, which includes
 Xorg, Xfce, LightDM and the standard desktop applications. LightDM is not
@@ -67,3 +68,24 @@ per-user socket location without introducing a systemd dependency.
 Users who need direct ALSA device access must belong to the `audio` group.
 After installing the desktop, add the account to `audio` and log out/in so
 the new group membership applies.
+
+
+## Removable storage and D-Bus integration
+
+The Xfce session includes `thunar-volman`, `gvfs`, and `udisks2`.
+Thunar is started with `thunar --daemon` by an XDG autostart entry in the
+Xfce session; this keeps the Thunar extension host active so the volume-manager
+extension can react to devices reported by GVfs.
+
+GVfs is built with its GUdev and UDisks2 volume-monitor backends and FUSE
+support. UDisks2 supplies the system storage API and performs authorized
+mount, unmount and device operations through polkit. The system D-Bus daemon
+(`dbus-system`) is supervised by runit; it activates `udisksd` on demand
+from `org.freedesktop.UDisks2.service`. The package removes the upstream
+`SystemdService` activation hint and does not install a systemd unit or a
+second runit service.
+
+The Xfce session already starts a per-user D-Bus session with
+`dbus-run-session`. GVfs session services are therefore activated on that
+bus, while UDisks2 is activated by the system bus. No systemd-logind or
+systemd user service is required.

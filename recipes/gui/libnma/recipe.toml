@@ -2,7 +2,7 @@
 [package]
 name = "libnma"
 version = "1.10.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GTK library for NetworkManager connection dialogs"
 license = ["GPL-2.0-only"]
@@ -14,6 +14,6 @@ build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gcr", "gtk3", "iso-cod
 run = ["glib", "gcr", "gtk3", "iso-codes", "network-manager"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dgtk_doc=false -Dintrospection=false -Dlibnma_gtk4=false -Dmobile_broadband_provider_info=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dgtk_doc=false -Dintrospection=false -Dvapi=false -Dlibnma_gtk4=false -Dmobile_broadband_provider_info=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

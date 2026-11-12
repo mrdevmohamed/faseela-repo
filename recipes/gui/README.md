@@ -98,6 +98,7 @@ For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
 | group | packages |
 |---|---|
 | text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic, noto-naskh-arabic noto-cjk noto-color-emoji |
+| D-Bus compatibility | dbus-glib (legacy GLib binding used by XFCE screensaver) |
 | X11 client libraries and utilities | xorg-util-macros xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender libXtst libXScrnSaver libXpresent libxshmfence xorg-xprop (GTK3 and Chrome client-side libraries; no X server) |
 | Xwayland server | xkbcomp xkeyboard-config libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
 | wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |

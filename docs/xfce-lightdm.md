@@ -89,11 +89,13 @@ desktop requests. The `xfce-polkit` authentication agent is installed as an
 XDG autostart entry scoped to `OnlyShowIn=XFCE;`; it starts inside the
 logged-in user's desktop session and displays authentication prompts.
 
-The elogind build disables its optional direct Polkit backend to avoid a
-build-time dependency cycle: Polkit itself depends on `libelogind` for
-session tracking. This covers active-session authorization for clients such
-as UDisks2; XFCE shutdown/reboot authorization through login1 remains a
-separate installed-system check.
+Elogind is built with `-Dpolkit=enabled`, which turns on PolicyKit
+authorization for login1 power actions, including shutdown and reboot. Elogind
+uses its own D-Bus PolicyKit client; the optional `polkit-gobject-1` probe is
+only used to detect legacy `.pkla` compatibility and is not a link-time build
+dependency. This allows Polkit to use `-Dsession_tracking=elogind` without
+creating a build cycle. The actual power actions still require validation in
+an installed XFCE session.
 
 UDisks2 keeps its upstream PolicyKit distinction: normal removable-volume
 mounts are available to the active local session, while inactive or remote

@@ -1,0 +1,32 @@
+# xfce recipe: xfce4-screensaver — native Xfce screen locker and screensaver
+[package]
+name = "xfce4-screensaver"
+version = "4.20.2"
+rel = 1
+arch = ["x86_64"]
+summary = "Xfce screen saver and secure session locker"
+license = ["GPL-2.0-or-later"]
+source = "https://archive.xfce.org/src/apps/xfce4-screensaver/4.20/xfce4-screensaver-%{version}.tar.xz"
+sha256 = "5032f60a31df5e50a80512e301b595be5ea6a6bd762cdd95cacc24cbd29a01d7"
+source_dir = "xfce4-screensaver-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "dbus", "dbus-glib", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "elogind"]
+run = ["dbus", "dbus-glib", "procps-ng", "python", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "elogind"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D x11=enabled -D wayland=disabled -D docs=disabled -D authentication-scheme=pam -D pam-auth-type=system -D session-manager=elogind -D kbd-layout-indicator=false -D xscreensaverhackdir=no"
+compile = "ninja -C build"
+install = '''set -eu
+DESTDIR=%{pkgdir} meson install -C build
+
+# The upstream PAM example includes system-auth, which Faseela does not ship.
+# Keep unlock authentication on the same local-account module as LightDM.
+install -d -m0755 "%{pkgdir}/etc/pam.d"
+cat > "%{pkgdir}/etc/pam.d/xfce4-screensaver" <<'PAM'
+# Faseela local-account authentication for screen unlock.
+auth required pam_unix.so
+account required pam_unix.so
+PAM
+chmod 0644 "%{pkgdir}/etc/pam.d/xfce4-screensaver"
+'''

@@ -34,11 +34,9 @@ printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > "$stub/XML/Parser.pm"
 PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --disable-static --disable-nls --disable-doc
 '''
 compile = '''
-# GNU grep warns about the non-portable BRE escape \# in gettext's generated
-# translation rules. Normalize it to a literal # before make enters po/.
-# The generated gettext rules may contain the non-portable BRE escape \\#.
-# Patch every generated/source Makefile template before make invokes grep.
-find . -type f -name 'Makefile*' -exec sed -i 's/\\\\#/#/g' {} +
+# GNU grep warns about a non-portable BRE escape in gettext's generated rules.
+# Patch all Makefiles and templates before make invokes grep.
+find . -type f -name 'Makefile*' -exec sed -i 's/\\#/#/g' {} +
 make -j%{jobs}
 '''
 install = "make DESTDIR=%{pkgdir} install"

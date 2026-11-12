@@ -5,7 +5,7 @@
 [package]
 name = "xarchiver"
 version = "0.5.4.27"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "GTK archive manager for common tar, zip, xz and 7z formats"
 license = ["GPL-2.0-or-later"]
@@ -33,5 +33,10 @@ chmod +x "$stub/intltool-update" "$stub/intltool-extract" "$stub/intltool-merge"
 printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > "$stub/XML/Parser.pm"
 PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --disable-static --disable-nls --disable-doc
 '''
-compile = "make -j%{jobs}"
+compile = '''
+# GNU grep warns about the non-portable BRE escape \# in gettext's generated
+# translation rules. Normalize it to a literal # before make enters po/.
+if [ -f po/Makefile ]; then sed -i 's/\\\\#/#/g' po/Makefile; fi
+make -j%{jobs}
+'''
 install = "make DESTDIR=%{pkgdir} install"

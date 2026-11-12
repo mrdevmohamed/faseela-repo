@@ -188,7 +188,7 @@ assert polkit_prepare_syntax.returncode == 0, (
 
 elogind = recipe("gui", "elogind")
 assert elogind["package"]["version"] == "257.16"
-assert elogind["package"]["rel"] >= 4, "Bump elogind rel when restoring PAM's local NSS lookup through UserDatabase"
+assert elogind["package"]["rel"] >= 5, "Bump elogind rel when changing Elogind PolicyKit authorization"
 assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
 require_deps("gui", "elogind", "build", {
     "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",

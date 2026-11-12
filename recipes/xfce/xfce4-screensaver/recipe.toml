@@ -12,7 +12,7 @@ source_dir = "xfce4-screensaver-%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gettext", "dbus", "dbus-glib", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "elogind"]
-run = ["dbus", "dbus-glib", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "elogind"]
+run = ["dbus", "dbus-glib", "procps-ng", "python", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "elogind"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D x11=enabled -D wayland=disabled -D docs=disabled -D authentication-scheme=pam -D pam-auth-type=system -D session-manager=elogind -D kbd-layout-indicator=false -D xscreensaverhackdir=no"

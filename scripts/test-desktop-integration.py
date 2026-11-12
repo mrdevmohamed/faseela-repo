@@ -422,15 +422,24 @@ assert "xfce4-clipman-plugin" not in xfce_group["optional"], (
 network_applet = recipe("gui", "network-manager-applet")
 assert network_applet["package"]["version"] == "1.36.0"
 assert re.fullmatch(r"[0-9a-f]{64}", network_applet["package"]["sha256"])
+assert network_applet["package"]["rel"] >= 2, (
+    "Bump network-manager-applet rel when fixing its GSettings schema installation"
+)
 require_deps("gui", "network-manager-applet", "run", {
     "network-manager", "libnma", "libsecret", "gnome-keyring", "dbus", "polkit",
 })
 applet_install = network_applet["build"]["install"]
 for required in (
+    "usr/share/glib-2.0/schemas/org.gnome.nm-applet.gschema.xml",
+    'test -s "$schema"',
     "etc/xdg/autostart/nm-applet.desktop",
     "Exec=nm-applet",
 ):
-    assert required in applet_install, f"NetworkManager applet autostart validation missing: {required}"
+    assert required in applet_install, f"NetworkManager applet install validation missing: {required}"
+applet_hooks = network_applet.get("hooks", {})
+assert "glib-compile-schemas /usr/share/glib-2.0/schemas" in applet_hooks.get("post_install", ""), (
+    "network-manager-applet must rebuild the compiled GSettings database after installing its schema"
+)
 
 libnma = recipe("gui", "libnma")
 assert libnma["package"]["version"] == "1.10.6"

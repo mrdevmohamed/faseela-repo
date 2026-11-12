@@ -5,7 +5,7 @@
 [package]
 name = "xarchiver"
 version = "0.5.4.27"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "GTK archive manager for common tar, zip, xz and 7z formats"
 license = ["GPL-2.0-or-later"]
@@ -36,7 +36,9 @@ PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib 
 compile = '''
 # GNU grep warns about the non-portable BRE escape \# in gettext's generated
 # translation rules. Normalize it to a literal # before make enters po/.
-if [ -f po/Makefile ]; then sed -i 's/\\#/#/g' po/Makefile; fi
+# The generated gettext rules may contain the non-portable BRE escape \\#.
+# Patch every generated/source Makefile template before make invokes grep.
+find . -type f -name 'Makefile*' -exec sed -i 's/\\\\#/#/g' {} +
 make -j%{jobs}
 '''
 install = "make DESTDIR=%{pkgdir} install"

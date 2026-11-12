@@ -204,7 +204,7 @@ assert "ln -s /etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default/polkitd" in p
     "gui/polkit: polkitd must be enabled through runit"
 )
 
-nm = require_deps("gui", "network-manager", "run", {"dbus-system", "polkit", "runit"})
+nm = require_deps("gui", "network-manager", "run", {"dbus-system", "polkit"})
 nm_install = nm["build"]["install"]
 nm_run = extract_heredoc(nm_install, "etc/sv/NetworkManager/run", "RUN")
 check_shell("gui/NetworkManager runit service", nm_run)

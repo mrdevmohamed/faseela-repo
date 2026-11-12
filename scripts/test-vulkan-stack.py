@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guard Mesa Vulkan/OpenGL runtime support and the optional Zed flavor."""
+"""Guard Mesa Vulkan/OpenGL runtime support and keep Zed optional."""
 
 from pathlib import Path
 import re
@@ -145,7 +145,9 @@ assert 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"' in in
 )
 
 flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))
-zed_flavor = flavors["flavor"]["iso-gui-zed"]
-assert "zed" in zed_flavor["include"], "iso-gui-zed must continue to install Zed"
+for desktop in ("iso-nogui", "iso-sway", "iso-xfce"):
+    assert "zed" not in flavors["flavor"][desktop].get("include", []), (
+        f"Zed must remain an optional application, not part of {desktop}"
+    )
 
 print("VULKAN STACK VALIDATION PASSED")

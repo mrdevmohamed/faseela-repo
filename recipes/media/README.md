@@ -38,7 +38,7 @@ installed system, use `sudo nawa install mpv ffmpeg`; their runtime
 dependencies are resolved by Nawa. Media applications do not have dedicated
 ISO flavors. `ALL` / `@all` does not include `@media`, same as `@gui`
 and `@browser`. Zed's recipe independently pulls in the Vulkan loader and
-Mesa runtime; SPIR-V and glslang remain build-only dependencies. mpv needs
+Mesa runtime; `spirv-tools` is also a Mesa runtime dependency because its Vulkan ICDs link to `libSPIRV-Tools.so`. SPIR-V headers and glslang remain build-only dependencies. mpv needs
 the `gui/` stack (X11 client libraries, Wayland, Mesa); ffmpeg does not.
 
 ## First build
@@ -49,7 +49,7 @@ the `gui/` stack (X11 client libraries, Wayland, Mesa); ffmpeg does not.
 3. Build order for Mesa's Vulkan support is
    `spirv-headers → spirv-tools → glslang → mesa`, plus
    `vulkan-headers → vulkan-loader` and `vulkan-headers → volk → vulkan-tools`; `python-ply` is also pulled into Mesa's
-   build closure for Intel ANV. The installed Zed flavor keeps only runtime packages.
+   build closure for Intel ANV. Installed desktop images retain only the runtime dependencies required by Mesa.
 4. `python3 scripts/check-recipes.py mpv` prints the mpv build order.
 5. Things most likely to need attention on the first build:
    * **Mesa / Lavapipe**: the Clang project is built as part of the `llvm`
@@ -99,8 +99,8 @@ heavy: try `--vo=gpu --profile=fast`, or `--vo=wlshm` for plain playback.
   (`lua5.2`, `luac5.2`, `liblua5.2.a`, `lua5.2.pc`) and never collides
   with `lua`. mpv links it statically.
 * **ffmpeg depends on the text stack of gui/** (freetype, fontconfig, fribidi,
-  harfbuzz, libass, libdrm) for subtitle burn-in and `drawtext`, so
-  `iso-nogui-ffmpeg` carries those too (no compositor needed).
+  harfbuzz, libass, libdrm) for subtitle burn-in and `drawtext`; Nawa resolves
+  those runtime dependencies automatically when ffmpeg is installed.
 * **ffmpeg encoders**: libx264, libx265, libvpx, libopus, libmp3lame and the
   native ones. Still missing: AV1 encoders (libaom, SVT-AV1) and vdpau.
 * **x264 is a git snapshot** (the `stable` branch commit in the recipe): there

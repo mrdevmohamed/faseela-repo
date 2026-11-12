@@ -5,7 +5,7 @@
 [package]
 name = "network-manager-applet"
 version = "1.36.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "NetworkManager notification-area applet and connection editor"
 license = ["GPL-2.0-only"]
@@ -21,6 +21,9 @@ configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --bu
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
+# This schema belongs to network-manager-applet (libnma's duplicate is removed).
+schema=%{pkgdir}/usr/share/glib-2.0/schemas/org.gnome.nm-applet.gschema.xml
+test -s "$schema"
 # The upstream autostart entry is required for a fresh XFCE session.
 desktop=%{pkgdir}/etc/xdg/autostart/nm-applet.desktop
 test -s "$desktop"
@@ -28,4 +31,10 @@ grep -Eq '^Exec=nm-applet([[:space:]]|$)' "$desktop"
 if grep -q '^OnlyShowIn=' "$desktop" && ! grep -q '^OnlyShowIn=.*XFCE' "$desktop"; then
     sed -i '/^OnlyShowIn=/s/$/;XFCE;/' "$desktop"
 fi
+'''
+
+[hooks]
+post_install = '''
+# Refresh the compiled GSettings database after installing the applet schema.
+glib-compile-schemas /usr/share/glib-2.0/schemas
 '''

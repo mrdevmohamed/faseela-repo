@@ -199,7 +199,7 @@ assert "--prefix=/usr" in seccomp["build"]["configure"]
 assert "%{pkgdir}" in seccomp["build"]["install"]
 
 flavors = (ROOT / "flavors.toml").read_text(encoding="utf-8")
-for default in ("bootstrap", "rootfs-min", "iso-nogui", "iso-gui"):
+for default in ("bootstrap", "rootfs-min", "iso-nogui", "iso-sway"):
     section = flavors.split(f"[flavor.{default}]", 1)[1].split("[flavor.", 1)[0]
     assert all(name not in section for name in ("podman", "developer-containers", "containers-common", "conmon", "catatonit", "crun", "libseccomp", "protobuf-compiler", "netavark", "aardvark-dns", "fuse-overlayfs", "passt"))
 

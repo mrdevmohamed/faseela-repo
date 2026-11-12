@@ -85,6 +85,8 @@ for required in (
     "UDisks2",
     "PipeWire",
     "notifications",
+    "Lock screen",
+    "Shutdown and reboot",
     "portals",
     "clean-install",
     "upgrade",

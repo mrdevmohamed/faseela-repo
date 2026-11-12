@@ -155,7 +155,9 @@ for required in (
         f"XFCE portal integration is missing its explicit backend policy: {required}"
     )
 xfce4_session = recipe("xfce", "xfce4-session")
-assert xfce4_session["package"]["rel"] >= 8
+assert xfce4_session["package"]["rel"] >= 9, (
+    "Bump xfce4-session rel when changing the XFCE D-Bus activation environment"
+)
 xfce4_install = xfce4_session["build"]["install"]
 assert "Exec=startxfce4" in xfce4_install
 assert "/tmp/runtime-$uid" in xfce4_install

@@ -1,141 +1,80 @@
-# flavors.toml — what each flavor of the distribution contains.
+# Faseela image definitions.
 #
-# ONE source of truth: the recipes (recipes/) say how a package is built, this
-# file says which packages make up which image. The faseela repository builds
-# the bootstrap and then only INSTALLS the other flavors from the package
-# repository (packages.yml publishes it); nothing here is compiled per flavor.
+# Recipes describe how packages are built. This file defines the package sets
+# installed into bootstrappable roots and desktop images.
 #
-#   scripts/flavor.py list                 the flavors
-#   scripts/flavor.py resolve NAME         their packages, dependencies first
-#   scripts/flavor.py check                every flavor resolves (run by ci.yml)
+# Internal build targets:
+#   bootstrap   self-hosting core used by stage 2 and stage 3
+#   seed        full rootfs used by the next bootstrap
+#   rootfs-min  small package-build environment
 #
-# Keys of a [flavor.NAME] table
-#   summary   one line
-#   include   package names, or @category (toolchain base system boot extra dev gui browser media creative messaging networking security peripherals xorg xfce)
-#   extends   other flavors whose packages are included too
-#   exclude   packages left out of the result (nothing else is dropped)
-#   closure   "run"   (default) add every [depends].run dependency, transitively:
-#                     what has to be INSTALLED for the packages to work
-#             "build" add [depends].build AND .run: what has to exist so the
-#                     packages can be BUILT (the bootstrap)
+# User-facing images:
+#   iso-nogui   common base system without a desktop
+#   iso-sway    common base + Sway Wayland desktop
+#   iso-xfce    common base + Xfce desktop on Xorg
+#
+# Optional applications (media players, editors, messaging, VPN clients,
+# peripherals, developer tools) are installed separately through Nawa.
+#
+# Flavor fields:
+#   summary  one-line description
+#   include  package names or @category selectors
+#   extends  inherit packages from another flavor
+#   exclude  omit named packages
+#   closure  run (default) or build (build + runtime dependencies)
 
-# What stage 2 and stage 3 of faseela build with the seed toolchain, and the
-# only thing they build. nawa is written in Rust, so its build dependencies
-# (rust, cmake, ...) are in the closure; curl and ca-certificates let the finished root fetch from https (the
-# package repository). This is also the seed of the next bootstrap (faseela-x86_64-rootfs.tar.zst).
+# Stage 2 and stage 3 build only this self-hosting core.
 [flavor.bootstrap]
-summary = "the self-hosting core: base-devel + nawa + curl + ca-certificates (and what builds them)"
+summary = "Self-hosting core: base-devel, Nawa and repository access"
 include = ["base-devel", "nawa", "curl", "ca-certificates"]
 closure = "build"
 
-# The rootfs a later build uses instead of the Debian seed.
+# Full rootfs used to seed a later bootstrap.
 [flavor.seed]
-summary = "rootfs that seeds the next bootstrap"
+summary = "Full rootfs that seeds the next bootstrap"
 extends = ["bootstrap"]
 closure = "build"
 
-# The small build environment: packages.yml builds the rest of the packages in it.
+# Small environment used by the package-build workflow.
 [flavor.rootfs-min]
-summary = "base-devel + nawa + git + curl: a build environment without rust"
+summary = "Minimal package-build environment without Rust"
 include = ["base-devel", "nawa", "git", "curl", "ca-certificates"]
 
-[flavor.docker]
-summary = "rootfs-min imported as a container image (ghcr.io/<owner>/faseela-build)"
-extends = ["rootfs-min"]
-
-# The live ISO without a graphical session. Firmware is the bulk of an ISO:
-# linux-firmware-lite stays, the full set is installed on demand (nawa install linux-firmware).
+# Shared live-system base, without a graphical session.
+# Keep full firmware out of the ISO; users can install it through Nawa.
 [flavor.iso-nogui]
-summary = "live ISO, no GUI"
+summary = "Base live system without a desktop environment"
 include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
 
-[flavor.iso-gui-huion]
-summary = "iso-gui plus the official Huion tablet control panel"
-extends = ["iso-gui"]
-include = ["huiontablet"]
-
-[flavor.iso-gui]
-summary = "live ISO with Sway, PipeWire audio, Firefox ESR, NetworkManager, Bluetooth and polkit"
+# Sway desktop image.
+[flavor.iso-sway]
+summary = "Live system with Sway, PipeWire, Firefox, networking and Bluetooth"
 extends = ["iso-nogui"]
-# Browser recipes stay in their own category, but Firefox is part of the standard GUI ISO.
-# zed is in gui/ but remains opt-in through iso-gui-zed.
 include = ["@gui", "firefox"]
 exclude = ["zed"]
 
-# Optional Xfce desktop on Xorg. Select the runtime session, LightDM,
-# greeter and standard applications; optional panel plugins stay out.
+# Xfce desktop image.
 [flavor.iso-xfce]
-summary = "live ISO with Xfce 4.20 on Xorg and LightDM login"
+summary = "Live system with Xfce on Xorg and LightDM"
 extends = ["iso-nogui"]
-include = ["xfce-session", "lightdm", "lightdm-gtk-greeter", "xfce4-terminal", "mousepad", "ristretto", "xfce4-taskmanager", "xfce4-screenshooter", "xfce4-notifyd", "xfce4-power-manager", "xfce4-whiskermenu-plugin", "xfce4-pulseaudio-plugin", "xfce4-clipman-plugin", "network-manager-applet", "tumbler", "thunar-archive-plugin", "xarchiver", "pavucontrol"]
-
-# Backwards-compatible flavor name for existing build workflow invocations.
-[flavor.iso-gui-firefox]
-summary = "compatibility alias for iso-gui (includes Firefox ESR)"
-extends = ["iso-gui"]
-
-# Opt-in Zed desktop. Mesa builds AMD RADV and Intel ANV/HasVK Vulkan ICDs, plus lavapipe
-# (swrast) as a CPU fallback; vulkan-loader supplies libvulkan. Mesa's build closure compiles
-# the SDK-matched SPIR-V/glslang helpers and python-ply; the ISO installs runtime packages only.
-[flavor.iso-gui-zed]
-summary = "iso-gui plus Zed and vulkaninfo, with Vulkan through Mesa (lavapipe, radv on AMD)"
-extends = ["iso-nogui"]
-include = ["@gui", "firefox", "zed", "vulkan-tools"]
-
-# Optional Telegram Desktop; kept out of the default ISO and GUI flavor.
-[flavor.iso-gui-telegram]
-summary = "iso-gui plus the official Telegram Desktop client"
-extends = ["iso-gui"]
-include = ["@messaging"]
-
-# Optional Nekoray desktop proxy client, kept out of the default ISO.
-[flavor.iso-gui-nekoray]
-summary = "iso-gui plus Nekoray (optional desktop proxy client)"
-extends = ["iso-gui"]
-include = ["@networking"]
-
-# --- media (recipes/media): opt-in, on top of the images above ----------------------------
-[flavor.iso-nogui-ffmpeg]
-summary = "iso-nogui plus ffmpeg (libav*, x264/x265/vpx/opus/lame, VA-API with the Intel driver)"
-extends = ["iso-nogui"]
-include = ["ffmpeg", "intel-media-driver"]
-
-[flavor.iso-gui-mpv]
-summary = "iso-gui plus the mpv media player (+ ffmpeg, libass, libplacebo, Intel VA-API driver; AMD's is in mesa)"
-extends = ["iso-gui"]
-include = ["mpv", "intel-media-driver"]
-
-
-# --- creative: optional Storytold Craft desktop apps --------------------------------------
-[flavor.creative]
-summary = "15 optional Storytold Craft desktop applications for Wayland"
-include = ["@creative"]
-
-
-# --- optional developer environments ----------------------------------------
-# These groups are opt-in and are intentionally excluded from the default ISO
-# and bootstrap flavors. See DEVELOPER-EDITION.md for the full target inventory.
-[flavor.developer-base]
-summary = "core build tools and version control"
-include = ["base-devel", "git", "cmake", "ninja", "meson", "make", "pkgconf", "patch", "autoconf", "automake", "libtool"]
-
-[flavor.developer-systems]
-summary = "systems programming: GCC, Rust, LLVM, assembler and Lua"
-include = ["gcc", "rust", "llvm", "golang", "gdb", "nasm", "lua"]
-
-[flavor.developer-python]
-summary = "Python interpreter and its runtime dependencies"
-include = ["python", "pip", "pipx"]
-
-[flavor.developer-web]
-summary = "JavaScript and TypeScript runtimes: Node.js and Deno"
-include = ["nodejs", "deno"]
-
-[flavor.developer-debugging]
-summary = "debuggers, tracing and memory diagnostics"
-include = ["gdb", "strace", "valgrind"]
-
-[flavor.developer-cli]
-summary = "terminal editors and command-line developer utilities"
-include = ["neovim", "jq", "tree", "zsh", "tmux", "htop", "ncdu"]
+include = [
+    "xfce-session",
+    "lightdm",
+    "lightdm-gtk-greeter",
+    "xfce4-terminal",
+    "mousepad",
+    "ristretto",
+    "xfce4-taskmanager",
+    "xfce4-screenshooter",
+    "xfce4-notifyd",
+    "xfce4-power-manager",
+    "xfce4-whiskermenu-plugin",
+    "xfce4-pulseaudio-plugin",
+    "xfce4-clipman-plugin",
+    "network-manager-applet",
+    "tumbler",
+    "thunar-archive-plugin",
+    "xarchiver",
+    "pavucontrol"
+]

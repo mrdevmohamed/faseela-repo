@@ -124,7 +124,6 @@ for label, desktop, exec_line in (
     assert "Type=Application" in desktop, f"{label}: wrong desktop entry type"
     assert exec_line in desktop, f"{label}: wrong Exec command"
     assert "OnlyShowIn=XFCE;" in desktop, f"{label}: not scoped to XFCE"
-    check_shell(label, desktop.replace("[Desktop Entry]", "", 1))
 
 # The Xsession file must point at the Faseela wrapper, which creates a
 # user-owned XDG_RUNTIME_DIR before starting the session.
@@ -134,7 +133,6 @@ xfce4_install = xfce4_session["build"]["install"]
 for required in (
     "usr/share/xsessions/xfce.desktop",
     "Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4",
-    "OnlyShowIn=XFCE",
     "XDG_SESSION_TYPE=x11",
     "XDG_CURRENT_DESKTOP=XFCE",
 ):

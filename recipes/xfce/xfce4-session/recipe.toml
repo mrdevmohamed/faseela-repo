@@ -5,7 +5,7 @@
 [package]
 name = "xfce4-session"
 version = "4.20.4"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "Xfce session manager (startxfce4, session save/restore, logout dialog)"
 license = ["GPL-2.0-or-later"]
@@ -51,6 +51,15 @@ fi
 export XDG_RUNTIME_DIR
 export XDG_SESSION_TYPE=x11
 export XDG_CURRENT_DESKTOP=XFCE
+
+# dbus-run-session starts before this wrapper. Import the final desktop and
+# X11 environment so D-Bus-activated portals select xfce-portals.conf and can
+# connect to the active X server.
+dbus-update-activation-environment DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR
+if [ -n "${XAUTHORITY:-}" ]; then
+    dbus-update-activation-environment XAUTHORITY
+fi
+
 exec /usr/bin/startxfce4 "$@"
 STARTXFCE
 chmod 755 %{pkgdir}/usr/bin/faseela-start-xfce4

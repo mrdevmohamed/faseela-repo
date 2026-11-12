@@ -126,10 +126,12 @@ assert "update-desktop-database" not in xfce_session_hooks.get("post_install", "
 # XFCE must start the same audio supervisor and establish a private runtime dir
 # before the desktop is launched from LightDM (which has no pam_systemd).
 xfce_session = recipe("xfce", "xfce-session")
-assert xfce_session["package"]["rel"] >= 12, (
-    "Bump xfce-session rel when completing XFCE desktop runtime dependencies"
+assert xfce_session["package"]["rel"] >= 14, (
+    "Bump xfce-session rel when adding XFCE XDG Desktop Portal integration"
 )
-require_deps("xfce", "xfce-session", "run", {"audio-session"})
+require_deps("xfce", "xfce-session", "run", {
+    "audio-session", "xdg-desktop-portal", "xdg-desktop-portal-gtk",
+})
 xfce_session_install = xfce_session["build"]["install"]
 assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" not in xfce_session_install, (
     "The Xfconf channel file belongs to xfce4-session; the meta package must not ship a duplicate"
@@ -140,12 +142,26 @@ assert "xfconf-query" not in xfce_session.get("hooks", {}).get("post_install", "
 xfce_install = xfce_session_install
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
+for required in (
+    "usr/share/xdg-desktop-portal/xfce-portals.conf",
+    "default=gtk",
+    "org.freedesktop.impl.portal.FileChooser=gtk",
+    "org.freedesktop.impl.portal.Secret=gnome-keyring",
+    "org.freedesktop.impl.portal.Screenshot=none",
+    "org.freedesktop.impl.portal.ScreenCast=none",
+    "org.freedesktop.impl.portal.RemoteDesktop=none",
+):
+    assert required in xfce_install, (
+        f"XFCE portal integration is missing its explicit backend policy: {required}"
+    )
 xfce4_session = recipe("xfce", "xfce4-session")
 assert xfce4_session["package"]["rel"] >= 8
 xfce4_install = xfce4_session["build"]["install"]
 assert "Exec=startxfce4" in xfce4_install
 assert "/tmp/runtime-$uid" in xfce4_install
 assert "chmod 700" in xfce4_install
+assert "dbus-update-activation-environment DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR" in xfce4_install
+assert "dbus-update-activation-environment XAUTHORITY" in xfce4_install
 assert "grep -Fqx 'Exec=startxfce4'" in xfce4_install
 assert "etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" in xfce4_install
 assert '<property name="LaunchGNOME" type="bool" value="true"/>' in xfce4_install

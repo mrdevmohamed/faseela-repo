@@ -108,8 +108,26 @@ xfce = require_deps("xfce", "xfce-session", "run", {
     "xfce-polkit", "audio-session", "dbus-system",
     "elogind", "polkit", "network-manager", "gvfs",
     "udisks2", "thunar", "thunar-volman", "upower",
+    "xdg-desktop-portal", "xdg-desktop-portal-gtk",
 })
 xfce_install = xfce["build"]["install"]
+assert xfce["package"]["rel"] >= 14
+portal_config = extract_heredoc(
+    xfce_install,
+    "usr/share/xdg-desktop-portal/xfce-portals.conf",
+    "PORTALS",
+)
+for required in (
+    "default=gtk",
+    "org.freedesktop.impl.portal.FileChooser=gtk",
+    "org.freedesktop.impl.portal.Secret=gnome-keyring",
+    "org.freedesktop.impl.portal.Screenshot=none",
+    "org.freedesktop.impl.portal.ScreenCast=none",
+    "org.freedesktop.impl.portal.RemoteDesktop=none",
+):
+    assert required in portal_config, (
+        f"XFCE portal configuration is missing: {required}"
+    )
 audio_desktop = extract_heredoc(
     xfce_install,
     "etc/xdg/autostart/faseela-audio-session.desktop",
@@ -143,6 +161,8 @@ for required in (
     assert required in xfce4_install, (
         f"xfce/xfce4-session: missing XFCE session integration: {required}"
     )
+assert "dbus-update-activation-environment DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR" in xfce4_install
+assert "dbus-update-activation-environment XAUTHORITY" in xfce4_install
 check_shell("xfce/xfce4-session install", xfce4_install)
 
 # The native locker must be part of the standard XFCE closure and use

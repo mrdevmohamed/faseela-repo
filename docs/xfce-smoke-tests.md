@@ -110,6 +110,8 @@ test -s /etc/xdg/autostart/faseela-audio-session.desktop
 test -s /etc/xdg/autostart/thunar-daemon.desktop
 test -s /etc/xdg/autostart/xfce-polkit.desktop
 test -s /etc/xdg/autostart/nm-applet.desktop
+test -s /usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service
+test -s /usr/share/xdg-desktop-portal/xfce-portals.conf
 ```
 
 ### A3. Perform the controlled LightDM login test
@@ -154,12 +156,22 @@ gdbus call --session --dest org.freedesktop.DBus \\
 gdbus call --system --dest org.freedesktop.DBus \\
     --object-path /org/freedesktop/DBus \\
     --method org.freedesktop.DBus.ListNames
+gdbus introspect --session \
+    --dest org.freedesktop.portal.Desktop \
+    --object-path /org/freedesktop/portal/desktop
+portal_pid="$(pgrep -u "$USER" -xo xdg-desktop-portal)"
+test -n "$portal_pid"
+test "$(pgrep -u "$USER" -xc xdg-desktop-portal)" -eq 1
+tr '\0' '\n' < "/proc/$portal_pid/environ" | grep -Fx 'XDG_CURRENT_DESKTOP=XFCE'
+tr '\0' '\n' < "/proc/$portal_pid/environ" | grep -Fx "DISPLAY=$DISPLAY"
 loginctl list-sessions
 ```
 
 Expected: XFCE reports X11, the runtime directory exists and belongs to the
 logged-in user, the session process is present, and both D-Bus commands return
-a list of names. Elogind lists the active user session.
+a list of names. The portal frontend activates on the session bus exactly once
+and inherits `XDG_CURRENT_DESKTOP=XFCE` plus the active `DISPLAY`. Elogind
+lists the active user session.
 
 ### A5. Exercise session services and desktop features
 
@@ -178,7 +190,8 @@ Perform each interaction, not just a process check:
 | Fixed/system storage policy | Attempt the relevant privileged action on a VM-only fixed test disk | UDisks2 applies its stricter system-device authorization and Polkit shows an administrator challenge |
 | Thumbnails and archives | Open a folder containing image files; use Thunar's archive context menu to create and extract a test archive | Thumbnails appear and archive create/extract both work |
 | Screenshots | Open the XFCE screenshot tool and save a screenshot | Screenshot UI opens and writes the requested image |
-| Desktop portals (conditional) | The current `iso-xfce` flavor does not include the portal packages by default. When testing an image that includes them, confirm `/usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service` exists and run `gdbus introspect --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop` | On portal-enabled images, the D-Bus service activates and introspection succeeds. On the standard XFCE flavor, record this check as N/A rather than a failure; a GTK-native file chooser should still open |
+| File chooser portal | Run `GTK_USE_PORTAL=1 mousepad`, open File → Open, and cancel the dialog | The GTK file chooser portal opens; the frontend and GTK backend activate on the user session bus without creating duplicate frontend processes |
+| Screenshot / ScreenCast portal policy | Inspect `/usr/share/xdg-desktop-portal/xfce-portals.conf`, then run `xfce4-screenshooter` and save a screenshot | The native XFCE X11 screenshot tool works. Screenshot, ScreenCast and RemoteDesktop portal interfaces are explicitly disabled because the selected GTK backend does not implement them; PipeWire alone does not provide an X11 capture backend |
 | Power management | Open XFCE power settings and inspect available actions; test suspend only when the VM platform supports it | Power actions are exposed; supported suspend/resume completes without losing the session |
 
 Do not use a real data disk for mount-policy tests. Use disposable virtual

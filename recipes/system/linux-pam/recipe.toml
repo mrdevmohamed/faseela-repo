@@ -4,7 +4,7 @@
 [package]
 name = "linux-pam"
 version = "1.7.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Linux Pluggable Authentication Modules"
 license = ["BSD-3-Clause", "GPL-2.0-or-later"]
@@ -14,11 +14,26 @@ source_dir = "Linux-PAM-%{version}"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "libxcrypt"]
-run = ["libxcrypt"]
+run = ["coreutils", "libxcrypt"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D docs=disabled -D audit=disabled -D econf=disabled -D logind=disabled -D elogind=disabled -D selinux=disabled -D nis=disabled -D i18n=disabled -D openssl=disabled -D examples=false -D xtests=false -D pam_userdb=disabled -D pam_lastlog=disabled -D pam_unix=enabled"
 compile = "ninja -C build"
-install = '''DESTDIR=%{pkgdir} meson install -C build
-chmod 4755 %{pkgdir}/usr/sbin/unix_chkpwd
+install = '''set -eu
+DESTDIR=%{pkgdir} meson install -C build
+helper="%{pkgdir}/usr/sbin/unix_chkpwd"
+test -f "$helper"
+chmod 4755 "$helper"
+test -u "$helper"
+'''
+
+[hooks]
+# Nawa's secure archive extraction strips SUID/SGID bits. Restore this one
+# explicitly required, package-owned helper after the payload is installed.
+post_install = '''set -eu
+helper=/usr/sbin/unix_chkpwd
+test -f "$helper"
+chown root:root "$helper"
+chmod 4755 "$helper"
+test "$(stat -c '%u:%g:%a' "$helper")" = "0:0:4755"
 '''

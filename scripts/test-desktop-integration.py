@@ -425,9 +425,13 @@ for icon_path in (
     assert icon_path in clipman_install, (
         f"Clipman package must validate installed panel icon: {icon_path}"
     )
-assert "gtk-update-icon-cache --force /usr/share/icons/hicolor" in (
-    clipman.get("hooks", {}).get("post_install", "")
-), "Clipman must refresh the hicolor icon cache after installing its panel icons"
+clipman_hook = clipman.get("hooks", {}).get("post_install", "")
+assert 'if [ -s "$theme_dir/index.theme" ]; then' in clipman_hook, (
+    "Clipman must skip icon-cache refresh in staging roots without hicolor/index.theme"
+)
+assert 'gtk-update-icon-cache --force "$theme_dir"' in clipman_hook, (
+    "Clipman must refresh the hicolor icon cache when the theme index is installed"
+)
 
 # The default XFCE profile must carry the complete desktop integration set.
 xfce_default = set(xfce_group["default"])

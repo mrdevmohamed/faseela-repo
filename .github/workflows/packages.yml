@@ -61,10 +61,10 @@ name: Build packages
 on:
   push:
     branches: [main, master]
-    paths: ["recipes/**", "flavors.toml", "groups.toml"]
+    paths: ["recipes/**", "groups.toml"]
   pull_request:
     types: [opened, synchronize, reopened]
-    paths: ["recipes/**", "flavors.toml"]
+    paths: ["recipes/**"]
   workflow_dispatch:
     inputs:
       all:

@@ -1,8 +1,8 @@
 # Optional messaging applications
 
-Packages in this category are opt-in and are not part of the default ISO,
-bootstrap, or GUI flavor. They can be installed individually with Nawa or
-selected through a dedicated flavor.
+Packages in this category are optional applications. They are not part of
+the default desktop images, bootstrap or build roots. Install them
+individually through Nawa when needed.
 
 ## Telegram Desktop
 
@@ -13,9 +13,9 @@ The package keeps Telegram's private runtime files under
 
 Install on an existing Faseela system:
 
-```sh
+~~~sh
 sudo nawa install telegram-desktop
-```
+~~~
 
-Build an ISO that includes Telegram Desktop with the
-`iso-gui-telegram` flavor.
+No Telegram-specific ISO flavor is maintained. The application can be
+installed on either Sway or Xfce without rebuilding the desktop image.

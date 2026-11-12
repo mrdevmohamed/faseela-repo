@@ -407,6 +407,28 @@ xfce_group = next(group for group in tomllib.loads(
 assert "thunar-volman" in xfce_group["default"]
 assert "thunar-volman" not in xfce_group["optional"]
 
+# Clipman must install its panel icon assets and refresh the hicolor cache.
+clipman = recipe("xfce", "xfce4-clipman-plugin")
+assert clipman["package"]["rel"] >= 3, (
+    "Bump Clipman rel when fixing missing panel icon assets/cache"
+)
+clipman_install = clipman["build"]["install"]
+for icon_path in (
+    "16x16/apps/xfce4-clipman-plugin.png",
+    "24x24/apps/xfce4-clipman-plugin.png",
+    "32x32/apps/xfce4-clipman-plugin.png",
+    "48x48/apps/xfce4-clipman-plugin.png",
+    "64x64/apps/xfce4-clipman-plugin.png",
+    "scalable/apps/xfce4-clipman-plugin.svg",
+    "16x16/apps/clipman-symbolic.svg",
+):
+    assert icon_path in clipman_install, (
+        f"Clipman package must validate installed panel icon: {icon_path}"
+    )
+assert "gtk-update-icon-cache --force /usr/share/icons/hicolor" in (
+    clipman.get("hooks", {}).get("post_install", "")
+), "Clipman must refresh the hicolor icon cache after installing its panel icons"
+
 # The default XFCE profile must carry the complete desktop integration set.
 xfce_default = set(xfce_group["default"])
 for package_name in (

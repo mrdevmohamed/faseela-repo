@@ -148,7 +148,8 @@ check_shell("xfce/xfce4-session install", xfce4_install)
 # queries when the XFCE session manager requests a lock.
 screensaver = require_deps("xfce", "xfce4-screensaver", "run", {
     "dbus", "dbus-glib", "elogind", "gtk3", "libXScrnSaver",
-    "libwnck3", "libxklavier", "libxfce4ui", "linux-pam", "xfconf",
+    "libwnck3", "libxklavier", "libxfce4ui", "linux-pam", "procps-ng",
+    "python", "xfconf",
 })
 screensaver_build = require_deps("xfce", "xfce4-screensaver", "build", {
     "dbus", "dbus-glib", "elogind", "linux-pam", "meson", "ninja", "pkgconf",

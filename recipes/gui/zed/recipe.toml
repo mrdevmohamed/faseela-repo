@@ -1,5 +1,5 @@
-# Upstream prebuilt Zed release bundle. Opt-in only: use flavor iso-gui-zed.
-# That flavor contains Mesa's lavapipe ICD and the Khronos Vulkan loader.
+# Upstream prebuilt Zed release bundle. Install it separately through Nawa.
+# Its runtime dependencies provide Mesa's Vulkan ICDs and the Khronos Vulkan loader.
 [package]
 name = "zed"
 version = "1.26.2"

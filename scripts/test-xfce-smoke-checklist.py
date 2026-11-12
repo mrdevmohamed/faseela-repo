@@ -99,7 +99,7 @@ assert "evidence that a graphical login" in doc and "not** evidence" in doc, (
 # Core XFCE closure: every applet/service exercised by the checklist is part
 # of the meta-package runtime dependency graph.
 xfce = require_deps("xfce", "xfce-session", "run", {
-    "xfce4-session", "xfce4-panel", "xfce4-notifyd",
+    "xfce4-session", "xfce4-panel", "xfce4-notifyd", "xfce4-screensaver",
     "xfce4-clipman-plugin", "network-manager-applet",
     "xfce-polkit", "audio-session", "dbus-system",
     "elogind", "polkit", "network-manager", "gvfs",
@@ -140,6 +140,32 @@ for required in (
         f"xfce/xfce4-session: missing XFCE session integration: {required}"
     )
 check_shell("xfce/xfce4-session install", xfce4_install)
+
+# The native locker must be part of the standard XFCE closure and use
+# Faseela's PAM + elogind stack. It exposes the D-Bus name that libxfce4ui
+# queries when the XFCE session manager requests a lock.
+screensaver = require_deps("xfce", "xfce4-screensaver", "run", {
+    "dbus", "dbus-glib", "elogind", "gtk3", "libXScrnSaver",
+    "libwnck3", "libxklavier", "libxfce4ui", "linux-pam", "xfconf",
+})
+screensaver_build = require_deps("xfce", "xfce4-screensaver", "build", {
+    "dbus", "dbus-glib", "elogind", "linux-pam", "meson", "ninja", "pkgconf",
+})
+screensaver_configure = screensaver["build"]["configure"]
+for option in (
+    "-D x11=enabled",
+    "-D wayland=disabled",
+    "-D authentication-scheme=pam",
+    "-D session-manager=elogind",
+):
+    assert option in screensaver_configure, (
+        f"xfce/xfce4-screensaver: missing configure option: {option}"
+    )
+screensaver_install = screensaver["build"]["install"]
+assert "etc/pam.d/xfce4-screensaver" in screensaver_install
+assert "auth required pam_unix.so" in screensaver_install, (
+    "xfce/xfce4-screensaver: unlock PAM stack must use Faseela's local-account module"
+)
 
 # LightDM is deliberately shipped as a manual-enable runit service until its
 # installed-system login path has been tested. Validate PAM and session wiring.
@@ -185,6 +211,16 @@ for required in (
     assert required in dbus_install, f"gui/dbus-system: missing runit entry: {required}"
 
 elogind = require_deps("gui", "elogind", "run", {"dbus-system", "runit"})
+elogind_configure = elogind["build"]["configure"]
+assert "-Dpolkit=enabled" in elogind_configure, (
+    "gui/elogind: login1 power-off/reboot authorization must enable Polkit"
+)
+assert "-Dpolkit=disabled" not in elogind_configure, (
+    "gui/elogind: Polkit authorization must not be compiled out"
+)
+assert "polkit" not in elogind["depends"]["build"], (
+    "gui/elogind: do not introduce a build dependency cycle with Polkit"
+)
 elogind_install = elogind["build"]["install"]
 for service, destination, marker in (
     ("elogind", "etc/sv/elogind/run", "RUN"),

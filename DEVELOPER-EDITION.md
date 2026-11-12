@@ -2,17 +2,16 @@
 
 This document tracks the developer-tooling package set for Faseela. Recipes remain
 the source of truth for build instructions and dependencies; `flavors.toml`
-selects installable package sets. Developer groups are opt-in and must never be
-added to the default ISO or bootstrap closure.
+selects installable package sets. Developer packages are optional and must never be added to desktop images
+or the bootstrap closure.
 
-## Package groups
+## Suggested package selections
 
-The groups below are deliberately split by workload. A group may contain only
-packages that currently have recipes; pending upstream packages are tracked in
-the inventory below and must not be referenced by a flavor until their recipes
-pass validation.
+The selections below are an inventory by workload, not image flavors. Install
+the required package names individually through Nawa. Pending upstream packages
+are tracked separately and must not be selected until their recipes pass validation.
 
-| Flavor | Current packages |
+| Workload | Current packages |
 |---|---|
 | `developer-base` | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
 | `developer-systems` | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
@@ -128,7 +127,6 @@ Every new package must:
 The `rust-development` group is opt-in; its component recipes are pinned to the same
 Rust release as the base `rust` package and do not require Rustup.
 
-Do not add every developer group to `iso-gui`, `iso-nogui`, `bootstrap`,
-or `rootfs-min`. Users should opt in with commands such as
-`nawa install @developer-base` only after Nawa's group-install syntax is
-confirmed; otherwise install the resolved package names explicitly.
+Do not add developer packages to `iso-nogui`, `iso-sway`, `iso-xfce`,
+`bootstrap`, or `rootfs-min`. Install only the package names required for a
+workload; developer tooling must remain independent of desktop image profiles.

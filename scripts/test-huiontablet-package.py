@@ -53,10 +53,9 @@ def run():
               "unexpected xorg-xprop package version")
 
     flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))["flavor"]
-    check("huiontablet" in flavors.get("iso-gui-huion", {}).get("include", []),
-          "the optional iso-gui-huion flavor must include huiontablet")
-    check("huiontablet" not in flavors.get("iso-gui", {}).get("include", []),
-          "Huion control panel must stay out of the default GUI ISO")
+    for desktop in ("iso-nogui", "iso-sway", "iso-xfce"):
+        check("huiontablet" not in flavors.get(desktop, {}).get("include", []),
+              f"Huion control panel must stay optional, not part of {desktop}")
 
     packages_workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
     check("peripherals:" in packages_workflow and "INPUT_PERIPHERALS" in packages_workflow

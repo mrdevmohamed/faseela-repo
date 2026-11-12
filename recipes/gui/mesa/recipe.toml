@@ -1,4 +1,5 @@
 # Mesa: AMD RADV and Intel ANV Vulkan, plus lavapipe software fallback.
+# rel 10 declares SPIR-V Tools as a runtime dependency of Mesa's Vulkan ICDs.
 # rel 9 adds libXrandr (GLX/DRI configure needs xrandr).
 # rel 8 enables the real AMD/Intel Vulkan ICDs, restores the DRI-based GLX ABI
 # required by legacy Qt/AppImage clients, while keeping Wayland as a native platform.
@@ -7,7 +8,7 @@
 [package]
 name = "mesa"
 version = "24.3.0"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "OpenGL/GLES/EGL/GBM + AMD/Intel Vulkan and lavapipe fallback"
 license = ["MIT"]
@@ -16,7 +17,7 @@ sha256 = "97813fe65028ef21b4d4e54164563059e8408d8fee3489a2323468d198bf2efc"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "python-mako", "python-markupsafe", "python-pyyaml", "python-packaging", "python-ply", "libdrm", "xorgproto", "libX11", "libXext", "libXfixes", "libXrandr", "libXxf86vm", "libxcb", "libxshmfence", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "bison", "flex", "llvm", "spirv-llvm-translator", "libclc", "elfutils", "libva", "vulkan-headers", "glslang"]
-run = ["libdrm", "libX11", "libXext", "libXfixes", "libXrandr", "libXxf86vm", "libxcb", "libxshmfence", "wayland", "expat", "zlib", "zstd", "llvm", "elfutils", "libva"]
+run = ["libdrm", "libX11", "libXext", "libXfixes", "libXrandr", "libXxf86vm", "libxcb", "libxshmfence", "wayland", "expat", "zlib", "zstd", "llvm", "elfutils", "libva", "spirv-tools"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D platforms=wayland,x11 -D gallium-drivers=radeonsi,softpipe,llvmpipe,virgl -D vulkan-drivers=amd,intel,intel_hasvk,swrast -D llvm=enabled -D shared-llvm=enabled -D glx=dri -D egl=enabled -D gbm=enabled -D gles1=disabled -D gles2=enabled -D gallium-va=enabled -D video-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec,av1dec,av1enc,vp9dec -D glvnd=disabled -D valgrind=disabled -D libunwind=disabled -D lmsensors=disabled -D build-tests=false"

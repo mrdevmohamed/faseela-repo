@@ -13,13 +13,13 @@ are tracked separately and must not be selected until their recipes pass validat
 
 | Workload | Current packages |
 |---|---|
-| `developer-base` | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
-| `developer-systems` | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
+| Base tools | `base-devel`, `git`, `cmake`, `ninja`, `meson`, `make`, `pkgconf`, `patch`, `autoconf`, `automake`, `libtool` |
+| Systems | `gcc`, `rust`, `llvm` (includes `clangd`), `golang`, `gdb`, `nasm`, `lua` |
 | `rust-development` | `rust`, `rust-clippy`, `rustfmt`; optional `rust-analyzer` |
-| `developer-python` | `python`, `pip`, `pipx` |
-| `developer-web` | `nodejs`, `deno` |
-| `developer-debugging` | `gdb`, `strace`, `valgrind` |
-| `developer-cli` | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu` |
+| Python | `python`, `pip`, `pipx` |
+| Web | `nodejs`, `deno` |
+| Debugging | `gdb`, `strace`, `valgrind` |
+| CLI | `neovim`, `jq`, `tree`, `zsh`, `tmux`, `htop`, `ncdu` |
 
 ## Full target inventory
 

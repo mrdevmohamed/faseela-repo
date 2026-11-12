@@ -202,7 +202,7 @@ for flag in (
     "-Dcgroup-controller=elogind",
     "-Dpam=enabled",
     "-Dpamlibdir=/usr/lib/security",
-    "-Dpolkit=disabled",
+    "-Dpolkit=enabled",
     "-Dnss-elogind=false",
     "-Duserdb=true",
     "-Dvarlink=true",

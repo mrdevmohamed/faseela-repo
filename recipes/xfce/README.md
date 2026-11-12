@@ -20,8 +20,8 @@ required by `xfce-session`; it can be installed separately.
   `xfce4-panel`, `xfce4-session`, `xfce4-settings`, `xfdesktop`,
   and `xfce4-appfinder`.
 * **Applications**: `xfce4-terminal`, `xfce4-notifyd`, `mousepad`,
-  `ristretto`, `xfce4-taskmanager`, `xfce4-screenshooter`, and
-  `xarchiver`.
+  `ristretto`, `xfce4-taskmanager`, `xfce4-screenshooter`,
+  `xfce4-screensaver` (the default session locker), and `xarchiver`.
 * **Panel plugins**: Whisker Menu, PulseAudio, Clipman (clipboard history),
   CPU graph, netload, systemload, battery, genmon, diskperf, and sensors.
 * **Network integration**: `network-manager-applet` provides the tray applet
@@ -88,15 +88,24 @@ systemd. Polkit is built with `-Dsession_tracking=elogind` and links against
 `libelogind`, allowing authorization decisions to identify an active local
 desktop session.
 
-The elogind build disables its optional direct Polkit backend to avoid a
-build-time dependency cycle; Polkit itself uses `libelogind` for session
-tracking. XFCE power-action authorization through login1 must still be
-verified on an installed system.
+Elogind is built with `-Dpolkit=enabled`, so login1 power-off and reboot
+requests are checked through PolicyKit. Elogind uses its own D-Bus client for
+these checks; its optional `polkit-gobject-1` dependency is only a version probe
+for legacy `.pkla` handling, not a link-time dependency. This allows Polkit to
+be built with `-Dsession_tracking=elogind` without creating a build cycle.
+The `xfce-session` meta-package installs both components in the same desktop
+closure. Verify the actual power actions in a disposable installed VM.
 
 The `xfce-polkit` authentication agent is installed in
 `/etc/xdg/autostart` with `OnlyShowIn=XFCE;`. XFCE starts it for each user
 session, allowing graphical tools such as Thunar/UDisks2 clients to display
 PolicyKit authentication prompts.
+
+XFCE session locking is provided by `xfce4-screensaver`. It registers the
+`org.xfce.ScreenSaver` session-bus service that `libxfce4ui` and
+`xfce4-session` already use. Its PAM service is packaged explicitly with
+`pam_unix.so`, matching Faseela local-account authentication rather than the
+upstream `system-auth` include that Faseela does not provide.
 
 ## Removable storage and D-Bus integration
 

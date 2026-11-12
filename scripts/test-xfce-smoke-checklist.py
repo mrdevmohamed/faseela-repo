@@ -150,6 +150,9 @@ for label, desktop, exec_line in (
 # The Xsession file must point at the Faseela wrapper, which creates a
 # user-owned XDG_RUNTIME_DIR before starting the session.
 xfce4_session = recipe("xfce", "xfce4-session")
+assert xfce4_session["package"]["rel"] >= 9, (
+    "Bump xfce4-session rel when changing the XFCE D-Bus activation environment"
+)
 require_deps("xfce", "xfce4-session", "run", {"dbus", "xfce4-panel"})
 xfce4_install = xfce4_session["build"]["install"]
 for required in (

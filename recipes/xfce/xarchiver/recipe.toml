@@ -5,7 +5,7 @@
 [package]
 name = "xarchiver"
 version = "0.5.4.27"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GTK archive manager for common tar, zip, xz and 7z formats"
 license = ["GPL-2.0-or-later"]
@@ -15,7 +15,7 @@ source_dir = "xarchiver-%{version}"
 
 [depends]
 build = ["pkgconf", "gtk3", "glib", "gdk-pixbuf", "perl"]
-run = ["gtk3", "glib", "gdk-pixbuf", "hicolor-icon-theme", "xdg-utils", "tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"]
+run = ["gtk3", "glib", "gdk-pixbuf", "pango", "harfbuzz", "at-spi2-core", "cairo", "glibc", "hicolor-icon-theme", "xdg-utils", "tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"]
 
 [build]
 configure = '''

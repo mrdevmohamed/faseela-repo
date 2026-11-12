@@ -41,6 +41,10 @@ done
 [hooks]
 post_install = '''
 set -eu
-# Refresh the hicolor lookup cache so the panel can resolve the plugin icon.
-gtk-update-icon-cache --force /usr/share/icons/hicolor
+# The package transaction may run before hicolor-icon-theme is present in a
+# minimal staging root. Refresh the cache only when the real theme index exists.
+theme_dir=/usr/share/icons/hicolor
+if [ -s "$theme_dir/index.theme" ]; then
+    gtk-update-icon-cache --force "$theme_dir"
+fi
 '''

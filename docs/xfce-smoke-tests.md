@@ -81,6 +81,10 @@ grep -Fqx 'user-session=xfce' /etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
 grep -q 'pam_elogind.so class=user type=x11 desktop=xfce' /etc/pam.d/lightdm
 grep -q 'pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter' /etc/pam.d/lightdm-greeter
 ! grep -R 'pam_systemd.so' /etc/pam.d/lightdm /etc/pam.d/lightdm-greeter /etc/pam.d/lightdm-autologin
+
+# PAM shadow-password authentication requires this helper to retain SUID.
+test -f /usr/sbin/unix_chkpwd
+test "$(stat -c '%u:%g:%a' /usr/sbin/unix_chkpwd)" = "0:0:4755"
 ```
 
 Expected:
@@ -92,6 +96,9 @@ Expected:
   installation; this is intentional.
 - LightDM's user and greeter PAM stacks use `pam_elogind.so`, not
   `pam_systemd.so`.
+- `/usr/sbin/unix_chkpwd` is owned by `root:root` and has mode `4755`.
+  Nawa intentionally strips SUID/SGID bits while extracting package archives;
+  linux-pam restores this required helper mode in its post-install hook.
 
 Check the installed session entry and desktop integration files:
 

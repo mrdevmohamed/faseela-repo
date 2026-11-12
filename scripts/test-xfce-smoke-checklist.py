@@ -86,6 +86,8 @@ for required in (
     "PipeWire",
     "notifications",
     "Lock screen",
+    "unix_chkpwd",
+    "4755",
     "Shutdown and reboot",
     "portals",
     "clean-install",
@@ -169,6 +171,35 @@ assert "etc/pam.d/xfce4-screensaver" in screensaver_install
 assert "auth required pam_unix.so" in screensaver_install, (
     "xfce/xfce4-screensaver: unlock PAM stack must use Faseela's local-account module"
 )
+
+# Nawa's secure archive extraction drops SUID/SGID bits by default. linux-pam
+# must restore the one trusted helper that PAM needs for shadow authentication.
+linux_pam = require_deps("system", "linux-pam", "run", {"coreutils", "libxcrypt"})
+assert linux_pam["package"]["rel"] >= 2, (
+    "Bump linux-pam rel when repairing unix_chkpwd's installed SUID mode"
+)
+linux_pam_install = linux_pam["build"]["install"]
+for required in (
+    'helper="%{pkgdir}/usr/sbin/unix_chkpwd"',
+    'chmod 4755 "$helper"',
+    'test -u "$helper"',
+):
+    assert required in linux_pam_install, (
+        f"system/linux-pam: staged unix_chkpwd permissions missing: {required}"
+    )
+check_shell("system/linux-pam install", linux_pam_install)
+
+linux_pam_hook = linux_pam.get("hooks", {}).get("post_install", "")
+for required in (
+    "helper=/usr/sbin/unix_chkpwd",
+    'chown root:root "$helper"',
+    'chmod 4755 "$helper"',
+    "stat -c '%u:%g:%a' ",
+):
+    assert required in linux_pam_hook, (
+        f"system/linux-pam: post-install must restore and verify unix_chkpwd: {required}"
+    )
+check_shell("system/linux-pam post_install", linux_pam_hook)
 
 # LightDM is deliberately shipped as a manual-enable runit service until its
 # installed-system login path has been tested. Validate PAM and session wiring.

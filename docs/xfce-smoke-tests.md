@@ -162,6 +162,8 @@ Perform each interaction, not just a process check:
 |---|---|---|
 | NetworkManager | Open the network panel applet; connect/disconnect the VM network or a Wi-Fi test adapter; run `nmcli general status` | Applet icon and menu render; device state changes and NetworkManager reports connected/disconnected accurately |
 | Polkit | Run `pkexec id` from a terminal | XFCE Polkit agent displays an authentication prompt; after valid authentication the command reports `uid=0(root)`. Cancel once and confirm the action is denied |
+| Lock screen | Run `xflock4` or `xfce4-screensaver-command --lock`, then unlock with the account password | The `org.xfce.ScreenSaver` service activates, the screen locks, and the correct local password restores the same session |
+| Shutdown and reboot | In a disposable VM, choose Shut Down from the XFCE logout dialog; after boot, repeat with Restart. Before each test, check `loginctl show-session "$XDG_SESSION_ID" -p Active` | The active session reports `Active=yes`; shutdown powers the VM off cleanly and restart returns to the login screen. Never run this test on a machine with unsaved work |
 | Clipboard / Clipman | Copy several distinct text snippets, open Clipman's panel menu, select an older entry and paste it | Clipman panel icon is visible, history opens, and the selected text is pasted |
 | Notifications | Run `notify-send "Faseela XFCE test" "Notification smoke test"` | A visible desktop notification appears; no missing notification-daemon error |
 | Audio | Run `pgrep -u "$USER" -x pipewire`, `pgrep -u "$USER" -x wireplumber`, `pgrep -u "$USER" -x pipewire-pulse`, then `pactl info` | All three user processes are present, PulseAudio compatibility connects to PipeWire, and the VM's test audio plays |

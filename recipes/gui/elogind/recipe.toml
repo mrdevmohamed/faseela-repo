@@ -1,9 +1,11 @@
 # gui recipe: elogind — standalone login1 session and seat manager for runit.
 # It provides libelogind and pam_elogind.so; systemd is not installed.
+# Its Polkit checks use D-Bus directly, so enabling them does not link polkit-gobject
+# or introduce a build dependency cycle with the Polkit package.
 [package]
 name = "elogind"
 version = "257.16"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Standalone login1 session and seat manager for non-systemd systems"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -254,7 +256,7 @@ meson setup build \
   -Dpamlibdir=/usr/lib/security \
   -Dpamconfdir=no \
   -Ddbuspolicydir=/usr/share/dbus-1/system.d \
-  -Dpolkit=disabled \
+  -Dpolkit=enabled \
   -Dcgroup-controller=elogind \
   -Ddefault-kill-user-processes=false \
   -Ddev-kvm-mode=0660 \

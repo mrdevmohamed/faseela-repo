@@ -112,22 +112,9 @@ xfce = require_deps("xfce", "xfce-session", "run", {
 })
 xfce_install = xfce["build"]["install"]
 assert xfce["package"]["rel"] >= 14
-portal_config = extract_heredoc(
-    xfce_install,
-    "usr/share/xdg-desktop-portal/xfce-portals.conf",
-    "PORTALS",
+assert "xfce-portals.conf" not in xfce_install, (
+    "The XFCE portal configuration must be owned only by xfce4-session"
 )
-for required in (
-    "default=gtk",
-    "org.freedesktop.impl.portal.FileChooser=gtk",
-    "org.freedesktop.impl.portal.Secret=gnome-keyring",
-    "org.freedesktop.impl.portal.Screenshot=none",
-    "org.freedesktop.impl.portal.ScreenCast=none",
-    "org.freedesktop.impl.portal.RemoteDesktop=none",
-):
-    assert required in portal_config, (
-        f"XFCE portal configuration is missing: {required}"
-    )
 audio_desktop = extract_heredoc(
     xfce_install,
     "etc/xdg/autostart/faseela-audio-session.desktop",
@@ -155,6 +142,22 @@ assert xfce4_session["package"]["rel"] >= 9, (
 )
 require_deps("xfce", "xfce4-session", "run", {"dbus", "xfce4-panel"})
 xfce4_install = xfce4_session["build"]["install"]
+portal_config = extract_heredoc(
+    xfce4_install,
+    "usr/share/xdg-desktop-portal/xfce-portals.conf",
+    "PORTALS",
+)
+for required in (
+    "default=gtk",
+    "org.freedesktop.impl.portal.FileChooser=gtk",
+    "org.freedesktop.impl.portal.Secret=gnome-keyring",
+    "org.freedesktop.impl.portal.Screenshot=none",
+    "org.freedesktop.impl.portal.ScreenCast=none",
+    "org.freedesktop.impl.portal.RemoteDesktop=none",
+):
+    assert required in portal_config, (
+        f"XFCE portal configuration is missing: {required}"
+    )
 for required in (
     "usr/share/xsessions/xfce.desktop",
     "Exec=dbus-run-session -- /usr/bin/faseela-start-xfce4",

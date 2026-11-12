@@ -142,6 +142,14 @@ assert "xfconf-query" not in xfce_session.get("hooks", {}).get("post_install", "
 xfce_install = xfce_session_install
 assert "OnlyShowIn=XFCE;" in xfce_install
 assert "Exec=/usr/bin/faseela-audio-sess" in xfce_install
+assert "xfce-portals.conf" not in xfce_install, (
+    "The XFCE portal policy must have one owner: xfce4-session"
+)
+xfce4_session = recipe("xfce", "xfce4-session")
+assert xfce4_session["package"]["rel"] >= 9, (
+    "Bump xfce4-session rel when changing the XFCE D-Bus activation environment"
+)
+xfce4_install = xfce4_session["build"]["install"]
 for required in (
     "usr/share/xdg-desktop-portal/xfce-portals.conf",
     "default=gtk",
@@ -151,14 +159,9 @@ for required in (
     "org.freedesktop.impl.portal.ScreenCast=none",
     "org.freedesktop.impl.portal.RemoteDesktop=none",
 ):
-    assert required in xfce_install, (
-        f"XFCE portal integration is missing its explicit backend policy: {required}"
+    assert required in xfce4_install, (
+        f"XFCE portal policy must be owned by xfce4-session: {required}"
     )
-xfce4_session = recipe("xfce", "xfce4-session")
-assert xfce4_session["package"]["rel"] >= 9, (
-    "Bump xfce4-session rel when changing the XFCE D-Bus activation environment"
-)
-xfce4_install = xfce4_session["build"]["install"]
 assert "Exec=startxfce4" in xfce4_install
 assert "/tmp/runtime-$uid" in xfce4_install
 assert "chmod 700" in xfce4_install

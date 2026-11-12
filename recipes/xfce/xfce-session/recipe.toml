@@ -61,24 +61,6 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 THUNAR
 chmod 644 %{pkgdir}/etc/xdg/autostart/thunar-daemon.desktop
-
-# --- XDG Desktop Portal for the XFCE/X11 session ---------------------------
-# GTK provides the file chooser and general GTK portal interfaces. Keep the
-# policy desktop-specific so an installed Sway/wlr backend is never selected
-# for an XFCE/X11 session.
-install -d -m755 %{pkgdir}/usr/share/xdg-desktop-portal
-cat > %{pkgdir}/usr/share/xdg-desktop-portal/xfce-portals.conf <<'PORTALS'
-[preferred]
-default=gtk
-org.freedesktop.impl.portal.FileChooser=gtk
-org.freedesktop.impl.portal.Secret=gnome-keyring
-# The packaged GTK backend does not implement these capture/control APIs.
-# XFCE uses its native X11 screenshooter for screenshots instead.
-org.freedesktop.impl.portal.Screenshot=none
-org.freedesktop.impl.portal.ScreenCast=none
-org.freedesktop.impl.portal.RemoteDesktop=none
-PORTALS
-chmod 644 %{pkgdir}/usr/share/xdg-desktop-portal/xfce-portals.conf
 '''
 
 [hooks]

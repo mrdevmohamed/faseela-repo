@@ -149,11 +149,13 @@ installation.
 
 ## XDG Desktop Portal
 
-The `xfce-session` meta-package installs the `xdg-desktop-portal`
-frontend and the GTK backend. The session config lives at
-`/usr/share/xdg-desktop-portal/xfce-portals.conf`: GTK is selected for the
-file chooser and general GTK portal interfaces, while Secret requests go to
-the existing per-user GNOME Keyring service.
+The `xfce-session` meta-package pulls in the `xdg-desktop-portal`
+frontend and GTK backend. The `xfce4-session` package owns the session policy
+at `/usr/share/xdg-desktop-portal/xfce-portals.conf`: GTK is selected for
+the file chooser and general GTK portal interfaces, while Secret requests go
+to the existing per-user GNOME Keyring service. Keeping the config beside the
+XFCE session wrapper gives one package ownership for the session environment
+and its portal policy.
 
 The session entry starts `dbus-run-session` before the Faseela XFCE wrapper.
 The wrapper therefore imports `DISPLAY`, `XDG_CURRENT_DESKTOP=XFCE`,

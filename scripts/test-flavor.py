@@ -17,7 +17,13 @@ def tree(d: Path, recipes: dict):
         run = ", ".join(f'"{x}"' for x in deps.get("run", []))
         build = ", ".join(f'"{x}"' for x in deps.get("build", []))
         (p / "recipe.toml").write_text(
-            f'[package]\nname = "{name}"\nversion = "1"\n[depends]\nbuild = [{build}]\nrun = [{run}]\n')
+            f'[package]
+name = "{name}"
+version = "1"
+[depends]
+build = [{build}]
+run = [{run}]
+')
     return d / "recipes"
 
 
@@ -87,12 +93,17 @@ class RealTree(unittest.TestCase):
         self.assertEqual(got["seed"], got["bootstrap"])
         self.assertNotIn("linux-firmware", got["iso-nogui"])
         self.assertIn("sway", got["iso-sway"])
-        self.assertNotIn("sway", got["iso-nogui"])\n        self.assertNotIn("zed", got["iso-sway"])\n        self.assertNotIn("huiontablet", got["iso-sway"])\n        self.assertNotIn("huiontablet", got["iso-xfce"])
+        self.assertNotIn("sway", got["iso-nogui"])
+        self.assertNotIn("zed", got["iso-sway"])
+        self.assertNotIn("huiontablet", got["iso-sway"])
+        self.assertNotIn("huiontablet", got["iso-xfce"])
         self.assertIn("firefox", got["iso-sway"])
         self.assertIn("libpulse", got["iso-sway"])
-        self.assertEqual(got["iso-gui-firefox"], got["iso-gui"])
-        self.assertNotIn("telegram-desktop", got["iso-gui"])
-        self.assertIn("telegram-desktop", got["iso-gui-telegram"])
+        self.assertNotIn("telegram-desktop", got["iso-sway"])
+        self.assertEqual(
+            set(flavors),
+            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce"},
+        )
 
     def test_base_files_first_everywhere(self):
         # base-files owns the merged-/usr symlinks (/sbin -> usr/bin ...). If glibc

@@ -25,8 +25,8 @@ Install the package with Nawa:
 sudo nawa install nekoray
 ```
 
-For an ISO containing the GUI and Nekoray, select the optional
-`iso-gui-nekoray` flavor. Nekoray is not part of the default Faseela ISO.
+Nekoray is an optional application, not a separate ISO flavor. Install it
+on either desktop with Nawa; no image rebuild is required.
 
 The package does not enable a system service. Start Nekoray from the
 application menu or by running `nekoray`.

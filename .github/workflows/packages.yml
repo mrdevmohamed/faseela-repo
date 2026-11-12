@@ -26,7 +26,7 @@ name: Build packages
 #   all   all recipe categories except toolchain
 #   base + system + boot + extra can be selected by ticking those four category boxes
 #   category boxes include Xorg, Xfce and peripherals
-#   messaging/networking packages can be selected by exact name or flavor (e.g. iso-gui-telegram, iso-gui-nekoray)
+#   optional applications can be selected by exact package name; desktop image profiles are iso-sway and iso-xfce
 #   toolchain      rebuild the full Toolchain using Faseela Bootstrap Stage 3
 #   toolchain_packages  rebuild selected Toolchain recipe names, e.g. glibc gcc
 #   packages       exact recipe names; Toolchain names are rerouted to Bootstrap

@@ -21,13 +21,13 @@ the standard `/usr/lib/libGL.so.1` ABI used by older Qt and AppImage clients
 closure includes the X11/XCB, `libXxf86vm` and shared-memory fence libraries
 needed by that GLX implementation. This does not add a separate Xorg server.
 
-## Zed (opt-in, Vulkan enabled)
+## Zed (optional application, Vulkan enabled)
 
-`zed` is the upstream prebuilt Zed editor bundle. It is in `gui/` but is
-excluded from the standard `iso-gui` flavor. Use `iso-gui-zed` or install
-`zed` on a system that already has the Vulkan stack.
+`zed` is the upstream prebuilt Zed editor bundle. It is optional and is
+not part of the standard desktop images. Install it on an existing desktop
+with `sudo nawa install zed`; its recipe pulls in Mesa and the Vulkan loader.
 
-The Zed flavor now contains a hardware-capable Vulkan path, with a software fallback:
+The packaged Vulkan stack provides a hardware-capable path, with a software fallback:
 
 - `vulkan-loader` provides the Khronos `libvulkan.so.1` loader with Wayland WSI.
 - Mesa is built with `-D vulkan-drivers=amd,intel,intel_hasvk,swrast`: RADV for AMD,
@@ -77,9 +77,9 @@ done
 
 (`python3 scripts/check-recipes.py gui-session` prints the same order offline.)
 
-For Zed's Vulkan support, request the `iso-gui-zed` flavor (or build/install
-`vulkan-loader`, Mesa and Zed with their dependency closure). The regular
-`iso-gui` remains unchanged.
+For Zed's Vulkan support, install `zed` through Nawa. Its runtime dependency
+closure installs the Vulkan loader and Mesa ICDs; no Zed-specific ISO flavor
+is maintained.
 
 ## First build
 

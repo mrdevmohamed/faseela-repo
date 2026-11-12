@@ -33,12 +33,13 @@ Everything else comes from the existing categories: `freetype fribidi harfbuzz f
 nawa install mpv ffmpeg --repo https://github.com/mrdevmohamed/faseela-repo/releases/download/stable
 ```
 
-Build with *Build packages* → `mpv`, `ffmpeg`, `@media`, or
-`flavor:iso-gui-mpv` /`flavor:iso-nogui-ffmpeg` (everything the flavor needs).
-`ALL` / `@all` does not include `@media`, same as `@gui` and `@browser`.
-The `iso-gui-zed` flavor gets the Vulkan loader and Mesa's lavapipe ICD through
-Zed/Mesa runtime dependencies; the SPIR-V and glslang packages are build-only
-dependencies and are not pulled into the installed ISO. mpv needs the `gui/` stack (X11 client libraries, Wayland, Mesa), ffmpeg does not.
+Build with *Build packages* → `mpv`, `ffmpeg` or `@media`. On an
+installed system, use `sudo nawa install mpv ffmpeg`; their runtime
+dependencies are resolved by Nawa. Media applications do not have dedicated
+ISO flavors. `ALL` / `@all` does not include `@media`, same as `@gui`
+and `@browser`. Zed's recipe independently pulls in the Vulkan loader and
+Mesa runtime; SPIR-V and glslang remain build-only dependencies. mpv needs
+the `gui/` stack (X11 client libraries, Wayland, Mesa); ffmpeg does not.
 
 ## First build
 
@@ -91,8 +92,8 @@ heavy: try `--vo=gpu --profile=fast`, or `--vo=wlshm` for plain playback.
   (clang + libclc), not built. Decoding still runs on the Intel media engine,
   but mpv cannot import the frames into llvmpipe's GL: use `--hwdec=vaapi-copy`
   there. On AMD (radeonsi) `--hwdec=vaapi` imports them directly.
-* **`iso-nogui-ffmpeg` has the Intel driver only**: AMD's VA driver is part of
-  mesa (with LLVM), which a headless image does not carry: `nawa install mesa` adds it.
+* A headless system does not carry Mesa by default. Install Mesa separately
+  when AMD VA-API support is required; Intel uses `intel-media-driver`.
 * **lua52 is a parallel Lua**: mpv supports 5.1/5.2/LuaJIT, not the 5.4 of the
   `lua` recipe, so `lua52` installs only under 5.2 names
   (`lua5.2`, `luac5.2`, `liblua5.2.a`, `lua5.2.pc`) and never collides

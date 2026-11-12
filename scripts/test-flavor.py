@@ -81,23 +81,28 @@ class RealTree(unittest.TestCase):
         flavors = flavor.load_flavors(root / "flavors.toml")
         recipes = flavor.load_recipes(root / "recipes")
         got = {n: flavor.resolve(flavors, recipes, n) for n in flavors}
-        for n in ("iso-nogui", "iso-gui", "rootfs-min"):
+        for n in ("iso-nogui", "iso-sway", "iso-xfce", "rootfs-min"):
             # the bootstrap core must be installable into every image
             self.assertTrue({"base-devel", "nawa"} <= set(got[n]), n)
         self.assertEqual(got["seed"], got["bootstrap"])
         self.assertNotIn("linux-firmware", got["iso-nogui"])
-        self.assertIn("sway", got["iso-gui"])
+        self.assertIn("sway", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])
-        self.assertIn("firefox", got["iso-gui"])
-        self.assertIn("libpulse", got["iso-gui"])
-        self.assertEqual(got["iso-gui-firefox"], got["iso-gui"])
-        self.assertNotIn("telegram-desktop", got["iso-gui"])
-        self.assertIn("telegram-desktop", got["iso-gui-telegram"])
+        self.assertNotIn("zed", got["iso-sway"])
+        self.assertNotIn("huiontablet", got["iso-sway"])
+        self.assertNotIn("huiontablet", got["iso-xfce"])
+        self.assertIn("firefox", got["iso-sway"])
+        self.assertIn("libpulse", got["iso-sway"])
+        self.assertNotIn("telegram-desktop", got["iso-sway"])
+        self.assertEqual(
+            set(flavors),
+            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce"},
+        )
 
     def test_base_files_first_everywhere(self):
         # base-files owns the merged-/usr symlinks (/sbin -> usr/bin ...). If glibc
         # lands first it owns /sbin and base-files fails with "file conflicts
-        # installing base-files: /sbin (owned by glibc)" (iso-nogui/iso-gui, 1 Nov).
+        # installing base-files: /sbin (owned by glibc)" (iso-nogui/iso-sway, 1 Nov).
         root = Path(__file__).resolve().parent.parent
         flavors = flavor.load_flavors(root / "flavors.toml")
         recipes = flavor.load_recipes(root / "recipes")

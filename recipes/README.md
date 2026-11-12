@@ -139,9 +139,9 @@ executing its Ubuntu maintainer scripts. The package installs a restricted
 udev rule for the HS64, adds a desktop launcher, and starts the Huion tray /
 background components in Faseela's Sway session.
 
-Build it directly with `nawa build huiontablet` or include it in an image with
-the `iso-gui-huion` flavor. The normal `iso-gui` flavor deliberately excludes
-this proprietary, device-specific application.
+Install it directly with `sudo nawa install huiontablet`. It remains an
+optional, device-specific application and is deliberately excluded from
+the standard Sway and Xfce desktop images.
 
 ## The Xfce / Xorg desktop (opt-in)
 

@@ -7,7 +7,7 @@ arch = ["x86_64"]
 summary = "Xfce screen saver and secure session locker"
 license = ["GPL-2.0-or-later"]
 source = "https://archive.xfce.org/src/apps/xfce4-screensaver/4.20/xfce4-screensaver-%{version}.tar.xz"
-sha256 = "5032f60a31df5e50a80512e301b595be5ea6a6bd762cdd95cacc24cbd29a01e"
+sha256 = "5032f60a31df5e50a80512e301b595be5ea6a6bd762cdd95cacc24cbd29a01d7"
 source_dir = "xfce4-screensaver-%{version}"
 
 [depends]

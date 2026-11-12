@@ -2,7 +2,7 @@
 
 **Firefox ESR**, official **Google Chrome Stable**, and the GTK3 stack used by the browsers.
 The browser recipes remain a separate category. Firefox is included in the standard
-`iso-gui` image; Google Chrome stays opt-in. 16 packages:
+`iso-sway` image; Google Chrome stays opt-in. 16 packages:
 
 | group | packages |
 |---|---|
@@ -21,11 +21,11 @@ The browser recipes remain a separate category. Firefox is included in the stand
 ## Why a separate category
 
 The GTK3/browser recipes stay under `recipes/browser/`, keeping `@gui` limited to
-the desktop stack. The `iso-gui` flavor explicitly includes `firefox`, so its
+the desktop stack. The `iso-sway` flavor explicitly includes `firefox`, so its
 runtime dependency closure (GTK3 and the required X11 client libraries) is installed
-in the standard GUI ISO. Google Chrome is not added to that ISO; install it only on
+in the standard Sway ISO. Google Chrome is not added to that ISO; install it only on
 systems that need it. The package workflow builds everything required by
-`flavor:iso-gui`; use `@browser` when you need to build just the browser category.
+`flavor:iso-sway`; use `@browser` when you need to build just the browser category.
 
 For an already-installed system, Firefox can also be installed directly:
 

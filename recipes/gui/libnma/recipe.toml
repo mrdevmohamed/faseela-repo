@@ -1,0 +1,19 @@
+# gui recipe: libnma — GTK user-interface library for NetworkManager
+[package]
+name = "libnma"
+version = "1.10.6"
+rel = 3
+arch = ["x86_64"]
+summary = "GTK library for NetworkManager connection dialogs"
+license = ["GPL-2.0-only"]
+source = "https://download.gnome.org/sources/libnma/1.10/libnma-1.10.6.tar.xz"
+sha256 = "53a6fb2b190ad37c5986caed3e98bede7c3c602399ee4f93c8fc054303d76dab"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gcr", "gtk3", "iso-codes", "network-manager"]
+run = ["glib", "gcr", "gtk3", "iso-codes", "network-manager"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dgtk_doc=false -Dintrospection=false -Dvapi=false -Dlibnma_gtk4=false -Dmobile_broadband_provider_info=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build && rm -f %{pkgdir}/usr/share/glib-2.0/schemas/org.gnome.nm-applet.gschema.xml"

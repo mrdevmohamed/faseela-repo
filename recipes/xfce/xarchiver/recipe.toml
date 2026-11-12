@@ -1,0 +1,42 @@
+# xfce recipe: xarchiver — lightweight GTK archive manager for Thunar
+# intltool and Perl XML::Parser are not packaged in Faseela. Keep NLS off and
+# provide source-tree-only intltool stand-ins to produce the un-translated
+# desktop entry, following the existing PCManFM/pavucontrol recipe pattern.
+[package]
+name = "xarchiver"
+version = "0.5.4.27"
+rel = 6
+arch = ["x86_64"]
+summary = "GTK archive manager for common tar, zip, xz and 7z formats"
+license = ["GPL-2.0-or-later"]
+source = "https://github.com/ib/xarchiver/archive/0.5.4.27/xarchiver-0.5.4.27.tar.gz"
+sha256 = "a52db2697f433621346dc4af59952728192878471e29f46b4b4221b7d5623a86"
+source_dir = "xarchiver-%{version}"
+
+[depends]
+build = ["pkgconf", "gtk3", "glib", "gdk-pixbuf", "perl"]
+run = ["gtk3", "glib", "gdk-pixbuf", "pango", "harfbuzz", "at-spi2-core", "cairo", "glibc", "hicolor-icon-theme", "xdg-utils", "tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"]
+
+[build]
+configure = '''
+stub=$PWD/.intltool-stub
+mkdir -p "$stub/XML"
+printf '%s\n' '#!/bin/sh' 'echo "intltool-update (intltool) 0.51.0"' > "$stub/intltool-update"
+printf '%s\n' '#!/bin/sh' 'exit 0' > "$stub/intltool-extract"
+cat > "$stub/intltool-merge" <<'IM'
+#!/bin/sh
+in= out=
+for a in "$@"; do in=$out; out=$a; done
+sed -e 's/^_\([A-Za-z]*\)=/\1=/' -e 's/_\(name\|label\|tooltip\)=/\1=/g' "$in" > "$out"
+IM
+chmod +x "$stub/intltool-update" "$stub/intltool-extract" "$stub/intltool-merge"
+printf 'package XML::Parser;\n$VERSION = "2.47";\n1;\n' > "$stub/XML/Parser.pm"
+PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib/xfce4 --sysconfdir=/etc --localstatedir=/var --disable-static --disable-nls --disable-doc
+'''
+compile = '''
+# GNU grep warns about a non-portable BRE escape in gettext's generated rules.
+# Patch all Makefiles and templates before make invokes grep.
+find . -type f -name 'Makefile*' -exec sed -i 's/\\#/#/g' {} +
+make -j%{jobs}
+'''
+install = "make DESTDIR=%{pkgdir} install"

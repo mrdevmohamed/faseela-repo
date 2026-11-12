@@ -1,0 +1,40 @@
+# gui recipe: network-manager-applet — GTK tray applet and connection editor
+# AppIndicator, SELinux, team editor and WWAN support are disabled: Faseela's
+# XFCE/X11 desktop uses the panel notification area and does not ship those
+# optional integrations.
+[package]
+name = "network-manager-applet"
+version = "1.36.0"
+rel = 2
+arch = ["x86_64"]
+summary = "NetworkManager notification-area applet and connection editor"
+license = ["GPL-2.0-only"]
+source = "https://download.gnome.org/sources/network-manager-applet/1.36/network-manager-applet-1.36.0.tar.xz"
+sha256 = "a84704487ea3afe1485c47fb2ab598b8f779f540ae0dcbf0a1c5f85e64a7e253"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "iso-codes", "libnma", "libsecret", "network-manager", "nss"]
+run = ["glib", "gtk3", "gdk-pixbuf", "hicolor-icon-theme", "iso-codes", "gcr", "libnma", "libsecret", "network-manager", "gnome-keyring", "dbus", "polkit"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dappindicator=no -Dselinux=false -Dteam=false -Dwwan=false"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+# This schema belongs to network-manager-applet (libnma's duplicate is removed).
+schema=%{pkgdir}/usr/share/glib-2.0/schemas/org.gnome.nm-applet.gschema.xml
+test -s "$schema"
+# The upstream autostart entry is required for a fresh XFCE session.
+desktop=%{pkgdir}/etc/xdg/autostart/nm-applet.desktop
+test -s "$desktop"
+grep -Eq '^Exec=nm-applet([[:space:]]|$)' "$desktop"
+if grep -q '^OnlyShowIn=' "$desktop" && ! grep -q '^OnlyShowIn=.*XFCE' "$desktop"; then
+    sed -i '/^OnlyShowIn=/s/$/;XFCE;/' "$desktop"
+fi
+'''
+
+[hooks]
+post_install = '''
+# Refresh the compiled GSettings database after installing the applet schema.
+glib-compile-schemas /usr/share/glib-2.0/schemas
+'''

@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-clipman-plugin"
 version = "1.6.7"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Clipboard manager panel plugin with history"
 license = ["GPL-2.0-or-later"]
@@ -16,4 +16,35 @@ run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "h
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"
 compile = "make -j%{jobs}"
-install = '''make DESTDIR=%{pkgdir} install'''
+install = '''
+set -eu
+make DESTDIR=%{pkgdir} install
+
+# Clipman's panel plugin loads this stock icon through GTK's hicolor theme.
+# Validate all upstream icon variants so a partial install cannot ship blank.
+icon_root="%{pkgdir}/usr/share/icons/hicolor"
+for icon in \
+    "$icon_root/16x16/apps/xfce4-clipman-plugin.png" \
+    "$icon_root/24x24/apps/xfce4-clipman-plugin.png" \
+    "$icon_root/32x32/apps/xfce4-clipman-plugin.png" \
+    "$icon_root/48x48/apps/xfce4-clipman-plugin.png" \
+    "$icon_root/64x64/apps/xfce4-clipman-plugin.png" \
+    "$icon_root/scalable/apps/xfce4-clipman-plugin.svg" \
+    "$icon_root/16x16/apps/clipman-symbolic.svg"; do
+    test -s "$icon" || {
+        echo "xfce4-clipman-plugin: missing installed icon: $icon" >&2
+        exit 1
+    }
+done
+'''
+
+[hooks]
+post_install = '''
+set -eu
+# The package transaction may run before hicolor-icon-theme is present in a
+# minimal staging root. Refresh the cache only when the real theme index exists.
+theme_dir=/usr/share/icons/hicolor
+if [ -s "$theme_dir/index.theme" ]; then
+    gtk-update-icon-cache --force "$theme_dir"
+fi
+'''

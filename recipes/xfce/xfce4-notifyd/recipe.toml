@@ -2,7 +2,7 @@
 [package]
 name = "xfce4-notifyd"
 version = "0.9.7"
-rel = 2
+rel = 4
 arch = ["x86_64"]
 summary = "Xfce notification daemon (org.freedesktop.Notifications implementation)"
 license = ["GPL-2.0-or-later"]
@@ -11,7 +11,7 @@ sha256 = "170d18fd5f40cce823ffc7ae3d7e21644007c3f45808ab4835f0401d21b3516a"
 
 [depends]
 build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "libnotify", "gtk3", "glib", "sqlite"]
-run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "libnotify", "gtk3", "glib", "sqlite"]
+run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "libnotify", "gtk3", "glib", "sqlite", "pango", "harfbuzz", "at-spi2-core", "cairo", "gdk-pixbuf", "libX11", "glibc", "dbus"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

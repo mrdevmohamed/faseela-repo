@@ -4,7 +4,7 @@
 [package]
 name = "tumbler"
 version = "4.20.2"
-rel = 2
+rel = 4
 arch = ["x86_64"]
 summary = "D-Bus thumbnailing service for Thunar (image, JPEG, font, directory plugins)"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -13,7 +13,7 @@ sha256 = "aa77fd90a88b83467cd8d2b39d80e4518ba2903d2e4ca50d32d1b96996685015"
 
 [depends]
 build = ["pkgconf", "libxfce4util", "glib", "gdk-pixbuf", "freetype", "libjpeg-turbo"]
-run = ["libxfce4util", "glib", "gdk-pixbuf", "freetype", "libjpeg-turbo"]
+run = ["libxfce4util", "glib", "gdk-pixbuf", "freetype", "libjpeg-turbo", "libpng", "curl", "glibc", "dbus"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

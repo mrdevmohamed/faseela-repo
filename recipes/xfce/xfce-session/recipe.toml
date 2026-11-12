@@ -4,7 +4,7 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 11
+rel = 12
 arch = ["x86_64"]
 summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
@@ -12,7 +12,7 @@ source = ""
 
 [depends]
 build = []
-run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "gvfs", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "bluez", "polkit", "elogind", "xfce-polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-notifyd", "xfce4-power-manager", "xfce4-screenshooter", "xfce4-clipman-plugin", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "gvfs", "tumbler", "thunar-archive-plugin", "xarchiver", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "network-manager-applet", "bluez", "polkit", "elogind", "xfce-polkit", "dbus-system", "eudev", "runit", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -75,11 +75,6 @@ for group in video render input audio; do
     /usr/libexec/faseela/ensure-system-account group "$group"
 done
 
-# Rebuild the MIME application cache only after the XFCE dependency closure
-# has been installed, so all installed .desktop files are included.
-update-desktop-database -q /usr/share/applications
-
-echo "xfce-session: refreshed the desktop MIME application cache."
 echo "xfce-session: add your user to video,render,input,audio for Xorg device access."
 echo "xfce-session: LightDM is optional; install lightdm and lightdm-gtk-greeter for a graphical login."
 '''

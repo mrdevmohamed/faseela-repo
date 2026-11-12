@@ -2,7 +2,7 @@
 [package]
 name = "thunar-archive-plugin"
 version = "0.6.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Create and extract archives from Thunar context menus"
 license = ["GPL-2.0-only"]
@@ -11,7 +11,7 @@ sha256 = "692708cd047c7a552f2f85fe2ee32f19c7d5be5bf695d0288e8cadf50289db06"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "libxfce4util", "thunar"]
-run = ["gtk3", "glib", "libxfce4util", "thunar", "hicolor-icon-theme", "xarchiver"]
+run = ["gtk3", "glib", "libxfce4util", "thunar", "hicolor-icon-theme", "xarchiver", "glibc"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=lib/xfce4 --sysconfdir=/etc --localstatedir=/var --buildtype=release"

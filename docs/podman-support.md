@@ -3,13 +3,13 @@
 Status: prerequisite recipes are being implemented; the Podman CLI is not packaged or published yet.
 
 Podman is an optional developer/container feature. It must not enter
-`bootstrap`, `rootfs-min`, `iso-nogui`, `iso-gui`, or the default build
+`bootstrap`, `rootfs-min`, `iso-nogui`, `iso-sway`, `iso-xfce`, or the default build
 closure. Faseela uses **runit**, not systemd. Podman is daemonless, so the
 engine itself must not be packaged as a permanently enabled system service.
 
 ## Target user experience
 
-After installing the optional container flavor and completing the one-time
+After installing the optional Podman package set and completing the one-time
 rootless setup, both of these must work:
 
 ```sh
@@ -228,15 +228,15 @@ should provide their own `/etc/containers/policy.json`, which takes precedence.
 
 1. Offline recipe validation and dependency ordering for every package.
 2. Build each source package through the normal Nawa package workflow.
-3. Install the optional flavor on a clean Faseela rootfs and verify
+3. Install the optional Podman package set on a clean Faseela rootfs and verify
    `podman --version`, `podman info`, and the selected OCI runtime/network paths.
 4. Rootless pull and run of `docker.io/library/hello-world` as an unprivileged user; use `--cgroups=disabled` for the baseline run because Faseela does not provide a systemd user-cgroup delegate.
 5. Rootless port publishing and container DNS using Netavark/Aardvark, again without claiming per-container cgroup resource limits.
 6. Bind mounts, named volumes, image removal and container cleanup.
 7. Rootful smoke test as a separate test; it must not substitute for rootless.
 8. Verify no Podman-related package installs or enables a systemd service and
-   no default ISO/bootstrap flavor gains a container dependency.
+   no default desktop image or bootstrap profile gains a container dependency.
 
-Only add a `developer-containers` flavor after all required recipes resolve and
-the build/install smoke tests pass. Until then, keep Podman marked Planned in
-the developer inventory.
+Once all required recipes resolve and the build/install smoke tests pass,
+expose the package set through the optional `containers` group in `groups.toml`.
+Do not create a separate desktop image profile for Podman.

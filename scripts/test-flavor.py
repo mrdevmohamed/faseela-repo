@@ -17,13 +17,7 @@ def tree(d: Path, recipes: dict):
         run = ", ".join(f'"{x}"' for x in deps.get("run", []))
         build = ", ".join(f'"{x}"' for x in deps.get("build", []))
         (p / "recipe.toml").write_text(
-            f'[package]
-name = "{name}"
-version = "1"
-[depends]
-build = [{build}]
-run = [{run}]
-')
+            f'[package]\\nname = "{name}"\\nversion = "1"\\n[depends]\\nbuild = [{build}]\\nrun = [{run}]\\n')
     return d / "recipes"
 
 

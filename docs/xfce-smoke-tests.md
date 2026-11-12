@@ -169,7 +169,7 @@ Perform each interaction, not just a process check:
 | Fixed/system storage policy | Attempt the relevant privileged action on a VM-only fixed test disk | UDisks2 applies its stricter system-device authorization and Polkit shows an administrator challenge |
 | Thumbnails and archives | Open a folder containing image files; use Thunar's archive context menu to create and extract a test archive | Thumbnails appear and archive create/extract both work |
 | Screenshots | Open the XFCE screenshot tool and save a screenshot | Screenshot UI opens and writes the requested image |
-| Desktop portals | From a GTK application, open a file chooser; inspect the portal with `gdbus introspect --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop` | File chooser opens and the portal service introspection succeeds |
+| Desktop portals (conditional) | The current `iso-xfce` flavor does not include the portal packages by default. When testing an image that includes them, confirm `/usr/share/dbus-1/services/org.freedesktop.portal.Desktop.service` exists and run `gdbus introspect --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop` | On portal-enabled images, the D-Bus service activates and introspection succeeds. On the standard XFCE flavor, record this check as N/A rather than a failure; a GTK-native file chooser should still open |
 | Power management | Open XFCE power settings and inspect available actions; test suspend only when the VM platform supports it | Power actions are exposed; supported suspend/resume completes without losing the session |
 
 Do not use a real data disk for mount-policy tests. Use disposable virtual

@@ -36,7 +36,7 @@ PATH="$stub:$PATH" PERL5LIB="$stub" ./configure --prefix=/usr --libdir=/usr/lib 
 compile = '''
 # GNU grep warns about the non-portable BRE escape \# in gettext's generated
 # translation rules. Normalize it to a literal # before make enters po/.
-if [ -f po/Makefile ]; then sed -i 's/\\\\#/#/g' po/Makefile; fi
+if [ -f po/Makefile ]; then sed -i 's/\\#/#/g' po/Makefile; fi
 make -j%{jobs}
 '''
 install = "make DESTDIR=%{pkgdir} install"

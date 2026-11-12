@@ -49,7 +49,7 @@ assert {"llvm", "spirv-llvm-translator"} <= set(libclc["depends"]["build"])
 assert 'LIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-"' in libclc["build"]["configure"], (
     "libclc must ship the 32-bit and 64-bit Mesa SPIR-V builtin files"
 )
-assert mesa["package"]["rel"] >= 7, "Bump Mesa rel when changing the shipped graphics ABI"
+assert mesa["package"]["rel"] >= 10, "Bump Mesa rel when changing Mesa runtime dependency metadata or graphics ABI"
 assert "-D platforms=wayland,x11" in configure, "Mesa must keep Wayland and enable the X11 platform"
 assert "-D glx=dri" in configure, "Mesa must build DRI-based GLX and provide libGL.so.1"
 assert "-D glx=disabled" not in configure, "Mesa must not drop the legacy libGL.so.1 ABI"
@@ -60,6 +60,10 @@ assert glx_runtime <= set(mesa["depends"]["build"]), (
 )
 assert glx_runtime <= set(mesa["depends"]["run"]), (
     f"Mesa GLX runtime dependencies missing: {sorted(glx_runtime - set(mesa['depends']['run']))}"
+)
+
+assert "spirv-tools" in set(mesa["depends"]["run"]), (
+    "Mesa Vulkan ICDs require libSPIRV-Tools.so at runtime"
 )
 
 nekoray = recipe("recipes/networking/nekoray/recipe.toml")

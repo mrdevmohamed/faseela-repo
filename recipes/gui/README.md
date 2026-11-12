@@ -89,7 +89,7 @@ is maintained.
    the upstream tag/asset changed: fix `source`/`version`, bump `rel`, and
    rerun. Review the resulting diff.
 3. Build the Vulkan dependency chain through the normal recipe graph:
-   `llvm → spirv-llvm-translator → libclc → mesa`; `spirv-headers → spirv-tools → glslang → mesa`; `vulkan-headers → vulkan-loader`.
+   `llvm → spirv-llvm-translator → libclc → mesa`; `spirv-headers → spirv-tools → glslang → mesa`; `spirv-tools` is also retained at runtime for Mesa's Vulkan ICDs. `vulkan-headers → vulkan-loader`.
    If a Meson option is rejected, compare it with the pinned Mesa release's
    `meson_options.txt`.
 

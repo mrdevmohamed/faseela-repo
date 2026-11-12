@@ -92,7 +92,7 @@ for required in (
     assert required.lower() in doc.lower(), (
         f"docs/xfce-smoke-tests.md: checklist does not cover {required}"
     )
-assert "not evidence that a graphical login" in doc, (
+assert "evidence that a graphical login" in doc and "not** evidence" in doc, (
     "The checklist must not conflate CI/package success with runtime validation"
 )
 

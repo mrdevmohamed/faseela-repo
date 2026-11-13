@@ -11,12 +11,12 @@ sha256 = "b80e2874157cd55071f1b6710fa0b911d5ac5de106a9ee2a4c9c7bee61782f8e"
 source_dir = "glib-networking-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "gnutls"]
+build = ["meson", "ninja", "pkgconf", "glib", "gnutls", "gsettings-desktop-schemas"]
 run = ["glib", "gnutls"]
 
 [build]
 # glib-networking 2.80.1 does not define a Meson "tests" option.
-# Keep the supported TLS/proxy feature switches only.
+# Its Meson configure step requires the shared GSettings schema package.
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

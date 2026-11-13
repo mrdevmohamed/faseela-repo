@@ -61,13 +61,13 @@ the WebKit WebProcess bubblewrap sandbox enabled.
 
 The initial minimal feature set keeps HTML rendering, JavaScript and HTTPS
 networking. GnuTLS and `glib-networking` provide the GIO TLS backend used by
-libsoup3, while `nghttp2` supplies its HTTP/2 transport support. Since
-Meson skips the upstream `gio-querymodules` install script under `DESTDIR`,
-the glib-networking recipe explicitly generates and verifies
-`giomodule.cache` inside the staged package before creating its archive.
-The libsoup3 configure probe pins `GIO_MODULE_DIR` to that directory so its
-TLS check sees the GnuTLS backend in isolated builds. No post-install hook is
-needed for this generated module cache.
+libsoup3, while `nghttp2` supplies its HTTP/2 transport support. The
+glib-networking package refreshes `/usr/lib/gio/modules/giomodule.cache` in
+its target-root post-install hook. For package builds, libsoup's upstream
+`tls_check` is disabled because the GIO TLS backend is a runtime dependency,
+not a libsoup compile-time input. `glib-networking` remains an explicit
+runtime dependency so HTTPS is available to applications using libsoup on
+the installed system.
 
 GStreamer, video, WebRTC, Web Audio, MediaRecorder, spellchecking,
 speech synthesis and other optional features are disabled for this Telegram

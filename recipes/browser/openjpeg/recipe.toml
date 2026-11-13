@@ -1,0 +1,20 @@
+# browser recipe: OpenJPEG — JPEG 2000 codec required by WebKitGTK.
+[package]
+name = "openjpeg"
+version = "2.5.4"
+rel = 1
+arch = ["x86_64"]
+summary = "JPEG 2000 image codec"
+license = ["BSD-2-Clause"]
+source = "https://github.com/uclouvain/openjpeg/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a9"
+source_dir = "openjpeg-%{version}"
+
+[depends]
+build = ["cmake", "ninja", "zlib", "libpng", "lcms2"]
+run = ["zlib", "libpng", "lcms2"]
+
+[build]
+configure = "cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_CODEC=OFF -DBUILD_TESTING=OFF -DBUILD_DOC=OFF -DBUILD_MJ2=OFF -DBUILD_JPIP=OFF"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} ninja -C build install"

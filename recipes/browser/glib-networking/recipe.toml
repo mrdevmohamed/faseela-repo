@@ -17,7 +17,10 @@ run = ["glib", "gnutls"]
 [build]
 # glib-networking 2.80.1 does not define a Meson "tests" option.
 # Its Meson configure step requires the shared GSettings schema package.
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
+# GnuTLS' .pc file references nettle/hogweed in /usr/lib64/pkgconfig;
+# repeat the search path here because build environments are not inherited
+# between separately built packages.
+configure = "PKG_CONFIG_PATH=/usr/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"
 

@@ -45,6 +45,9 @@ assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
 networking = recipe("browser", "glib-networking")
 require_deps("browser", "glib-networking", "build", {"gsettings-desktop-schemas"})
 networking_configure = networking["build"]["configure"]
+assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in networking_configure, (
+    "glib-networking must resolve GnuTLS' Nettle/Hogweed pkg-config requirements"
+)
 for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabled"):
     assert required in networking_configure, (
         f"glib-networking is missing Meson option: {required}"

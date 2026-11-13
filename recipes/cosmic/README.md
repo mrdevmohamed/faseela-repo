@@ -60,7 +60,7 @@ agreety sample.
 
 The `iso-cosmic` flavor selects `@cosmic` plus Firefox. Because the login
 packages live in the separate `greeter/` category, the image does not pull in
-greetd, PAM or their greeter-only dependencies.
+greetd or the greeter-specific dependency closure (PAM is already in the base system).
 
 Inspect the dependency closure:
 

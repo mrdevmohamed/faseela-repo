@@ -37,6 +37,7 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
     "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking",
 })
+require_deps("browser", "gnutls", "build", {"pkgconf", "nettle", "libtasn1", "libidn2", "p11-kit"})
 require_deps("browser", "webkit2gtk-4.1", "run", {
     "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",

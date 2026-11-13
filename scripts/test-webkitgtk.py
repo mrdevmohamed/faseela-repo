@@ -38,6 +38,10 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking",
 })
 require_deps("browser", "gnutls", "build", {"pkgconf", "nettle", "libtasn1", "libidn2", "p11-kit"})
+gnutls_configure = recipe("browser", "gnutls")["build"]["configure"]
+assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
+    "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
+)
 require_deps("browser", "webkit2gtk-4.1", "run", {
     "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",

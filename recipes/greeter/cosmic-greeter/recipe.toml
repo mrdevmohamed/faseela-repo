@@ -85,7 +85,14 @@ cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
 #!/bin/sh
 exec 2>&1
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-install -d -m755 -o cosmic-greeter -g video /run/cosmic-greeter
+greeter_uid=$(awk -F: '$1 == "cosmic-greeter" { print $3; exit }' /etc/passwd)
+video_gid=$(awk -F: '$1 == "video" { print $3; exit }' /etc/group)
+[ -n "$greeter_uid" ] && [ -n "$video_gid" ] || {
+    echo "cosmic-greeter: service account or video group is missing" >&2
+    exit 1
+}
+install -d -m750 /run/cosmic-greeter
+chown "$greeter_uid:$video_gid" /run/cosmic-greeter
 exec greetd
 RUN
 chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
@@ -95,7 +102,17 @@ chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
 post_install = '''
 # The shared seatd-runit package provides the `video` group.
 /usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
-install -d -m750 -o cosmic-greeter -g video /var/lib/cosmic-greeter
+# Resolve numeric IDs from the account databases. This avoids relying on NSS
+# name lookup in minimal install/chroot environments while keeping ownership
+# tied to the helper-created system account and shared video group.
+greeter_uid=$(awk -F: '$1 == "cosmic-greeter" { print $3; exit }' /etc/passwd)
+video_gid=$(awk -F: '$1 == "video" { print $3; exit }' /etc/group)
+[ -n "$greeter_uid" ] && [ -n "$video_gid" ] || {
+    echo "cosmic-greeter: ensure-system-account did not create the expected account/group" >&2
+    exit 1
+}
+install -d -m750 /var/lib/cosmic-greeter
+chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter
 
 # Use the COSMIC greeter only while greetd still has its stock agreety sample.
 # Preserve any administrator-authored greetd configuration.

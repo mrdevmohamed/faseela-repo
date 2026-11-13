@@ -27,7 +27,7 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
-assert webkit["package"]["rel"] >= 3, "Bump WebKitGTK rel when correcting build dependencies"
+assert webkit["package"]["rel"] >= 4, "Bump WebKitGTK rel when correcting build dependencies"
 assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
@@ -36,7 +36,7 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2",
     "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf",
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
-    "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1",
+    "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1", "libseccomp",
 })
 nghttp2_recipe = recipe("browser", "nghttp2")
 nghttp2 = nghttp2_recipe["package"]
@@ -94,7 +94,7 @@ require_deps("browser", "webkit2gtk-4.1", "run", {
     "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite",
     "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo",
     "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland",
-    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt",
+    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt", "libseccomp",
     "gcc", "glibc",
 })
 
@@ -144,6 +144,7 @@ for category, package_name, min_version in (
     ("extra", "cmake", (4, 4, 5)),
     ("gui", "cairo", (1, 18, 6)),
     ("extra", "which", (2, 25)),
+    ("system", "libseccomp", (2, 6, 1)),
 ):
     package = recipe(category, package_name)["package"]
     version = tuple(int(part) for part in package["version"].split(".")[:3])

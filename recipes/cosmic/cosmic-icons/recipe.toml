@@ -1,0 +1,39 @@
+# cosmic recipe: cosmic-icons — default COSMIC icon theme (data package).
+# The theme is named "Cosmic" and installs to /usr/share/icons/Cosmic, exactly
+# like the upstream `just install` target: index.theme at the root, the
+# freedesktop/ and extra/ scalable icon trees merged beneath it.
+[package]
+name = "cosmic-icons"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC default icon theme"
+license = ["CC-BY-SA-4.0"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-icons"
+url = "https://codeload.github.com/pop-os/cosmic-icons/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "4fc8d208316532766de8c4481b88e8a28fb42cdcb184ef4c92393dad1c98367c"
+strip_components = 1
+
+[depends]
+build = []
+run = ["hicolor-icon-theme"]
+
+[build]
+install = '''
+theme=%{pkgdir}/usr/share/icons/Cosmic
+install -d -m755 "$theme"
+install -m644 index.theme "$theme/index.theme"
+for tree in freedesktop extra; do
+    if [ -d "$tree/scalable" ]; then
+        find "$tree/scalable" -type f | while read -r f; do
+            rel=${f#$tree/}
+            install -Dm644 "$f" "$theme/$rel"
+        done
+    fi
+done
+test -f "$theme/index.theme"
+test -d "$theme/scalable"
+'''

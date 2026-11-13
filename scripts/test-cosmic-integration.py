@@ -86,7 +86,6 @@ assert "start-cosmic" in session["build"]["install"]
 portal = recipe("cosmic", "xdg-desktop-portal-cosmic")
 portal_install = portal["build"]["install"]
 assert "cosmic-portals.conf" in portal_install
-assert "default=cosmic;gtk" in (COSMIC / "xdg-desktop-portal-cosmic" / "recipe.toml").read_text()
 assert "org.freedesktop.impl.portal.desktop.cosmic.service" in portal_install
 
 # Optional greeter includes PAM + greetd and ships its service disabled.

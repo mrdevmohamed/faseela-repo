@@ -15,7 +15,9 @@ build = ["meson", "ninja", "pkgconf", "glib", "gnutls"]
 run = ["glib", "gnutls"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled -D tests=false"
+# glib-networking 2.80.1 does not define a Meson "tests" option.
+# Keep the supported TLS/proxy feature switches only.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"
 

@@ -15,7 +15,7 @@ source_dir = "webkitgtk-%{version}"
 
 [depends]
 build = ["cmake", "ninja", "pkgconf", "ruby", "which", "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols", "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking"]
-run = ["gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls", "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "openssl", "hicolor-icon-theme"]
+run = ["gcc", "glibc", "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls", "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "openssl", "hicolor-icon-theme"]
 
 [slim]
 strip = false

@@ -42,6 +42,14 @@ gnutls_configure = recipe("browser", "gnutls")["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
     "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
 )
+networking_configure = recipe("browser", "glib-networking")["build"]["configure"]
+for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabled"):
+    assert required in networking_configure, (
+        f"glib-networking is missing Meson option: {required}"
+    )
+assert "-D tests=" not in networking_configure, (
+    "glib-networking 2.80.1 has no Meson 'tests' option"
+)
 require_deps("browser", "webkit2gtk-4.1", "run", {
     "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",

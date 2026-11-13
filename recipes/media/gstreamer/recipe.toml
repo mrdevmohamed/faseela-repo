@@ -12,7 +12,7 @@ sha256 = "6dbf744f583131a34845cc641e803843766a9ba80ce00378a9043fd6d8d5fb38"
 source_dir = "gstreamer-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib"]
+build = ["meson", "ninja", "pkgconf", "glib", "flex"]
 run = ["glib"]
 
 [build]

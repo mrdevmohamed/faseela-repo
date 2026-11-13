@@ -2,7 +2,7 @@
 [package]
 name = "cmake"
 version = "4.4.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "CMake — cross-platform build system generator"
 license = ["BSD-3-Clause"]
@@ -13,6 +13,7 @@ sha256 = "a0c54c88abb8078dd8eccadb717fc6bb194bf18e7d44c86309910288886e04e2"
 build = []
 run = []
 
+[build]
 # Keep the bootstrap-independent vendored dependencies; no OpenSSL in stage 2.
 configure = "./configure --prefix=/usr --parallel=%{jobs} -- -DCMAKE_USE_OPENSSL=OFF -DBUILD_TESTING=OFF"
 compile = "make -j%{jobs}"

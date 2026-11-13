@@ -20,6 +20,8 @@ faseela-repo/
 │   ├── boot/
 │   ├── extra/
 │   ├── gui/
+│   ├── cosmic/
+│   ├── greeter/
 │   ├── xorg/
 │   ├── xfce/
 │   ├── browser/

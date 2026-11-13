@@ -16,7 +16,7 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 [[package.sources]]
 name = "cosmic-comp"
 url = "https://codeload.github.com/pop-os/cosmic-comp/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "b8f473d5ccc25a3ff075f4a62c0c7ba80ad574f00e40b278a97dc6fd8705fda"
+sha256 = "b8f473d5ccc25a3ff0756f4a62c0c7ba80ad574f00e40b278a97dc6fd8705fda"
 strip_components = 1
 
 [depends]

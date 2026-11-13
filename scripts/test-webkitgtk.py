@@ -27,17 +27,59 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
-assert webkit["package"]["rel"] >= 6, "Bump WebKitGTK rel when correcting build dependencies"
+assert webkit["package"]["rel"] >= 7, "Bump WebKitGTK rel when changing the WebKit build feature set"
 assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
-    "cmake", "ninja", "ruby", "which", "gtk3", "glib", "cairo", "icu",
+    "cmake", "ninja", "ruby", "which", "gstreamer", "gst-plugins-base", "gst-plugins-good", "gst-plugins-bad", "gtk3", "glib", "cairo", "icu",
     "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev",
     "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2",
     "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf",
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
     "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1", "libseccomp", "bubblewrap", "xdg-dbus-proxy",
 })
+
+# GStreamer is an optional multimedia stack; all four modules must stay version-aligned.
+gstreamer_packages = {
+    "gstreamer": "gstreamer",
+    "gst-plugins-base": "gst-plugins-base",
+    "gst-plugins-good": "gst-plugins-good",
+    "gst-plugins-bad": "gst-plugins-bad",
+}
+for package_name, source_name in gstreamer_packages.items():
+    package = recipe("media", package_name)["package"]
+    assert package["version"] == "1.28.9", f"{package_name} must match the GStreamer release"
+    assert package["rel"] >= 1
+    assert package["source"].endswith(f"{source_name}-%{{version}}.tar.xz")
+    assert re.fullmatch(r"[0-9a-f]{64}", package["sha256"]), (
+        f"{package_name} source checksum must be pinned"
+    )
+
+require_deps("media", "gst-plugins-base", "build", {
+    "gstreamer", "glib", "alsa-lib", "libdrm", "libepoxy", "libogg",
+    "libpng", "libvorbis", "opus", "pango", "mesa", "wayland",
+})
+require_deps("media", "gst-plugins-good", "build", {
+    "gstreamer", "gst-plugins-base", "libpulse", "libvpx",
+})
+require_deps("media", "gst-plugins-bad", "build", {
+    "gstreamer", "gst-plugins-base",
+})
+base_configure = recipe("media", "gst-plugins-base")["build"]["configure"]
+for required in (
+    "-Dgl=enabled", "-Dapp=enabled", "-Dplayback=enabled",
+    "-Dvideoconvertscale=enabled", "-Daudioconvert=enabled",
+    "-Daudioresample=enabled", "-Dgl_winsys=x11,wayland,gbm",
+):
+    assert required in base_configure, f"gst-plugins-base is missing: {required}"
+good_configure = recipe("media", "gst-plugins-good")["build"]["configure"]
+for required in ("-Disomp4=enabled", "-Dmatroska=enabled", "-Dvpx=enabled", "-Dpulse=enabled"):
+    assert required in good_configure, f"gst-plugins-good is missing: {required}"
+bad_configure = recipe("media", "gst-plugins-bad")["build"]["configure"]
+assert "-Dmpegtsdemux=enabled" in bad_configure, (
+    "gst-plugins-bad must provide WebKitGTK's MPEG-TS library"
+)
+
 nghttp2_recipe = recipe("browser", "nghttp2")
 nghttp2 = nghttp2_recipe["package"]
 assert nghttp2["version"] == "1.71.0"
@@ -89,7 +131,7 @@ assert "-D tls_check=false" in libsoup_configure, (
 )
 require_deps("browser", "libsoup3", "run", {"glib-networking"})
 require_deps("browser", "webkit2gtk-4.1", "run", {
-    "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype",
+    "gstreamer", "gst-plugins-base", "gst-plugins-good", "gst-plugins-bad", "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",
     "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite",
     "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo",
@@ -133,10 +175,13 @@ for required in (
     "-DUSE_GTK4=OFF",
     "-DENABLE_BUBBLEWRAP_SANDBOX=ON",
     "-DENABLE_JOURNALD_LOG=OFF",
-    "-DUSE_GSTREAMER=OFF",
-    "-DENABLE_VIDEO=OFF",
+    "-DUSE_GSTREAMER=ON",
+    "-DUSE_GSTREAMER_GL=ON",
+    "-DUSE_GSTREAMER_MPEGTS=OFF",
+    "-DUSE_GSTREAMER_WEBRTC=OFF",
+    "-DENABLE_VIDEO=ON",
     "-DENABLE_WEB_RTC=OFF",
-    "-DENABLE_WEB_AUDIO=OFF",
+    "-DENABLE_WEB_AUDIO=ON",
     "-DENABLE_MEDIA_RECORDER=OFF",
 ):
     assert required in configure, f"WebKitGTK is missing build option: {required}"
@@ -180,6 +225,10 @@ for flavor_name in ("bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", 
     assert "harfbuzz-icu" not in resolved, (
         f"HarfBuzz ICU unexpectedly entered the {flavor_name} flavor"
     )
+    for package_name in ("gstreamer", "gst-plugins-base", "gst-plugins-good", "gst-plugins-bad"):
+        assert package_name not in resolved, (
+            f"{package_name} unexpectedly entered the {flavor_name} flavor"
+        )
     assert "xdg-dbus-proxy" not in resolved, (
         f"xdg-dbus-proxy unexpectedly entered the {flavor_name} flavor"
     )

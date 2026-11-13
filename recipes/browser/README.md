@@ -10,6 +10,7 @@ standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 29 packages:
 | browser applications | firefox google-chrome |
 | WebKitGTK engine | webkit2gtk-4.1 |
 | WebKit dependencies | icu harfbuzz-icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 libseccomp xdg-dbus-proxy lcms2 libwebp openjpeg nghttp2 |
+| WebKit multimedia (media/) | gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad |
 | Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
@@ -82,12 +83,15 @@ not a libsoup compile-time input. `glib-networking` remains an explicit
 runtime dependency so HTTPS is available to applications using libsoup on
 the installed system.
 
-GStreamer is disabled at the WebKit build-system level with
-`-DUSE_GSTREAMER=OFF`; disabling only video and Web Audio would still make
-CMake require the GStreamer core/base development libraries. Video, WebRTC,
-Web Audio, MediaRecorder, spellchecking, speech synthesis and other optional
-features remain disabled for this Telegram Web Apps use case. As a result, embedded web video, calls and media capture
-are not provided by this build.
+GStreamer 1.28.9 is packaged as four optional media recipes: the core,
+base, good and minimal bad plug-ins. WebKitGTK enables HTML video and Web
+Audio and links against the app, pbutils, video, audio, FFT, tag, GL and
+MPEG-TS components. The good plug-in set includes MP4/WebM containers,
+VP8/VP9, Vorbis/Opus and PulseAudio-compatible output. This is a deliberately
+small codec set: H.264/AAC and other external codec plug-ins are not included.
+WebRTC, MediaStream and MediaRecorder remain disabled, so calls and media
+capture are not part of this build. The GStreamer packages are pulled only
+through WebKitGTK and remain outside every default ISO flavor.
 
 WebKitGTK is large and must be built with the recipe's conservative two-job
 limit. It is deliberately not selected by any ISO flavor. Installing

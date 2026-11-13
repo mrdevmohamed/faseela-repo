@@ -1,0 +1,29 @@
+# media recipe: GStreamer core — framework libraries, core elements and tools.
+# Kept separate from optional plugin modules so media stacks can choose their codecs.
+[package]
+name = "gstreamer"
+version = "1.28.9"
+rel = 1
+arch = ["x86_64"]
+summary = "GStreamer multimedia framework core"
+license = ["LGPL-2.1-or-later"]
+source = "https://gstreamer.freedesktop.org/src/gstreamer/gstreamer-%{version}.tar.xz"
+sha256 = "6dbf744f583131a34845cc641e803843766a9ba80ce00378a9043fd6d8d5fb38"
+source_dir = "gstreamer-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib"]
+run = ["glib"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=disabled -Dtools=enabled -Dtests=disabled -Dexamples=disabled -Dintrospection=disabled -Dnls=disabled -Ddoc=disabled -Dgtk_doc=disabled -Dorc=disabled"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+test -e "%{pkgdir}/usr/lib/libgstreamer-1.0.so" || {
+    echo "gstreamer: core shared library was not installed" >&2
+    exit 1
+}
+test -x "%{pkgdir}/usr/bin/gst-inspect-1.0" || {
+    echo "gstreamer: gst-inspect-1.0 was not installed" >&2
+    exit 1
+}'''

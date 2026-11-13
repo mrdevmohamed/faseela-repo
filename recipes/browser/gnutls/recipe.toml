@@ -2,7 +2,7 @@
 [package]
 name = "gnutls"
 version = "3.8.13"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "TLS and cryptographic library"
 license = ["LGPL-2.1-or-later"]
@@ -14,6 +14,6 @@ build = ["pkgconf", "nettle", "libtasn1", "libidn2", "p11-kit"]
 run = ["nettle", "libtasn1", "libidn2", "p11-kit"]
 
 [build]
-configure = "./configure --prefix=/usr --disable-static --disable-doc --disable-guile --disable-tests --with-default-trust-store-file=/etc/ssl/certs/ca-certificates.crt"
+configure = "PKG_CONFIG_PATH=/usr/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} ./configure --prefix=/usr --disable-static --disable-doc --disable-guile --disable-tests --with-default-trust-store-file=/etc/ssl/certs/ca-certificates.crt"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

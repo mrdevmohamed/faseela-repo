@@ -27,6 +27,7 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
+assert webkit["package"]["rel"] >= 2, "Bump WebKitGTK rel when correcting build dependencies"
 assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
@@ -35,7 +36,7 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2",
     "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf",
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
-    "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking",
+    "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1",
 })
 nghttp2_recipe = recipe("browser", "nghttp2")
 nghttp2 = nghttp2_recipe["package"]
@@ -93,11 +94,12 @@ require_deps("browser", "webkit2gtk-4.1", "run", {
     "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite",
     "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo",
     "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland",
-    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "openssl",
+    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt",
     "gcc", "glibc",
 })
 
 configure = webkit["build"]["configure"]
+assert "USE_OPENSSL" not in configure, "WebKitGTK 2.54.2 uses its required libgcrypt backend"
 for required in (
     "-DPORT=GTK",
     "-DUSE_GTK4=OFF",

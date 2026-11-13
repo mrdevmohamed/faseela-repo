@@ -1,0 +1,20 @@
+# browser recipe: nghttp2 — HTTP/2 framing library used by libsoup3.
+[package]
+name = "nghttp2"
+version = "1.71.0"
+rel = 1
+arch = ["x86_64"]
+summary = "HTTP/2 framing and HPACK library"
+license = ["MIT"]
+source = "https://github.com/nghttp2/nghttp2/releases/download/v%{version}/nghttp2-%{version}.tar.xz"
+sha256 = "c0f55121d88650e4b9227aec28cebaf664d2417ca60fe70be0f8d38829f52116"
+
+[depends]
+build = []
+run = []
+
+[build]
+# libsoup3 only needs libnghttp2; omit the command-line tools and optional bindings.
+configure = "./configure --prefix=/usr --disable-static --enable-lib-only"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

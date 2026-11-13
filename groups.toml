@@ -5,7 +5,7 @@ name = "Development Tools"
 description = "Compilers, build tools, language runtimes, editors, and debugging utilities."
 mandatory = ["git", "base-devel"]
 default = ["gcc", "make", "cmake", "ninja", "neovim", "gdb", "nodejs", "golang", "python", "pipx"]
-optional = ["deno", "rust", "llvm", "valgrind", "argcomplete"]
+optional = ["deno", "rust", "llvm", "valgrind", "argcomplete", "ruby"]
 
 [[group]]
 schema = 1

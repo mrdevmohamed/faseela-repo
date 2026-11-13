@@ -1,0 +1,34 @@
+# browser recipe: harfbuzz-icu — optional ICU integration for HarfBuzz.
+# Keep ICU support separate from the regular GUI HarfBuzz package so the
+# WebKitGTK dependency does not pull ICU into default desktop flavors.
+[package]
+name = "harfbuzz-icu"
+version = "10.0.1"
+rel = 2
+arch = ["x86_64"]
+summary = "ICU integration module for HarfBuzz"
+license = ["MIT"]
+source = "https://github.com/harfbuzz/harfbuzz/releases/download/%{version}/harfbuzz-%{version}.tar.xz"
+sha256 = "b2cb13bd351904cb9038f907dc0dee0ae07127061242fe3556b2795c4e9748fc"
+source_dir = "harfbuzz-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "icu"]
+run = ["harfbuzz", "icu"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D glib=disabled -D gobject=disabled -D icu=enabled -D icu_builtin=false -D cairo=disabled -D freetype=disabled -D tests=disabled -D docs=disabled -D introspection=disabled -D benchmark=disabled"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+# This package owns only the optional ICU integration; the normal HarfBuzz
+# package supplies libharfbuzz, the common headers and its pkg-config file.
+find "%{pkgdir}/usr" -type f ! -name 'libharfbuzz-icu.so*' ! -name 'harfbuzz-icu.pc' ! -name 'hb-icu.h' -delete
+find "%{pkgdir}/usr" -type l ! -name 'libharfbuzz-icu.so*' -delete
+find "%{pkgdir}/usr" -depth -type d -empty -delete
+
+test -e "%{pkgdir}/usr/lib/libharfbuzz-icu.so" || test -e "%{pkgdir}/usr/lib/libharfbuzz-icu.so.0" || {
+    echo "harfbuzz-icu: ICU integration library was not installed" >&2
+    exit 1
+}
+test -f "%{pkgdir}/usr/lib/pkgconfig/harfbuzz-icu.pc"
+test -f "%{pkgdir}/usr/include/harfbuzz/hb-icu.h"'''

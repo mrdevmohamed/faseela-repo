@@ -1,0 +1,20 @@
+# browser recipe: ICU — Unicode and globalization libraries for WebKitGTK.
+[package]
+name = "icu"
+version = "79.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Unicode and globalization libraries"
+license = ["Unicode-3.0"]
+source = "https://github.com/unicode-org/icu/archive/refs/tags/release-%{version}.tar.gz"
+sha256 = "195b1dbb083321cc097e8cf88eca73de34fb41418f091748f7b6a829a4d40f1d"
+source_dir = "icu-release-%{version}/icu4c/source"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --disable-samples --disable-tests"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

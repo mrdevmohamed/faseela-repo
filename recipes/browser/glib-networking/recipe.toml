@@ -1,0 +1,31 @@
+# browser recipe: glib-networking — GIO TLS modules used by libsoup3 for HTTPS.
+[package]
+name = "glib-networking"
+version = "2.80.1"
+rel = 4
+arch = ["x86_64"]
+summary = "GLib networking modules with GnuTLS support"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/glib-networking/2.80/glib-networking-%{version}.tar.xz"
+sha256 = "b80e2874157cd55071f1b6710fa0b911d5ac5de106a9ee2a4c9c7bee61782f8e"
+source_dir = "glib-networking-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gnutls", "gsettings-desktop-schemas"]
+run = ["glib", "gnutls"]
+
+[build]
+# glib-networking 2.80.1 does not define a Meson "tests" option.
+# Its Meson configure step requires the shared GSettings schema package.
+# GnuTLS' .pc file references nettle/hogweed in /usr/lib64/pkgconfig;
+# repeat the search path here because build environments are not inherited
+# between separately built packages.
+configure = "PKG_CONFIG_PATH=/usr/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+# Refresh the cache on the target root after the module payload is installed.
+# gio-querymodules reports scan errors but returns success; runtime dependency
+# resolution is separately covered by libsoup3's declared glib-networking dep.
+post_install = "gio-querymodules /usr/lib/gio/modules"

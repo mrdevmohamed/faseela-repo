@@ -1,0 +1,19 @@
+# browser recipe: lcms2 — Little CMS colour-management engine for WebKitGTK.
+[package]
+name = "lcms2"
+version = "2.20"
+rel = 2
+arch = ["x86_64"]
+summary = "Little CMS colour-management engine"
+license = ["MIT"]
+source = "https://downloads.sourceforge.net/project/lcms/lcms/2.20/lcms2-2.20.tar.gz"
+sha256 = "18ff5504fa9cc8a2b1f3591180d90ead16c8a2ea78e530523b46eab70e1ca6b9"
+
+[depends]
+build = []
+run = []
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

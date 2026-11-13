@@ -1,0 +1,19 @@
+# browser recipe: nettle — cryptographic primitives used by GnuTLS.
+[package]
+name = "nettle"
+version = "3.10.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Low-level cryptographic library"
+license = ["LGPL-3.0-or-later", "GPL-2.0-or-later"]
+source = "https://mirrors.kernel.org/gnu/nettle/nettle-%{version}.tar.gz"
+sha256 = "fe9ff51cb1f2abb5e65a6b8c10a92da0ab5ab6eaf26e7fc2b675c45f1fb519b5"
+
+[depends]
+build = ["gmp", "m4"]
+run = ["gmp"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -53,7 +53,7 @@ assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
     "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
 )
 networking = recipe("browser", "glib-networking")
-assert networking["package"]["rel"] >= 2, "Bump glib-networking rel when fixing its install hook"
+assert networking["package"]["rel"] >= 3, "Bump glib-networking rel when changing the staged GIO cache"
 require_deps("browser", "glib-networking", "build", {"gsettings-desktop-schemas"})
 networking_configure = networking["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in networking_configure, (
@@ -66,21 +66,22 @@ for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabl
 assert "-D tests=" not in networking_configure, (
     "glib-networking 2.80.1 has no Meson 'tests' option"
 )
-networking_hook = networking.get("hooks", {}).get("post_install", "")
+networking_install = networking["build"]["install"]
 for required in (
-    "gio-querymodules /usr/lib/gio/modules",
+    "gio-querymodules %{pkgdir}/usr/lib/gio/modules",
     "libgiognutls.so",
-    "giomodule.cache",
+    "%{pkgdir}/usr/lib/gio/modules/giomodule.cache",
 ):
-    assert required in networking_hook, (
-        f"glib-networking post-install hook must verify {required}"
+    assert required in networking_install, (
+        f"glib-networking install step must generate and verify {required}"
     )
-assert "|| true" not in networking_hook, (
-    "Do not hide failure to register the GIO GnuTLS backend"
+assert "hooks" not in networking or "post_install" not in networking["hooks"], (
+    "Do not run gio-querymodules as a post_install hook: build hooks run before "
+    "the staged package payload is available in the target root"
 )
 
 libsoup = recipe("browser", "libsoup3")
-assert libsoup["package"]["rel"] >= 2, "Bump libsoup3 rel when fixing GIO TLS discovery"
+assert libsoup["package"]["rel"] >= 3, "Bump libsoup3 rel when fixing GIO TLS discovery"
 libsoup_configure = libsoup["build"]["configure"]
 assert libsoup_configure.startswith(
     "GIO_MODULE_DIR=/usr/lib/gio/modules meson setup"

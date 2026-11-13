@@ -87,4 +87,3 @@ include = [
 summary = "Live system with COSMIC, PipeWire, Firefox, networking and Bluetooth"
 extends = ["iso-nogui"]
 include = ["@cosmic", "firefox"]
-exclude = ["cosmic-greeter", "greetd"]

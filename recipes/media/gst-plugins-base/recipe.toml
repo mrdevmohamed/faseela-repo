@@ -12,8 +12,8 @@ sha256 = "c1fda668b520e6aef763c0eb962c032c9fe52bce322e8b00c69b4e9e847bddc1"
 source_dir = "gst-plugins-base-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gstreamer", "glib", "alsa-lib", "libdrm", "libepoxy", "libjpeg-turbo", "libogg", "libpng", "libvorbis", "opus", "pango", "mesa", "wayland", "wayland-protocols", "libxkbcommon", "libX11", "libXext", "libXrender", "libxcb"]
-run = ["gstreamer", "glib", "alsa-lib", "libdrm", "libepoxy", "libjpeg-turbo", "libogg", "libpng", "libvorbis", "opus", "pango", "mesa", "wayland", "libxkbcommon", "libX11", "libXext", "libXrender", "libxcb"]
+build = ["meson", "ninja", "pkgconf", "gstreamer", "glib", "alsa-lib", "libgudev", "libdrm", "libepoxy", "libjpeg-turbo", "libogg", "libpng", "libvorbis", "opus", "pango", "mesa", "wayland", "wayland-protocols", "libxkbcommon", "libX11", "libXext", "libXrender", "libxcb"]
+run = ["gstreamer", "glib", "alsa-lib", "libgudev", "libdrm", "libepoxy", "libjpeg-turbo", "libogg", "libpng", "libvorbis", "opus", "pango", "mesa", "wayland", "libxkbcommon", "libX11", "libXext", "libXrender", "libxcb"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=disabled -Dtests=disabled -Dexamples=disabled -Dtools=disabled -Dintrospection=disabled -Ddoc=disabled -Dnls=disabled -Dorc=disabled -Dgl=enabled -Dgl_api=opengl,gles2 -Dgl_platform=egl,glx -Dgl_winsys=x11,wayland,gbm -Dgl-graphene=disabled -Dgl-jpeg=enabled -Dgl-png=enabled -Dapp=enabled -Dplayback=enabled -Dtypefind=enabled -Dvideoconvertscale=enabled -Dvideorate=enabled -Daudioconvert=enabled -Daudioresample=enabled -Dvolume=enabled -Dalsa=enabled -Dogg=enabled -Dopus=enabled -Dvorbis=enabled -Dpango=enabled -Dx11=enabled -Dxshm=enabled -Dxvideo=disabled -Dqt5=disabled -Dlibvisual=disabled -Dcdparanoia=disabled -Dtheora=disabled -Dtremor=disabled"

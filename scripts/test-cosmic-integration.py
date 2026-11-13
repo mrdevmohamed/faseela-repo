@@ -86,6 +86,8 @@ assert {"greetd", "linux-pam", "elogind", "seatd-runit", "runit"} <= greeter_run
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
 assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
 assert "pam_elogind.so" in greeter["build"]["install"]
+assert "--features logind,networkmanager,upower" in greeter["build"]["compile"]
+assert {"network-manager", "bluez", "upower"} <= greeter_run
 assert "ensure-system-account user cosmic-greeter" in greeter["hooks"]["post_install"]
 assert "grep -q 'agreety'" in greeter["hooks"]["post_install"]
 

@@ -53,7 +53,7 @@ assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
     "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
 )
 networking = recipe("browser", "glib-networking")
-assert networking["package"]["rel"] >= 3, "Bump glib-networking rel when changing the staged GIO cache"
+assert networking["package"]["rel"] >= 4, "Bump glib-networking rel when changing its runtime module-cache hook"
 require_deps("browser", "glib-networking", "build", {"gsettings-desktop-schemas"})
 networking_configure = networking["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in networking_configure, (
@@ -66,30 +66,27 @@ for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabl
 assert "-D tests=" not in networking_configure, (
     "glib-networking 2.80.1 has no Meson 'tests' option"
 )
-networking_install = networking["build"]["install"]
-for required in (
-    "gio-querymodules %{pkgdir}/usr/lib/gio/modules",
-    "libgiognutls.so",
-    "%{pkgdir}/usr/lib/gio/modules/giomodule.cache",
-):
-    assert required in networking_install, (
-        f"glib-networking install step must generate and verify {required}"
-    )
-assert "hooks" not in networking or "post_install" not in networking["hooks"], (
-    "Do not run gio-querymodules as a post_install hook: build hooks run before "
-    "the staged package payload is available in the target root"
+assert networking["build"]["install"] == (
+    "DESTDIR=%{pkgdir} meson install -C build"
+), "Do not generate a host-specific GIO cache inside the package archive"
+networking_hook = networking.get("hooks", {}).get("post_install", "")
+assert networking_hook == "gio-querymodules /usr/lib/gio/modules", (
+    "Refresh the installed GIO module cache after the target payload is installed"
+)
+assert "|| true" not in networking_hook, (
+    "Do not hide failures to execute the GIO module-cache hook"
 )
 
 libsoup = recipe("browser", "libsoup3")
-assert libsoup["package"]["rel"] >= 3, "Bump libsoup3 rel when fixing GIO TLS discovery"
+assert libsoup["package"]["rel"] >= 4, "Bump libsoup3 rel when changing its TLS packaging check"
 libsoup_configure = libsoup["build"]["configure"]
-assert libsoup_configure.startswith(
-    "GIO_MODULE_DIR=/usr/lib/gio/modules meson setup"
-), "libsoup3 must probe GIO modules from Faseela's installed module directory"
-assert "-D tls_check=true" in libsoup_configure, (
-    "Keep libsoup's configure-time TLS validation enabled"
+assert "GIO_MODULE_DIR=" not in libsoup_configure, (
+    "Do not couple libsoup's package build to a staged GIO module directory"
 )
-
+assert "-D tls_check=false" in libsoup_configure, (
+    "Disable only the upstream packaging-time TLS probe; glib-networking remains a runtime dependency"
+)
+require_deps("browser", "libsoup3", "run", {"glib-networking"})
 require_deps("browser", "webkit2gtk-4.1", "run", {
     "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",

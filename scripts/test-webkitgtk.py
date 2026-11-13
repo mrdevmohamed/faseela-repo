@@ -53,6 +53,7 @@ assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
     "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
 )
 networking = recipe("browser", "glib-networking")
+assert networking["package"]["rel"] >= 2, "Bump glib-networking rel when fixing its install hook"
 require_deps("browser", "glib-networking", "build", {"gsettings-desktop-schemas"})
 networking_configure = networking["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in networking_configure, (
@@ -65,6 +66,29 @@ for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabl
 assert "-D tests=" not in networking_configure, (
     "glib-networking 2.80.1 has no Meson 'tests' option"
 )
+networking_hook = networking.get("hooks", {}).get("post_install", "")
+for required in (
+    "gio-querymodules /usr/lib/gio/modules",
+    "libgiognutls.so",
+    "giomodule.cache",
+):
+    assert required in networking_hook, (
+        f"glib-networking post-install hook must verify {required}"
+    )
+assert "|| true" not in networking_hook, (
+    "Do not hide failure to register the GIO GnuTLS backend"
+)
+
+libsoup = recipe("browser", "libsoup3")
+assert libsoup["package"]["rel"] >= 2, "Bump libsoup3 rel when fixing GIO TLS discovery"
+libsoup_configure = libsoup["build"]["configure"]
+assert libsoup_configure.startswith(
+    "GIO_MODULE_DIR=/usr/lib/gio/modules meson setup"
+), "libsoup3 must probe GIO modules from Faseela's installed module directory"
+assert "-D tls_check=true" in libsoup_configure, (
+    "Keep libsoup's configure-time TLS validation enabled"
+)
+
 require_deps("browser", "webkit2gtk-4.1", "run", {
     "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",

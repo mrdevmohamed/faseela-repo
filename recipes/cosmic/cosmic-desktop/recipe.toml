@@ -1,0 +1,92 @@
+# cosmic recipe: cosmic-desktop — COSMIC desktop session integration for
+# Faseela (meta package in the gui-session/xfce-session style: no upstream
+# source, only configuration and service wiring on top of the real packages).
+#
+# Faseela runs runit as PID 1 with the system D-Bus and elogind, so this
+# package wires COSMIC into that stack:
+#   * the per-session bus starts via dbus-run-session inside start-cosmic
+#     (upstream script; its systemd branches are guarded by `command -v`)
+#   * cosmic-session's login1 calls resolve to elogind, and the greeter
+#     session is registered through pam_elogind
+#   * seatd stays the libseat backend for cosmic-comp's DRM access
+#   * PipeWire/WirePlumber start per session through faseela-audio-session
+#     (XDG autostart entry below, OnlyShowIn=COSMIC)
+#   * the greetd-based login greeter ships as a runit service that is NOT
+#     pre-enabled, like LightDM's service in the Xfce flavor
+[package]
+name = "cosmic-desktop"
+version = "0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC Wayland desktop session integration for Faseela (runit + dbus + elogind)"
+license = ["MIT"]
+
+[depends]
+build = []
+run = ["cosmic-session", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings", "cosmic-settings-daemon", "cosmic-screenshot", "cosmic-randr", "cosmic-icons", "xdg-desktop-portal-cosmic", "mesa", "dbus", "dbus-system", "elogind", "polkit", "pipewire", "wireplumber", "network-manager", "bluez", "upower", "seatd-runit", "eudev", "base-files", "faseela-branding", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "gnome-keyring", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[build]
+install = '''
+# --- XDG runtime directory + libseat backend for the compositor --------------
+install -d -m755 %{pkgdir}/etc/profile.d
+cat > %{pkgdir}/etc/profile.d/cosmic-session.sh <<'EOF'
+# /etc/profile.d/cosmic-session.sh — environment for running COSMIC from a tty
+if [ -z "$XDG_RUNTIME_DIR" ]; then
+    _uid=$(id -u)
+    if [ -d "/run/user/$_uid" ] && [ -O "/run/user/$_uid" ]; then
+        XDG_RUNTIME_DIR=/run/user/$_uid
+    elif [ "$_uid" = 0 ]; then
+        XDG_RUNTIME_DIR=/run/user/0
+        mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null && chmod 700 "$XDG_RUNTIME_DIR"
+    else
+        XDG_RUNTIME_DIR=/tmp/runtime-$_uid
+        mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null && chmod 700 "$XDG_RUNTIME_DIR"
+    fi
+    if [ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ]; then
+        export XDG_RUNTIME_DIR
+    else
+        unset XDG_RUNTIME_DIR
+    fi
+    unset _uid
+fi
+# cosmic-comp takes the DRM seat through libseat; Faseela builds libseat with
+# the seatd backend only (no systemd), so pin the backend selection.
+export LIBSEAT_BACKEND=seatd
+EOF
+chmod 644 %{pkgdir}/etc/profile.d/cosmic-session.sh
+
+# --- per-session audio: PipeWire/WirePlumber via the shared helper -----------
+# Same autostart entry the Sway and Xfce sessions use; audio-session is
+# idempotent, so it coexists with the other desktops.
+install -d -m755 %{pkgdir}/etc/xdg/autostart
+cat > %{pkgdir}/etc/xdg/autostart/faseela-audio-session-cosmic.desktop <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Faseela Audio Session
+Comment=Start PipeWire audio services for this desktop session
+Exec=/usr/bin/faseela-audio-session
+TryExec=/usr/bin/faseela-audio-session
+OnlyShowIn=COSMIC;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+DESKTOP
+chmod 644 %{pkgdir}/etc/xdg/autostart/faseela-audio-session-cosmic.desktop
+
+# --- portal preference sanity -------------------------------------------------
+# xdg-desktop-portal-cosmic already ships /usr/share/xdg-desktop-portal/
+# cosmic-portals.conf (default=cosmic;gtk, Secret=gnome-keyring); nothing to
+# add here.
+'''
+
+[hooks]
+post_install = '''
+# The shared seatd-runit package creates seat/video/render/input groups.
+# COSMIC's per-user audio helper needs the audio group.
+/usr/libexec/faseela/ensure-system-account group audio
+
+echo "cosmic-desktop: add your user to the desktop groups:"
+echo "cosmic-desktop:   usermod -aG seat,video,render,input,audio <user>"
+echo "cosmic-desktop: start the session from a tty:  start-cosmic"
+echo "cosmic-desktop: optional login greeter: install cosmic-greeter, then enable its runit service"
+echo "cosmic-desktop: disable getty-tty1 first if it owns VT 1"
+'''

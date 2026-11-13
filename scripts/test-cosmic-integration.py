@@ -95,6 +95,11 @@ assert {"greetd", "linux-pam", "elogind", "seatd-runit", "runit"} <= greeter_run
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
 assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
 assert "pam_elogind.so" in greeter["build"]["install"]
+greeter_install = greeter["build"]["install"]
+assert "system-services/com.system76.CosmicGreeter.service" in greeter_install
+assert "Name=com.system76.CosmicGreeter" in greeter_install
+assert "Exec=/usr/bin/cosmic-greeter-daemon" in greeter_install
+assert "User=root" in greeter_install
 assert "--features logind,networkmanager,upower -p cosmic-greeter" in greeter["build"]["compile"]
 assert "--no-default-features -p cosmic-greeter-daemon" in greeter["build"]["compile"]
 assert {"network-manager", "bluez", "upower"} <= greeter_run

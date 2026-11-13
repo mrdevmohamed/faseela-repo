@@ -52,6 +52,16 @@ install -Dm644 cosmic-greeter.toml %{pkgdir}/etc/greetd/cosmic-greeter.toml
 # System-bus policy that lets the greeter talk to its root daemon.
 install -Dm644 dbus/com.system76.CosmicGreeter.conf \
     %{pkgdir}/usr/share/dbus-1/system.d/com.system76.CosmicGreeter.conf
+# On runit there is no systemd Type=dbus unit. Let the system bus
+# activate the privileged daemon when the greeter first requests its API.
+install -d -m755 %{pkgdir}/usr/share/dbus-1/system-services
+cat > %{pkgdir}/usr/share/dbus-1/system-services/com.system76.CosmicGreeter.service <<'DBUS'
+[D-BUS Service]
+Name=com.system76.CosmicGreeter
+Exec=/usr/bin/cosmic-greeter-daemon
+User=root
+DBUS
+chmod 644 %{pkgdir}/usr/share/dbus-1/system-services/com.system76.CosmicGreeter.service
 # PAM stack named by /etc/greetd/cosmic-greeter.toml (service =
 # "cosmic-greeter"): local UNIX auth; the session line registers the login
 # session with elogind (login1) — never pam_systemd, this is a runit system.

@@ -51,7 +51,9 @@ sudo nawa service enable cosmic-greeter
 ```
 
 The package includes greetd, its COSMIC greeter, PAM integration through
-`pam_elogind.so`, and a runit service shipped disabled. Disable the
+`pam_elogind.so`, and a runit service shipped disabled. The privileged
+`cosmic-greeter-daemon` is started on demand by the system D-Bus activation
+file, so this path does not depend on a systemd unit. Disable the
 `getty-tty1` service first when it owns the selected VT. The package hook
 preserves a custom `/etc/greetd/config.toml`; it only replaces the stock
 agreety sample.

@@ -37,10 +37,14 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
     "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking",
 })
-require_deps("browser", "nghttp2", "build", set())
-nghttp2 = recipe("browser", "nghttp2")["package"]
+nghttp2_recipe = recipe("browser", "nghttp2")
+nghttp2 = nghttp2_recipe["package"]
 assert nghttp2["version"] == "1.71.0"
+assert nghttp2["source"].endswith("nghttp2-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", nghttp2["sha256"])
+assert "--enable-lib-only" in nghttp2_recipe["build"]["configure"], (
+    "Build only the nghttp2 library needed by libsoup3"
+)
 require_deps("browser", "libsoup3", "build", {"nghttp2"})
 require_deps("browser", "libsoup3", "run", {"nghttp2"})
 require_deps("browser", "gnutls", "build", {"pkgconf", "nettle", "libtasn1", "libidn2", "p11-kit"})

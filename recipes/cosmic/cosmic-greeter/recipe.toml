@@ -31,7 +31,7 @@ dir = "."
 # Keep the greeter's logind, NetworkManager and UPower D-Bus integrations.
 # The upstream logind feature also enables the optional journald tracing sink;
 # it does not link libsystemd. Avoid the compositor-only systemd backend.
-compile = "cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter -p cosmic-greeter-daemon"
+compile = "cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter && cargo build --release --offline --locked --no-default-features -p cosmic-greeter-daemon"
 install = '''
 install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter
 install -Dm755 target/release/cosmic-greeter-daemon %{pkgdir}/usr/bin/cosmic-greeter-daemon

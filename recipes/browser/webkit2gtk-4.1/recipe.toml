@@ -5,7 +5,7 @@
 [package]
 name = "webkit2gtk-4.1"
 version = "2.54.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "WebKitGTK 4.1 web rendering engine for GTK3 applications"
 license = ["LGPL-2.1-or-later", "BSD-2-Clause", "MPL-2.0"]
@@ -35,6 +35,7 @@ configure = '''cmake -S . -B build -G Ninja \
   -DENABLE_WAYLAND_TARGET=ON \
   -DENABLE_DOCUMENTATION=OFF \
   -DENABLE_INTROSPECTION=OFF \
+  -DENABLE_JOURNALD_LOG=OFF \
   -DENABLE_MINIBROWSER=OFF \
   -DENABLE_WEBDRIVER=OFF \
   -DENABLE_GAMEPAD=OFF \

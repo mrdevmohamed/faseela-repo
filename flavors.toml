@@ -12,6 +12,7 @@
 #   iso-nogui   common base system without a desktop
 #   iso-sway    common base + Sway Wayland desktop
 #   iso-xfce    common base + Xfce desktop on Xorg
+#   iso-cosmic  common base + COSMIC Wayland desktop
 #
 # Optional applications (media players, editors, messaging, VPN clients,
 # peripherals, developer tools) are installed separately through Nawa.
@@ -78,3 +79,12 @@ include = [
     "xarchiver",
     "pavucontrol"
 ]
+
+ 
+# COSMIC desktop image.
+# The login greeter stays optional because it takes ownership of a VT.
+[flavor.iso-cosmic]
+summary = "Live system with COSMIC, PipeWire, Firefox, networking and Bluetooth"
+extends = ["iso-nogui"]
+include = ["@cosmic", "firefox"]
+exclude = ["cosmic-greeter", "greetd"]

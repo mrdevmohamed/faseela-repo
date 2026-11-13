@@ -2,7 +2,7 @@
 [package]
 name = "libsoup3"
 version = "3.8.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GLib HTTP client and server library (libsoup 3)"
 license = ["LGPL-2.0-only"]
@@ -15,8 +15,9 @@ build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "br
 run = ["glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2"]
 
 [build]
-# glib-networking ships a generated giomodule.cache with its GnuTLS backend.
-# Point Meson's runtime TLS probe at the module directory in this build root.
-configure = "GIO_MODULE_DIR=/usr/lib/gio/modules meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vapi=disabled -D docs=disabled -D tests=false -D installed_tests=false -D sysprof=disabled -D gssapi=disabled -D ntlm=disabled -D autobahn=disabled -D brotli=enabled -D tls_check=true"
+# Upstream documents tls_check=false for package builds: glib-networking is
+# a runtime backend, not a libsoup compile-time dependency. Keep it explicit
+# in depends.run and validate runtime TLS separately after installation.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vapi=disabled -D docs=disabled -D tests=false -D installed_tests=false -D sysprof=disabled -D gssapi=disabled -D ntlm=disabled -D autobahn=disabled -D brotli=enabled -D tls_check=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

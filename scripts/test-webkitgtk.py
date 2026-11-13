@@ -103,6 +103,10 @@ require_deps("browser", "webkit2gtk-4.1", "run", {
 harfbuzz = recipe("gui", "harfbuzz")
 harfbuzz_icu_recipe = recipe("browser", "harfbuzz-icu")
 assert harfbuzz_icu_recipe["package"]["version"] == harfbuzz["package"]["version"]
+assert harfbuzz_icu_recipe["package"]["rel"] >= 2, "Bump HarfBuzz ICU rel when correcting source staging"
+assert harfbuzz_icu_recipe["package"].get("source_dir") == "harfbuzz-%{version}", (
+    "HarfBuzz ICU must build from the upstream harfbuzz-version source directory"
+)
 assert harfbuzz_icu_recipe["package"]["sha256"] == harfbuzz["package"]["sha256"]
 require_deps("browser", "harfbuzz-icu", "build", {"icu"})
 require_deps("browser", "harfbuzz-icu", "run", {"harfbuzz", "icu"})

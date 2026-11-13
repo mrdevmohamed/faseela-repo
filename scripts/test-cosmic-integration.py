@@ -8,11 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 COSMIC = ROOT / "recipes" / "cosmic"
 EXPECTED = {
     "cosmic-applets", "cosmic-bg", "cosmic-comp", "cosmic-desktop",
-    "cosmic-edit", "cosmic-files", "cosmic-greeter", "cosmic-icons",
+    "cosmic-edit", "cosmic-files", "cosmic-icons",
     "cosmic-idle", "cosmic-launcher", "cosmic-notifications", "cosmic-osd",
     "cosmic-panel", "cosmic-randr", "cosmic-screenshot", "cosmic-session",
     "cosmic-settings", "cosmic-settings-daemon", "cosmic-store", "cosmic-term",
-    "cosmic-workspaces", "greetd", "xdg-desktop-portal-cosmic",
+    "cosmic-workspaces", "xdg-desktop-portal-cosmic",
 }
 
 
@@ -50,6 +50,16 @@ for name in sorted(EXPECTED):
         encoding="utf-8"
     ) or name == "cosmic-icons", f"{name}: Rust sources must use Nawa's Cargo fetch phase"
 
+# Login components live outside @cosmic so an ISO can select the desktop
+# without pulling the PAM stack or a second login daemon.
+for name in ("cosmic-greeter", "greetd"):
+    item = recipe("greeter", name)
+    pkg = item["package"]
+    assert pkg["name"] == name
+    assert pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+    assert re.fullmatch(r"[0-9a-f]{64}", pkg["sources"][0]["sha256"])
+    assert "[fetch.cargo]" in (ROOT / "recipes" / "greeter" / name / "recipe.toml").read_text()
+
 desktop = recipe("cosmic", "cosmic-desktop")
 desktop_run = set(desktop["depends"]["run"])
 assert {"cosmic-session", "cosmic-comp", "seatd-runit", "audio-session",
@@ -80,7 +90,7 @@ assert "default=cosmic;gtk" in (COSMIC / "xdg-desktop-portal-cosmic" / "recipe.t
 assert "org.freedesktop.impl.portal.desktop.cosmic.service" in portal_install
 
 # Optional greeter includes PAM + greetd and ships its service disabled.
-greeter = recipe("cosmic", "cosmic-greeter")
+greeter = recipe("greeter", "cosmic-greeter")
 greeter_run = set(greeter["depends"]["run"])
 assert {"greetd", "linux-pam", "elogind", "seatd-runit", "runit"} <= greeter_run
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
@@ -92,7 +102,7 @@ assert {"network-manager", "bluez", "upower"} <= greeter_run
 assert "ensure-system-account user cosmic-greeter" in greeter["hooks"]["post_install"]
 assert "grep -q 'agreety'" in greeter["hooks"]["post_install"]
 
-greetd = recipe("cosmic", "greetd")
+greetd = recipe("greeter", "greetd")
 assert "linux-pam" in greetd["depends"]["run"]
 
 # Shared seatd integration is owned once, not by the Sway or COSMIC session.
@@ -121,6 +131,7 @@ assert cosmic_group["optional"] == ["cosmic-greeter"]
 flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))
 cosmic_flavor = flavors["flavor"]["iso-cosmic"]
 assert "@cosmic" in cosmic_flavor["include"]
-assert {"cosmic-greeter", "greetd"} <= set(cosmic_flavor["exclude"])
+assert "cosmic-greeter" not in cosmic_flavor.get("exclude", [])
+assert "greetd" not in cosmic_flavor.get("exclude", [])
 
-print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes and Faseela integration checks passed")
+print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes, 2 optional greeter recipes and Faseela integration checks passed")

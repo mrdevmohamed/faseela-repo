@@ -3,13 +3,13 @@
 **Firefox ESR**, official **Google Chrome Stable**, the GTK3 browser stack,
 and optional **WebKitGTK 4.1** for applications that embed a web view.
 The browser recipes remain a separate category. Firefox is included in the
-standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 28 packages:
+standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 29 packages:
 
 | group | packages |
 |---|---|
 | browser applications | firefox google-chrome |
 | WebKitGTK engine | webkit2gtk-4.1 |
-| WebKit dependencies | icu harfbuzz-icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 libseccomp lcms2 libwebp openjpeg nghttp2 |
+| WebKit dependencies | icu harfbuzz-icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 libseccomp xdg-dbus-proxy lcms2 libwebp openjpeg nghttp2 |
 | Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
@@ -61,8 +61,11 @@ the WebKit WebProcess bubblewrap sandbox enabled. This release requires
 `libgcrypt` and `libtasn1` for its own crypto backend; `USE_OPENSSL` is not
 an available 2.54.2 build option.
 
-WebKit's Bubblewrap sandbox also requires `libseccomp`; the package is kept in
-`system/` and is installed through WebKitGTK's explicit build/runtime dependencies.
+WebKit's Bubblewrap sandbox requires three build/runtime tools: `libseccomp`
+(the library linked by WebCore, from `system/`), `bubblewrap` (the `gui/`
+package providing `bwrap`), and `xdg-dbus-proxy` (packaged here). All three
+are explicit WebKitGTK dependencies so CMake can verify the sandbox tools
+during configuration and the installed WebProcess can use them at runtime.
 
 WebKit requires HarfBuzz's ICU component. It is packaged separately as
 `harfbuzz-icu`, which depends on the regular `harfbuzz` package and ICU.

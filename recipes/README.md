@@ -23,10 +23,10 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
-**209 core packages**. Optional categories contain 133 GUI, 26 browser, 45
+Current set: 10 toolchain + 39 base + 56 system + 8 boot + 98 extra =
+**211 core packages**. Optional categories contain 138 GUI, 29 browser, 48
 Xfce, 18 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 16 developer packages. The recipe tree contains **510
+1 peripheral and 16 developer packages. The recipe tree contains **513
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
@@ -92,7 +92,7 @@ libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
 
 **boot** — linux; efibootmgr → grub → busybox
 
-**extra** — 95 general-purpose packages covering development/build
+**extra** — 98 general-purpose packages covering development/build
 utilities, network diagnostics, editors, hardware inspection, storage tools,
 compression and command-line productivity. The live ISO's `iso-nogui` flavor
 includes this category; inspect the current inventory with

@@ -5,7 +5,7 @@
 [package]
 name = "webkit2gtk-4.1"
 version = "2.54.2"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "WebKitGTK 4.1 web rendering engine for GTK3 applications"
 license = ["LGPL-2.1-or-later", "BSD-2-Clause", "MPL-2.0"]
@@ -14,8 +14,8 @@ sha256 = "a76345b391bef6211fb5ab6cfab2e86b285d18cda17cbb9ade595f1252b86065"
 source_dir = "webkitgtk-%{version}"
 
 [depends]
-build = ["cmake", "ninja", "pkgconf", "ruby", "which", "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols", "libX11", "libXext", "libXrender", "libxcb", "libgcrypt", "libtasn1", "glib-networking", "libseccomp"]
-run = ["gcc", "glibc", "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls", "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt", "libseccomp", "hicolor-icon-theme"]
+build = ["cmake", "ninja", "pkgconf", "ruby", "which", "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols", "libX11", "libXext", "libXrender", "libxcb", "libgcrypt", "libtasn1", "glib-networking", "libseccomp", "bubblewrap", "xdg-dbus-proxy"]
+run = ["gcc", "glibc", "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls", "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "xdg-dbus-proxy", "libgcrypt", "libseccomp", "hicolor-icon-theme"]
 
 [slim]
 strip = false

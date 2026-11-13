@@ -27,7 +27,7 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
-assert webkit["package"]["rel"] >= 4, "Bump WebKitGTK rel when correcting build dependencies"
+assert webkit["package"]["rel"] >= 5, "Bump WebKitGTK rel when correcting build dependencies"
 assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
@@ -36,7 +36,7 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2",
     "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf",
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
-    "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1", "libseccomp",
+    "libX11", "libXext", "libXrender", "libxcb", "glib-networking", "libgcrypt", "libtasn1", "libseccomp", "bubblewrap", "xdg-dbus-proxy",
 })
 nghttp2_recipe = recipe("browser", "nghttp2")
 nghttp2 = nghttp2_recipe["package"]
@@ -94,9 +94,16 @@ require_deps("browser", "webkit2gtk-4.1", "run", {
     "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite",
     "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo",
     "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland",
-    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt", "libseccomp",
+    "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "xdg-dbus-proxy", "libgcrypt", "libseccomp",
     "gcc", "glibc",
 })
+
+
+proxy = recipe("browser", "xdg-dbus-proxy")
+require_deps("browser", "xdg-dbus-proxy", "build", {"meson", "ninja", "pkgconf", "glib"})
+require_deps("browser", "xdg-dbus-proxy", "run", {"glib"})
+assert "-D man=disabled" in proxy["build"]["configure"]
+assert "-D tests=false" in proxy["build"]["configure"]
 
 # WebKit requires HarfBuzz's separately packaged ICU integration. Keep it
 # opt-in so the regular GUI HarfBuzz package does not pull ICU into base flavors.
@@ -145,6 +152,7 @@ for category, package_name, min_version in (
     ("gui", "cairo", (1, 18, 6)),
     ("extra", "which", (2, 25)),
     ("system", "libseccomp", (2, 6, 1)),
+    ("browser", "xdg-dbus-proxy", (0, 1, 9)),
 ):
     package = recipe(category, package_name)["package"]
     version = tuple(int(part) for part in package["version"].split(".")[:3])
@@ -170,6 +178,9 @@ for flavor_name in ("bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", 
     )
     assert "harfbuzz-icu" not in resolved, (
         f"HarfBuzz ICU unexpectedly entered the {flavor_name} flavor"
+    )
+    assert "xdg-dbus-proxy" not in resolved, (
+        f"xdg-dbus-proxy unexpectedly entered the {flavor_name} flavor"
     )
 
 print("WEBKITGTK / TELEGRAM WEB APPS VALIDATION PASSED")

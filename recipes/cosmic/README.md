@@ -1,6 +1,6 @@
 # recipes/cosmic — COSMIC desktop for Faseela
 
-This category contains 23 recipes from the System76 COSMIC Epoch desktop,
+This category contains 21 recipes from the System76 COSMIC Epoch desktop,
 pinned as one coordinated `epoch-1.0.8` snapshot. Rust components use their
 committed Cargo lockfiles and Nawa's `[fetch.cargo]` phase; workspace
 dependencies such as libcosmic are fetched before the offline build.
@@ -12,7 +12,7 @@ dependencies such as libcosmic are fetched before the offline build.
 | Session and shell | `cosmic-comp`, `cosmic-session`, `cosmic-panel`, `cosmic-applets`, `cosmic-launcher`, `cosmic-notifications`, `cosmic-workspaces`, `cosmic-osd`, `cosmic-bg`, `cosmic-idle`, `cosmic-settings`, `cosmic-settings-daemon`, `cosmic-randr` |
 | Portal and visual assets | `xdg-desktop-portal-cosmic`, `cosmic-icons`, `cosmic-screenshot` |
 | Applications | `cosmic-files`, `cosmic-term`, `cosmic-edit`, `cosmic-store` |
-| Optional login | `greetd`, `cosmic-greeter` |
+| Optional login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |
 | Faseela integration | `cosmic-desktop` |
 
 ## Faseela integration
@@ -58,9 +58,9 @@ agreety sample.
 
 ## Build and install
 
-The `iso-cosmic` flavor selects the COSMIC category and Firefox while
-excluding `greetd` and `cosmic-greeter`. This keeps a fresh live image from
-starting an extra login daemon.
+The `iso-cosmic` flavor selects `@cosmic` plus Firefox. Because the login
+packages live in the separate `greeter/` category, the image does not pull in
+greetd, PAM or their greeter-only dependencies.
 
 Inspect the dependency closure:
 

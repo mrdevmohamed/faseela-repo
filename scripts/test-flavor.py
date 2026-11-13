@@ -93,6 +93,7 @@ class RealTree(unittest.TestCase):
         self.assertNotIn("sway", got["iso-cosmic"])
         self.assertNotIn("greetd", got["iso-cosmic"])
         self.assertNotIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertNotIn("linux-pam", got["iso-cosmic"])
         self.assertNotIn("cosmic-desktop", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])
         self.assertNotIn("zed", got["iso-sway"])

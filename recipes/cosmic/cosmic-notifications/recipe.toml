@@ -1,0 +1,35 @@
+# cosmic recipe: cosmic-notifications — COSMIC notification daemon
+# (org.freedesktop.Notifications for the session bus).
+[package]
+name = "cosmic-notifications"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC notification daemon"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-notifications"
+url = "https://codeload.github.com/pop-os/cosmic-notifications/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "6c0b7c3d8468be797952f0c1963b8a638336b61945bc9e4bc957c6b479afc3ff"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "wayland", "libxkbcommon"]
+run = ["wayland", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin cosmic-notifications"
+install = '''
+install -Dm755 target/release/cosmic-notifications %{pkgdir}/usr/bin/cosmic-notifications
+install -Dm644 data/com.system76.CosmicNotifications.desktop \
+    %{pkgdir}/usr/share/applications/com.system76.CosmicNotifications.desktop
+install -Dm644 data/com.system76.CosmicNotifications.metainfo.xml \
+    %{pkgdir}/usr/share/metainfo/com.system76.CosmicNotifications.metainfo.xml
+install -Dm644 data/icons/com.system76.CosmicNotifications.svg \
+    %{pkgdir}/usr/share/icons/hicolor/scalable/apps/com.system76.CosmicNotifications.svg
+'''

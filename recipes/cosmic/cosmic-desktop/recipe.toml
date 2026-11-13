@@ -6,13 +6,10 @@
 # package wires COSMIC into that stack:
 #   * the per-session bus starts via dbus-run-session inside start-cosmic
 #     (upstream script; its systemd branches are guarded by `command -v`)
-#   * cosmic-session's login1 calls resolve to elogind, and the greeter
-#     session is registered through pam_elogind
-#   * seatd stays the libseat backend for cosmic-comp's DRM access
+#   * cosmic-session's login1 calls resolve to elogind
+#   * seatd-runit provides the shared libseat daemon and DRM device rules
 #   * PipeWire/WirePlumber start per session through faseela-audio-session
 #     (XDG autostart entry below, OnlyShowIn=COSMIC)
-#   * the greetd-based login greeter ships as a runit service that is NOT
-#     pre-enabled, like LightDM's service in the Xfce flavor
 [package]
 name = "cosmic-desktop"
 version = "0.1"

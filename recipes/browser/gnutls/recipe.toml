@@ -1,0 +1,19 @@
+# browser recipe: GnuTLS — TLS backend for GLib Networking / libsoup HTTPS.
+[package]
+name = "gnutls"
+version = "3.8.13"
+rel = 1
+arch = ["x86_64"]
+summary = "TLS and cryptographic library"
+license = ["LGPL-2.1-or-later"]
+source = "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-%{version}.tar.xz"
+sha256 = "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e"
+
+[depends]
+build = ["nettle", "libtasn1", "libidn2", "p11-kit"]
+run = ["nettle", "libtasn1", "libidn2", "p11-kit"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-doc --disable-guile --disable-tests --with-default-trust-store-file=/etc/ssl/certs/ca-certificates.crt"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

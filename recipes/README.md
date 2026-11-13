@@ -10,7 +10,8 @@ recipes/
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
-├── cosmic/      optional COSMIC Wayland desktop, applications, and login greeter (opt-in)
+├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
+├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
 ├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
@@ -25,7 +26,7 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
-**209 core packages**. Optional categories contain 134 GUI, 23 COSMIC, 16 browser, 45 Xfce, 18 Xorg,
+**209 core packages**. Optional categories contain 134 GUI, 21 COSMIC, 2 greeter, 16 browser, 45 Xfce, 18 Xorg,
 23 media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral
 and 15 developer packages. The recipe tree contains **513 recipes** in total.
 
@@ -189,7 +190,7 @@ nawa --recipes recipes deps xfce-session
 
 ## The COSMIC desktop (opt-in)
 
-The `cosmic/` category contains 23 recipes for the System76 COSMIC Wayland
+The `cosmic/` category contains 21 recipes for the System76 COSMIC Wayland
 desktop, all pinned to the `epoch-1.0.8` source snapshot. Each Rust package
 uses Nawa's Cargo fetch phase and locked workspace dependency graph.
 `cosmic-desktop` is the Faseela integration meta-package: it connects the
@@ -199,8 +200,9 @@ owns the seatd service and DRM render-node udev rule used by Sway; the service
 is not duplicated in desktop-specific packages.
 
 The `iso-cosmic` flavor selects `@cosmic` plus Firefox. The login stack
-(`greetd` + `cosmic-greeter`) is excluded from that flavor and remains
-selectable through the COSMIC package group. This avoids taking over VT 1
+(`greetd` + `cosmic-greeter`) lives in the separate `greeter/` category and
+remains selectable through the COSMIC package group. This keeps those login
+packages and their dependencies out of the ISO and avoids taking over VT 1
 during an ordinary package install. To inspect the dependency closure:
 
 ```sh

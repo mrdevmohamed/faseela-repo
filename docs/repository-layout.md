@@ -58,7 +58,9 @@ recipes/
 | **system** | System services, hardware and device support, networking, storage, and administration tools. |
 | **boot** | Kernel and boot-related packages. |
 | **extra** | General-purpose command-line tools, editors, diagnostics, and utilities. |
-| **gui** | Optional graphical desktop stack and shared desktop services. |\n| **cosmic** | COSMIC Wayland desktop and applications. |\n| **greeter** | Optional login daemons and greeter applications. |
+| **gui** | Optional graphical desktop stack and shared desktop services. |
+| **cosmic** | COSMIC Wayland desktop and applications. |
+| **greeter** | Optional login daemons and greeter applications. |
 | **xorg** | The X.Org server, its input driver, and X11 client utilities. |
 | **xfce** | The Xfce desktop, applications, panel plugins, LightDM, GTK greeter, and session integration. |
 | **browser** | Optional browser packages and their supporting libraries. |

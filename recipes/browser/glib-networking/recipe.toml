@@ -1,0 +1,23 @@
+# browser recipe: glib-networking — GIO TLS modules used by libsoup3 for HTTPS.
+[package]
+name = "glib-networking"
+version = "2.80.1"
+rel = 1
+arch = ["x86_64"]
+summary = "GLib networking modules with GnuTLS support"
+license = ["LGPL-2.1-or-later"]
+source = "https://download.gnome.org/sources/glib-networking/2.80/glib-networking-%{version}.tar.xz"
+sha256 = "b80e2874157cd55071f1b6710fa0b911d5ac5de106a9ee2a4c9c7bee61782f8e"
+source_dir = "glib-networking-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gnutls"]
+run = ["glib", "gnutls"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled -D tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+post_install = "gio-querymodules /usr/lib/gio/modules 2>/dev/null || true"

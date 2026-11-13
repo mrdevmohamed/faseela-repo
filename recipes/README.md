@@ -26,7 +26,7 @@ recipes/
 Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
 **209 core packages**. Optional categories contain 133 GUI, 26 browser, 45
 Xfce, 18 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 16 developer packages. The recipe tree contains **500
+1 peripheral and 16 developer packages. The recipe tree contains **510
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added

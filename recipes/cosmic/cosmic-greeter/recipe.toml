@@ -3,8 +3,9 @@
 # (root-owned D-Bus service doing PAM conversations and system queries) and
 # cosmic-greeter-start (greetd session wrapper). PAM goes through pam-client
 # against linux-pam; the greeter session is registered with elogind
-# (pam_elogind). The optional "systemd" features only add journald tracing
-# sinks, which do not exist on runit — built with --no-default-features.
+# (pam_elogind). The upstream logind feature also enables a journald tracing
+# sink, but does not link libsystemd; the daemon is built without its optional
+# journald sink.
 [package]
 name = "cosmic-greeter"
 version = "1.0.8"

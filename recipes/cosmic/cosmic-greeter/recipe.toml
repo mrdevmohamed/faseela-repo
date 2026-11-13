@@ -22,15 +22,16 @@ strip_components = 1
 
 [depends]
 build = ["rust", "pkgconf", "linux-pam", "wayland", "libxkbcommon", "mesa", "eudev"]
-run = ["linux-pam", "wayland", "mesa", "libxkbcommon", "eudev", "dbus", "elogind", "greetd", "cosmic-icons", "hicolor-icon-theme", "seatd-runit", "runit", "base-files", "coreutils"]
+run = ["linux-pam", "wayland", "mesa", "libxkbcommon", "eudev", "dbus", "elogind", "network-manager", "bluez", "upower", "greetd", "cosmic-icons", "hicolor-icon-theme", "seatd-runit", "runit", "base-files", "coreutils"]
 
 [fetch.cargo]
 dir = "."
 
 [build]
-# --no-default-features drops the journald tracing sink for both the greeter
-# and its daemon; tracing falls back to the regular subscriber.
-compile = "cargo build --release --offline --locked --no-default-features -p cosmic-greeter -p cosmic-greeter-daemon"
+# Keep the greeter's logind, NetworkManager and UPower D-Bus integrations.
+# The upstream logind feature also enables the optional journald tracing sink;
+# it does not link libsystemd. Avoid the compositor-only systemd backend.
+compile = "cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter -p cosmic-greeter-daemon"
 install = '''
 install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter
 install -Dm755 target/release/cosmic-greeter-daemon %{pkgdir}/usr/bin/cosmic-greeter-daemon

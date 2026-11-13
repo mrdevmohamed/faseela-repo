@@ -1,0 +1,93 @@
+# cosmic recipe: cosmic-greeter — COSMIC login greeter for greetd.
+# Three binaries: cosmic-greeter (libcosmic UI), cosmic-greeter-daemon
+# (root-owned D-Bus service doing PAM conversations and system queries) and
+# cosmic-greeter-start (greetd session wrapper). PAM goes through pam-client
+# against linux-pam; the greeter session is registered with elogind
+# (pam_elogind). The optional "systemd" features only add journald tracing
+# sinks, which do not exist on runit — built with --no-default-features.
+[package]
+name = "cosmic-greeter"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC login greeter (greetd session with PAM authentication)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-greeter"
+url = "https://codeload.github.com/pop-os/cosmic-greeter/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "c77cfd3fa9d75e6d385e960e6019e7313a16c652a01d9e39b84560152213aa11"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "linux-pam", "wayland", "libxkbcommon", "mesa", "eudev"]
+run = ["linux-pam", "wayland", "mesa", "libxkbcommon", "eudev", "dbus", "elogind", "greetd", "cosmic-icons", "hicolor-icon-theme", "seatd-runit", "runit", "base-files", "coreutils"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+# --no-default-features drops the journald tracing sink for both the greeter
+# and its daemon; tracing falls back to the regular subscriber.
+compile = "cargo build --release --offline --locked --no-default-features -p cosmic-greeter -p cosmic-greeter-daemon"
+install = '''
+install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter
+install -Dm755 target/release/cosmic-greeter-daemon %{pkgdir}/usr/bin/cosmic-greeter-daemon
+# cosmic-greeter-start is a shell script: greetd runs it as the greeter
+# session; it clears stale settings-daemon state and starts cosmic-comp
+# followed by the greeter UI on the greetd VT.
+install -m755 cosmic-greeter-start.sh %{pkgdir}/usr/bin/cosmic-greeter-start
+# greetd session definition and per-user greeter configuration.
+install -Dm644 cosmic-greeter.toml %{pkgdir}/etc/greetd/cosmic-greeter.toml
+# System-bus policy that lets the greeter talk to its root daemon.
+install -Dm644 dbus/com.system76.CosmicGreeter.conf \
+    %{pkgdir}/usr/share/dbus-1/system.d/com.system76.CosmicGreeter.conf
+# PAM stack named by /etc/greetd/cosmic-greeter.toml (service =
+# "cosmic-greeter"): local UNIX auth; the session line registers the login
+# session with elogind (login1) — never pam_systemd, this is a runit system.
+install -d -m755 %{pkgdir}/etc/pam.d
+cat > %{pkgdir}/etc/pam.d/cosmic-greeter <<'PAM'
+#%PAM-1.0
+auth      required pam_nologin.so
+auth      required pam_env.so
+auth      required pam_unix.so
+account   required pam_unix.so
+password  required pam_unix.so
+session   required pam_unix.so
+session   optional pam_elogind.so class=user type=wayland desktop=COSMIC
+PAM
+chmod 644 %{pkgdir}/etc/pam.d/cosmic-greeter
+
+# Optional runit service. Ship it disabled so installing the greeter never
+# unexpectedly takes over VT 1 or conflicts with the active getty.
+install -d -m755 %{pkgdir}/etc/sv/cosmic-greeter
+cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
+#!/bin/sh
+exec 2>&1
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+install -d -m755 -o cosmic-greeter -g video /run/cosmic-greeter
+exec greetd
+RUN
+chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
+'''
+
+[hooks]
+post_install = '''
+# The shared seatd-runit package provides the `video` group.
+/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
+install -d -m750 -o cosmic-greeter -g video /var/lib/cosmic-greeter
+
+# Use the COSMIC greeter only while greetd still has its stock agreety sample.
+# Preserve any administrator-authored greetd configuration.
+if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
+   && grep -q 'agreety' /etc/greetd/config.toml; then
+    cp /etc/greetd/cosmic-greeter.toml /etc/greetd/config.toml
+    chmod 644 /etc/greetd/config.toml
+    echo "cosmic-greeter: configured greetd to start the COSMIC greeter"
+fi
+
+echo "cosmic-greeter: optional runit service shipped disabled."
+echo "cosmic-greeter: enable with: nawa service enable cosmic-greeter"
+echo "cosmic-greeter: disable getty-tty1 first if it owns VT 1."
+'''

@@ -37,6 +37,12 @@ require_deps("browser", "webkit2gtk-4.1", "build", {
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
     "libX11", "libXext", "libXrender", "libxcb", "openssl", "glib-networking",
 })
+require_deps("browser", "nghttp2", "build", set())
+nghttp2 = recipe("browser", "nghttp2")["package"]
+assert nghttp2["version"] == "1.71.0"
+assert re.fullmatch(r"[0-9a-f]{64}", nghttp2["sha256"])
+require_deps("browser", "libsoup3", "build", {"nghttp2"})
+require_deps("browser", "libsoup3", "run", {"nghttp2"})
 require_deps("browser", "gnutls", "build", {"pkgconf", "nettle", "libtasn1", "libidn2", "p11-kit"})
 gnutls_configure = recipe("browser", "gnutls")["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (

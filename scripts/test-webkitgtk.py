@@ -68,6 +68,9 @@ assert webkit.get("slim", {}).get("strip") is False, (
 
 for category, package_name, min_version in (
     ("dev", "ruby", (4, 0, 9)),
+    ("extra", "cmake", (4, 4, 5)),
+    ("gui", "cairo", (1, 18, 6)),
+    ("extra", "which", (2, 25)),
 ):
     package = recipe(category, package_name)["package"]
     version = tuple(int(part) for part in package["version"].split(".")[:3])

@@ -11,8 +11,8 @@ sha256 = "5013dcef9136f6f861e6529fca578af50c1f52a39219027fb5aff652d1371a04"
 source_dir = "libsoup-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking"]
-run = ["glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking"]
+build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2"]
+run = ["glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vapi=disabled -D docs=disabled -D tests=false -D installed_tests=false -D sysprof=disabled -D gssapi=disabled -D ntlm=disabled -D autobahn=disabled -D brotli=enabled -D tls_check=true"

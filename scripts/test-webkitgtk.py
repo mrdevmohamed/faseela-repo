@@ -42,7 +42,9 @@ gnutls_configure = recipe("browser", "gnutls")["build"]["configure"]
 assert "PKG_CONFIG_PATH=/usr/lib64/pkgconfig" in gnutls_configure, (
     "GnuTLS must search Faseela's /usr/lib64/pkgconfig directory for Nettle"
 )
-networking_configure = recipe("browser", "glib-networking")["build"]["configure"]
+networking = recipe("browser", "glib-networking")
+require_deps("browser", "glib-networking", "build", {"gsettings-desktop-schemas"})
+networking_configure = networking["build"]["configure"]
 for required in ("-D gnutls=enabled", "-D openssl=disabled", "-D libproxy=disabled"):
     assert required in networking_configure, (
         f"glib-networking is missing Meson option: {required}"

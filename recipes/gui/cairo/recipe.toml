@@ -1,16 +1,14 @@
 # gui recipe: cairo — 2D vector graphics library
-# rel 2: libcairo-gobject (glib=enabled) and the xlib surface (xlib=enabled). GTK3 needs both, and
-#        there can be only one cairo: see recipes/browser. xcb stays off. Adds glib and the
-#        X11 client libraries (recipes/gui/libX11, no X server) to everything that uses cairo.
+# rel 1: GTK3 requires libcairo-gobject and the Xlib surface; xcb stays off.
 [package]
 name = "cairo"
-version = "1.18.2"
-rel = 2
+version = "1.18.6"
+rel = 1
 arch = ["x86_64"]
 summary = "2D vector graphics library"
 license = ["LGPL-2.1-only", "MPL-1.1"]
 source = "https://cairographics.org/releases/cairo-%{version}.tar.xz"
-sha256 = "a62b9bb42425e844cc3d6ddde043ff39dbabedd1542eba57a2eb79f85889d45a"
+sha256 = "1c767308174337a74694da0f3ec069c271452163a1ef4540964c50c301f157d4"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "glib", "pixman", "freetype", "fontconfig", "libpng", "zlib", "libX11", "libXext", "libXrender"]

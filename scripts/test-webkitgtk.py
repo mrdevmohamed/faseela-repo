@@ -32,7 +32,7 @@ assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
     "cmake", "ninja", "ruby", "which", "gtk3", "glib", "cairo", "icu",
-    "harfbuzz", "fontconfig", "freetype", "mesa", "libdrm", "libgudev",
+    "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev",
     "libsoup3", "libwebp", "lcms2", "openjpeg", "sqlite", "libxml2",
     "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo", "gdk-pixbuf",
     "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "wayland-protocols",
@@ -89,7 +89,7 @@ assert "-D tls_check=false" in libsoup_configure, (
 )
 require_deps("browser", "libsoup3", "run", {"glib-networking"})
 require_deps("browser", "webkit2gtk-4.1", "run", {
-    "gtk3", "glib", "cairo", "icu", "harfbuzz", "fontconfig", "freetype",
+    "gtk3", "glib", "cairo", "icu", "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype",
     "mesa", "libdrm", "libgudev", "libsoup3", "glib-networking", "gnutls",
     "libtasn1", "nettle", "libwebp", "lcms2", "openjpeg", "sqlite",
     "libxml2", "libxslt", "zlib", "brotli", "libpng", "libjpeg-turbo",
@@ -97,6 +97,23 @@ require_deps("browser", "webkit2gtk-4.1", "run", {
     "libX11", "libXext", "libXrender", "libxcb", "bubblewrap", "libgcrypt",
     "gcc", "glibc",
 })
+
+# WebKit requires HarfBuzz's separately packaged ICU integration. Keep it
+# opt-in so the regular GUI HarfBuzz package does not pull ICU into base flavors.
+harfbuzz = recipe("gui", "harfbuzz")
+harfbuzz_icu_recipe = recipe("browser", "harfbuzz-icu")
+assert harfbuzz_icu_recipe["package"]["version"] == harfbuzz["package"]["version"]
+assert harfbuzz_icu_recipe["package"]["sha256"] == harfbuzz["package"]["sha256"]
+require_deps("browser", "harfbuzz-icu", "build", {"icu"})
+require_deps("browser", "harfbuzz-icu", "run", {"harfbuzz", "icu"})
+hb_icu_configure = harfbuzz_icu_recipe["build"]["configure"]
+assert "-D icu=enabled" in hb_icu_configure
+assert "-D icu_builtin=false" in hb_icu_configure
+assert "-D icu=disabled" in harfbuzz["build"]["configure"], (
+    "Keep the regular HarfBuzz package independent of ICU"
+)
+assert "libharfbuzz-icu.so" in harfbuzz_icu_recipe["build"]["install"]
+assert "harfbuzz-icu.pc" in harfbuzz_icu_recipe["build"]["install"]
 
 configure = webkit["build"]["configure"]
 assert "USE_OPENSSL" not in configure, "WebKitGTK 2.54.2 uses its required libgcrypt backend"
@@ -144,6 +161,9 @@ for flavor_name in ("bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", 
     )
     assert "telegram-desktop" not in resolved, (
         f"Telegram unexpectedly entered the {flavor_name} flavor"
+    )
+    assert "harfbuzz-icu" not in resolved, (
+        f"HarfBuzz ICU unexpectedly entered the {flavor_name} flavor"
     )
 
 print("WEBKITGTK / TELEGRAM WEB APPS VALIDATION PASSED")

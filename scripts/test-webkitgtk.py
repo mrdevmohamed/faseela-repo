@@ -52,7 +52,6 @@ for required in (
     "-DPORT=GTK",
     "-DUSE_GTK4=OFF",
     "-DENABLE_BUBBLEWRAP_SANDBOX=ON",
-    "-DUSE_GSTREAMER=OFF",
     "-DENABLE_VIDEO=OFF",
     "-DENABLE_WEB_RTC=OFF",
     "-DENABLE_WEB_AUDIO=OFF",

@@ -9,7 +9,7 @@ standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 27 packages:
 |---|---|
 | browser applications | firefox google-chrome |
 | WebKitGTK engine | webkit2gtk-4.1 |
-| WebKit dependencies | icu libsoup3 glib-networking gnutls nettle libtasn1 lcms2 libwebp openjpeg nghttp2 |
+| WebKit dependencies | icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 lcms2 libwebp openjpeg nghttp2 |
 | Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
@@ -57,7 +57,9 @@ updating this recipe.
 
 The `webkit2gtk-4.1` recipe builds the GTK3 WebKit API from the official
 WebKitGTK 2.54.2 source release. It uses GTK3 (`USE_GTK4=OFF`) and keeps
-the WebKit WebProcess bubblewrap sandbox enabled.
+the WebKit WebProcess bubblewrap sandbox enabled. This release requires
+`libgcrypt` and `libtasn1` for its own crypto backend; `USE_OPENSSL` is not
+an available 2.54.2 build option.
 
 The initial minimal feature set keeps HTML rendering, JavaScript and HTTPS
 networking. GnuTLS and `glib-networking` provide the GIO TLS backend used by

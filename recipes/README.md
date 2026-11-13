@@ -10,7 +10,7 @@ recipes/
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop and shared services: sway, PipeWire, NetworkManager, BlueZ, elogind, polkit, ... (opt-in)
-├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
+├── browser/     optional Firefox/Google Chrome and WebKitGTK 4.1 stack (opt-in, on top of gui/)
 ├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
@@ -24,16 +24,16 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
-**209 core packages**. Optional categories contain 133 GUI, 16 browser, 45
+**209 core packages**. Optional categories contain 133 GUI, 26 browser, 45
 Xfce, 18 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 15 developer packages. The recipe tree contains **489
+1 peripheral and 16 developer packages. The recipe tree contains **500
 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; browser, media, creative, messaging, networking,
 security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
-The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
+The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
 The first 47 `extra/` recipes are generated from a data table
 (`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator

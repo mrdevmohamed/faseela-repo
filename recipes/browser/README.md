@@ -3,13 +3,13 @@
 **Firefox ESR**, official **Google Chrome Stable**, the GTK3 browser stack,
 and optional **WebKitGTK 4.1** for applications that embed a web view.
 The browser recipes remain a separate category. Firefox is included in the
-standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 26 packages:
+standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 27 packages:
 
 | group | packages |
 |---|---|
 | browser applications | firefox google-chrome |
 | WebKitGTK engine | webkit2gtk-4.1 |
-| WebKit dependencies | icu libsoup3 glib-networking gnutls nettle libtasn1 lcms2 libwebp openjpeg |
+| WebKit dependencies | icu libsoup3 glib-networking gnutls nettle libtasn1 lcms2 libwebp openjpeg nghttp2 |
 | Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
@@ -61,7 +61,8 @@ the WebKit WebProcess bubblewrap sandbox enabled.
 
 The initial minimal feature set keeps HTML rendering, JavaScript and HTTPS
 networking. GnuTLS and `glib-networking` provide the GIO TLS backend used by
-libsoup3. GStreamer, video, WebRTC, Web Audio, MediaRecorder, spellchecking,
+libsoup3, while `nghttp2` supplies its HTTP/2 transport support.
+GStreamer, video, WebRTC, Web Audio, MediaRecorder, spellchecking,
 speech synthesis and other optional features are disabled for this Telegram
 Web Apps use case. As a result, embedded web video, calls and media capture
 are not provided by this build.

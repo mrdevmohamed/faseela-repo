@@ -2,7 +2,7 @@
 [package]
 name = "glib-networking"
 version = "2.80.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GLib networking modules with GnuTLS support"
 license = ["LGPL-2.1-or-later"]
@@ -22,10 +22,7 @@ run = ["glib", "gnutls"]
 # between separately built packages.
 configure = "PKG_CONFIG_PATH=/usr/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH} meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gnutls=enabled -D openssl=disabled -D libproxy=disabled"
 compile = "ninja -C build"
-install = "DESTDIR=%{pkgdir} meson install -C build"
-
-[hooks]
-# The package archive intentionally does not ship a host-specific GIO module
-# cache. Rebuild it after installation and fail if the GnuTLS TLS backend
-# was not registered; silently ignoring this used to leave libsoup without TLS.
-post_install = "test -s /usr/lib/gio/modules/libgiognutls.so && gio-querymodules /usr/lib/gio/modules && grep -q 'libgiognutls.so' /usr/lib/gio/modules/giomodule.cache"
+# Meson deliberately skips gio-querymodules while DESTDIR is set. Generate
+# the GIO cache against the staged module directory explicitly so it ships
+# inside the archive and is already available to dependent package builds.
+install = "DESTDIR=%{pkgdir} meson install -C build && gio-querymodules %{pkgdir}/usr/lib/gio/modules && grep -q 'libgiognutls.so' %{pkgdir}/usr/lib/gio/modules/giomodule.cache"

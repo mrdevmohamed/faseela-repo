@@ -25,7 +25,15 @@ assert session["package"]["rel"] >= 13, "Bump gui-session rel for desktop integr
 require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
-assert "%{pkgdir}/etc/udev/rules.d" in install_script
+seatd_runit = recipe("gui", "seatd-runit")
+seatd_install = seatd_runit["build"]["install"]
+require_deps("gui", "gui-session", "run", {"seatd-runit"})
+assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" not in install_script
+assert "%{pkgdir}/etc/sv/seatd/run" not in install_script
+assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
+assert "%{pkgdir}/etc/sv/seatd/run" in seatd_install
+assert "/etc/runit/runsvdir/default/seatd" in seatd_install
+assert "ensure-system-account group" in seatd_runit["hooks"]["post_install"]
 assert (chr(36) + "{pkgdir}") not in install_script, (
     "Use the recipe %{pkgdir} macro; an unset shell variable breaks package staging"
 )
@@ -82,7 +90,7 @@ for name in ("fuse3", "json-glib", "bubblewrap"):
     ), f"{name} must have a SHA-256 field"
 audio_session = recipe("gui", "audio-session")
 audio_install = audio_session["build"]["install"]
-assert audio_session["package"]["rel"] >= 2, (
+assert audio_session["package"]["rel"] >= 3, (
     "Bump audio-session rel when fixing desktop-session lifetime detection"
 )
 require_deps("gui", "audio-session", "run", {"pipewire", "wireplumber", "procps-ng", "coreutils"})
@@ -93,6 +101,7 @@ assert "*XFCE*) session_process=xfce4-session ;;" in audio_install, (
     "The audio helper must stay alive for an XFCE session, not look for Sway"
 )
 assert "*sway*|*Sway*) session_process=sway ;;" in audio_install
+assert "*COSMIC*|*cosmic*) session_process=cosmic-session ;;" in audio_install
 assert "unsupported desktop session" in audio_install
 assert "exec /usr/bin/faseela-audio-session" in install_script
 

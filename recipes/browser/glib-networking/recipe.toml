@@ -2,7 +2,7 @@
 [package]
 name = "glib-networking"
 version = "2.80.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GLib networking modules with GnuTLS support"
 license = ["LGPL-2.1-or-later"]
@@ -25,4 +25,7 @@ compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"
 
 [hooks]
-post_install = "gio-querymodules /usr/lib/gio/modules 2>/dev/null || true"
+# The package archive intentionally does not ship a host-specific GIO module
+# cache. Rebuild it after installation and fail if the GnuTLS TLS backend
+# was not registered; silently ignoring this used to leave libsoup without TLS.
+post_install = "test -s /usr/lib/gio/modules/libgiognutls.so && gio-querymodules /usr/lib/gio/modules && grep -q 'libgiognutls.so' /usr/lib/gio/modules/giomodule.cache"

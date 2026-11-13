@@ -1,0 +1,59 @@
+# cosmic recipe: cosmic-settings — COSMIC settings application.
+# The audio page reads the PipeWire graph directly (crates/cosmic-pipewire),
+# which links libpipewire/libspa; translations use glibc's gettext
+# (gettext-rs with the "gettext-system" feature, no extra library). Device
+# pages talk to NetworkManager, BlueZ and UPower over D-Bus.
+[package]
+name = "cosmic-settings"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC settings application (display, network, audio, power, ...)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-settings"
+url = "https://codeload.github.com/pop-os/cosmic-settings/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "0b5938c01fa68fcca6a328d718537202529b7ede7da19ea7380dfc891488f769"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "pipewire", "eudev", "wayland", "libxkbcommon"]
+run = ["pipewire", "eudev", "wayland", "mesa", "libxkbcommon", "network-manager", "bluez", "upower", "polkit", "cosmic-icons", "hicolor-icon-theme", "dbus", "xdg-desktop-portal-cosmic"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked -p cosmic-settings"
+install = '''
+appid=com.system76.CosmicSettings
+install -Dm755 target/release/cosmic-settings %{pkgdir}/usr/bin/cosmic-settings
+install -Dm644 resources/$appid.metainfo.xml \
+    %{pkgdir}/usr/share/metainfo/$appid.metainfo.xml
+install -Dm644 resources/polkit-1/rules.d/cosmic-settings.rules \
+    %{pkgdir}/usr/share/polkit-1/rules.d/cosmic-settings.rules
+install -Dm644 resources/polkit-1/actions/$appid.Users.policy \
+    %{pkgdir}/usr/share/polkit-1/actions/$appid.Users.policy
+if [ -d resources/applications ]; then
+    (cd resources/applications && find . -type f) | while read -r f; do
+        f=${f#./}
+        install -Dm644 "resources/applications/$f" \
+            "%{pkgdir}/usr/share/applications/$f"
+    done
+fi
+# Default RON settings schemas keep the <app-id>/v1/<key> layout.
+if [ -d resources/default_schema ]; then
+    find resources/default_schema -type f | while read -r f; do
+        rel=${f#resources/default_schema/}
+        install -Dm644 "$f" "%{pkgdir}/usr/share/cosmic/$rel"
+    done
+fi
+if [ -d resources/icons ]; then
+    find resources/icons -type f | while read -r f; do
+        rel=${f#resources/icons/}
+        install -Dm644 "$f" "%{pkgdir}/usr/share/icons/hicolor/$rel"
+    done
+fi
+'''

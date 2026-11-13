@@ -9,7 +9,7 @@ standard `iso-sway` image; Google Chrome and WebKitGTK stay opt-in. 28 packages:
 |---|---|
 | browser applications | firefox google-chrome |
 | WebKitGTK engine | webkit2gtk-4.1 |
-| WebKit dependencies | icu harfbuzz-icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 lcms2 libwebp openjpeg nghttp2 |
+| WebKit dependencies | icu harfbuzz-icu libsoup3 glib-networking gnutls nettle libgcrypt libtasn1 libseccomp lcms2 libwebp openjpeg nghttp2 |
 | Chrome runtime libraries | nspr nss libcups |
 | toolkit | gtk3 gdk-pixbuf libepoxy at-spi2-core dbus |
 | X11 client libraries | libXfixes libXi libXcursor libXrandr libXcomposite libXdamage |
@@ -60,6 +60,9 @@ WebKitGTK 2.54.2 source release. It uses GTK3 (`USE_GTK4=OFF`) and keeps
 the WebKit WebProcess bubblewrap sandbox enabled. This release requires
 `libgcrypt` and `libtasn1` for its own crypto backend; `USE_OPENSSL` is not
 an available 2.54.2 build option.
+
+WebKit's Bubblewrap sandbox also requires `libseccomp`; the package is kept in
+`system/` and is installed through WebKitGTK's explicit build/runtime dependencies.
 
 WebKit requires HarfBuzz's ICU component. It is packaged separately as
 `harfbuzz-icu`, which depends on the regular `harfbuzz` package and ICU.

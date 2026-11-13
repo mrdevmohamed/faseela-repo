@@ -33,6 +33,7 @@ install -Dm644 data/com.system76.CosmicBackground.metainfo.xml \
 # cosmic-config schema directory for the app id. The upstream default points
 # at a Pop wallpaper file that does not exist here — repoint it at Faseela's
 # branded default (shipped by faseela-branding).
+install -d -m755 "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1"
 for f in data/v1/all data/v1/backgrounds; do
     sed "s|/usr/share/backgrounds/cosmic/|/usr/share/backgrounds/faseela/|" "$f" \
         > "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/$(basename "$f")"

@@ -1,7 +1,8 @@
 # cosmic recipe: cosmic-store — COSMIC package/app store frontend.
 # The appstream metadata parser (jackpot51/appstream) is pure Rust — it reads
-# catalog XML files; repository backends are queried over D-Bus. Without
-# Flatpak installed it still lists locally advertised applications.
+# catalog XML files; repository backends are queried over D-Bus. Keep Flatpak,
+# PackageKit and systemd-scope integrations disabled: Faseela has no Flatpak or
+# PackageKit service and uses elogind/runit rather than systemd.
 [package]
 name = "cosmic-store"
 version = "1.0.8"
@@ -25,7 +26,7 @@ run = ["wayland", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus", "xdg-des
 dir = "."
 
 [build]
-compile = "cargo build --release --offline --locked --bin cosmic-store"
+compile = "cargo build --release --offline --locked --no-default-features --features dbus-config,desktop,logind,notify,single-instance,wgpu,wayland,xdg-portal --bin cosmic-store"
 install = '''
 install -Dm755 target/release/cosmic-store %{pkgdir}/usr/bin/cosmic-store
 install -Dm644 target/xdgen/com.system76.CosmicStore.desktop \

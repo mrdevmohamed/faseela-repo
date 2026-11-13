@@ -32,7 +32,14 @@ dir = "."
 # Keep the greeter's logind, NetworkManager and UPower D-Bus integrations.
 # The upstream logind feature also enables the optional journald tracing sink;
 # it does not link libsystemd. Avoid the compositor-only systemd backend.
-compile = "cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter && cargo build --release --offline --locked --no-default-features -p cosmic-greeter-daemon"
+compile = """
+# The source archive has no .git directory. Supply the exact tag metadata so
+# vergen can generate the greeter build constants without probing Git.
+export VERGEN_GIT_COMMIT_DATE=2026-02-24T17:28:01Z
+export VERGEN_GIT_SHA=2cbb199a1613e7431a642ad601b8b7cb2546bbea
+cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter
+cargo build --release --offline --locked --no-default-features -p cosmic-greeter-daemon
+"""
 install = '''
 install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter
 install -Dm755 target/release/cosmic-greeter-daemon %{pkgdir}/usr/bin/cosmic-greeter-daemon

@@ -35,7 +35,7 @@ for name in sorted(EXPECTED):
     assert pkg["arch"] == ["x86_64"], f"{name}: unexpected architecture list"
     assert pkg.get("license"), f"{name}: license metadata is required"
     if name == "cosmic-desktop":
-        assert pkg.get("source") == "", "cosmic-desktop is a source-less integration package"
+        assert not pkg.get("source"), "cosmic-desktop is a source-less integration package"
         continue
     assert pkg.get("source") == "local:/nawa-schema-2-requires-a-newer-nawa", (
         f"{name}: multi-source recipe must fail closed on old Nawa clients"

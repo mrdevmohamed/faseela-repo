@@ -16,7 +16,9 @@ build = ["meson", "ninja", "pkgconf", "glib"]
 run = ["glib"]
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=disabled -Dtools=enabled -Dtests=disabled -Dexamples=disabled -Dintrospection=disabled -Dnls=disabled -Ddoc=disabled -Dgtk_doc=disabled -Dorc=disabled"
+# gtk_doc is disabled by upstream by default; do not pass it explicitly.
+# ORC is optional and is auto-detected by GStreamer's Meson configuration.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=disabled -Dtools=enabled -Dtests=disabled -Dexamples=disabled -Dintrospection=disabled -Dnls=disabled -Ddoc=disabled"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build
 test -e "%{pkgdir}/usr/lib/libgstreamer-1.0.so" || {

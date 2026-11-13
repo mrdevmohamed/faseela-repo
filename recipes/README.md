@@ -201,8 +201,8 @@ is not duplicated in desktop-specific packages.
 
 The `iso-cosmic` flavor selects `@cosmic` plus Firefox. The login stack
 (`greetd` + `cosmic-greeter`) lives in the separate `greeter/` category and
-remains selectable through the COSMIC package group. This keeps those login
-packages and their dependencies out of the ISO and avoids taking over VT 1
+remains selectable through the COSMIC package group. This keeps the login
+daemon and greeter-specific dependency closure out of the ISO and avoids taking over VT 1
 during an ordinary package install. To inspect the dependency closure:
 
 ```sh

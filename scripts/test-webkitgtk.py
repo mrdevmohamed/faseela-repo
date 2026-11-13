@@ -27,7 +27,7 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
-assert webkit["package"]["rel"] >= 5, "Bump WebKitGTK rel when correcting build dependencies"
+assert webkit["package"]["rel"] >= 6, "Bump WebKitGTK rel when correcting build dependencies"
 assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
 assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
 require_deps("browser", "webkit2gtk-4.1", "build", {
@@ -133,6 +133,7 @@ for required in (
     "-DUSE_GTK4=OFF",
     "-DENABLE_BUBBLEWRAP_SANDBOX=ON",
     "-DENABLE_JOURNALD_LOG=OFF",
+    "-DUSE_GSTREAMER=OFF",
     "-DENABLE_VIDEO=OFF",
     "-DENABLE_WEB_RTC=OFF",
     "-DENABLE_WEB_AUDIO=OFF",

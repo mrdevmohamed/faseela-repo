@@ -82,9 +82,11 @@ not a libsoup compile-time input. `glib-networking` remains an explicit
 runtime dependency so HTTPS is available to applications using libsoup on
 the installed system.
 
-GStreamer, video, WebRTC, Web Audio, MediaRecorder, spellchecking,
-speech synthesis and other optional features are disabled for this Telegram
-Web Apps use case. As a result, embedded web video, calls and media capture
+GStreamer is disabled at the WebKit build-system level with
+`-DUSE_GSTREAMER=OFF`; disabling only video and Web Audio would still make
+CMake require the GStreamer core/base development libraries. Video, WebRTC,
+Web Audio, MediaRecorder, spellchecking, speech synthesis and other optional
+features remain disabled for this Telegram Web Apps use case. As a result, embedded web video, calls and media capture
 are not provided by this build.
 
 WebKitGTK is large and must be built with the recipe's conservative two-job

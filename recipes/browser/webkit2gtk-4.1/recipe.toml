@@ -5,7 +5,7 @@
 [package]
 name = "webkit2gtk-4.1"
 version = "2.54.2"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "WebKitGTK 4.1 web rendering engine for GTK3 applications"
 license = ["LGPL-2.1-or-later", "BSD-2-Clause", "MPL-2.0"]
@@ -41,6 +41,7 @@ configure = '''cmake -S . -B build -G Ninja \
   -DENABLE_GAMEPAD=OFF \
   -DENABLE_SPEECH_SYNTHESIS=OFF \
   -DENABLE_SPELLCHECK=OFF \
+  -DUSE_GSTREAMER=OFF \
   -DENABLE_VIDEO=OFF \
   -DENABLE_WEB_AUDIO=OFF \
   -DENABLE_WEB_CODECS=OFF \

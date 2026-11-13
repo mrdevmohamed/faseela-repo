@@ -1,0 +1,29 @@
+# cosmic recipe: cosmic-osd — COSMIC on-screen display (volume/brightness
+# overlay window, driven through cosmic-comp's OSD D-Bus interface).
+[package]
+name = "cosmic-osd"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC on-screen display overlay"
+license = ["GPL-3.0-or-later"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-osd"
+url = "https://codeload.github.com/pop-os/cosmic-osd/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "82123a65472541f9971a80feb7938d979527466f68a29beba62326cbc09fa0c7"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "pipewire", "wayland", "libxkbcommon", "libpulse"]
+run = ["pipewire", "wayland", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus", "libpulse"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin cosmic-osd"
+install = '''
+install -Dm755 target/release/cosmic-osd %{pkgdir}/usr/bin/cosmic-osd
+'''

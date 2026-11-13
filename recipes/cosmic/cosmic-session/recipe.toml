@@ -1,0 +1,51 @@
+# cosmic recipe: cosmic-session — COSMIC session manager.
+# cosmic-session starts cosmic-comp, cosmic-settings-daemon, cosmic-bg,
+# cosmic-idle, cosmic-notifications, cosmic-panel, the app library, launcher,
+# workspaces and OSD, and exports the compositor environment to D-Bus
+# activation. Built with the default "logind" feature (pure zbus D-Bus calls
+# to org.freedesktop.login1, which elogind provides on Faseela) plus the
+# "autostart" feature so XDG autostart entries run in the session.
+[package]
+name = "cosmic-session"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC session manager"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-session"
+url = "https://codeload.github.com/pop-os/cosmic-session/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "dd4ad439db248a2ed25fc6a7ce5ebc753ddc3fe297e4f78b69c2551ea385ca04"
+strip_components = 1
+
+[depends]
+build = ["rust"]
+run = ["dbus", "dbus-system", "elogind", "xdg-desktop-portal-cosmic", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings-daemon", "cosmic-files", "cosmic-randr"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin cosmic-session --features autostart"
+install = '''
+install -Dm755 target/release/cosmic-session %{pkgdir}/usr/bin/cosmic-session
+# Upstream session start script: re-executes through the login shell for the
+# environment, then wraps cosmic-session in a per-session D-Bus bus. The
+# systemd branches are guarded by `command -v systemctl` and stay off under
+# runit.
+install -m755 data/start-cosmic %{pkgdir}/usr/bin/start-cosmic
+# Wayland session entry for display managers / greetd.
+install -Dm644 data/cosmic.desktop %{pkgdir}/usr/share/wayland-sessions/cosmic.desktop
+# Default application associations used inside the COSMIC session.
+if [ -f data/cosmic-mimeapps.list ]; then
+    install -Dm644 data/cosmic-mimeapps.list \
+        %{pkgdir}/usr/share/applications/cosmic-mimeapps.list
+fi
+# DConf profile referenced by start-cosmic (DCONF_PROFILE=cosmic). Harmless
+# when dconf is not installed; it only becomes active with a dconf package.
+if [ -f data/dconf/profile/cosmic ]; then
+    install -Dm644 data/dconf/profile/cosmic %{pkgdir}/etc/dconf/profile/cosmic
+fi
+'''

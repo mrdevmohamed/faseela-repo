@@ -9,7 +9,9 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop and shared services: sway, PipeWire, NetworkManager, BlueZ, elogind, polkit, ... (opt-in)
+├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
+├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
 ├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
@@ -24,13 +26,12 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
-**209 core packages**. Optional categories contain 133 GUI, 16 browser, 45
-Xfce, 18 Xorg, 23 media, 15 creative, 1 messaging, 1 networking, 12 security,
-1 peripheral and 15 developer packages. The recipe tree contains **489
-recipes** in total.
+**209 core packages**. Optional categories contain 134 GUI, 21 COSMIC, 2 greeter, 16 browser, 45 Xfce, 18 Xorg,
+23 media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral
+and 15 developer packages. The recipe tree contains **513 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
-only when `WITH_GUI=1`; browser, media, creative, messaging, networking,
+only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
 security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
@@ -185,3 +186,30 @@ applications. Build order for the session meta-package:
 python3 scripts/check-recipes.py xfce-session
 nawa --recipes recipes deps xfce-session
 ```
+
+
+## The COSMIC desktop (opt-in)
+
+The `cosmic/` category contains 21 recipes for the System76 COSMIC Wayland
+desktop, all pinned to the `epoch-1.0.8` source snapshot. Each Rust package
+uses Nawa's Cargo fetch phase and locked workspace dependency graph.
+`cosmic-desktop` is the Faseela integration meta-package: it connects the
+session to runit, D-Bus, elogind, PipeWire/WirePlumber, NetworkManager and the
+COSMIC portal backend. It uses the shared `seatd-runit` package, which also
+owns the seatd service and DRM render-node udev rule used by Sway; the service
+is not duplicated in desktop-specific packages.
+
+The `iso-cosmic` flavor selects `@cosmic` plus Firefox. The login stack
+(`greetd` + `cosmic-greeter`) lives in the separate `greeter/` category and
+remains selectable through the COSMIC package group. This keeps the login
+daemon and greeter-specific dependency closure out of the ISO and avoids taking over VT 1
+during an ordinary package install. To inspect the dependency closure:
+
+```sh
+python3 scripts/check-recipes.py cosmic-desktop
+nawa --recipes recipes deps cosmic-desktop
+```
+
+The uploaded recipe snapshot has not yet been validated by a complete clean
+package build; the repository CI checks recipe structure and integration
+contracts only.

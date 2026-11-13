@@ -1,0 +1,45 @@
+# cosmic recipe: cosmic-panel — COSMIC top panel and dock (layer-shell client).
+# The panel is a Wayland client rendered through libcosmic/iced (tiny-skia CPU
+# renderer with a wgpu/EGL fallback), so it needs only the Wayland and
+# xkbcommon client libraries; mesa is kept as a runtime dependency for the
+# GPU fallback path. The smithay dependency is only used for the embedded
+# xdg-shell wrapper configuration, not for a compositor backend.
+[package]
+name = "cosmic-panel"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC top panel and dock (layer-shell Wayland client)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-panel"
+url = "https://codeload.github.com/pop-os/cosmic-panel/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "b8073cc3e9b819dc6272f114858ce983197eb5e2173515b7c7a93b4f817158bb"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "wayland", "libxkbcommon"]
+run = ["wayland", "libxkbcommon", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked -p cosmic-panel-bin --bin cosmic-panel"
+install = '''
+install -Dm755 target/release/cosmic-panel %{pkgdir}/usr/bin/cosmic-panel
+# Default RON panel configuration (read by cosmic-config at first start).
+# The tree keeps the <app-id>/v1/<key> layout cosmic-config looks up under
+# /usr/share/cosmic.
+install -d -m755 %{pkgdir}/usr/share/cosmic
+if [ -d data/default_schema ]; then
+    find data/default_schema -type f | while read -r f; do
+        rel=${f#data/default_schema/}
+        install -Dm644 "$f" "%{pkgdir}/usr/share/cosmic/$rel"
+    done
+fi
+test -d %{pkgdir}/usr/share/cosmic/com.system76.CosmicPanel/v1 || {
+    echo "cosmic-panel: missing default schema" >&2; exit 1; }
+'''

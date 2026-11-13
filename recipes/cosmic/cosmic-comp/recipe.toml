@@ -1,0 +1,37 @@
+# cosmic recipe: cosmic-comp — COSMIC Wayland compositor (smithay-based).
+# Built without the "systemd" default feature: that feature links libsystemd
+# and only adds sd-journal logging / a logind-zbus seat backend, neither of
+# which exists on Faseela (runit + elogind). Seat access goes through libseat
+# (the packaged seatd recipe builds libseat with its seatd backend), session
+# tracking and power actions go through elogind's login1 D-Bus API.
+[package]
+name = "cosmic-comp"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC Wayland compositor (smithay-based, with Xwayland support)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-comp"
+url = "https://codeload.github.com/pop-os/cosmic-comp/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "b8f473d5ccc25a3ff0756f4a62c0c7ba80ad574f00e40b278a97dc6fd8705fda"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "seatd", "libinput", "libxkbcommon", "libdisplay-info", "eudev", "wayland", "pixman", "mesa"]
+run = ["seatd", "libinput", "libxkbcommon", "libdisplay-info", "eudev", "wayland", "pixman", "mesa", "xkeyboard-config", "dbus"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+# --no-default-features drops the systemd feature (libsystemd + logind-zbus).
+# The libseat crate dlopens libseat, the udev/xkbcommon/libdisplay-info crates
+# link their libraries, gbm/egl come from mesa and Vulkan via ash dlopens the
+# mesa loader, so the pkg-config headers above are the complete build set.
+compile = "cargo build --release --offline --locked --no-default-features --bin cosmic-comp"
+install = '''
+install -Dm755 target/release/cosmic-comp %{pkgdir}/usr/bin/cosmic-comp
+'''

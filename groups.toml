@@ -18,6 +18,15 @@ optional = ["grim", "slurp", "swayidle", "swaylock", "wl-clipboard", "mako"]
 
 [[group]]
 schema = 1
+id = "cosmic"
+name = "COSMIC Desktop"
+description = "System76 COSMIC Wayland desktop, its session applications, and optional login greeter."
+mandatory = ["cosmic-desktop"]
+default = ["cosmic-files", "cosmic-term", "cosmic-edit", "cosmic-screenshot", "cosmic-randr", "cosmic-store"]
+optional = ["cosmic-greeter"]
+
+[[group]]
+schema = 1
 id = "xfce"
 name = "Xfce Desktop (X11)"
 description = "The Xfce 4.20 X11 session. LightDM and desktop applications are selectable defaults."

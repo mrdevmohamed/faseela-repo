@@ -1,0 +1,33 @@
+# cosmic recipe: cosmic-workspaces — COSMIC workspace overview
+# (layer-shell overview of workspaces and windows).
+[package]
+name = "cosmic-workspaces"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC workspace overview"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-workspaces"
+url = "https://codeload.github.com/pop-os/cosmic-workspaces-epoch/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "08c3cfc5c8cc51e35dac55576fcf5f0aea0fd30db0926ada0a85b02d59669232"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "wayland", "libxkbcommon", "mesa"]
+run = ["wayland", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin cosmic-workspaces"
+install = '''
+install -Dm755 target/release/cosmic-workspaces %{pkgdir}/usr/bin/cosmic-workspaces
+install -Dm644 data/com.system76.CosmicWorkspaces.desktop \
+    %{pkgdir}/usr/share/applications/com.system76.CosmicWorkspaces.desktop
+install -Dm644 data/com.system76.CosmicWorkspaces.svg \
+    %{pkgdir}/usr/share/icons/hicolor/scalable/apps/com.system76.CosmicWorkspaces.svg
+'''

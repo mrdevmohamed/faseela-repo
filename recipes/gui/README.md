@@ -4,7 +4,8 @@ A graphical session: **sway** (i3-compatible Wayland compositor) on
 **wlroots 0.18** (with **Xwayland** for X11-only applications), **foot**
 terminal, DejaVu **and Noto** fonts (Latin/Greek/Cyrillic, Arabic, Chinese,
 Japanese, Korean, and color emoji), **waybar** status bar, **mako** notifications, and **seatd** for seat
-management. System services are supervised by runit; user applications use a
+management. The shared **seatd-runit** package owns its runit service,
+seat/video/render/input groups and DRM render-node udev rule. System services are supervised by runit; user applications use a
 per-session D-Bus session bus.
 
 > **Build status:** these recipes have not all been exercised in one clean
@@ -101,7 +102,7 @@ is maintained.
 | D-Bus compatibility | dbus-glib (legacy GLib binding used by XFCE screensaver) |
 | X11 client libraries and utilities | xorg-util-macros xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender libXtst libXScrnSaver libXpresent libxshmfence xorg-xprop (GTK3 and Chrome client-side libraries; no X server) |
 | Xwayland server | xkbcomp xkeyboard-config libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |
-| wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd |
+| wayland + input | libdrm wayland wayland-protocols xkeyboard-config libxkbcommon libevdev mtdev libinput seatd seatd-runit |
 | graphics | mesa (+ `libXxf86vm` for X11/GLX, python-mako python-markupsafe python-pyyaml python-packaging, glslang and Vulkan-Headers as build helpers), libva (VA-API loader; mesa's AMD video driver) |
 | compositor | hwdata libdisplay-info json-c wlroots sway |
 | apps | tllist fcft foot swaybg wmenu |
@@ -109,12 +110,13 @@ is maintained.
 | desktop shell | waybar (+ libdbusmenu GTK 3 StatusNotifier tray, fmt spdlog jsoncpp gtk-layer-shell gtkmm glibmm cairomm pangomm atkmm libsigc++), mako (+ basu inih), xdg-user-dirs |
 | desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK and wlr backends, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, libgudev, libusb, UPower, GCR/GCK, p11-kit and libgcrypt |
 | audio tools | pavucontrol (+ libcanberra GTK 3 plugin, libogg, libvorbis) |
-| session | gui-session (seatd runit service, `start-sway`, group setup hook) |
+| session | gui-session (`start-sway`, desktop config and audio integration); seatd-runit (shared seatd runit service, group setup and DRM udev rule) |
 
 ## Using it
 
-`gui-session` creates the `seat`, `video`, `render`, `input` and `audio` groups (hook),
-installs the DRM render-node udev rule, and enables the `seatd` service. Then:
+`seatd-runit` creates the `seat`, `video`, `render` and `input` groups,
+installs the DRM render-node udev rule, and enables the `seatd` service.
+`gui-session` creates the `audio` group and installs the Sway session wiring. Then:
 
 ```
 usermod -aG seat,video,render,input,audio <user> # log out and in again
@@ -166,8 +168,7 @@ monitor, while the Thunar daemon hosts the `thunar-volman` extension.
 Waybar's tray module provides the StatusNotifierWatcher used by Qt tray clients. Sway starts one Waybar process for the session; Waybar is not registered for D-Bus activation, because `Exec=waybar` could launch a second independent status bar when the name is not owned yet. Start Telegram after the session bar is running so its tray icon can register with that existing watcher.
 
 The wlr portal backend (ScreenCast through PipeWire), the notification daemon
-and the bar all speak D-Bus through **basu**'s sd-bus. The Sway session keeps
-using seatd for compositor seat access; elogind is used by the shared Polkit
+and the bar all speak D-Bus through **basu**'s sd-bus. The Sway and COSMIC sessions use the shared seatd service for compositor seat access; elogind is used by the shared Polkit
 stack and the optional Xfce session, not as a replacement for seatd. The session autostarts `mako`
 (`org.freedesktop.Notifications`), `waybar` (anchored through
 gtk-layer-shell) and `xdg-user-dirs-update`; `pavucontrol` mixes the

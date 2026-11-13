@@ -1,0 +1,50 @@
+# cosmic recipe: xdg-desktop-portal-cosmic — XDG Desktop Portal backend for
+# the COSMIC desktop (screencast through PipeWire, screenshot, file chooser,
+# settings, ...). Activated on the session bus by xdg-desktop-portal.
+[package]
+name = "xdg-desktop-portal-cosmic"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "XDG Desktop Portal backend for the COSMIC desktop"
+license = ["GPL-3.0-or-later"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xdg-desktop-portal-cosmic"
+url = "https://codeload.github.com/pop-os/xdg-desktop-portal-cosmic/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "454178f0e51a30b04a672cd682895f06ac976246cc44c26fccb45062c6030695"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "pipewire", "mesa", "wayland", "eudev"]
+run = ["pipewire", "mesa", "wayland", "dbus", "xdg-desktop-portal"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin xdg-desktop-portal-cosmic"
+install = '''
+install -Dm755 target/release/xdg-desktop-portal-cosmic %{pkgdir}/usr/bin/xdg-desktop-portal-cosmic
+# Portal definition and the desktop's portal preference list.
+install -Dm644 data/cosmic.portal \
+    %{pkgdir}/usr/share/xdg-desktop-portal/portals/cosmic.portal
+install -Dm644 data/cosmic-portals.conf \
+    %{pkgdir}/usr/share/xdg-desktop-portal/cosmic-portals.conf
+# Session-bus activation file: the @libexecdir@ placeholder becomes /usr/bin,
+# matching where this package installs the binary (upstream uses /usr/libexec).
+install -d -m755 %{pkgdir}/usr/share/dbus-1/services
+sed "s|@libexecdir@|/usr/bin|" \
+    data/dbus-1/org.freedesktop.impl.portal.desktop.cosmic.service.in \
+    > %{pkgdir}/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.cosmic.service
+chmod 644 %{pkgdir}/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.cosmic.service
+if [ -d data/icons ]; then
+    find data/icons -type f | while read -r f; do
+        rel=${f#data/icons/}
+        install -Dm644 "$f" "%{pkgdir}/usr/share/icons/hicolor/$rel"
+    done
+fi
+test -f %{pkgdir}/usr/share/xdg-desktop-portal/portals/cosmic.portal
+test -f %{pkgdir}/usr/share/xdg-desktop-portal/cosmic-portals.conf
+'''

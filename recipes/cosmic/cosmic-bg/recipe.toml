@@ -1,0 +1,48 @@
+# cosmic recipe: cosmic-bg — COSMIC wallpaper daemon (layer-shell background).
+[package]
+name = "cosmic-bg"
+version = "1.0.8"
+rel = 1
+arch = ["x86_64"]
+summary = "COSMIC wallpaper/background daemon"
+license = ["MPL-2.0"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cosmic-bg"
+url = "https://codeload.github.com/pop-os/cosmic-bg/tar.gz/refs/tags/epoch-1.0.8"
+sha256 = "c50ef3e916d89ae14719d6673fa74f4926021c9c007aef8ae2ac4851894adf1d"
+strip_components = 1
+
+[depends]
+build = ["rust", "pkgconf", "wayland", "libxkbcommon"]
+run = ["wayland", "mesa", "dbus"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --offline --locked --bin cosmic-bg"
+install = '''
+install -Dm755 target/release/cosmic-bg %{pkgdir}/usr/bin/cosmic-bg
+install -Dm644 data/com.system76.CosmicBackground.desktop \
+    %{pkgdir}/usr/share/applications/com.system76.CosmicBackground.desktop
+install -Dm644 data/com.system76.CosmicBackground.metainfo.xml \
+    %{pkgdir}/usr/share/metainfo/com.system76.CosmicBackground.metainfo.xml
+# Default wallpaper configuration: data/v1/{all,backgrounds} under the
+# cosmic-config schema directory for the app id. The upstream default points
+# at a Pop wallpaper file that does not exist here — repoint it at Faseela's
+# branded default (shipped by faseela-branding).
+install -d -m755 "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1"
+for f in data/v1/all data/v1/backgrounds; do
+    sed "s|/usr/share/backgrounds/cosmic/|/usr/share/backgrounds/faseela/|" "$f" \
+        > "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/$(basename "$f")"
+done
+if [ -d data/icons ]; then
+    find data/icons -type f | while read -r f; do
+        rel=${f#data/icons/}
+        install -Dm644 "$f" "%{pkgdir}/usr/share/icons/hicolor/$rel"
+    done
+fi
+test -f %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
+'''

@@ -1,6 +1,6 @@
 # recipes/cosmic — COSMIC desktop for Faseela
 
-This category contains 21 recipes from the System76 COSMIC Epoch desktop,
+This category contains 22 recipes from the System76 COSMIC Epoch desktop,
 pinned as a coordinated `epoch-1.0.8` snapshot, except `cosmic-files`,
 `cosmic-edit`, `cosmic-term` and `xdg-desktop-portal-cosmic`, which are pinned at
 `epoch-1.9.0`: the `epoch-1.0.8` lockfiles depend on the `jackpot51/trash-rs`
@@ -12,7 +12,7 @@ dependencies such as libcosmic are fetched before the offline build.
 
 | role | recipes |
 |---|---|
-| Session and shell | `cosmic-comp`, `cosmic-session`, `cosmic-panel`, `cosmic-applets`, `cosmic-launcher`, `cosmic-notifications`, `cosmic-workspaces`, `cosmic-osd`, `cosmic-bg`, `cosmic-idle`, `cosmic-settings`, `cosmic-settings-daemon`, `cosmic-randr` |
+| Session and shell | `cosmic-comp`, `cosmic-session`, `cosmic-panel`, `cosmic-applets`, `cosmic-launcher`, `cosmic-notifications`, `cosmic-workspaces`, `cosmic-osd`, `cosmic-osk`, `cosmic-bg`, `cosmic-idle`, `cosmic-settings`, `cosmic-settings-daemon`, `cosmic-randr` |
 | Portal and visual assets | `xdg-desktop-portal-cosmic`, `cosmic-icons`, `cosmic-screenshot` |
 | Applications | `cosmic-files`, `cosmic-term`, `cosmic-edit`, `cosmic-store` |
 | Optional login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |

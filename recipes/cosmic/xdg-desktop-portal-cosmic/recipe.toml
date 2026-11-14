@@ -3,7 +3,7 @@
 # settings, ...). Activated on the session bus by xdg-desktop-portal.
 [package]
 name = "xdg-desktop-portal-cosmic"
-version = "1.0.8"
+version = "1.9.0"
 rel = 1
 arch = ["x86_64"]
 summary = "XDG Desktop Portal backend for the COSMIC desktop"
@@ -12,8 +12,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "xdg-desktop-portal-cosmic"
-url = "https://codeload.github.com/pop-os/xdg-desktop-portal-cosmic/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "454178f0e51a30b04a672cd682895f06ac976246cc44c26fccb45062c6030695"
+url = "https://codeload.github.com/pop-os/xdg-desktop-portal-cosmic/tar.gz/refs/tags/epoch-1.9.0"
+sha256 = "4fcd4631348e98decfd991489a5e9a941792741f5cf127f8ca9e874056c144d6"
 strip_components = 1
 
 [depends]
@@ -24,7 +24,7 @@ run = ["pipewire", "mesa", "wayland", "dbus", "xdg-desktop-portal"]
 dir = "."
 
 [build]
-compile = "cargo build --release --offline --locked --bin xdg-desktop-portal-cosmic"
+compile = "cargo build --release --offline --locked --no-default-features --bin xdg-desktop-portal-cosmic"
 install = '''
 install -Dm755 target/release/xdg-desktop-portal-cosmic %{pkgdir}/usr/bin/xdg-desktop-portal-cosmic
 # Portal definition and the desktop's portal preference list.

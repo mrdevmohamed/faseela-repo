@@ -1,7 +1,10 @@
 # recipes/cosmic — COSMIC desktop for Faseela
 
 This category contains 21 recipes from the System76 COSMIC Epoch desktop,
-pinned as one coordinated `epoch-1.0.8` snapshot. Rust components use their
+pinned as a coordinated `epoch-1.0.8` snapshot, except `cosmic-files`,
+`cosmic-edit`, `cosmic-term` and `xdg-desktop-portal-cosmic`, which are pinned at
+`epoch-1.9.0`: the `epoch-1.0.8` lockfiles depend on the `jackpot51/trash-rs`
+fork, which no longer exists upstream (1.9.0 uses crates.io `trash`). Rust components use their
 committed Cargo lockfiles and Nawa's `[fetch.cargo]` phase; workspace
 dependencies such as libcosmic are fetched before the offline build.
 

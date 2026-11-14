@@ -4,7 +4,7 @@
 # is completed at runtime by GVfs talking to UDisks2.
 [package]
 name = "cosmic-files"
-version = "1.0.8"
+version = "1.9.0"
 rel = 1
 arch = ["x86_64"]
 summary = "COSMIC file manager"
@@ -13,8 +13,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-files"
-url = "https://codeload.github.com/pop-os/cosmic-files/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "83d30eb99c5888bab4322361553796efee34b6f3af71a0845396378106d66e83"
+url = "https://codeload.github.com/pop-os/cosmic-files/tar.gz/refs/tags/epoch-1.9.0"
+sha256 = "c30cb40b8177112c821753a95134ba82e64dfd8230f5c371a1c89a4b0d066309"
 strip_components = 1
 
 [depends]
@@ -25,7 +25,7 @@ run = ["glib", "bzip2", "wayland", "mesa", "libxkbcommon", "gvfs", "udisks2", "c
 dir = "."
 
 [build]
-compile = "cargo build --release --offline --locked --bin cosmic-files --bin cosmic-files-applet"
+compile = "cargo build --release --offline --locked --bin cosmic-files && cargo build --release --offline --locked -p cosmic-files-applet"
 install = '''
 install -Dm755 target/release/cosmic-files %{pkgdir}/usr/bin/cosmic-files
 install -Dm755 target/release/cosmic-files-applet %{pkgdir}/usr/bin/cosmic-files-applet

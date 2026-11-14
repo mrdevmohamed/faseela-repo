@@ -73,14 +73,6 @@ jobs:
         run: python3 -I scripts/test-desktop-integration.py
       - name: COSMIC recipes and runit desktop integration
         run: python3 -I scripts/test-cosmic-integration.py
-      - name: Diagnose COSMIC epoch-1.9.0 source archive checksums
-        run: |
-          for r in cosmic-files cosmic-edit cosmic-term xdg-desktop-portal-cosmic; do
-            printf '%s ' "$r"
-            curl --fail --location --retry 3 --connect-timeout 20 \
-              "https://codeload.github.com/pop-os/$r/tar.gz/refs/tags/epoch-1.9.0" \
-              | sha256sum
-          done
       - name: XFCE smoke-test checklist and runit service definitions
         run: python3 -I scripts/test-xfce-smoke-checklist.py
       - name: mpv X11/EGL, Wayland/EGL and DRM output backends

@@ -2,7 +2,7 @@
 # build.rs generates the desktop entry and metainfo into target/xdgen.
 [package]
 name = "cosmic-term"
-version = "1.0.8"
+version = "1.9.0"
 rel = 1
 arch = ["x86_64"]
 summary = "COSMIC terminal emulator"
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-term"
-url = "https://codeload.github.com/pop-os/cosmic-term/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "4aee40b909c5a935a7a3eb31713dbbd73837a833786aec5617dc98a4ed560492"
+url = "https://codeload.github.com/pop-os/cosmic-term/tar.gz/refs/tags/epoch-1.9.0"
+sha256 = "2e5ef9ff8428503024f84e9d0c9d8b0007dec0be42b398e5925d209ec91e2e19"
 strip_components = 1
 
 [depends]

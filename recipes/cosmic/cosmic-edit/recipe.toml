@@ -1,7 +1,7 @@
 # cosmic recipe: cosmic-edit — COSMIC text editor (libcosmic + cosmic-text).
 [package]
 name = "cosmic-edit"
-version = "1.0.8"
+version = "1.9.0"
 rel = 1
 arch = ["x86_64"]
 summary = "COSMIC text editor"
@@ -10,8 +10,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-edit"
-url = "https://codeload.github.com/pop-os/cosmic-edit/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "d8dcd072b07523e27c114ff81787ed7cb0fb9a635900d1d368859c1759dfd5a3"
+url = "https://codeload.github.com/pop-os/cosmic-edit/tar.gz/refs/tags/epoch-1.9.0"
+sha256 = "2748de5388e637c8390801961961b063e1c15778c33912cdc62448994194a789"
 strip_components = 1
 
 [depends]

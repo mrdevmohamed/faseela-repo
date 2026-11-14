@@ -39,6 +39,8 @@ jobs:
           python3 -I scripts/test-huiontablet-package.py "$deb"
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
+      - name: Telegram WebKitGTK 4.1 and optional-flavor regression checks
+        run: python3 -I scripts/test-webkitgtk.py
       - name: Validate package groups against recipes
         run: python3 -I scripts/check-groups.py
       - name: Bash completion is enabled in default interactive shells

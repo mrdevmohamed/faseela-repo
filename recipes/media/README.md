@@ -1,11 +1,14 @@
 # recipes/media — ffmpeg, mpv and Vulkan support
 
 **ffmpeg** (convert / probe / stream audio and video), the **mpv** media player
-and the Vulkan SDK runtime/build helpers are opt-in packages. 23 packages:
+and the Vulkan SDK runtime/build helpers are opt-in packages. The GStreamer
+core and selected plug-in modules are also optional, and are pulled in by
+WebKitGTK only. 27 packages:
 
 | group | packages |
 |---|---|
 | tools | ffmpeg mpv |
+| WebKit multimedia backend | gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad |
 | decoding / subtitles / rendering | dav1d (AV1) libass (subtitles, OSD text) libplacebo (GPU video rendering) |
 | encoders | x264 (H.264) x265 (H.265/HEVC) libvpx (VP8/VP9) opus lame (MP3) |
 | hardware video | intel-media-driver gmmlib (Intel VA-API driver; libva and AMD's driver: see gui/ libva, mesa) |
@@ -109,7 +112,7 @@ heavy: try `--vo=gpu --profile=fast`, or `--vo=wlshm` for plain playback.
 * **x265 is a multilib build** (12- and 10-bit static libs linked into the
   8-bit shared one) in a single recipe; it also passes
   `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` for cmake 4.
-* **No audio server** (ALSA only; no PulseAudio/PipeWire output backend).
+* `ffmpeg` and `mpv` use ALSA directly. GStreamer also builds the PulseAudio client output plug-in; on Faseela it can use the `pipewire-pulse` compatibility socket through `libpulse`.
 * **Licenses**: x264 and x265 are GPL, so ffmpeg is built with
   `--enable-gpl --enable-version3` and its binaries are GPL-3.0-or-later
   (drop x264, x265 and `--enable-gpl` for an LGPL-3.0 build). mpv is GPL.

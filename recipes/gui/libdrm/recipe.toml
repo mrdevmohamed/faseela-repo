@@ -2,7 +2,7 @@
 [package]
 name = "libdrm"
 version = "2.4.124"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Userspace interface to the kernel DRM subsystem"
 license = ["MIT"]

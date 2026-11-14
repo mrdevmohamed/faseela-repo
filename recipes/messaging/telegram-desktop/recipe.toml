@@ -1,11 +1,12 @@
 # messaging recipe: Telegram Desktop — official upstream Linux x86_64 binary bundle.
 # The official release is a static Qt build; keep its private runtime files together.
+# WebKitGTK 4.1 is required for Telegram Mini Apps / Web Apps.
 # Do not strip the upstream binary: it is already release-optimized and pinned by
 # the official release SHA-256. Faseela/Nawa owns updates after installation.
 [package]
 name = "telegram-desktop"
 version = "7.3.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Official Telegram Desktop instant messaging client"
 license = ["GPL-3.0-or-later WITH OpenSSL-exception"]
@@ -16,7 +17,7 @@ source_dir = "Telegram"
 [depends]
 # Platform libraries for graphics, fonts, X11/Wayland, audio and desktop integration.
 build = ["glib", "fontconfig", "freetype", "mesa", "gtk3", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info"]
-run = ["gcc", "glibc", "glib", "fontconfig", "freetype", "mesa", "gtk3", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info", "hicolor-icon-theme"]
+run = ["gcc", "glibc", "glib", "fontconfig", "freetype", "mesa", "gtk3", "webkit2gtk-4.1", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info", "hicolor-icon-theme"]
 
 [slim]
 # Preserve the official upstream executable and its bundled runtime payload.

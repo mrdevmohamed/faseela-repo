@@ -439,6 +439,28 @@ jobs:
       NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Build the PR head itself, not GitHub's synthetic merge commit. The
+          # COSMIC source-pin step below writes verified hashes back to this branch.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Update and verify COSMIC Epoch source pins
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/cosmic-desktop-support' }}
+        run: |
+          set -euo pipefail
+          python3 -I scripts/update-cosmic-epoch.py
+          python3 -I scripts/check-recipes.py cosmic-desktop
+          python3 -I scripts/test-cosmic-integration.py
+          git diff --check
+          if ! git diff --quiet -- recipes/cosmic recipes/greeter/cosmic-greeter; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add recipes/cosmic recipes/greeter/cosmic-greeter
+            git commit -m "Update COSMIC recipes to Epoch 1.11.0"
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          else
+            echo "All COSMIC source archives already match Epoch 1.11.0."
+          fi
 
       # The chroot helpers (enter-root.sh, sync-repo.sh, build-packages-inner.sh),
       # profiles/ and fetch-rootfs-seed.sh belong to the distribution and are

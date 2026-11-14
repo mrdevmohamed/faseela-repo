@@ -50,8 +50,8 @@ The greeter stack is separate from `cosmic-desktop`. Install it only when
 you want greetd to own a virtual terminal:
 
 ```sh
-sudo nawa install cosmic-greeter
-sudo nawa service enable cosmic-greeter
+doas nawa install cosmic-greeter
+doas nawa service enable cosmic-greeter
 ```
 
 The package includes greetd, its COSMIC greeter, PAM integration through

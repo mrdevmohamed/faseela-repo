@@ -9,7 +9,7 @@ COSMIC = ROOT / "recipes" / "cosmic"
 EXPECTED = {
     "cosmic-applets", "cosmic-bg", "cosmic-comp", "cosmic-desktop",
     "cosmic-edit", "cosmic-files", "cosmic-icons",
-    "cosmic-idle", "cosmic-launcher", "cosmic-notifications", "cosmic-osd",
+    "cosmic-idle", "cosmic-launcher", "cosmic-notifications", "cosmic-osk", "cosmic-osd",
     "cosmic-panel", "cosmic-randr", "cosmic-screenshot", "cosmic-session",
     "cosmic-settings", "cosmic-settings-daemon", "cosmic-store", "cosmic-term",
     "cosmic-workspaces", "xdg-desktop-portal-cosmic",
@@ -62,7 +62,7 @@ for name in ("cosmic-greeter", "greetd"):
 
 desktop = recipe("cosmic", "cosmic-desktop")
 desktop_run = set(desktop["depends"]["run"])
-assert {"cosmic-session", "cosmic-comp", "seatd-runit", "audio-session",
+assert {"cosmic-session", "cosmic-osk", "cosmic-comp", "seatd-runit", "audio-session",
         "elogind", "dbus-system", "xdg-desktop-portal-cosmic"} <= desktop_run
 assert not {"greetd", "cosmic-greeter", "linux-pam"} & desktop_run, (
     "The core COSMIC desktop must not install or enable the optional login stack"

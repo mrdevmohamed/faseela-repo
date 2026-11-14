@@ -46,6 +46,9 @@ for name in sorted(EXPECTED):
         f"{name}: source SHA-256 must be pinned"
     )
     assert sources[0]["url"].startswith("https://"), f"{name}: source URL must be HTTPS"
+    assert sources[0]["url"].endswith("/refs/tags/epoch-1.11.0"), (
+        f"{name}: source must use the coordinated Epoch 1.11.0 tag"
+    )
     assert "[fetch.cargo]" in (COSMIC / name / "recipe.toml").read_text(
         encoding="utf-8"
     ) or name == "cosmic-icons", f"{name}: Rust sources must use Nawa's Cargo fetch phase"
@@ -56,7 +59,9 @@ for name in ("cosmic-greeter", "greetd"):
     item = recipe("greeter", name)
     pkg = item["package"]
     assert pkg["name"] == name
+    assert pkg["version"] == "1.11.0"
     assert pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+    assert pkg["sources"][0]["url"].endswith("/refs/tags/epoch-1.11.0")
     assert re.fullmatch(r"[0-9a-f]{64}", pkg["sources"][0]["sha256"])
     assert "[fetch.cargo]" in (ROOT / "recipes" / "greeter" / name / "recipe.toml").read_text()
 

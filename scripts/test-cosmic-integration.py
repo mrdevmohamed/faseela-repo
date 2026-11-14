@@ -34,6 +34,10 @@ for name in sorted(EXPECTED):
     assert pkg["name"] == name, f"{name}: package.name must match its directory"
     assert pkg["arch"] == ["x86_64"], f"{name}: unexpected architecture list"
     assert pkg.get("license"), f"{name}: license metadata is required"
+    if name != "cosmic-desktop":
+        assert pkg["version"] == "1.11.0", (
+            f"{name}: package version must match COSMIC Epoch 1.11.0"
+        )
     if name == "cosmic-desktop":
         assert not pkg.get("source"), "cosmic-desktop is a source-less integration package"
         continue
@@ -59,10 +63,11 @@ for name in ("cosmic-greeter", "greetd"):
     item = recipe("greeter", name)
     pkg = item["package"]
     assert pkg["name"] == name
-    assert pkg["version"] == "1.11.0"
     assert pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
-    assert pkg["sources"][0]["url"].endswith("/refs/tags/epoch-1.11.0")
     assert re.fullmatch(r"[0-9a-f]{64}", pkg["sources"][0]["sha256"])
+    if name == "cosmic-greeter":
+        assert pkg["version"] == "1.11.0"
+        assert pkg["sources"][0]["url"].endswith("/refs/tags/epoch-1.11.0")
     assert "[fetch.cargo]" in (ROOT / "recipes" / "greeter" / name / "recipe.toml").read_text()
 
 desktop = recipe("cosmic", "cosmic-desktop")

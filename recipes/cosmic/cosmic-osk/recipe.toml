@@ -12,7 +12,7 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 [[package.sources]]
 name = "cosmic-osk"
 url = "https://codeload.github.com/pop-os/cosmic-osk/tar.gz/refs/tags/epoch-1.11.0"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "bdb94386f451e672c2512ddb65bd0c8691921d5488595d0988fd935ce7e43bb6"
 strip_components = 1
 
 [depends]

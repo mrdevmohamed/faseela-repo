@@ -5,8 +5,8 @@
 # PackageKit service and uses elogind/runit rather than systemd.
 [package]
 name = "cosmic-store"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC application store frontend"
 license = ["GPL-3.0-only"]
@@ -14,8 +14,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-store"
-url = "https://codeload.github.com/pop-os/cosmic-store/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "c73221fe4c26a52b965f6fbd4f7feb1ea18edf23778a91964c0172133ef67e3b"
+url = "https://codeload.github.com/pop-os/cosmic-store/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "d8c95307e4a865ab4681a0be86fea98f82fb052ecc7bcea98fad2b8165c34e83"
 strip_components = 1
 
 [depends]

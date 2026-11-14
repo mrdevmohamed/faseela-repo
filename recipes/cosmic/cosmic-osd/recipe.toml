@@ -2,8 +2,8 @@
 # overlay window, driven through cosmic-comp's OSD D-Bus interface).
 [package]
 name = "cosmic-osd"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC on-screen display overlay"
 license = ["GPL-3.0-or-later"]
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-osd"
-url = "https://codeload.github.com/pop-os/cosmic-osd/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "82123a65472541f9971a80feb7938d979527466f68a29beba62326cbc09fa0c7"
+url = "https://codeload.github.com/pop-os/cosmic-osd/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "98f049d10e9746ae9751d10d556eff73b7270d7d99861445ab9171bd140ba416"
 strip_components = 1
 
 [depends]

@@ -3,8 +3,8 @@
 # settings, ...). Activated on the session bus by xdg-desktop-portal.
 [package]
 name = "xdg-desktop-portal-cosmic"
-version = "1.9.0"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "XDG Desktop Portal backend for the COSMIC desktop"
 license = ["GPL-3.0-or-later"]
@@ -12,8 +12,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "xdg-desktop-portal-cosmic"
-url = "https://codeload.github.com/pop-os/xdg-desktop-portal-cosmic/tar.gz/refs/tags/epoch-1.9.0"
-sha256 = "4fcd4631348e98decfd991489a5e9a941792741f5cf127f8ca9e874056c144d6"
+url = "https://codeload.github.com/pop-os/xdg-desktop-portal-cosmic/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "5befa4beda6ee231ebaa553b3db53d794500b5646de385fd1f576a7406242f16"
 strip_components = 1
 
 [depends]

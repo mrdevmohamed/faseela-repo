@@ -5,8 +5,8 @@
 # pages talk to NetworkManager, BlueZ and UPower over D-Bus.
 [package]
 name = "cosmic-settings"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC settings application (display, network, audio, power, ...)"
 license = ["GPL-3.0-only"]
@@ -14,8 +14,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-settings"
-url = "https://codeload.github.com/pop-os/cosmic-settings/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "0b5938c01fa68fcca6a328d718537202529b7ede7da19ea7380dfc891488f769"
+url = "https://codeload.github.com/pop-os/cosmic-settings/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "213459e770dc899da7f9d47557b7d3e4e27e1debb8d7af590995bd0f63da0a5e"
 strip_components = 1
 
 [depends]

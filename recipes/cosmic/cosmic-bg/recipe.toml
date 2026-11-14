@@ -1,8 +1,8 @@
 # cosmic recipe: cosmic-bg — COSMIC wallpaper daemon (layer-shell background).
 [package]
 name = "cosmic-bg"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC wallpaper/background daemon"
 license = ["MPL-2.0"]
@@ -10,8 +10,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-bg"
-url = "https://codeload.github.com/pop-os/cosmic-bg/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "c50ef3e916d89ae14719d6673fa74f4926021c9c007aef8ae2ac4851894adf1d"
+url = "https://codeload.github.com/pop-os/cosmic-bg/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "00e0874b82877378be9cb305139e626f3cd5ef01ad7a1a517de826086adc2652"
 strip_components = 1
 
 [depends]

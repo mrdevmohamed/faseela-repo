@@ -8,8 +8,8 @@
 # journald sink.
 [package]
 name = "cosmic-greeter"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC login greeter (greetd session with PAM authentication)"
 license = ["GPL-3.0-only"]
@@ -17,8 +17,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-greeter"
-url = "https://codeload.github.com/pop-os/cosmic-greeter/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "c77cfd3fa9d75e6d385e960e6019e7313a16c652a01d9e39b84560152213aa11"
+url = "https://codeload.github.com/pop-os/cosmic-greeter/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "f31c5bac8e50ed5df75cb7d07fb8167e7835dc22b3438a48c8c1f27e7de36e48"
 strip_components = 1
 
 [depends]
@@ -35,8 +35,8 @@ dir = "."
 compile = """
 # The source archive has no .git directory. Supply the exact tag metadata so
 # vergen can generate the greeter build constants without probing Git.
-export VERGEN_GIT_COMMIT_DATE=2026-02-24T17:28:01Z
-export VERGEN_GIT_SHA=2cbb199a1613e7431a642ad601b8b7cb2546bbea
+export VERGEN_GIT_COMMIT_DATE=2026-10-20T19:54:44Z
+export VERGEN_GIT_SHA=80e8a104b75a01ab8df52bca7b8bde6dbcdb8133
 cargo build --release --offline --locked --no-default-features --features logind,networkmanager,upower -p cosmic-greeter
 cargo build --release --offline --locked --no-default-features -p cosmic-greeter-daemon
 """

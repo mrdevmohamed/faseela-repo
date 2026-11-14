@@ -2,8 +2,8 @@
 # displays (modes, positions, scaling) against cosmic-comp.
 [package]
 name = "cosmic-randr"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "Display configuration utility for the COSMIC desktop"
 license = ["MPL-2.0"]
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-randr"
-url = "https://codeload.github.com/pop-os/cosmic-randr/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "ea8f96ce37566e85b61f0397d06940702db01d83cffbf9ca33ff6e3a38cbff2e"
+url = "https://codeload.github.com/pop-os/cosmic-randr/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "cd04841b780ad13d407a0a3740f827b3fc214dfc198b114d6a83524c2a0ca96e"
 strip_components = 1
 
 [depends]

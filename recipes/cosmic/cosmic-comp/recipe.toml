@@ -6,8 +6,8 @@
 # tracking and power actions go through elogind's login1 D-Bus API.
 [package]
 name = "cosmic-comp"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC Wayland compositor (smithay-based, with Xwayland support)"
 license = ["GPL-3.0-only"]
@@ -15,8 +15,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-comp"
-url = "https://codeload.github.com/pop-os/cosmic-comp/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "b8f473d5ccc25a3ff0756f4a62c0c7ba80ad574f00e40b278a97dc6fd8705fda"
+url = "https://codeload.github.com/pop-os/cosmic-comp/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "c07778440f25e909358a37f293ddf403a28a153b02eedb30b61b846a7142ba60"
 strip_components = 1
 
 [depends]

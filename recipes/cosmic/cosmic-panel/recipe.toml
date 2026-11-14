@@ -6,8 +6,8 @@
 # xdg-shell wrapper configuration, not for a compositor backend.
 [package]
 name = "cosmic-panel"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC top panel and dock (layer-shell Wayland client)"
 license = ["GPL-3.0-only"]
@@ -15,8 +15,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-panel"
-url = "https://codeload.github.com/pop-os/cosmic-panel/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "b8073cc3e9b819dc6272f114858ce983197eb5e2173515b7c7a93b4f817158bb"
+url = "https://codeload.github.com/pop-os/cosmic-panel/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "ef0de256580e1f1600c5a662179862976ba0b8475b45e99e9eb2713bed8e1007"
 strip_components = 1
 
 [depends]

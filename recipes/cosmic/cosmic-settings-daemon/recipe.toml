@@ -4,8 +4,8 @@
 # UPower over the session/system D-Bus buses.
 [package]
 name = "cosmic-settings-daemon"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC settings daemon (shortcuts, input configuration, system actions)"
 license = ["GPL-3.0-or-later"]
@@ -13,8 +13,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-settings-daemon"
-url = "https://codeload.github.com/pop-os/cosmic-settings-daemon/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "1113ba5462a0a0d60ff8d4ef7f465b775b13b1e3533aeefa5f492d5f98183e63"
+url = "https://codeload.github.com/pop-os/cosmic-settings-daemon/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "1cc494c028a59a0356547c834421495da326622f837221726c15fceb14f3f9f0"
 strip_components = 1
 
 [depends]

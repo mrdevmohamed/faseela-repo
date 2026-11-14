@@ -2,8 +2,8 @@
 # (layer-shell overview of workspaces and windows).
 [package]
 name = "cosmic-workspaces"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC workspace overview"
 license = ["GPL-3.0-only"]
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-workspaces"
-url = "https://codeload.github.com/pop-os/cosmic-workspaces-epoch/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "08c3cfc5c8cc51e35dac55576fcf5f0aea0fd30db0926ada0a85b02d59669232"
+url = "https://codeload.github.com/pop-os/cosmic-workspaces-epoch/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "4dad3cd1fffe5b377c84948598c666493e5a053e6e1105a958f20a73bea92eab"
 strip_components = 1
 
 [depends]

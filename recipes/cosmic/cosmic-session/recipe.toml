@@ -7,8 +7,8 @@
 # elogind on Faseela) and "autostart" for XDG autostart entries.
 [package]
 name = "cosmic-session"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC session manager"
 license = ["GPL-3.0-only"]
@@ -16,8 +16,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-session"
-url = "https://codeload.github.com/pop-os/cosmic-session/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "dd4ad439db248a2ed25fc6a7ce5ebc753ddc3fe297e4f78b69c2551ea385ca04"
+url = "https://codeload.github.com/pop-os/cosmic-session/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "0c3d3e1f0ef534a063621932cdcc15c8af258df5c12ce6023615dc33222ebca5"
 strip_components = 1
 
 [depends]

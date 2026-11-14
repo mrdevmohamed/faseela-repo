@@ -8,8 +8,8 @@
 # /usr/share/cosmic/<app-id>/v1/<key> layout that cosmic-config reads.
 [package]
 name = "cosmic-applets"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC panel applets (audio, network, bluetooth, battery, time, ...)"
 license = ["GPL-3.0-only"]
@@ -17,8 +17,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-applets"
-url = "https://codeload.github.com/pop-os/cosmic-applets/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "75738474a60447922412e771d7cdf691218143c3acc22c8ebd0174ba78354790"
+url = "https://codeload.github.com/pop-os/cosmic-applets/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "d2ad09b72a2dcba2a17f12e557f0e21dc60171eefa54390e4b67bb058f9180e2"
 strip_components = 1
 
 [depends]

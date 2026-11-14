@@ -2,8 +2,8 @@
 # idle/suspend actions through the ext-idle-notify protocol and login1).
 [package]
 name = "cosmic-idle"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC idle manager (screen blanking and idle actions)"
 license = ["GPL-3.0-only"]
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-idle"
-url = "https://codeload.github.com/pop-os/cosmic-idle/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "81ef78da4cf6811a395962ea9fa817c6288b4164b6057c9dc8e82f6669fde684"
+url = "https://codeload.github.com/pop-os/cosmic-idle/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "683290f2a67a63fd553f654a34756cbfdcc41b2d2141b79850c58c16643dc63a"
 strip_components = 1
 
 [depends]

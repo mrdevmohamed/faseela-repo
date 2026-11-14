@@ -1,8 +1,8 @@
 # cosmic recipe: cosmic-launcher — COSMIC launcher (pop-launcher frontend).
 [package]
 name = "cosmic-launcher"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC application launcher"
 license = ["GPL-3.0-only"]
@@ -10,8 +10,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-launcher"
-url = "https://codeload.github.com/pop-os/cosmic-launcher/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "5dcecd911dceb5b360f6cc9f4cc4401aff3f58710f9c6d96b277c58653b05ce3"
+url = "https://codeload.github.com/pop-os/cosmic-launcher/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "82a510d7d472c68cdd1137363704c1f6a91b37de4f48e5a1f844242de79f941d"
 strip_components = 1
 
 [depends]

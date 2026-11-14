@@ -4,8 +4,8 @@
 # freedesktop/ and extra/ scalable icon trees merged beneath it.
 [package]
 name = "cosmic-icons"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC default icon theme"
 license = ["CC-BY-SA-4.0"]
@@ -13,8 +13,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-icons"
-url = "https://codeload.github.com/pop-os/cosmic-icons/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "4fc8d208316532766de8c4481b88e8a28fb42cdcb184ef4c92393dad1c98367c"
+url = "https://codeload.github.com/pop-os/cosmic-icons/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "1cbe6ca6ad3743a26b84ab17d3f7b8e5a885fcbcbb2d071ff0b74bccb5b44a53"
 strip_components = 1
 
 [depends]

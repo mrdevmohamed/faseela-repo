@@ -2,8 +2,8 @@
 # (org.freedesktop.Notifications for the session bus).
 [package]
 name = "cosmic-notifications"
-version = "1.0.8"
-rel = 1
+version = "1.11.0"
+rel = 2
 arch = ["x86_64"]
 summary = "COSMIC notification daemon"
 license = ["GPL-3.0-only"]
@@ -11,8 +11,8 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-notifications"
-url = "https://codeload.github.com/pop-os/cosmic-notifications/tar.gz/refs/tags/epoch-1.0.8"
-sha256 = "6c0b7c3d8468be797952f0c1963b8a638336b61945bc9e4bc957c6b479afc3ff"
+url = "https://codeload.github.com/pop-os/cosmic-notifications/tar.gz/refs/tags/epoch-1.11.0"
+sha256 = "1874d0b5d67a0c6f1c1415f36a094faaac9c82f3ddf4eeb5061c516d778598c8"
 strip_components = 1
 
 [depends]

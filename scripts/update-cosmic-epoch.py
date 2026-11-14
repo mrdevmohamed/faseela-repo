@@ -14,7 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TAG = "epoch-1.11.0"
-RECIPES = sorted((ROOT / "recipes" / "cosmic").glob("*/recipe.toml"))
+RECIPES = sorted(
+    path for path in (ROOT / "recipes" / "cosmic").glob("*/recipe.toml")
+    if path.parent.name != "cosmic-desktop"
+)
 greeter = ROOT / "recipes" / "greeter" / "cosmic-greeter" / "recipe.toml"
 if greeter.is_file():
     RECIPES.append(greeter)

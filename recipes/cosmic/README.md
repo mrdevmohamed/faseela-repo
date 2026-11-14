@@ -1,12 +1,13 @@
 # recipes/cosmic — COSMIC desktop for Faseela
 
-This category contains 22 recipes from the System76 COSMIC Epoch desktop,
-pinned as a coordinated `epoch-1.0.8` snapshot, except `cosmic-files`,
-`cosmic-edit`, `cosmic-term` and `xdg-desktop-portal-cosmic`, which are pinned at
-`epoch-1.9.0`: the `epoch-1.0.8` lockfiles depend on the `jackpot51/trash-rs`
-fork, which no longer exists upstream (1.9.0 uses crates.io `trash`). Rust components use their
-committed Cargo lockfiles and Nawa's `[fetch.cargo]` phase; workspace
-dependencies such as libcosmic are fetched before the offline build.
+This category contains 22 recipes for the System76 COSMIC Epoch 1.11.0
+desktop. All upstream source archives are pinned to the coordinated
+`epoch-1.11.0` tag; their SHA-256 values are calculated from the downloaded
+archives by `scripts/update-cosmic-epoch.py`. The same updater resolves the
+greeter's exact Vergen commit metadata from the annotated upstream tag.
+Rust components use their committed Cargo lockfiles and Nawa's
+`[fetch.cargo]` phase; workspace dependencies such as libcosmic are fetched
+before the offline build.
 
 ## Package layout
 
@@ -54,7 +55,9 @@ sudo nawa service enable cosmic-greeter
 ```
 
 The package includes greetd, its COSMIC greeter, PAM integration through
-`pam_elogind.so`, and a runit service shipped disabled. The privileged
+`pam_elogind.so`, and a runit service shipped disabled. Its dedicated
+service account is provisioned when that runit service starts, against the
+installed account databases. The privileged
 `cosmic-greeter-daemon` is started on demand by the system D-Bus activation
 file, so this path does not depend on a systemd unit. Disable the
 `getty-tty1` service first when it owns the selected VT. The package hook

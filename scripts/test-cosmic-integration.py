@@ -73,6 +73,12 @@ assert "OnlyShowIn=COSMIC;" in desktop_install
 assert "faseela-audio-session-cosmic.desktop" in desktop_install
 assert "/etc/sv/cosmic-greeter" not in desktop_install
 
+# GTK/GLib bindings need the GLib development files at build time and the
+# matching runtime library after installation.
+edit = recipe("cosmic", "cosmic-edit")
+assert "glib" in edit["depends"]["build"]
+assert "glib" in edit["depends"]["run"]
+
 # Native audio system headers and PulseAudio-compatible client ABI are explicit.
 applets = recipe("cosmic", "cosmic-applets")
 assert "pipewire" in applets["depends"]["build"]

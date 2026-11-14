@@ -85,14 +85,19 @@ cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
 #!/bin/sh
 exec 2>&1
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+# Provision the dedicated greeter account at service start, when the real
+# installed account databases are available (package-build hook sandboxes may
+# intentionally omit runtime account state).
+/usr/libexec/faseela/ensure-system-account group video
+/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
 greeter_uid=$(awk -F: '$1 == "cosmic-greeter" { print $3; exit }' /etc/passwd)
 video_gid=$(awk -F: '$1 == "video" { print $3; exit }' /etc/group)
 [ -n "$greeter_uid" ] && [ -n "$video_gid" ] || {
-    echo "cosmic-greeter: service account or video group is missing" >&2
+    echo "cosmic-greeter: account provisioning failed" >&2
     exit 1
 }
-install -d -m750 /run/cosmic-greeter
-chown "$greeter_uid:$video_gid" /run/cosmic-greeter
+install -d -m750 /var/lib/cosmic-greeter /run/cosmic-greeter
+chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter
 exec greetd
 RUN
 chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
@@ -100,33 +105,7 @@ chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
 
 [hooks]
 post_install = '''
-# seatd-runit also creates the `video` group, but it is only a run dependency
-# and is not installed in the build root where this hook is first exercised.
-# The helper is idempotent, so make sure the group exists before the account.
-/usr/libexec/faseela/ensure-system-account group video
-/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
-# Resolve numeric IDs from the account databases. This avoids relying on NSS
-# name lookup in minimal install/chroot environments while keeping ownership
-# tied to the helper-created system account and shared video group.
-greeter_uid=$(awk -F: '$1 == "cosmic-greeter" { print $3; exit }' /etc/passwd)
-video_gid=$(awk -F: '$1 == "video" { print $3; exit }' /etc/group)
-[ -n "$greeter_uid" ] && [ -n "$video_gid" ] || {
-    echo "cosmic-greeter: ensure-system-account did not create the expected account/group" >&2
-    exit 1
-}
-install -d -m750 /var/lib/cosmic-greeter
-chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter
-
-# Use the COSMIC greeter only while greetd still has its stock agreety sample.
-# Preserve any administrator-authored greetd configuration.
-if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
-   && grep -q 'agreety' /etc/greetd/config.toml; then
-    cp /etc/greetd/cosmic-greeter.toml /etc/greetd/config.toml
-    chmod 644 /etc/greetd/config.toml
-    echo "cosmic-greeter: configured greetd to start the COSMIC greeter"
-fi
-
-echo "cosmic-greeter: optional runit service shipped disabled."
+echo "cosmic-greeter: service account is provisioned when the optional runit service starts."
 echo "cosmic-greeter: enable with: nawa service enable cosmic-greeter"
 echo "cosmic-greeter: disable getty-tty1 first if it owns VT 1."
 '''

@@ -100,7 +100,10 @@ chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
 
 [hooks]
 post_install = '''
-# The shared seatd-runit package provides the `video` group.
+# seatd-runit also creates the `video` group, but it is only a run dependency
+# and is not installed in the build root where this hook is first exercised.
+# The helper is idempotent, so make sure the group exists before the account.
+/usr/libexec/faseela/ensure-system-account group video
 /usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
 # Resolve numeric IDs from the account databases. This avoids relying on NSS
 # name lookup in minimal install/chroot environments while keeping ownership

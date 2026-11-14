@@ -1,0 +1,51 @@
+name: Update COSMIC Epoch sources
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  update-cosmic:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'feat/cosmic-desktop-support'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Download Epoch 1.11.0 sources and calculate SHA-256
+        run: python3 -I scripts/update-cosmic-epoch.py
+
+      - name: Validate recipe metadata and COSMIC integration
+        run: |
+          set -eu
+          for recipe in recipes/cosmic/*/recipe.toml recipes/greeter/cosmic-greeter/recipe.toml; do
+            python3 -I scripts/check-recipes.py "$(basename "$(dirname "$recipe")")"
+          done
+          python3 -I scripts/test-cosmic-integration.py
+          python3 -I scripts/test-flavor.py
+          git diff --check
+
+      - name: Commit verified source updates
+        run: |
+          if git diff --quiet; then
+            echo "All COSMIC recipes already use Epoch 1.11.0."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add recipes/cosmic recipes/greeter/cosmic-greeter
+          git commit -m "Update COSMIC recipes to Epoch 1.11.0"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

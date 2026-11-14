@@ -178,7 +178,7 @@ permissions:
 # an older pending run; the selector below therefore diffs from the last
 # successful push run so the surviving run includes every unpublished recipe change.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('packages-pr-{0}', github.event.pull_request.number) || 'packages-publish' }}
+  group: ${{ github.ref == 'refs/heads/feat/cosmic-desktop-support' && 'packages-cosmic-epoch' || (github.event_name == 'pull_request' && format('packages-pr-{0}', github.event.pull_request.number) || 'packages-publish') }}
   cancel-in-progress: false
 
 jobs:
@@ -335,7 +335,7 @@ jobs:
           )"
           [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
           transition_needed=0
-          if [[ "$GITHUB_EVENT_NAME" != pull_request ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
+          if [[ "$GITHUB_EVENT_NAME" != pull_request && "$GITHUB_REF" != "refs/heads/feat/cosmic-desktop-support" ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
             pkgs+=" nawa"
             pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
             pkgs="$(echo $pkgs)"
@@ -489,7 +489,7 @@ jobs:
           echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check the publishing setup before spending hours building
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' }}
         env:
           GH_TOKEN: ${{ github.token }}
           HAVE_KEY: ${{ secrets.NAWA_SIGN_KEY_B64 != '' }}
@@ -937,7 +937,7 @@ jobs:
       # The shard limit is deliberately below GitHub's 1,000-asset release cap.
       - name: Publish to the distributed package repository
         id: publish
-        if: ${{ github.event_name != 'pull_request' && always() && steps.published.conclusion == 'success' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
           SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
@@ -1105,7 +1105,7 @@ jobs:
       # published now counts as done, so it continues with the rest. Only when
       # this run made progress, otherwise two runs would loop forever.
       - name: Continue with the remaining packages
-        if: ${{ github.event_name != 'pull_request' && always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -1164,8 +1164,8 @@ jobs:
       - name: Fail the run if a package failed
         if: ${{ steps.build.outcome == 'failure' }}
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            echo "::error::some changed packages failed - see Build report and the pr-package-cache artifact."
+          if [[ "$GITHUB_EVENT_NAME" == pull_request || "$GITHUB_REF" == "refs/heads/feat/cosmic-desktop-support" ]]; then
+            echo "::error::some selected packages failed - see Build report and package-build-logs artifact. Nothing was published from this validation branch."
           else
             echo "::error::some packages failed - see Build report in the run summary. Packages that succeeded were published."
           fi

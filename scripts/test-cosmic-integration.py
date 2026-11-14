@@ -117,11 +117,12 @@ assert "User=root" in greeter_install
 assert "--features logind,networkmanager,upower -p cosmic-greeter" in greeter["build"]["compile"]
 assert "--no-default-features -p cosmic-greeter-daemon" in greeter["build"]["compile"]
 assert {"network-manager", "bluez", "upower"} <= greeter_run
-assert "ensure-system-account user cosmic-greeter" in greeter["hooks"]["post_install"]
-assert 'greeter_uid=$(awk -F: \'$1 == "cosmic-greeter" { print $3; exit }\' /etc/passwd)' in greeter["hooks"]["post_install"]
-assert 'video_gid=$(awk -F: \'$1 == "video" { print $3; exit }\' /etc/group)' in greeter["hooks"]["post_install"]
-assert 'chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter' in greeter["hooks"]["post_install"]
-assert 'chown "$greeter_uid:$video_gid" /run/cosmic-greeter' in greeter["build"]["install"]
+greeter_run_script = greeter["build"]["install"]
+assert "ensure-system-account user cosmic-greeter" in greeter_run_script
+assert 'greeter_uid=$(awk -F: \'$1 == "cosmic-greeter" { print $3; exit }\' /etc/passwd)' in greeter_run_script
+assert 'video_gid=$(awk -F: \'$1 == "video" { print $3; exit }\' /etc/group)' in greeter_run_script
+assert 'chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter' in greeter_run_script
+assert "ensure-system-account" not in greeter["hooks"]["post_install"]
 assert "grep -q 'agreety'" in greeter["hooks"]["post_install"]
 
 greetd = recipe("greeter", "greetd")

@@ -7,6 +7,7 @@ Git object IDs or guessed checksums as source SHA-256 values.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import sys
 import urllib.request

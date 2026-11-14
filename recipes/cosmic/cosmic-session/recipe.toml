@@ -2,9 +2,9 @@
 # cosmic-session starts cosmic-comp, cosmic-settings-daemon, cosmic-bg,
 # cosmic-idle, cosmic-notifications, cosmic-panel, the app library, launcher,
 # workspaces and OSD, and exports the compositor environment to D-Bus
-# activation. Built with the default "logind" feature (pure zbus D-Bus calls
-# to org.freedesktop.login1, which elogind provides on Faseela) plus the
-# "autostart" feature so XDG autostart entries run in the session.
+# activation. Explicitly disable the upstream default "systemd" feature;
+# enable only "logind" (pure zbus calls to org.freedesktop.login1, provided by
+# elogind on Faseela) and "autostart" for XDG autostart entries.
 [package]
 name = "cosmic-session"
 version = "1.0.8"
@@ -28,7 +28,7 @@ run = ["dbus", "dbus-system", "elogind", "xdg-desktop-portal-cosmic", "cosmic-co
 dir = "."
 
 [build]
-compile = "cargo build --release --offline --locked --bin cosmic-session --features autostart"
+compile = "cargo build --release --offline --locked --no-default-features --features logind,autostart --bin cosmic-session"
 install = '''
 install -Dm755 target/release/cosmic-session %{pkgdir}/usr/bin/cosmic-session
 # Upstream session start script: re-executes through the login shell for the

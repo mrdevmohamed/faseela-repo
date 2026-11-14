@@ -92,7 +92,8 @@ assert "--no-default-features" in comp["build"]["compile"]
 assert "seatd" in comp["depends"]["run"]
 session = recipe("cosmic", "cosmic-session")
 assert "elogind" in session["depends"]["run"]
-assert "--features autostart" in session["build"]["compile"]
+assert "--no-default-features --features logind,autostart" in session["build"]["compile"]
+assert "systemd" not in session["build"]["compile"]
 assert "start-cosmic" in session["build"]["install"]
 
 # COSMIC's portal backend is a session-D-Bus activated provider.

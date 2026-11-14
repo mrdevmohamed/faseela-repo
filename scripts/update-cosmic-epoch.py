@@ -60,9 +60,7 @@ def update(path: Path) -> bool:
     match = matches[0]
     repo = match.group(2)
     old_tag = match.group(3)
-    if old_tag == TAG:
-        print(f"already current: {path.relative_to(ROOT)}")
-        return False
+    tag_changed = old_tag != TAG
 
     new_url = f"https://codeload.github.com/{repo}/tar.gz/refs/tags/{TAG}"
     new_sha = digest(new_url)
@@ -80,11 +78,16 @@ def update(path: Path) -> bool:
 
     if not REL_RE.search(content):
         raise RuntimeError(f"{path.relative_to(ROOT)}: package rel field not found")
-    content = REL_RE.sub(
-        lambda m: f"{m.group(1)}{int(m.group(2)) + 1}{m.group(3)}",
-        content,
-        count=1,
-    )
+    if tag_changed:
+        content = REL_RE.sub(
+            lambda m: f"{m.group(1)}{int(m.group(2)) + 1}{m.group(3)}",
+            content,
+            count=1,
+        )
+
+    if content == original:
+        print(f"verified {path.relative_to(ROOT)}: {TAG}; sha256={new_sha}")
+        return False
 
     path.write_text(content, encoding="utf-8")
     print(f"updated {path.relative_to(ROOT)}: {old_tag} -> {TAG}; sha256={new_sha}")

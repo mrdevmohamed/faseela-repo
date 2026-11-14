@@ -1,0 +1,63 @@
+name: Update COSMIC Epoch sources
+
+on:
+  push:
+    branches: [feat/cosmic-desktop-support]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  update-cosmic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out COSMIC PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/cosmic-desktop-support
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Download Epoch 1.11.0 sources and calculate SHA-256
+        run: |
+          set -euo pipefail
+          python3 -I scripts/update-cosmic-epoch.py
+          python3 -I scripts/check-recipes.py cosmic-desktop
+          python3 -I scripts/test-cosmic-integration.py
+          git diff --check
+
+      - name: Commit verified source pins
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- recipes/cosmic recipes/greeter/cosmic-greeter; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add recipes/cosmic recipes/greeter/cosmic-greeter
+            git commit -m "Update COSMIC recipes to Epoch 1.11.0 [skip ci]"
+            git push origin HEAD:feat/cosmic-desktop-support
+          else
+            echo "All COSMIC source archives already match Epoch 1.11.0."
+          fi
+
+      - name: Start isolated package build (no publishing)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          packages="cosmic-applets cosmic-bg cosmic-comp cosmic-desktop cosmic-edit cosmic-files cosmic-icons cosmic-idle cosmic-launcher cosmic-notifications cosmic-osk cosmic-osd cosmic-panel cosmic-randr cosmic-screenshot cosmic-session cosmic-settings cosmic-settings-daemon cosmic-store cosmic-term cosmic-workspaces xdg-desktop-portal-cosmic cosmic-greeter"
+          gh workflow run packages.yml --repo "$GITHUB_REPOSITORY" \
+            --ref feat/cosmic-desktop-support \
+            -f packages="$packages" \
+            -f rootfs=auto \
+            -f isolation=sandbox \
+            -f budget=300 \
+            -f keep_going=true \
+            -f auto_continue=false \
+            -f prune=false
+          echo "Dispatched an isolated COSMIC package build. Stable publishing is disabled for this branch."

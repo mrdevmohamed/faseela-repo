@@ -19,7 +19,7 @@ run = ["gstreamer", "gst-plugins-base", "gdk-pixbuf", "libjpeg-turbo", "libpng",
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release --wrap-mode=nodownload -Dauto_features=disabled -Dtests=disabled -Dexamples=disabled -Ddoc=disabled -Dnls=disabled -Dorc=disabled -Davi=enabled -Dflv=enabled -Disomp4=enabled -Dmatroska=enabled -Daudioparsers=enabled -Dwavparse=enabled -Dwavenc=enabled -Did3demux=enabled -Drtp=enabled -Drtpmanager=enabled -Drtsp=enabled -Dudp=enabled -Dgdk-pixbuf=enabled -Djpeg=enabled -Dpng=enabled -Dpulse=enabled -Dvpx=enabled -Dgtk3=disabled -Dqt5=disabled -Dsoup=disabled -Dflac=disabled -Dmpg123=disabled -Dv4l2=disabled"
 compile = "ninja -C build"
 install = '''DESTDIR=%{pkgdir} meson install -C build
-for plugin in isomp4 matroska vpx pulse; do
+for plugin in isomp4 matroska vpx pulseaudio; do
     test -e "%{pkgdir}/usr/lib/gstreamer-1.0/libgst${plugin}.so" || {
         echo "gst-plugins-good: missing libgst${plugin}.so" >&2
         exit 1

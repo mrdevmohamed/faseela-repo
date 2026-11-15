@@ -84,7 +84,10 @@ class RealTree(unittest.TestCase):
         for n in ("iso-nogui", "iso-sway", "iso-xfce", "iso-cosmic", "rootfs-min"):
             # the bootstrap core must be installable into every image
             self.assertTrue({"base-devel", "nawa"} <= set(got[n]), n)
-        self.assertEqual(got["seed"], got["bootstrap"])
+        # seed extends bootstrap and deliberately adds the Rust toolchain.
+        # Keep the bootstrap core intact without requiring both flavors to be identical.
+        self.assertTrue(set(got["bootstrap"]) <= set(got["seed"]))
+        self.assertIn("rust", got["seed"])
         self.assertNotIn("linux-firmware", got["iso-nogui"])
         self.assertIn("sway", got["iso-sway"])
         self.assertIn("cosmic-desktop", got["iso-cosmic"])

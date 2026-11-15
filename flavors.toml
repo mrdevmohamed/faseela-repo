@@ -34,6 +34,7 @@ closure = "build"
 [flavor.seed]
 summary = "Full rootfs that seeds the next bootstrap"
 extends = ["bootstrap"]
+include = ["rust"]
 closure = "build"
 
 # Small environment used by the package-build workflow.

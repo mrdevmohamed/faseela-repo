@@ -29,7 +29,7 @@ install -Dm755 target/release/cosmic-bg %{pkgdir}/usr/bin/cosmic-bg
 # Point the default at Faseela's branded wallpaper directory.
 install -Dm644 data/v1/all \
     %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
-sed -i 's|/usr/share/backgrounds/cosmic/|/usr/share/backgrounds/faseela/|' \
+sed -i 's|/usr/share/backgrounds/cosmic/orion_nebula_nasa_heic0601a.jpg|/usr/share/backgrounds/faseela/default.png|' \
     %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
 test -f %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
 '''

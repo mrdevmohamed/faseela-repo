@@ -107,6 +107,7 @@ assert "CosmicNotifications.desktop" not in notifications["build"]["install"]
 bg = recipe("cosmic", "cosmic-bg")
 assert "data/v1/all" in bg["build"]["install"]
 assert "data/v1/backgrounds" not in bg["build"]["install"]
+assert "/usr/share/backgrounds/faseela/default.png" in bg["build"]["install"]
 assert "CosmicBackground.desktop" not in bg["build"]["install"]
 
 store = recipe("cosmic", "cosmic-store")

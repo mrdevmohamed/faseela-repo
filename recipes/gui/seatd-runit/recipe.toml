@@ -1,0 +1,47 @@
+# gui recipe: seatd-runit — shared seatd service and DRM device permissions.
+# Both Sway and COSMIC use libseat with the seatd backend. Keeping the service
+# and render-node rule here avoids desktop-specific duplicate file ownership.
+[package]
+name = "seatd-runit"
+version = "0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Shared runit supervision and DRM permissions for seatd-based Wayland desktops"
+license = ["MIT"]
+source = ""
+
+[depends]
+build = []
+run = ["seatd", "runit", "eudev", "base-files", "coreutils"]
+
+[build]
+install = '''
+# seatd runs as root and grants access through the `seat` group.
+install -d -m755 %{pkgdir}/etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default
+cat > %{pkgdir}/etc/sv/seatd/run <<'RUN'
+#!/bin/sh
+exec 2>&1
+exec seatd -g seat
+RUN
+chmod 755 %{pkgdir}/etc/sv/seatd/run
+ln -s /etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default/seatd
+
+# Render nodes are safe for unprivileged GPU command submission. Keep the
+# primary DRM nodes restricted; compositor clients only need render access.
+install -d -m755 %{pkgdir}/etc/udev/rules.d
+cat > %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules <<'DRM'
+SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"
+DRM
+chmod 644 %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules
+'''
+
+[hooks]
+post_install = '''
+for group in seat video render input; do
+    /usr/libexec/faseela/ensure-system-account group "$group"
+done
+udevadm control --reload-rules 2>/dev/null || true
+udevadm trigger --subsystem-match=drm 2>/dev/null || true
+udevadm settle 2>/dev/null || true
+echo "seatd-runit: add desktop users to seat,video,render,input."
+'''

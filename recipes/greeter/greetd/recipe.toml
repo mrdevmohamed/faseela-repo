@@ -1,0 +1,58 @@
+# cosmic recipe: greetd — minimal, flexible login manager daemon.
+# COSMIC's own greeter (cosmic-greeter) is designed to run under greetd, and
+# greetd itself is a small PAM client: it needs no systemd, so it works as a
+# plain runit service started by the optional cosmic-greeter integration.
+[package]
+name = "greetd"
+version = "0.10.3"
+rel = 1
+arch = ["x86_64"]
+summary = "Minimal and flexible login manager (greeter daemon for cosmic-greeter)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-schema-2-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "greetd"
+url = "https://codeload.github.com/kennylevinsen/greetd/tar.gz/refs/tags/0.10.3"
+sha256 = "ee5cb70e0add4ca9c9fe57e47581ab0002d44c07743fb5492469f3b570db640b"
+strip_components = 1
+
+[depends]
+build = ["rust", "linux-pam", "pkgconf"]
+run = ["linux-pam"]
+
+[fetch.cargo]
+dir = "."
+
+[build]
+# greetd is a virtual workspace; select the two packages explicitly.
+compile = "cargo build --release --offline --locked -p greetd -p agreety"
+install = '''
+install -Dm755 target/release/greetd %{pkgdir}/usr/bin/greetd
+install -Dm755 target/release/agreety %{pkgdir}/usr/bin/agreety
+# Default configuration: session command and greeter user. cosmic-greeter
+# installs its own /etc/greetd/cosmic-greeter.toml; this file only defines the
+# daemon defaults (terminal VT and the PAM service name "greetd").
+install -d -m755 %{pkgdir}/etc/greetd
+install -m644 config.toml %{pkgdir}/etc/greetd/config.toml
+# PAM stack for the default service name; the COSMIC greeter has its own PAM
+# service and elogind session registration.
+install -d -m755 %{pkgdir}/etc/pam.d
+cat > %{pkgdir}/etc/pam.d/greetd <<'PAM'
+#%PAM-1.0
+auth      required pam_nologin.so
+auth      required pam_env.so
+auth      required pam_unix.so
+account   required pam_unix.so
+password  required pam_unix.so
+session   required pam_unix.so
+session   optional pam_elogind.so class=user type=wayland
+PAM
+chmod 644 %{pkgdir}/etc/pam.d/greetd
+'''
+
+[hooks]
+post_install = '''
+echo "greetd: COSMIC's optional cosmic-greeter package supplies the runit service."
+echo "greetd: configure /etc/greetd/config.toml if you need a custom session."
+'''

@@ -1,33 +1,18 @@
-# gui recipe: gui-session — Wayland desktop session: seatd service, start-sway, default fonts/terminal
+# gui recipe: gui-session — Sway session wiring; seatd is provided by seatd-runit
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 27
+rel = 28
 arch = ["x86_64"]
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd-runit", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "eudev", "runit", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
-# --- DRM render-node permissions for Vulkan/OpenGL clients -------------------
-install -d -m755 %{pkgdir}/etc/udev/rules.d
-cat > %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules <<'DRM'
-# Render nodes are safe for unprivileged GPU command submission; keep access
-# limited to members of the render group.
-SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"
-DRM
-chmod 644 %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules
-
-# --- seatd supervised by runit (enabled by default) -------------------------
-install -d -m755 %{pkgdir}/etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default
-printf '#!/bin/sh\nexec seatd -g seat\n' > %{pkgdir}/etc/sv/seatd/run
-chmod 755 %{pkgdir}/etc/sv/seatd/run
-ln -s /etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default/seatd
-
 # --- default wallpaper (the image comes from faseela-branding): sway's stock config has its own wallpaper line disabled;
 #     this drop-in is read through its `include /etc/sway/config.d/*` -----------
 install -d -m755 %{pkgdir}/etc/sway/config.d
@@ -218,13 +203,9 @@ chmod 644 %{pkgdir}/etc/profile.d/gui-session.sh
 '''
 
 [hooks]
-post_install = '''for g in seat video render input audio; do
+post_install = '''for g in audio; do
     /usr/libexec/faseela/ensure-system-account group "$g"
 done
-# Apply the DRM node rule immediately when installing into a running system.
-udevadm control --reload-rules 2>/dev/null || true
-udevadm trigger --subsystem-match=drm 2>/dev/null || true
-udevadm settle 2>/dev/null || true
 echo "gui-session: add your user:  usermod -aG seat,video,render,input,audio <user>"
 echo "gui-session: then log in on a tty and run:  start-sway"
 

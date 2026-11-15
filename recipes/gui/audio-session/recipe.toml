@@ -4,7 +4,7 @@
 [package]
 name = "audio-session"
 version = "0.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Shared per-user PipeWire, WirePlumber and PulseAudio-compatible session startup"
 license = ["MIT"]
@@ -85,6 +85,7 @@ done
 # kill the daemons when no Sway process exists.
 session_process=
 case "${XDG_CURRENT_DESKTOP:-}" in
+    *COSMIC*|*cosmic*) session_process=cosmic-session ;;
     *XFCE*) session_process=xfce4-session ;;
     *sway*|*Sway*) session_process=sway ;;
     *)

@@ -133,18 +133,20 @@ assert {"mesa", "vulkan-loader"} <= set(zed["depends"]["run"]), (
 
 session = recipe("recipes/gui/gui-session/recipe.toml")
 post_install = session["hooks"]["post_install"]
-assert re.search(r"for g in [^\n]*\brender\b", post_install), (
-    "gui-session must create the render group"
-)
 assert "seat,video,render,input,audio" in post_install, (
     "gui-session instructions must add desktop users to render"
 )
-assert session["package"]["rel"] >= 12, "Bump gui-session rel when changing DRM access rules"
-install_script = session["build"]["install"]
-assert "70-faseela-drm.rules" in install_script, (
-    "gui-session must ship a udev rule for the DRM render group"
+assert session["package"]["rel"] >= 28, "Bump gui-session rel when changing shared seatd integration"
+seatd_runit = recipe("recipes/gui/seatd-runit/recipe.toml")
+seatd_post_install = seatd_runit["hooks"]["post_install"]
+assert "for group in seat video render input; do" in seatd_post_install, (
+    "seatd-runit must create the shared DRM and input groups"
 )
-assert 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"' in install_script, (
+seatd_install = seatd_runit["build"]["install"]
+assert "70-faseela-drm.rules" in seatd_install, (
+    "seatd-runit must ship the shared udev rule for the DRM render group"
+)
+assert 'SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"' in seatd_install, (
     "the udev rule must assign render nodes to the render group"
 )
 

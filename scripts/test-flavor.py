@@ -81,12 +81,19 @@ class RealTree(unittest.TestCase):
         flavors = flavor.load_flavors(root / "flavors.toml")
         recipes = flavor.load_recipes(root / "recipes")
         got = {n: flavor.resolve(flavors, recipes, n) for n in flavors}
-        for n in ("iso-nogui", "iso-sway", "iso-xfce", "rootfs-min"):
+        for n in ("iso-nogui", "iso-sway", "iso-xfce", "iso-cosmic", "rootfs-min"):
             # the bootstrap core must be installable into every image
             self.assertTrue({"base-devel", "nawa"} <= set(got[n]), n)
         self.assertEqual(got["seed"], got["bootstrap"])
         self.assertNotIn("linux-firmware", got["iso-nogui"])
         self.assertIn("sway", got["iso-sway"])
+        self.assertIn("cosmic-desktop", got["iso-cosmic"])
+        self.assertIn("cosmic-comp", got["iso-cosmic"])
+        self.assertIn("cosmic-files", got["iso-cosmic"])
+        self.assertNotIn("sway", got["iso-cosmic"])
+        self.assertNotIn("greetd", got["iso-cosmic"])
+        self.assertNotIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertNotIn("cosmic-desktop", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])
         self.assertNotIn("zed", got["iso-sway"])
         self.assertNotIn("huiontablet", got["iso-sway"])
@@ -96,7 +103,7 @@ class RealTree(unittest.TestCase):
         self.assertNotIn("telegram-desktop", got["iso-sway"])
         self.assertEqual(
             set(flavors),
-            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce"},
+            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce", "iso-cosmic"},
         )
 
     def test_base_files_first_everywhere(self):

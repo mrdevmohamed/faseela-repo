@@ -2,7 +2,7 @@
 [package]
 name = "cosmic-bg"
 version = "1.11.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "COSMIC wallpaper/background daemon"
 license = ["MPL-2.0"]
@@ -15,8 +15,8 @@ sha256 = "00e0874b82877378be9cb305139e626f3cd5ef01ad7a1a517de826086adc2652"
 strip_components = 1
 
 [depends]
-build = ["rust", "pkgconf", "wayland", "libxkbcommon"]
-run = ["wayland", "mesa", "dbus"]
+build = ["rust", "pkgconf", "wayland", "libxkbcommon", "dav1d"]
+run = ["wayland", "mesa", "dbus", "dav1d"]
 
 [fetch.cargo]
 dir = "."
@@ -25,24 +25,11 @@ dir = "."
 compile = "cargo build --release --offline --locked --bin cosmic-bg"
 install = '''
 install -Dm755 target/release/cosmic-bg %{pkgdir}/usr/bin/cosmic-bg
-install -Dm644 data/com.system76.CosmicBackground.desktop \
-    %{pkgdir}/usr/share/applications/com.system76.CosmicBackground.desktop
-install -Dm644 data/com.system76.CosmicBackground.metainfo.xml \
-    %{pkgdir}/usr/share/metainfo/com.system76.CosmicBackground.metainfo.xml
-# Default wallpaper configuration: data/v1/{all,backgrounds} under the
-# cosmic-config schema directory for the app id. The upstream default points
-# at a Pop wallpaper file that does not exist here — repoint it at Faseela's
-# branded default (shipped by faseela-branding).
-install -d -m755 "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1"
-for f in data/v1/all data/v1/backgrounds; do
-    sed "s|/usr/share/backgrounds/cosmic/|/usr/share/backgrounds/faseela/|" "$f" \
-        > "%{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/$(basename "$f")"
-done
-if [ -d data/icons ]; then
-    find data/icons -type f | while read -r f; do
-        rel=${f#data/icons/}
-        install -Dm644 "$f" "%{pkgdir}/usr/share/icons/hicolor/$rel"
-    done
-fi
+# Epoch 1.11.0 ships the wallpaper schema only (no desktop/metainfo assets).
+# Point the default at Faseela's branded wallpaper directory.
+install -Dm644 data/v1/all \
+    %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
+sed -i 's|/usr/share/backgrounds/cosmic/|/usr/share/backgrounds/faseela/|' \
+    %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
 test -f %{pkgdir}/usr/share/cosmic/com.system76.CosmicBackground/v1/all
 '''

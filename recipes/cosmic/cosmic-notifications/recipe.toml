@@ -3,7 +3,7 @@
 [package]
 name = "cosmic-notifications"
 version = "1.11.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "COSMIC notification daemon"
 license = ["GPL-3.0-only"]
@@ -25,11 +25,6 @@ dir = "."
 [build]
 compile = "cargo build --release --offline --locked --bin cosmic-notifications"
 install = '''
+# The upstream install target ships this session daemon binary only.
 install -Dm755 target/release/cosmic-notifications %{pkgdir}/usr/bin/cosmic-notifications
-install -Dm644 data/com.system76.CosmicNotifications.desktop \
-    %{pkgdir}/usr/share/applications/com.system76.CosmicNotifications.desktop
-install -Dm644 data/com.system76.CosmicNotifications.metainfo.xml \
-    %{pkgdir}/usr/share/metainfo/com.system76.CosmicNotifications.metainfo.xml
-install -Dm644 data/icons/com.system76.CosmicNotifications.svg \
-    %{pkgdir}/usr/share/icons/hicolor/scalable/apps/com.system76.CosmicNotifications.svg
 '''

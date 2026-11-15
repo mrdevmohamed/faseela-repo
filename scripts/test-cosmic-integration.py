@@ -89,6 +89,38 @@ edit = recipe("cosmic", "cosmic-edit")
 assert "glib" in edit["depends"]["build"]
 assert "glib" in edit["depends"]["run"]
 
+# Native dav1d is required by the AV1 decoder dependencies in these
+# Epoch packages, both while compiling and when loading the shared library.
+for category, name in (
+    ("cosmic", "cosmic-bg"),
+    ("greeter", "cosmic-greeter"),
+    ("cosmic", "cosmic-settings"),
+):
+    item = recipe(category, name)
+    assert "dav1d" in item["depends"]["build"]
+    assert "dav1d" in item["depends"]["run"]
+
+# Keep the source install manifests aligned with the actual Epoch 1.11.0 trees.
+notifications = recipe("cosmic", "cosmic-notifications")
+assert "target/release/cosmic-notifications" in notifications["build"]["install"]
+assert "CosmicNotifications.desktop" not in notifications["build"]["install"]
+bg = recipe("cosmic", "cosmic-bg")
+assert "data/v1/all" in bg["build"]["install"]
+assert "data/v1/backgrounds" not in bg["build"]["install"]
+assert "CosmicBackground.desktop" not in bg["build"]["install"]
+
+store = recipe("cosmic", "cosmic-store")
+assert "FuturesUnordered::<tokio::sync::oneshot::Receiver" in store["build"]["compile"]
+for path in (
+    "recipes/cosmic/cosmic-bg/recipe.toml",
+    "recipes/greeter/cosmic-greeter/recipe.toml",
+    "recipes/cosmic/cosmic-settings/recipe.toml",
+    "recipes/cosmic/cosmic-notifications/recipe.toml",
+    "recipes/cosmic/cosmic-store/recipe.toml",
+):
+    data = tomllib.loads((ROOT / path).read_text(encoding="utf-8"))
+    assert data["package"]["rel"] >= 3, f"{path}: failed package release must be rebuilt"
+
 # Native audio system headers and PulseAudio-compatible client ABI are explicit.
 applets = recipe("cosmic", "cosmic-applets")
 assert "pipewire" in applets["depends"]["build"]

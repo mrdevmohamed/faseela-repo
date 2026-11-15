@@ -114,6 +114,13 @@ assert 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' in workflow
 assert "building nawa from its pinned source requires the seed rootfs" in workflow
 assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
 assert "cargo fetch --locked" in workflow
+# The stage-3-derived seed has no /opt/cargo: the pinned Rust (recipe sha256) is
+# installed there first, before Nawa is bootstrapped with it.
+assert "has_cargo()" in workflow
+assert 'recipes/base/rust/recipe.toml' in workflow
+assert "sha256sum --check --status" in workflow
+assert "--prefix=/opt/cargo" in workflow
+assert workflow.index("has_cargo()") < workflow.index("cargo fetch --locked")
 assert "deps nawa" in workflow
 assert "supports_schema_v3()" in workflow
 assert "supports_recipe_schema()" in workflow

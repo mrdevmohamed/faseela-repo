@@ -599,6 +599,45 @@ jobs:
               echo "::error::building nawa requires the seed rootfs (Rust/Cargo)"
               exit 1
             }
+            # The seed rootfs is derived from stage 3, which deletes /opt/cargo:
+            # Rust is the db-owned `rust` package there, not part of the seed.
+            # Put the same pinned upstream toolchain the rust recipe installs
+            # (sha256 from the recipe) under /opt/cargo, where this step looks
+            # for it. It lives only in this throwaway build root; package
+            # builds get Rust through the `rust` build dependency.
+            has_cargo() {
+              sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env \
+                PATH=/opt/cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin /bin/sh -c 'command -v cargo' >/dev/null 2>&1
+            }
+            if ! has_cargo; then
+              rust_dir="$RUNNER_TEMP/rust-bootstrap"
+              rm -rf "$rust_dir"
+              mkdir -p "$rust_dir"
+              read -r rust_version rust_sha256 rust_url < <(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/rust/recipe.toml").read_text(encoding="utf-8"))["package"]
+          print(p["version"], p["sha256"], p["source"].replace("%{version}", p["version"]))
+          PY
+              )
+              echo "The seed rootfs has no cargo: installing the pinned Rust $rust_version under /opt/cargo."
+              curl --fail --location --silent --show-error --retry 3 --connect-timeout 20 \
+                --output "$rust_dir/rust.tar.xz" "$rust_url"
+              echo "$rust_sha256  $rust_dir/rust.tar.xz" | sha256sum --check --status || {
+                echo "::error::the downloaded Rust toolchain does not match the sha256 pinned in recipes/base/rust/recipe.toml"
+                exit 1
+              }
+              tar -xJf "$rust_dir/rust.tar.xz" -C "$rust_dir"
+              sudo bash "$rust_dir/rust-$rust_version-x86_64-unknown-linux-gnu/install.sh" \
+                --prefix=/opt/cargo --destdir="$T" --disable-ldconfig \
+                --components=rustc,cargo,rust-std-x86_64-unknown-linux-gnu > /dev/null
+              rm -rf "$rust_dir"
+              has_cargo || {
+                echo "::error::cargo still does not run inside the build root after installing the pinned Rust toolchain"
+                exit 1
+              }
+              echo "Rust $rust_version installed under /opt/cargo in the seed build root to bootstrap Nawa." >> "$GITHUB_STEP_SUMMARY"
+            fi
             echo "Bootstrapping the selected Nawa source with the seed Rust toolchain."
             sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/env HOME=/root PATH=/opt/cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin CARGO_HOME=/root/.cargo /bin/bash -c '
                 set -euo pipefail

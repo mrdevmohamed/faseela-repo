@@ -1,0 +1,19 @@
+# dev recipe: Ruby — build-time generator required by WebKitGTK.
+[package]
+name = "ruby"
+version = "4.0.9"
+rel = 1
+arch = ["x86_64"]
+summary = "Ruby interpreter and standard library"
+license = ["BSD-2-Clause"]
+source = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.xz"
+sha256 = "a8057adb39f51ad6dc3106237504c93dd792bb515837b4fe7817ae21ed7e51f4"
+
+[depends]
+build = ["gdbm", "libffi", "openssl", "readline", "libyaml", "zlib"]
+run = ["gdbm", "libffi", "openssl", "readline", "libyaml", "zlib", "gcc", "glibc"]
+
+[build]
+configure = "./configure --prefix=/usr --enable-shared --disable-install-doc"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

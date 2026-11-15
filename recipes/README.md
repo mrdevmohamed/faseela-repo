@@ -34,7 +34,7 @@ The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
 security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
-The `dev/` category is opt-in and currently contains Node.js, Go, Deno, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
+The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
 The first 47 `extra/` recipes are generated from a data table
 (`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator
@@ -93,7 +93,7 @@ libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
 
 **boot** — linux; efibootmgr → grub → busybox
 
-**extra** — 95 general-purpose packages covering development/build
+**extra** — 98 general-purpose packages covering development/build
 utilities, network diagnostics, editors, hardware inspection, storage tools,
 compression and command-line productivity. The live ISO's `iso-nogui` flavor
 includes this category; inspect the current inventory with

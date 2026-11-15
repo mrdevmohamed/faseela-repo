@@ -272,7 +272,7 @@ class RealRecipeTreeTests(unittest.TestCase):
         self.assertIn("pr-build-cache.py save", workflow)
         self.assertIn("name: pr-package-cache", workflow)
         self.assertIn(
-            "if: ${{ github.event_name != 'pull_request' && always() && steps.published.conclusion == 'success' }}",
+            "if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}",
             workflow,
         )
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)

@@ -43,7 +43,7 @@ diff --git a/util/ulockmgr_server.c b/util/ulockmgr_server.c
 +#endif
 +
  struct message {
-@@ -124,6 +128,7 @@ static int receive_message(int cfd, struct message *msg)
+@@ -124,6 +128,7 @@ static int receive_message(int sock, void *buf, size_t buflen, int *fdp,
  	return res;
  }
  
@@ -54,6 +54,7 @@ diff --git a/util/ulockmgr_server.c b/util/ulockmgr_server.c
  	return 0;
  }
 +#endif
+ 
  static void send_reply(int cfd, struct message *msg)
  {
 PATCH

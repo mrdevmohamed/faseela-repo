@@ -116,6 +116,8 @@ for path in (
     "recipes/cosmic/cosmic-bg/recipe.toml",
     "recipes/greeter/cosmic-greeter/recipe.toml",
     "recipes/cosmic/cosmic-settings/recipe.toml",
+    "recipes/cosmic/cosmic-settings-daemon/recipe.toml",
+    "recipes/cosmic/cosmic-launcher/recipe.toml",
     "recipes/cosmic/cosmic-notifications/recipe.toml",
     "recipes/cosmic/cosmic-store/recipe.toml",
 ):
@@ -215,6 +217,7 @@ assert "greetd" not in cosmic_flavor.get("exclude", [])
 # The backend must install matching plugin config files and multicall symlinks.
 launcher = recipe("cosmic", "cosmic-launcher")
 assert "pop-launcher" in launcher["depends"]["run"]
+assert "--cfg tokio_unstable" in launcher["build"]["compile"]
 pop = recipe("gui", "pop-launcher")
 pop_pkg = pop["package"]
 assert pop_pkg["version"] == "1.11.0"
@@ -238,6 +241,7 @@ daemon_build = set(daemon["depends"]["build"])
 daemon_run = set(daemon["depends"]["run"])
 assert {"dbus", "elogind", "pipewire"} <= daemon_run
 assert "pipewire" in daemon_build, "libspa-sys needs PipeWire development metadata"
+assert "llvm" in daemon_build, "libspa-sys bindgen requires libclang from Faseela's llvm package"
 assert "sed 's|systemctl suspend|loginctl suspend|g'" in daemon_install
 assert "grep -q 'systemctl'" in daemon_install
 assert "busctl --user call" in daemon_install

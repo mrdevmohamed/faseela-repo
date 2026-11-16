@@ -2,7 +2,7 @@
 [package]
 name = "cosmic-launcher"
 version = "1.11.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "COSMIC application launcher"
 license = ["GPL-3.0-only"]
@@ -22,7 +22,11 @@ run = ["wayland", "mesa", "cosmic-icons", "hicolor-icon-theme", "dbus", "pop-lau
 dir = "."
 
 [build]
-compile = "cargo build --release --offline --locked --bin cosmic-launcher"
+compile = """
+# Match upstream's justfile: libcosmic/Tokio uses tokio_unstable cfg gates.
+export RUSTFLAGS="${RUSTFLAGS:-} --cfg tokio_unstable"
+cargo build --release --offline --locked --bin cosmic-launcher
+"""
 install = '''
 install -Dm755 target/release/cosmic-launcher %{pkgdir}/usr/bin/cosmic-launcher
 # The APPID data (desktop entry, metainfo, scalable icon) is installed the

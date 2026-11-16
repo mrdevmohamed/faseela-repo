@@ -99,6 +99,13 @@ assert "AC_CHECK_FUNCS([closefrom])" in fuse2_prepare
 assert "HAVE_CLOSEFROM" in fuse2_prepare
 assert "autoreconf -fi -I/usr/share/gettext/m4" in fuse2_prepare
 assert "AM_GNU_GETTEXT_VERSION([0.26])" in fuse2_prepare
+fuse2_patch_script = re.search(
+    r"python3 - <<'PY'\\n(.*?)\\nPY",
+    fuse2_prepare,
+    re.DOTALL,
+)
+assert fuse2_patch_script, "fuse2 must contain the checked glibc compatibility patch"
+compile(fuse2_patch_script.group(1), "fuse2-prepare-patch", "exec")
 fuse2_prepare_syntax = subprocess.run(
     ["bash", "-n"], input=fuse2_prepare, text=True, capture_output=True, check=False
 )

@@ -134,17 +134,20 @@ nawa --recipes recipes deps-all        # full-tree topological order
 
 ## Flatpak and application stores
 
-The GUI category includes the complete Flatpak runtime used by COSMIC Store:
-`flatpak`, `ostree`, GPGME/GnuPG, AppStream, libxmlb, libfyaml,
-Bubblewrap, `xdg-dbus-proxy`, FUSE 3 and seccomp. COSMIC Store enables its
-native Flatpak feature and exposes the user and system installations without
-enabling PackageKit or systemd-scope integration.
+The opt-in `flatpak/` category contains the runtime and its supporting
+stack: `flatpak`, `ostree`, GPGME/GnuPG, AppStream, libxmlb, libfyaml and
+pyparsing. It is intentionally separate from `gui/`, so Sway and Xfce images
+do not pull in a second application manager. Installing `cosmic-store`
+pulls in this category through its runtime dependency.
 
-Flathub is provided as a signed static remote in
-`/usr/share/flatpak/remotes.d/`. The Flatpak system helper is activated by
-the system D-Bus and authorized through the existing Polkit/elogind stack;
-it is not a runit service. System-install prompts still require a graphical
-Polkit authentication agent in the active session.
+COSMIC Store enables its native Flatpak feature, exposing user and system
+installations without enabling PackageKit or systemd-scope integration.
+Flathub is preconfigured as a signed system-wide remote under
+`/usr/share/flatpak/remotes.d/`; each user can import that same signed
+definition into their own installation. The privileged system helper is
+activated on demand by D-Bus and authorized by Polkit. COSMIC OSD registers
+the session authentication agent and uses Faseela's Polkit helper path. No
+systemd unit or runit service is required.
 
 ## Optional hardware integrations
 

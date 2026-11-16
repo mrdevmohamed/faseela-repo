@@ -8,17 +8,17 @@ ROOT = Path(__file__).resolve().parents[1]
 RECIPES = ROOT / "recipes"
 
 REQUIRED = {
-    ("system", "libassuan"),
-    ("system", "npth"),
-    ("system", "libksba"),
-    ("system", "gnupg"),
-    ("system", "gpgme"),
-    ("gui", "python-pyparsing"),
-    ("gui", "libfyaml"),
-    ("gui", "libxmlb"),
-    ("gui", "appstream"),
-    ("gui", "ostree"),
-    ("gui", "flatpak"),
+    ("flatpak", "libassuan"),
+    ("flatpak", "npth"),
+    ("flatpak", "libksba"),
+    ("flatpak", "gnupg"),
+    ("flatpak", "gpgme"),
+    ("flatpak", "python-pyparsing"),
+    ("flatpak", "libfyaml"),
+    ("flatpak", "libxmlb"),
+    ("flatpak", "appstream"),
+    ("flatpak", "ostree"),
+    ("flatpak", "flatpak"),
 }
 
 

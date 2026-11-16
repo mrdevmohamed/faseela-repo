@@ -7,7 +7,7 @@
 [package]
 name = "cosmic-comp"
 version = "1.11.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "COSMIC Wayland compositor (smithay-based, with Xwayland support)"
 license = ["GPL-3.0-only"]
@@ -34,4 +34,13 @@ dir = "."
 compile = "cargo build --release --offline --locked --no-default-features --bin cosmic-comp"
 install = '''
 install -Dm755 target/release/cosmic-comp %{pkgdir}/usr/bin/cosmic-comp
+# Default shortcuts (Alt+Tab / Super+Tab window switcher, Super+Space input
+# source switch, workspace and tiling keys) and the tiling exception list.
+# cosmic-config reads these system defaults from /usr/share/cosmic; without
+# them no default keybinding exists. Same paths as upstream `just install`.
+install -Dm644 data/keybindings.ron \
+    %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/defaults
+install -Dm644 data/tiling-exceptions.ron \
+    %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_defaults
+test -s %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/defaults
 '''

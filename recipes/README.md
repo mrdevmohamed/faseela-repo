@@ -9,7 +9,7 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── gui/         optional Wayland desktop stack, Flatpak/AppStream runtime and shared services (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
@@ -25,11 +25,11 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 57 system + 8 boot + 98 extra =
-**212 core packages**. Optional categories contain 141 GUI, 22 COSMIC, 2 greeter,
+Current set: 10 toolchain + 39 base + 62 system + 8 boot + 98 extra =
+**217 core packages**. Optional categories contain 147 GUI, 22 COSMIC, 2 greeter,
 29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
 12 security, 1 peripheral and 16 developer packages. The recipe tree contains
-**546 recipes** in total.
+**557 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
@@ -130,6 +130,20 @@ Verify any dependency chain — or the complete recipe graph — with:
 nawa --recipes recipes deps <name>
 nawa --recipes recipes deps-all        # full-tree topological order
 ```
+
+## Flatpak and application stores
+
+The GUI category includes the complete Flatpak runtime used by COSMIC Store:
+`flatpak`, `ostree`, GPGME/GnuPG, AppStream, libxmlb, libfyaml,
+Bubblewrap, `xdg-dbus-proxy`, FUSE 3 and seccomp. COSMIC Store enables its
+native Flatpak feature and exposes the user and system installations without
+enabling PackageKit or systemd-scope integration.
+
+Flathub is provided as a signed static remote in
+`/usr/share/flatpak/remotes.d/`. The Flatpak system helper is activated by
+the system D-Bus and authorized through the existing Polkit/elogind stack;
+it is not a runit service. System-install prompts still require a graphical
+Polkit authentication agent in the active session.
 
 ## Optional hardware integrations
 

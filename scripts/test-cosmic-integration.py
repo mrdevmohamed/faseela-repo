@@ -178,21 +178,18 @@ assert "--no-default-features -p cosmic-greeter-daemon" in greeter["build"]["com
 assert {"network-manager", "bluez", "upower"} <= locker_run
 greeter_run_script = greeter["build"]["install"]
 greeter_post_install = greeter["hooks"]["post_install"]
-assert "ensure-system-account user cosmic-greeter" in greeter_post_install
-assert "ensure-system-account group video" in greeter_post_install
-assert "set -eu" in greeter_post_install
-assert 'while IFS=: read -r account_name _ account_uid _' in greeter_post_install
-assert "done < /etc/passwd" in greeter_post_install
-assert "id -u cosmic-greeter" not in greeter_post_install
-assert "video_gid=" in greeter_post_install
-assert 'chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter' in greeter_post_install
-assert "ensure-system-account" not in greeter_run_script
+assert "ensure-system-account user cosmic-greeter" in greeter_run_script
+assert "ensure-system-account group video" in greeter_run_script
+assert "set -eu" in greeter_run_script
 assert 'while IFS=: read -r account_name _ account_uid _' in greeter_run_script
 assert "done < /etc/passwd" in greeter_run_script
+assert "video_gid=" in greeter_run_script
+assert 'chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter' in greeter_run_script
+assert "account provisioning failed" in greeter_run_script
 assert "id -u cosmic-greeter" not in greeter_run_script
 assert "awk -F:" not in greeter_run_script
-assert 'chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter' in greeter_run_script
-assert "service account is missing" in greeter_run_script
+assert "ensure-system-account" not in greeter_post_install
+assert "account_name _ account_uid" not in greeter_post_install
 assert "grep -q 'agreety'" in greeter_post_install
 
 greetd = recipe("greeter", "greetd")

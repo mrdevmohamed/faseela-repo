@@ -52,22 +52,22 @@ for category, name in sorted(REQUIRED):
     assert pkg.get("source", "").startswith("https://"), f"{name}: HTTPS source required"
 
 # OpenPGP verification has a real CLI engine as well as the GPGME library.
-require_dependencies(recipe("system", "libassuan"), "run", {"libgpg-error"}, "libassuan")
-require_dependencies(recipe("system", "libksba"), "run", {"libgpg-error"}, "libksba")
-require_dependencies(recipe("system", "gnupg"), "run", {
+require_dependencies(recipe("flatpak", "libassuan"), "run", {"libgpg-error"}, "libassuan")
+require_dependencies(recipe("flatpak", "libksba"), "run", {"libgpg-error"}, "libksba")
+require_dependencies(recipe("flatpak", "gnupg"), "run", {
     "libgpg-error", "libgcrypt", "libassuan", "libksba", "npth", "gnutls",
 }, "gnupg")
-require_dependencies(recipe("system", "gpgme"), "run", {
+require_dependencies(recipe("flatpak", "gpgme"), "run", {
     "libgpg-error", "libassuan", "gnupg",
 }, "gpgme")
 
 # AppStream's XML/YAML metadata stack and OSTree's signature/network backends
 # must be explicit rather than depending on incidental build-root packages.
-require_dependencies(recipe("gui", "libxmlb"), "run", {"glib", "xz", "zstd"}, "libxmlb")
-require_dependencies(recipe("gui", "appstream"), "run", {
+require_dependencies(recipe("flatpak", "libxmlb"), "run", {"glib", "xz", "zstd"}, "libxmlb")
+require_dependencies(recipe("flatpak", "appstream"), "run", {
     "glib", "curl", "libxml2", "libfyaml", "libxmlb", "zstd",
 }, "appstream")
-ostree = recipe("gui", "ostree")
+ostree = recipe("flatpak", "ostree")
 require_dependencies(ostree, "build", {"libsoup3", "gpgme", "libarchive", "e2fsprogs"}, "ostree")
 assert "--with-soup3" in ostree["build"]["configure"]
 assert "--with-gpgme" in ostree["build"]["configure"]
@@ -76,7 +76,7 @@ assert "--without-curl" in ostree["build"]["configure"]
 
 # Flatpak must use existing Faseela sandbox/security components and its
 # D-Bus/Polkit system helper, while compiling without systemd.
-flatpak = recipe("gui", "flatpak")
+flatpak = recipe("flatpak", "flatpak")
 flatpak_run = set(flatpak["depends"]["run"])
 assert {
     "ostree", "appstream", "gpgme", "gnupg", "bubblewrap",

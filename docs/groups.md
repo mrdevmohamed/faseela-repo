@@ -60,3 +60,17 @@ Packages installed solely as group members are marked with reason `group`,
 not `explicit`. Removing a group preserves packages that were explicitly
 installed or are still referenced by another installed group. Dependencies
 that become unnecessary can be reviewed with `nawa autoremove`.
+
+
+## Messaging and phone integration
+
+The `messaging` group installs NectarLink by default. Telegram Desktop is an
+additional optional selection:
+
+```sh
+nawa group info messaging
+nawa group install messaging
+nawa group install messaging --with-optional
+```
+
+NectarLink remains optional and is not added to any desktop flavor or ISO.

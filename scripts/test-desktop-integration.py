@@ -21,7 +21,7 @@ def require_deps(category: str, name: str, kind: str, required: set[str]) -> Non
 
 
 session = recipe("gui", "gui-session")
-assert session["package"]["rel"] >= 13, "Bump gui-session rel for desktop integration changes"
+assert session["package"]["rel"] >= 29, "Bump gui-session rel for AppImage runtime dependency changes"
 require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
@@ -98,6 +98,7 @@ fuse2_prepare = fuse2["build"]["prepare"]
 assert "AC_CHECK_FUNCS([closefrom])" in fuse2_prepare
 assert "HAVE_CLOSEFROM" in fuse2_prepare
 assert "autoreconf -fi -I/usr/share/gettext/m4" in fuse2_prepare
+assert "AM_GNU_GETTEXT_VERSION([0.26])" in fuse2_prepare
 fuse2_prepare_syntax = subprocess.run(
     ["bash", "-n"], input=fuse2_prepare, text=True, capture_output=True, check=False
 )
@@ -116,6 +117,7 @@ assert {"fuse2", "fuse3"} <= set(appimage["depends"]["run"])
 require_deps("gui", "gui-session", "run", {"appimage-support"})
 require_deps("xfce", "xfce-session", "run", {"appimage-support"})
 require_deps("cosmic", "cosmic-desktop", "run", {"appimage-support"})
+assert recipe("cosmic", "cosmic-desktop")["package"]["rel"] >= 2
 
 for name in ("fuse3", "fuse2", "json-glib", "bubblewrap"):
     assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(

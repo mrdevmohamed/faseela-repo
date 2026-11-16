@@ -108,7 +108,7 @@ is maintained.
 | apps | tllist fcft foot swaybg wmenu |
 | sway companions | swaylock (setuid, shadow auth) swayidle grim slurp wl-clipboard wlr-randr wlsunset |
 | desktop shell | waybar (+ libdbusmenu GTK 3 StatusNotifier tray, fmt spdlog jsoncpp gtk-layer-shell gtkmm glibmm cairomm pangomm atkmm libsigc++), mako (+ basu inih), xdg-user-dirs |
-| desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK and wlr backends, bubblewrap, fuse3, json-glib, rsync, gnome-keyring, libgudev, libusb, UPower, GCR/GCK, p11-kit and libgcrypt |
+| desktop integration | xdg-utils (`xdg-open`), xdg-desktop-portal + GTK and wlr backends, bubblewrap, appimage-support (FUSE 2 + FUSE 3), json-glib, rsync, gnome-keyring, libgudev, libusb, UPower, GCR/GCK, p11-kit and libgcrypt |
 | audio tools | pavucontrol (+ libcanberra GTK 3 plugin, libogg, libvorbis) |
 | session | gui-session (`start-sway`, desktop config and audio integration); seatd-runit (shared seatd runit service, group setup and DRM udev rule) |
 
@@ -133,6 +133,43 @@ session D-Bus activation environment for desktop portals, and starts
 It checks the native and Pulse sockets and avoids starting duplicate daemons. The kernel recipe enables DRM (virtio-gpu, bochs, simpledrm)
 and evdev/HID input; to try it in QEMU use `-device virtio-vga` (or `-vga std`)
 and a USB/PS2 keyboard and mouse.
+
+## AppImage support
+
+All three maintained desktop sessions (Sway, Xfce and COSMIC) depend on
+`appimage-support`, which installs both FUSE generations:
+
+- **FUSE 3** provides `fusermount3` for current applications and remains the
+  FUSE implementation used by the desktop portal stack.
+- **FUSE 2** provides the legacy `fusermount` name and `libfuse.so.2` ABI
+  required by older AppImage runtimes. It is installed alongside FUSE 3; the
+  two packages keep separate helper names and library SONAMEs.
+
+Both mount helpers are restored as root-owned setuid executables by their
+package post-install hooks. This is required for ordinary users to mount FUSE
+filesystems. FUSE support is kernel built-in (`CONFIG_FUSE_FS=y)); no FUSE
+runit service or systemd component is needed.
+
+An AppImage can be launched directly after making it executable:
+
+```sh
+chmod +x ./Application.AppImage
+./Application.AppImage
+```
+
+When FUSE mounting is unavailable due to a host/container policy, try the
+runtime's extraction fallback (when supported):
+
+```sh
+APPIMAGE_EXTRACT_AND_RUN=1 ./Application.AppImage
+```
+
+To diagnose the installed runtime, check that `/dev/fuse` exists and both
+helpers are root-owned with mode `4755`:
+
+```sh
+ls -l /dev/fuse /usr/bin/fusermount /usr/bin/fusermount3
+```
 
 ## Desktop integration
 

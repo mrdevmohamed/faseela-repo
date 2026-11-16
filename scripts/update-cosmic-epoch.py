@@ -25,6 +25,9 @@ RECIPES = sorted(
 greeter = ROOT / "recipes" / "greeter" / "cosmic-greeter" / "recipe.toml"
 if greeter.is_file():
     RECIPES.append(greeter)
+pop_launcher = ROOT / "recipes" / "gui" / "pop-launcher" / "recipe.toml"
+if pop_launcher.is_file():
+    RECIPES.append(pop_launcher)
 
 URL_RE = re.compile(
     r'^(\s*url\s*=\s*")https://codeload\.github\.com/'

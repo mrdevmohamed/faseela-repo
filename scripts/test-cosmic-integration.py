@@ -9,7 +9,7 @@ COSMIC = ROOT / "recipes" / "cosmic"
 EXPECTED = {
     "cosmic-applets", "cosmic-bg", "cosmic-comp", "cosmic-desktop",
     "cosmic-edit", "cosmic-files", "cosmic-icons",
-    "cosmic-idle", "cosmic-launcher", "cosmic-notifications", "cosmic-osk", "cosmic-osd",
+    "cosmic-idle", "cosmic-launcher", "cosmic-locker", "cosmic-notifications", "cosmic-osk", "cosmic-osd",
     "cosmic-panel", "cosmic-randr", "cosmic-screenshot", "cosmic-session",
     "cosmic-settings", "cosmic-settings-daemon", "cosmic-store", "cosmic-term",
     "cosmic-workspaces", "xdg-desktop-portal-cosmic",
@@ -93,7 +93,7 @@ assert "glib" in edit["depends"]["run"]
 # Epoch packages, both while compiling and when loading the shared library.
 for category, name in (
     ("cosmic", "cosmic-bg"),
-    ("greeter", "cosmic-greeter"),
+    ("cosmic", "cosmic-locker"),
     ("cosmic", "cosmic-settings"),
 ):
     item = recipe(category, name)
@@ -135,6 +135,7 @@ assert "--no-default-features" in comp["build"]["compile"]
 assert "seatd" in comp["depends"]["run"]
 session = recipe("cosmic", "cosmic-session")
 assert "elogind" in session["depends"]["run"]
+assert "cosmic-locker" in session["depends"]["run"], "cosmic-session must install its regular-user lock UI"
 assert "--no-default-features --features logind,autostart" in session["build"]["compile"]
 assert "systemd" not in session["build"]["compile"]
 assert "start-cosmic" in session["build"]["install"]
@@ -148,18 +149,27 @@ assert "org.freedesktop.impl.portal.desktop.cosmic.service" in portal_install
 # Optional greeter includes PAM + greetd and ships its service disabled.
 greeter = recipe("greeter", "cosmic-greeter")
 greeter_run = set(greeter["depends"]["run"])
-assert {"greetd", "linux-pam", "elogind", "seatd-runit", "runit"} <= greeter_run
+assert {"greetd", "elogind", "seatd-runit", "runit", "cosmic-locker"} <= greeter_run
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
 assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
-assert "pam_elogind.so" in greeter["build"]["install"]
+locker = recipe("cosmic", "cosmic-locker")
+locker_run = set(locker["depends"]["run"])
+locker_install = locker["build"]["install"]
+assert {"linux-pam", "elogind", "wayland"} <= locker_run
+assert "target/release/cosmic-greeter" in locker_install
+assert "pam_elogind.so" in locker_install
+assert "class=user type=wayland desktop=COSMIC" in locker_install
+assert "cosmic-locker" in greeter_run
+assert "target/release/cosmic-greeter" not in greeter["build"]["install"]
+assert "pam_elogind.so" not in greeter["build"]["install"]
 greeter_install = greeter["build"]["install"]
 assert "system-services/com.system76.CosmicGreeter.service" in greeter_install
 assert "Name=com.system76.CosmicGreeter" in greeter_install
 assert "Exec=/usr/bin/cosmic-greeter-daemon" in greeter_install
 assert "User=root" in greeter_install
-assert "--features logind,networkmanager,upower -p cosmic-greeter" in greeter["build"]["compile"]
+assert "--features logind,networkmanager,upower -p cosmic-greeter" in locker["build"]["compile"]
 assert "--no-default-features -p cosmic-greeter-daemon" in greeter["build"]["compile"]
-assert {"network-manager", "bluez", "upower"} <= greeter_run
+assert {"network-manager", "bluez", "upower"} <= locker_run
 greeter_run_script = greeter["build"]["install"]
 assert "ensure-system-account user cosmic-greeter" in greeter_run_script
 assert 'greeter_uid=$(awk -F: \'$1 == "cosmic-greeter" { print $3; exit }\' /etc/passwd)' in greeter_run_script
@@ -199,6 +209,24 @@ cosmic_flavor = flavors["flavor"]["iso-cosmic"]
 assert "@cosmic" in cosmic_flavor["include"]
 assert "cosmic-greeter" not in cosmic_flavor.get("exclude", [])
 assert "greetd" not in cosmic_flavor.get("exclude", [])
+
+
+# COSMIC Launcher has two executables: a Wayland frontend and its IPC backend.
+# The backend must install matching plugin config files and multicall symlinks.
+launcher = recipe("cosmic", "cosmic-launcher")
+assert "pop-launcher" in launcher["depends"]["run"]
+pop = recipe("gui", "pop-launcher")
+pop_pkg = pop["package"]
+assert pop_pkg["version"] == "1.11.0"
+assert pop_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert pop_pkg["sources"][0]["url"].endswith("/refs/tags/epoch-1.11.0")
+assert re.fullmatch(r"[0-9a-f]{64}", pop_pkg["sources"][0]["sha256"])
+assert "pop-launcher-bin" in pop["build"]["compile"]
+pop_install = pop["build"]["install"]
+assert "desktop_entries files find recent cosmic_toplevel" in pop_install
+assert "/usr/lib/pop-launcher/plugins" in pop_install
+assert "ln -s /usr/bin/pop-launcher" in pop_install
+assert {"fd"} <= set(pop["depends"]["run"])
 
 # Default shortcuts, input-source switching and elogind-native actions.
 assert "keybindings.ron" in comp["build"]["install"]

@@ -1,0 +1,14 @@
+# gui recipe: AppImage runtime support shared by all Faseela desktop sessions.
+# FUSE 2 supplies the fusermount name used by legacy Type 2 AppImages;
+# FUSE 3 remains available for native FUSE 3 clients and document portals.
+[package]
+name = "appimage-support"
+version = "0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Runtime support for legacy and modern Linux AppImage bundles"
+license = ["MIT"]
+
+[depends]
+build = []
+run = ["fuse2", "fuse3"]

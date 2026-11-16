@@ -38,8 +38,12 @@ desktop entry, icons and metadata. Optional phone-as-webcam and remote
 keyboard/mouse integration require their separate system setup and are not
 enabled automatically.
 
-**Updates are managed by Nawa.** Turn off NectarLink's built-in automatic
-updates in its Settings and upgrade it with:
+**Updates are managed by Nawa.** On a new profile, the Faseela launcher
+creates initial settings with NectarLink's automatic update check and
+automatic installation both disabled, preventing a second upstream copy
+from being installed outside the package manager. Existing NectarLink
+profiles are preserved; check Settings and turn both options off if they
+were enabled before installing the Nawa package. Upgrade it with:
 
 ~~~sh
 doas nawa upgrade nectarlink

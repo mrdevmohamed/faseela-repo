@@ -128,7 +128,25 @@ fi
 # udev and firewall rules, all of which must remain outside a Nawa package.
 cat > "%{pkgdir}/usr/bin/nectarlink-desktop" <<'WRAPPER'
 #!/bin/sh
+set -eu
+
 appdir=/usr/lib/nectarlink
+data_home="${XDG_DATA_HOME:-${HOME}/.local/share}"
+data_dir="$data_home/Nectarlink"
+settings="$data_dir/desktop-settings.json"
+
+# A Nawa-managed installation must not replace itself from the upstream
+# tarball updater. Seed safe first-run defaults only; never overwrite an
+# existing user's settings file.
+if [ ! -e "$settings" ]; then
+    mkdir -p "$data_dir"
+    (
+        umask 077
+        set -C
+        printf '%s\n' '{"autoUpdate":false,"installUpdates":false}' > "$settings"
+    ) 2>/dev/null || :
+fi
+
 export LD_LIBRARY_PATH="$appdir/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export QT_PLUGIN_PATH="$appdir/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 export QML2_IMPORT_PATH="$appdir/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"

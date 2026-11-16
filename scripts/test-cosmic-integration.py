@@ -197,8 +197,8 @@ assert "grep -q 'agreety'" in greeter_post_install
 # the bug that wrote every COSMIC service account as another "video" entry.
 base_files = recipe("base", "base-files")
 base_install = base_files["build"]["install"]
-helper_start = "cat > %{pkgdir}/usr/libexec/faseela/ensure-system-account <<'ACCOUNT'\\n"
-helper_end = "\\nACCOUNT\\nchmod 0755 %{pkgdir}/usr/libexec/faseela/ensure-system-account"
+helper_start = "cat > %{pkgdir}/usr/libexec/faseela/ensure-system-account <<'ACCOUNT'\n"
+helper_end = "\nACCOUNT\nchmod 0755 %{pkgdir}/usr/libexec/faseela/ensure-system-account"
 assert helper_start in base_install and helper_end in base_install
 account_helper = base_install.split(helper_start, 1)[1].split(helper_end, 1)[0]
 assert "group_name=$1" in account_helper

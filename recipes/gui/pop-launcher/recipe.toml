@@ -13,7 +13,7 @@ source = "local:/nawa-schema-2-requires-a-newer-nawa"
 [[package.sources]]
 name = "pop-launcher"
 url = "https://codeload.github.com/pop-os/launcher/tar.gz/refs/tags/epoch-1.11.0"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+sha256 = "5c36c3304c48c047b5b6a1ae645f0ceb44447aec82db862fb93be6184af3fdc7"
 strip_components = 1
 
 [depends]

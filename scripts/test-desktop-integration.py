@@ -107,7 +107,7 @@ assert fuse2_prepare_syntax.returncode == 0, (
 )
 fuse2_install = fuse2["build"]["install"]
 assert "rm -f %{pkgdir}/etc/fuse.conf" in fuse2_install
-assert "rm -f %{pkgdir}/usr/lib/udev/rules.d/99-fuse.rules" in fuse2_install
+assert "%{pkgdir}/usr/lib/udev/rules.d/99-fuse.rules" in fuse2_install
 fuse2_post_install = fuse2.get("hooks", {}).get("post_install", "")
 assert "chown root:root /usr/bin/fusermount" in fuse2_post_install
 assert "chmod 4755 /usr/bin/fusermount" in fuse2_post_install

@@ -78,3 +78,12 @@ description = "The version-matched Rust compiler, Clippy linter, formatter, and 
 mandatory = ["rust"]
 default = ["rust-clippy", "rustfmt"]
 optional = ["rust-analyzer"]
+
+[[group]]
+schema = 1
+id = "messaging"
+name = "Messaging and Phone Integration"
+description = "Optional desktop messaging apps and local encrypted Android-to-PC integration."
+mandatory = []
+default = ["nectarlink"]
+optional = ["telegram-desktop"]

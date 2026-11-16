@@ -12,8 +12,9 @@ Nawa; they do not create separate ISO variants.
 | `seed` | Full rootfs used to seed a later bootstrap. |
 | `rootfs-min` | Small environment used by the package-build workflow. |
 | `iso-nogui` | Common live-system base without a desktop. |
-| `iso-sway` | Common base plus the Sway Wayland desktop. |
-| `iso-xfce` | Common base plus Xfce on Xorg. |
+| `iso-sway` | Common base plus the Sway Wayland desktop (console login). |
+| `iso-xfce` | Common base plus Xfce on Xorg and the LightDM packages. |
+| `iso-cosmic` | Common base plus COSMIC and COSMIC Greeter (greetd). |
 
 The desktop images extend `iso-nogui`, so core packages, boot support,
 networking and command-line tools remain shared. Desktop-specific packages
@@ -31,6 +32,8 @@ MPV and FFmpeg are not flavors. Install them with Nawa when needed.
 | `extends` | Inherit packages from another flavor. |
 | `exclude` | Package names removed from the resolved result. |
 | `closure` | `run` (runtime dependencies) or `build` (build and runtime dependencies). |
+| `enable_services` | Runit services to enable in the image's default runsvdir. |
+| `disable_services` | Runit services to disable; already-disabled or absent services are ignored. |
 
 An `@category` item expands to every recipe in that category. The default
 closure is `run`; bootstrap profiles use `build` to include everything
@@ -50,6 +53,18 @@ Resolve a profile, with dependencies first:
 python3 -I scripts/flavor.py resolve iso-sway
 python3 -I scripts/flavor.py resolve iso-xfce
 ~~~
+
+Inspect service actions applied while the image root is assembled:
+
+~~~sh
+python3 -I scripts/flavor.py services iso-cosmic
+~~~
+
+The COSMIC image enables `cosmic-greeter` and disables `getty-tty1` plus
+LightDM, ensuring only the selected login manager owns VT 1. The Xfce image
+contains LightDM and its GTK greeter but deliberately leaves the service
+manual-enable until its Xorg privilege path is validated. Sway and no-GUI
+images retain console gettys.
 
 Check every profile against the current recipes:
 

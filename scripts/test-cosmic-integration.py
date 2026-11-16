@@ -202,12 +202,23 @@ assert "greetd" not in cosmic_flavor.get("exclude", [])
 
 print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes, 2 optional greeter recipes and Faseela integration checks passed")
 
-# Default shortcuts, input-source switching and the busctl-free system actions.
+# Default shortcuts, input-source switching and elogind-native actions.
 assert "keybindings.ron" in comp["build"]["install"]
 assert "CosmicSettings.Shortcuts/v1/defaults" in comp["build"]["install"]
+
 daemon = recipe("cosmic", "cosmic-settings-daemon")
-assert "dbus-send --session" in daemon["build"]["install"]
-assert "dbus" in daemon["depends"]["run"]
+daemon_install = daemon["build"]["install"]
+daemon_build = set(daemon["depends"]["build"])
+daemon_run = set(daemon["depends"]["run"])
+assert {"dbus", "elogind", "pipewire"} <= daemon_run
+assert "pipewire" in daemon_build, "libspa-sys needs PipeWire development metadata"
+assert "dbus-send --session" in daemon_install
+assert "-e 's|systemctl suspend|loginctl suspend|g'" in daemon_install
+assert "grep -Eq 'busctl|systemctl'" in daemon_install
+assert "loginctl suspend" in daemon_install
+
 desktop = recipe("cosmic", "cosmic-desktop")
 assert "CosmicComp/v1/xkb_config" in desktop["build"]["install"]
 assert "grp:alt_shift_toggle" in desktop["build"]["install"]
+
+print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes, 2 optional greeter recipes and Faseela integration checks passed")

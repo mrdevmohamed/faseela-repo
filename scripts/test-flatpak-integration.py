@@ -68,6 +68,8 @@ require_dependencies(recipe("flatpak", "appstream"), "run", {
     "glib", "curl", "libxml2", "libfyaml", "libxmlb", "zstd",
 }, "appstream")
 ostree = recipe("flatpak", "ostree")
+assert ostree["package"]["version"] == "2026.7"
+assert ostree["package"]["rel"] >= 2
 require_dependencies(ostree, "build", {"libsoup3", "gpgme", "libarchive", "e2fsprogs"}, "ostree")
 assert "--with-soup3" in ostree["build"]["configure"]
 assert "--with-gpgme" in ostree["build"]["configure"]

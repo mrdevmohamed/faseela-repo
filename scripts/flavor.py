@@ -16,6 +16,7 @@ exclude list), expanded through the recipes' dependencies:
 See flavors.toml for the format. Needs Python >= 3.11 (tomllib).
 """
 import argparse
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -46,11 +47,26 @@ def load_flavors(path: Path):
     if not flavors:
         raise FlavorError(f"{path}: no [flavor.*] tables")
     for name, f in flavors.items():
-        unknown = set(f) - {"summary", "include", "extends", "exclude", "closure"}
+        unknown = set(f) - {"summary", "include", "extends", "exclude", "closure", "enable_services", "disable_services"}
         if unknown:
             raise FlavorError(f"flavor {name}: unknown key(s) {sorted(unknown)}")
         if f.get("closure", "run") not in CLOSURES:
             raise FlavorError(f"flavor {name}: closure must be one of {CLOSURES}")
+        for key in ("enable_services", "disable_services"):
+            services = f.get(key, [])
+            if not isinstance(services, list) or any(
+                not isinstance(service, str)
+                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._@-]*", service)
+                for service in services
+            ):
+                raise FlavorError(
+                    f"flavor {name}: {key} must contain valid runit service names"
+                )
+        overlap = set(f.get("enable_services", [])) & set(f.get("disable_services", []))
+        if overlap:
+            raise FlavorError(
+                f"flavor {name}: services cannot be both enabled and disabled: {sorted(overlap)}"
+            )
     return flavors
 
 
@@ -73,6 +89,34 @@ def _flat(flavors, name, seen=()):
     include += f.get("include", [])
     exclude += f.get("exclude", [])
     return include, exclude, closure
+
+
+def resolve_services(flavors, name):
+    """Return ordered (action, service) pairs, inheriting service choices."""
+    def walk(current, seen=()):
+        if current not in flavors:
+            raise FlavorError(
+                f"no flavor named '{current}' (have: {', '.join(sorted(flavors))})"
+            )
+        if current in seen:
+            raise FlavorError(f"flavor cycle: {' -> '.join((*seen, current))}")
+        actions = {}
+        item = flavors[current]
+        for base in item.get("extends", []):
+            actions.update(walk(base, (*seen, current)))
+        # A child flavor may deliberately override an inherited service choice.
+        for service in item.get("disable_services", []):
+            actions[service] = "disable"
+        for service in item.get("enable_services", []):
+            actions[service] = "enable"
+        return actions
+
+    actions = walk(name)
+    # Disable conflicts first, then enable the one selected by the flavor.
+    return (
+        [("disable", service) for service, action in sorted(actions.items()) if action == "disable"]
+        + [("enable", service) for service, action in sorted(actions.items()) if action == "enable"]
+    )
 
 
 def resolve(flavors, recipes, name):
@@ -126,6 +170,8 @@ def main(argv=None):
     ap.add_argument("--flavors", type=Path, default=ROOT / "flavors.toml")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list")
+    services_parser = sub.add_parser("services")
+    services_parser.add_argument("name")
     for c in ("resolve", "check"):
         p = sub.add_parser(c)
         p.add_argument("--recipes", type=Path, default=ROOT / "recipes")
@@ -138,6 +184,11 @@ def main(argv=None):
         if a.cmd == "list":
             for n, f in flavors.items():
                 print(f"{n:<12} {f.get('summary', '')}")
+            return 0
+        if a.cmd == "services":
+            print("\\n".join(
+                f"{action} {service}" for action, service in resolve_services(flavors, a.name)
+            ))
             return 0
         recipes = load_recipes(a.recipes)
         if a.cmd == "resolve":

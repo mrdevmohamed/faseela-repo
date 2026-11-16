@@ -89,9 +89,9 @@ class Flavors(unittest.TestCase):
         for fields in (
             'enable_services = ["../lightdm"]',
             'enable_services = ["getty/tty1"]',
-            'enable_services = ["same"]\\ndisable_services = ["same"]',
+            'enable_services = ["same"]\ndisable_services = ["same"]',
         ):
-            path.write_text("[flavor.bad]\\n" + fields + "\\n", encoding="utf-8")
+            path.write_text("[flavor.bad]\n" + fields + "\n", encoding="utf-8")
             with self.assertRaises(flavor.FlavorError):
                 flavor.load_flavors(path)
 

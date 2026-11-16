@@ -82,9 +82,12 @@ include = [
 ]
 
  
-# COSMIC desktop image.
-# The login greeter stays optional because it takes ownership of a VT.
+# COSMIC desktop image. Select its own login manager and reserve VT 1 for it.
+# Do not ship LightDM in this flavor: greetd/cosmic-greeter owns the login VT.
 [flavor.iso-cosmic]
-summary = "Live system with COSMIC, PipeWire, Firefox, networking and Bluetooth"
+summary = "Live system with COSMIC, COSMIC Greeter, PipeWire, Firefox and networking"
 extends = ["iso-nogui"]
-include = ["@cosmic", "firefox"]
+include = ["@cosmic", "firefox", "greetd", "cosmic-greeter"]
+exclude = ["lightdm", "lightdm-gtk-greeter"]
+disable_services = ["getty-tty1", "lightdm"]
+enable_services = ["cosmic-greeter"]

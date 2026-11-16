@@ -16,7 +16,7 @@ before the offline build.
 | Session and shell | `cosmic-comp`, `cosmic-session`, `cosmic-panel`, `cosmic-applets`, `cosmic-launcher`, `cosmic-notifications`, `cosmic-workspaces`, `cosmic-osd`, `cosmic-osk`, `cosmic-bg`, `cosmic-idle`, `cosmic-settings`, `cosmic-settings-daemon`, `cosmic-randr` |
 | Portal and visual assets | `xdg-desktop-portal-cosmic`, `cosmic-icons`, `cosmic-screenshot` |
 | Applications | `cosmic-files`, `cosmic-term`, `cosmic-edit`, `cosmic-store` |
-| Optional login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |
+| COSMIC login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |
 | Faseela integration | `cosmic-desktop` |
 
 ## Faseela integration
@@ -44,10 +44,11 @@ infrastructure rather than introducing systemd:
 The desktop meta-package is a normal opt-in package. It does not enable a
 login manager, take over a virtual terminal, or install a greeter service.
 
-## Optional login greeter
+## Login greeter
 
-The greeter stack is separate from `cosmic-desktop`. Install it only when
-you want greetd to own a virtual terminal:
+The greeter stack stays separate from `cosmic-desktop` so the desktop can be
+installed without taking over a terminal. The complete `iso-cosmic` flavor
+selects it and enables its runit service in the image:
 
 ```sh
 doas nawa install cosmic-greeter
@@ -59,16 +60,18 @@ The package includes greetd, its COSMIC greeter, PAM integration through
 service account is provisioned when that runit service starts, against the
 installed account databases. The privileged
 `cosmic-greeter-daemon` is started on demand by the system D-Bus activation
-file, so this path does not depend on a systemd unit. Disable the
-`getty-tty1` service first when it owns the selected VT. The package hook
-preserves a custom `/etc/greetd/config.toml`; it only replaces the stock
-agreety sample.
+file, so this path does not depend on a systemd unit. The COSMIC image flavor
+disables `getty-tty1` and an enabled LightDM service before enabling
+`cosmic-greeter`. A manual install on an existing system must perform that
+switch explicitly. The package hook preserves a custom `/etc/greetd/config.toml`;
+it only replaces the stock agreety sample.
 
 ## Build and install
 
-The `iso-cosmic` flavor selects `@cosmic` plus Firefox. Because the login
-packages live in the separate `greeter/` category, the image does not pull in
-greetd or the greeter-specific dependency closure (PAM is already in the base system).
+The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
+`cosmic-greeter`. It excludes LightDM and configures runit to start the COSMIC
+greeter instead of a console getty on VT 1. The `cosmic` group keeps the greeter
+optional for users who install the desktop onto an existing system.
 
 Inspect the dependency closure:
 

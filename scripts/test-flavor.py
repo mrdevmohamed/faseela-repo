@@ -37,6 +37,10 @@ class Flavors(unittest.TestCase):
             [flavor.boot]
             include = ["nawa"]
             closure = "build"
+            disable_services = ["getty-tty1"]
+            [flavor.boot-child]
+            extends = ["boot"]
+            enable_services = ["cosmic-greeter"]
             [flavor.min]
             include = ["nawa", "vim"]
             [flavor.big]
@@ -74,6 +78,23 @@ class Flavors(unittest.TestCase):
         with self.assertRaises(flavor.FlavorError):
             self.r("a")
 
+    def test_service_actions_are_inherited(self):
+        self.assertEqual(
+            flavor.resolve_services(self.flavors, "boot-child"),
+            [("disable", "getty-tty1"), ("enable", "cosmic-greeter")],
+        )
+
+    def test_invalid_service_names_and_conflicts_are_rejected(self):
+        path = Path(self.tmp.name) / "bad-services.toml"
+        for fields in (
+            'enable_services = ["../lightdm"]',
+            'enable_services = ["getty/tty1"]',
+            'enable_services = ["same"]\ndisable_services = ["same"]',
+        ):
+            path.write_text("[flavor.bad]\n" + fields + "\n", encoding="utf-8")
+            with self.assertRaises(flavor.FlavorError):
+                flavor.load_flavors(path)
+
 
 class RealTree(unittest.TestCase):
     def test_every_flavor_resolves_and_bootstrap_is_contained(self):
@@ -94,8 +115,18 @@ class RealTree(unittest.TestCase):
         self.assertIn("cosmic-comp", got["iso-cosmic"])
         self.assertIn("cosmic-files", got["iso-cosmic"])
         self.assertNotIn("sway", got["iso-cosmic"])
-        self.assertNotIn("greetd", got["iso-cosmic"])
-        self.assertNotIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertIn("greetd", got["iso-cosmic"])
+        self.assertIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertNotIn("lightdm", got["iso-cosmic"])
+        self.assertNotIn("lightdm-gtk-greeter", got["iso-cosmic"])
+        self.assertIn("lightdm", got["iso-xfce"])
+        self.assertIn("lightdm-gtk-greeter", got["iso-xfce"])
+        self.assertNotIn("greetd", got["iso-xfce"])
+        self.assertNotIn("cosmic-greeter", got["iso-xfce"])
+        self.assertEqual(
+            flavor.resolve_services(flavors, "iso-cosmic"),
+            [("disable", "getty-tty1"), ("disable", "lightdm"), ("enable", "cosmic-greeter")],
+        )
         self.assertNotIn("cosmic-desktop", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])
         self.assertNotIn("zed", got["iso-sway"])

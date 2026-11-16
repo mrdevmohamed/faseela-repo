@@ -200,11 +200,11 @@ COSMIC portal backend. It uses the shared `seatd-runit` package, which also
 owns the seatd service and DRM render-node udev rule used by Sway; the service
 is not duplicated in desktop-specific packages.
 
-The `iso-cosmic` flavor selects `@cosmic` plus Firefox. The login stack
-(`greetd` + `cosmic-greeter`) lives in the separate `greeter/` category and
-remains selectable through the COSMIC package group. This keeps the login
-daemon and greeter-specific dependency closure out of the ISO and avoids taking over VT 1
-during an ordinary package install. To inspect the dependency closure:
+The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
+`cosmic-greeter`, then enables the greeter's runit service while disabling
+`getty-tty1` and LightDM in the image. The separate `greeter/` category keeps
+the login stack out of other desktop flavors; the `cosmic` package group still
+makes it optional for an existing desktop installation. To inspect the dependency closure:
 
 ```sh
 python3 scripts/check-recipes.py cosmic-desktop

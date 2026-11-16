@@ -160,7 +160,7 @@ assert "target/release/cosmic-greeter" in locker_install
 assert "pam_elogind.so" in locker_install
 assert "class=user type=wayland desktop=COSMIC" in locker_install
 assert "cosmic-locker" in greeter_run
-assert "target/release/cosmic-greeter" not in greeter["build"]["install"]
+assert "install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter" not in greeter["build"]["install"]
 assert "pam_elogind.so" not in greeter["build"]["install"]
 greeter_install = greeter["build"]["install"]
 assert "system-services/com.system76.CosmicGreeter.service" in greeter_install

@@ -446,6 +446,8 @@ jobs:
 
       - name: Update and verify COSMIC and pop-launcher source pins
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'feat/cosmic-desktop-support' || github.event.pull_request.head.ref == 'fix/cosmic-shortcuts-layout-switch') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 -I scripts/update-cosmic-epoch.py

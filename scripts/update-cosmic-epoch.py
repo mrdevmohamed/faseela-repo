@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -49,6 +50,9 @@ def open_url(url: str, *, github_api: bool = False):
     headers = {"User-Agent": "Faseela-COSMIC-source-updater/1.0"}
     if github_api:
         headers["Accept"] = "application/vnd.github+json"
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
     for attempt in range(5):
         try:

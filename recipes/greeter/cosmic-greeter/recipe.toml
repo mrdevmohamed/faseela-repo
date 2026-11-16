@@ -65,7 +65,6 @@ install -d -m755 %{pkgdir}/etc/sv/cosmic-greeter
 cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
 #!/bin/sh
 exec 2>&1
-[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 set -eu
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 

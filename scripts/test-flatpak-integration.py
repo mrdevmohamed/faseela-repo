@@ -104,7 +104,11 @@ assert "no-systemd" in install
 assert "/usr/share/flatpak/remotes.d/flathub.flatpakrepo" in install
 assert "Url=https://dl.flathub.org/repo/" in install
 assert "GPGKey=" in install
+assert "/usr/share/flatpak/remotes.d/flathub.flatpakrepo" in install
 assert "flatpak" in flatpak["hooks"]["post_install"]
+cosmic_readme = (ROOT / "recipes" / "cosmic" / "README.md").read_text(encoding="utf-8")
+assert "flatpak remote-add --user --if-not-exists flathub" in cosmic_readme
+assert "flatpak --user remotes --show-details" in cosmic_readme
 assert "ensure-system-account group flatpak" in flatpak["hooks"]["post_install"]
 assert "ensure-system-account user flatpak flatpak" in flatpak["hooks"]["post_install"]
 assert "/var/lib/flatpak" in flatpak["hooks"]["post_install"]

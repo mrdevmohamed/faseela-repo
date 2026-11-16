@@ -100,7 +100,7 @@ assert "HAVE_CLOSEFROM" in fuse2_prepare
 assert "autoreconf -fi -I/usr/share/gettext/m4" in fuse2_prepare
 assert "AM_GNU_GETTEXT_VERSION([0.26])" in fuse2_prepare
 fuse2_patch_script = re.search(
-    r"python3 - <<'PY'\\n(.*?)\\nPY",
+    r"python3 - <<'PY'\n(.*?)\nPY",
     fuse2_prepare,
     re.DOTALL,
 )

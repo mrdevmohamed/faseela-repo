@@ -212,9 +212,10 @@ daemon_build = set(daemon["depends"]["build"])
 daemon_run = set(daemon["depends"]["run"])
 assert {"dbus", "elogind", "pipewire"} <= daemon_run
 assert "pipewire" in daemon_build, "libspa-sys needs PipeWire development metadata"
-assert "dbus-send --session" in daemon_install
-assert "-e 's|systemctl suspend|loginctl suspend|g'" in daemon_install
-assert "grep -Eq 'busctl|systemctl'" in daemon_install
+assert "sed 's|systemctl suspend|loginctl suspend|g'" in daemon_install
+assert "grep -q 'systemctl'" in daemon_install
+assert "busctl --user call" in daemon_install
+assert "dbus-send" not in daemon_install, "Faseela's elogind already ships busctl"
 assert "loginctl suspend" in daemon_install
 
 desktop = recipe("cosmic", "cosmic-desktop")

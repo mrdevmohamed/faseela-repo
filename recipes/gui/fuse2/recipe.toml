@@ -1,0 +1,81 @@
+# gui recipe: fuse2 — legacy FUSE 2 runtime for older AppImages and applications.
+# FUSE 2 and FUSE 3 are intentionally co-installable: their helpers and SONAMEs
+# are versioned separately (/usr/bin/fusermount vs fusermount3, libfuse.so.2 vs
+# libfuse3.so.3). Keep the system's shared fuse.conf and device rule owned by
+# fuse3 to avoid package file conflicts.
+[package]
+name = "fuse2"
+version = "2.9.9"
+rel = 1
+arch = ["x86_64"]
+summary = "Legacy FUSE 2 runtime and fusermount helper for AppImages"
+license = ["GPL-2.0-only", "LGPL-2.1-only"]
+source = "https://github.com/libfuse/libfuse/releases/download/fuse-%{version}/fuse-%{version}.tar.gz"
+sha256 = "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
+source_dir = "fuse-%{version}"
+
+[depends]
+build = ["autoconf", "automake", "gettext", "libtool", "pkgconf"]
+run = []
+
+[build]
+prepare = '''
+# glibc 2.34 added closefrom(3); FUSE 2.9.9 still defines its fallback.
+# Detect the libc implementation and only compile the fallback when needed.
+patch -Np1 <<'PATCH'
+diff --git a/configure.ac b/configure.ac
+--- a/configure.ac
++++ b/configure.ac
+@@ -55,6 +55,7 @@
+ AC_CHECK_FUNCS([fork setxattr fdatasync splice vmsplice utimensat])
+ AC_CHECK_FUNCS([posix_fallocate])
++AC_CHECK_FUNCS([closefrom])
+ AC_CHECK_MEMBERS([struct stat.st_atim])
+ AC_CHECK_MEMBERS([struct stat.st_atimespec])
+diff --git a/util/ulockmgr_server.c b/util/ulockmgr_server.c
+--- a/util/ulockmgr_server.c
++++ b/util/ulockmgr_server.c
+@@ -22,6 +22,10 @@
+ #include <sys/socket.h>
+ #include <sys/wait.h>
++#ifdef HAVE_CONFIG_H
++	#include "config.h"
++#endif
++
+ struct message {
+@@ -124,6 +128,7 @@ static int receive_message(int cfd, struct message *msg)
+ 	return res;
+ }
+ 
++#if !defined(HAVE_CLOSEFROM)
+ static int closefrom(int minfd)
+ {
+@@ -141,6 +146,7 @@ static int closefrom(int minfd)
+ 	return 0;
+ }
++#endif
+ static void send_reply(int cfd, struct message *msg)
+ {
+PATCH
+autoreconf -fi -I/usr/share/gettext/m4
+'''
+configure = "./configure --prefix=/usr --disable-static INIT_D_PATH=/tmp/init.d"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+# Faseela uses runit, not SysV init. The init script is never enabled.
+rm -rf %{pkgdir}/tmp/init.d %{pkgdir}/etc/init.d
+# fuse3 owns the common configuration and FUSE device udev rule.
+rm -f %{pkgdir}/etc/fuse.conf %{pkgdir}/usr/lib/udev/rules.d/99-fuse.rules
+'''
+
+[hooks]
+# Nawa's slimming/install path must not leave the FUSE 2 helper non-setuid.
+post_install = '''
+test -x /usr/bin/fusermount || {
+    echo "fuse2: /usr/bin/fusermount is missing" >&2
+    exit 1
+}
+chown root:root /usr/bin/fusermount
+chmod 4755 /usr/bin/fusermount
+'''

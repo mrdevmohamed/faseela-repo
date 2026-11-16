@@ -118,6 +118,13 @@ assert "/etc/sv/" not in install
 # The COSMIC Store feature is enabled explicitly. PackageKit and systemd
 # scope remain disabled; the native user/system Flatpak backends come from
 # the same upstream "flatpak" feature.
+# COSMIC OSD is the desktop's authentication agent. Its helper path is
+# different from the upstream default and must match Faseela's Polkit package.
+osd = recipe("cosmic", "cosmic-osd")
+assert osd["package"]["rel"] >= 3
+assert "polkit" in osd["depends"]["run"]
+assert "POLKIT_AGENT_HELPER_1=/usr/lib/polkit-1/polkit-agent-helper-1" in osd["build"]["compile"]
+
 store = recipe("cosmic", "cosmic-store")
 store_compile = store["build"]["compile"]
 assert store["package"]["rel"] >= 4

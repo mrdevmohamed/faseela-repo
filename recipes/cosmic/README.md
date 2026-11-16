@@ -81,11 +81,11 @@ flatpak install --user flathub org.mozilla.firefox
 ```
 
 System installations use Flatpak's privileged D-Bus helper and Polkit
-authorization. They also require an active desktop Polkit authentication
-agent; installing Flatpak does not silently weaken Polkit policy or grant
-all local users administrator rights. A COSMIC-specific authentication
-agent is not included by this change, so use the user installation backend
-until one is installed and verified in the COSMIC session.
+authorization. COSMIC's `cosmic-osd` registers the session authentication
+agent on the system bus. The Faseela recipe explicitly points that agent to
+`/usr/lib/polkit-1/polkit-agent-helper-1`, the helper path installed by
+the `polkit` package. Polkit policy remains in force: this does not grant
+administrator rights to all local users.
 
 ## Optional login greeter
 

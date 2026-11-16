@@ -1,0 +1,160 @@
+# Optional x86_64 desktop integration for Android phones.
+# Package the upstream prebuilt Linux bundle; do not run its system installer.
+# Nawa owns the files and all package upgrades/removals on Faseela.
+[package]
+name = "nectarlink"
+version = "0.1.5"
+rel = 1
+arch = ["x86_64"]
+summary = "Connect an Android phone and Linux PC with end-to-end encryption"
+license = ["GPL-3.0-or-later", "MPL-2.0", "OFL-1.1"]
+source = "https://github.com/thtbee/nectarlink/releases/download/v%{version}/Nectarlink-%{version}-linux-x86_64.tar.gz"
+sha256 = "2df6432710de457f7dfad293f2e45c4698b19b0952e9af5cd426625e12ddc8a1"
+source_dir = "Nectarlink-%{version}-linux-x86_64"
+
+[depends]
+build = []
+run = [
+    "glibc",
+    "gcc",
+    "zlib",
+    "zstd",
+    "brotli",
+    "glib",
+    "krb5",
+    # System libraries required by upstream's Linux package dependency list.
+    "dbus",
+    "ca-certificates",
+    "fontconfig",
+    "freetype",
+    "mesa",
+    "wayland",
+    "libxkbcommon",
+    "libX11",
+    "libXext",
+    "libXrender",
+    "libXfixes",
+    "libXcursor",
+    "libXrandr",
+    "libXdamage",
+    "libXcomposite",
+    "libXi",
+    "libxcb",
+    "xcb-util",
+    "xcb-util-cursor",
+    "xcb-util-image",
+    "xcb-util-keysyms",
+    "xcb-util-renderutil",
+    "xcb-util-wm",
+    "hicolor-icon-theme",
+]
+
+[slim]
+# The upstream executable and private Qt/QML runtime are shipped prebuilt.
+strip = false
+cleanup = false
+split = false
+
+[build]
+install = '''
+set -eu
+
+bundle="."
+test -x "$bundle/nectarlink-desktop" || {
+    echo "nectarlink: upstream desktop executable is missing" >&2
+    exit 1
+}
+test -f "$bundle/qt.conf" || {
+    echo "nectarlink: private Qt runtime configuration is missing" >&2
+    exit 1
+}
+test -f "$bundle/lib/libQt6Core.so.6" || {
+    echo "nectarlink: release archive does not contain its private Qt runtime" >&2
+    exit 1
+}
+test -f "$bundle/share/applications/nectarlink.desktop" || {
+    echo "nectarlink: upstream desktop entry is missing" >&2
+    exit 1
+}
+test -f "$bundle/share/metainfo/org.nectarlink.desktop.metainfo.xml" || {
+    echo "nectarlink: AppStream metadata is missing" >&2
+    exit 1
+}
+
+appdir="%{pkgdir}/usr/lib/nectarlink"
+install -d -m755 "$appdir" \
+    "%{pkgdir}/usr/bin" \
+    "%{pkgdir}/usr/share/applications" \
+    "%{pkgdir}/usr/share/metainfo" \
+    "%{pkgdir}/usr/share/nectarlink"
+
+install -m755 "$bundle/nectarlink-desktop" "$appdir/nectarlink-desktop"
+install -m644 "$bundle/qt.conf" "$appdir/qt.conf"
+
+# Keep the private Qt libraries, QPA plugins and QML imports together. Qt
+# resolves these paths through the qt.conf beside the upstream executable.
+cp -a "$bundle/lib" "$appdir/"
+cp -a "$bundle/plugins" "$appdir/"
+cp -a "$bundle/qml" "$appdir/"
+
+# Preserve optional FFmpeg adapters when they are present in the release.
+for adapter in "$bundle"/libnectarlink-video-ffmpeg*.so; do
+    [ -f "$adapter" ] || continue
+    install -m755 "$adapter" "$appdir/"
+done
+
+# Translations are Qt .qm catalogs, not gettext catalogs.
+if [ -d "$bundle/share/nectarlink" ]; then
+    cp -a "$bundle/share/nectarlink/." "%{pkgdir}/usr/share/nectarlink/"
+fi
+
+install -m644 "$bundle/share/applications/nectarlink.desktop" \
+    "%{pkgdir}/usr/share/applications/nectarlink.desktop"
+install -m644 "$bundle/share/metainfo/org.nectarlink.desktop.metainfo.xml" \
+    "%{pkgdir}/usr/share/metainfo/org.nectarlink.desktop.metainfo.xml"
+
+if [ -f "$bundle/share/icons/nectarlink.svg" ]; then
+    install -D -m644 "$bundle/share/icons/nectarlink.svg" \
+        "%{pkgdir}/usr/share/icons/hicolor/scalable/apps/nectarlink.svg"
+fi
+if [ -f "$bundle/share/icons/nectarlink.png" ]; then
+    install -D -m644 "$bundle/share/icons/nectarlink.png" \
+        "%{pkgdir}/usr/share/icons/hicolor/512x512/apps/nectarlink.png"
+fi
+
+# Launch through a stable PATH entry while keeping the upstream Qt runtime
+# private to this application. The upstream install.sh is deliberately not
+# called: it writes to /opt, changes /usr/local/bin, configures kernel modules,
+# udev and firewall rules, all of which must remain outside a Nawa package.
+cat > "%{pkgdir}/usr/bin/nectarlink-desktop" <<'WRAPPER'
+#!/bin/sh
+set -eu
+
+appdir=/usr/lib/nectarlink
+data_home="${XDG_DATA_HOME:-${HOME}/.local/share}"
+data_dir="$data_home/Nectarlink"
+settings="$data_dir/desktop-settings.json"
+
+# A Nawa-managed installation must not replace itself from the upstream
+# tarball updater. Seed safe first-run defaults only; never overwrite an
+# existing user's settings file.
+if [ ! -e "$settings" ]; then
+    mkdir -p "$data_dir"
+    (
+        umask 077
+        set -C
+        printf '%s\n' '{"autoUpdate":false,"installUpdates":false}' > "$settings"
+    ) 2>/dev/null || :
+fi
+
+export LD_LIBRARY_PATH="$appdir/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export QT_PLUGIN_PATH="$appdir/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+export QML2_IMPORT_PATH="$appdir/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+exec "$appdir/nectarlink-desktop" "$@"
+WRAPPER
+chmod 755 "%{pkgdir}/usr/bin/nectarlink-desktop"
+
+# Runtime ELF dependencies are resolved by the declared [depends].run closure
+# when Nawa installs the package. The package build sandbox intentionally has
+# only build dependencies, so running ldd here would report false missing libs.
+'''

@@ -1,8 +1,60 @@
-# Optional messaging applications
+# Optional messaging and phone integration
 
 Packages in this category are optional applications. They are not part of
 the default desktop images, bootstrap or build roots. Install them
-individually through Nawa when needed.
+individually through Nawa or through the `messaging` package group.
+
+## NectarLink
+
+`nectarlink` packages the official upstream Linux x86_64 desktop bundle.
+It connects an Android phone and a Linux PC over a local, end-to-end encrypted
+connection without requiring an account or cloud relay.
+
+Features include file and clipboard transfer, phone notifications, SMS and
+call integration, screen mirroring, and camera/audio features. The package
+keeps the executable and its private Qt/QML runtime under
+`/usr/lib/nectarlink`, and exposes `nectarlink-desktop` on PATH.
+
+Install on an existing Faseela system:
+
+~~~sh
+doas nawa install nectarlink
+~~~
+
+Or install the messaging group (NectarLink is its default selection):
+
+~~~sh
+doas nawa group install messaging
+~~~
+
+The Android companion app is not part of the Linux package; get it from the
+[upstream NectarLink project](https://github.com/thtbee/nectarlink).
+
+The recipe deliberately does not execute the upstream `install.sh`. That
+script changes system-wide firewall rules, kernel module loading and udev
+permissions, which must not happen as a side effect of installing a Nawa
+package. The Faseela package installs the application, its private Qt runtime,
+desktop entry, icons and metadata. Optional phone-as-webcam and remote
+keyboard/mouse integration require their separate system setup and are not
+enabled automatically.
+
+**Updates are managed by Nawa.** On a new profile, the Faseela launcher
+creates initial settings with NectarLink's automatic update check and
+automatic installation both disabled, preventing a second upstream copy
+from being installed outside the package manager. Existing NectarLink
+profiles are preserved; check Settings and turn both options off if they
+were enabled before installing the Nawa package. Upgrade it with:
+
+~~~sh
+doas nawa upgrade nectarlink
+~~~
+
+The upstream tarball updater is not aware of Nawa and can install a separate
+copy under `/opt/nectarlink`; do not use it for the Faseela package.
+
+The package is pinned to upstream release `0.1.5` and requires x86_64 with
+glibc 2.39 or newer. It is optional and can be installed on either Sway or
+Xfce without rebuilding an ISO.
 
 ## Telegram Desktop
 
@@ -19,7 +71,7 @@ separate manual WebKit installation.
 Install on an existing Faseela system:
 
 ~~~sh
-sudo nawa install telegram-desktop
+doas nawa install telegram-desktop
 ~~~
 
 WebKitGTK is intentionally not part of the default Sway or Xfce ISO flavors.

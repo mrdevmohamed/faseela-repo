@@ -17,7 +17,7 @@ recipes/
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
-├── messaging/  optional messaging apps such as Telegram Desktop (opt-in)
+├── messaging/  optional messaging and Android phone integration apps: Telegram Desktop, NectarLink (opt-in)
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── security/   optional ProjectDiscovery reconnaissance and security tools (opt-in)
 ├── peripherals/ optional hardware integrations such as the Huion tablet control panel (opt-in)
@@ -25,10 +25,11 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 56 system + 8 boot + 96 extra =
-**209 core packages**. Optional categories contain 134 GUI, 21 COSMIC, 2 greeter, 16 browser, 45 Xfce, 18 Xorg,
-23 media, 15 creative, 1 messaging, 1 networking, 12 security, 1 peripheral
-and 15 developer packages. The recipe tree contains **513 recipes** in total.
+Current set: 10 toolchain + 39 base + 57 system + 8 boot + 98 extra =
+**212 core packages**. Optional categories contain 139 GUI, 22 COSMIC, 2 greeter,
+29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
+12 security, 1 peripheral and 16 developer packages. The recipe tree contains
+**544 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
@@ -102,7 +103,7 @@ includes this category; inspect the current inventory with
 **system, later additions** — attr/acl (extended attributes and POSIX ACLs),
 libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
 chrony (NTP, runit service
-`chronyd`, enabled by default), libnl → iw and wpa_supplicant (Wi-Fi, runit service
+`chronyd`, enabled by default), krb5 (MIT Kerberos/GSSAPI runtime libraries), libnl → iw and wpa_supplicant (Wi-Fi, runit service
 `wpa_supplicant`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
 dmidecode, lm-sensors, iperf3. `tzdata` defaults to `Africa/Cairo` while preserving
 an administrator's existing `/etc/localtime`; choose another zone by linking it

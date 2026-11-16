@@ -1,0 +1,34 @@
+# MIT Kerberos runtime libraries, including libgssapi_krb5 required by Qt Network.
+[package]
+name = "krb5"
+version = "1.22.3"
+rel = 1
+arch = ["x86_64"]
+summary = "MIT Kerberos V5 libraries and network authentication tools"
+license = ["MIT"]
+source = "https://kerberos.org/dist/krb5/1.22/krb5-%{version}.tar.gz"
+sha256 = "fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b"
+
+[depends]
+build = ["e2fsprogs", "bison", "openssl", "perl"]
+run = ["e2fsprogs", "openssl"]
+
+[build]
+configure = """
+cd src && ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var/lib \
+    --runstatedir=/run \
+    --with-system-et \
+    --with-system-ss \
+    --with-system-verto=no \
+    --enable-dns-for-realm \
+    --disable-rpath
+"""
+compile = "cd src && make -j%{jobs}"
+install = """
+cd src && make DESTDIR=%{pkgdir} install
+# /run is runtime state and must not be shipped in the package archive.
+rm -rf %{pkgdir}/run
+"""

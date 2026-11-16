@@ -2,7 +2,7 @@
 [package]
 name = "fuse3"
 version = "3.18.3"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Filesystem in Userspace library and mount helper"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
@@ -18,3 +18,15 @@ run = []
 configure = "sed -i '/mknod .*dev\\/fuse/d' util/install_helper.sh && meson setup build --prefix=/usr --libdir=lib --buildtype=release -D utils=true -D examples=false -D tests=false -D udevrulesdir=/usr/lib/udev/rules.d -D initscriptdir= -D useroot=true"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"
+
+[hooks]
+# fusermount3 must remain a setuid-root helper after Nawa's install/slim phase.
+# This is the privilege boundary required for unprivileged FUSE mounts.
+post_install = '''
+test -x /usr/bin/fusermount3 || {
+    echo "fuse3: /usr/bin/fusermount3 is missing" >&2
+    exit 1
+}
+chown root:root /usr/bin/fusermount3
+chmod 4755 /usr/bin/fusermount3
+'''

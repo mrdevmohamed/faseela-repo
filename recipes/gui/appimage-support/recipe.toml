@@ -1,0 +1,27 @@
+# gui recipe: AppImage runtime support shared by all Faseela desktop sessions.
+# FUSE 2 supplies the fusermount name used by legacy Type 2 AppImages;
+# FUSE 3 remains available for native FUSE 3 clients and document portals.
+[package]
+name = "appimage-support"
+version = "0.1"
+rel = 1
+arch = ["x86_64"]
+summary = "Runtime support for legacy and modern Linux AppImage bundles"
+license = ["MIT"]
+
+[depends]
+build = []
+run = ["fuse2", "fuse3"]
+
+[build]
+install = '''
+install -d -m755 %{pkgdir}/usr/share/appimage-support
+cat > %{pkgdir}/usr/share/appimage-support/README <<'EOF'
+Faseela AppImage runtime support.
+
+This package pulls in the FUSE 2 and FUSE 3 user-space runtimes.
+Make an AppImage executable with chmod +x, then launch it directly.
+Use APPIMAGE_EXTRACT_AND_RUN=1 when FUSE mounting is blocked and the
+AppImage runtime supports extraction fallback.
+EOF
+'''

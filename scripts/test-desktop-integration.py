@@ -21,7 +21,7 @@ def require_deps(category: str, name: str, kind: str, required: set[str]) -> Non
 
 
 session = recipe("gui", "gui-session")
-assert session["package"]["rel"] >= 13, "Bump gui-session rel for desktop integration changes"
+assert session["package"]["rel"] >= 29, "Bump gui-session rel for AppImage runtime dependency changes"
 require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
@@ -75,7 +75,7 @@ assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"][
 assert {"fontconfig", "gsettings-desktop-schemas"} <= set(gtk_portal["depends"]["run"])
 
 fuse = recipe("gui", "fuse3")
-assert fuse["package"]["rel"] >= 2, "Bump fuse3 rel when changing sandbox-safe staging"
+assert fuse["package"]["rel"] >= 3, "Bump fuse3 rel when preserving the installed setuid helper"
 fuse_configure = fuse["build"]["configure"]
 assert "install_helper.sh" in fuse_configure and "mknod" in fuse_configure, (
     "fuse3 must not try to create /dev/fuse inside the unprivileged package staging root"
@@ -83,8 +83,51 @@ assert "install_helper.sh" in fuse_configure and "mknod" in fuse_configure, (
 assert "-D useroot=true" in fuse_configure, (
     "Keep fusermount3 ownership/mode and udev rule installation enabled"
 )
+fuse3_post_install = fuse.get("hooks", {}).get("post_install", "")
+assert "chown root:root /usr/bin/fusermount3" in fuse3_post_install
+assert "chmod 4755 /usr/bin/fusermount3" in fuse3_post_install, (
+    "fusermount3 must retain setuid-root after Nawa installs/slims the package"
+)
 
-for name in ("fuse3", "json-glib", "bubblewrap"):
+# AppImages from older runtimes may look specifically for /usr/bin/fusermount
+# and require libfuse.so.2; keep FUSE 2 alongside the existing FUSE 3 stack.
+fuse2 = recipe("gui", "fuse2")
+assert fuse2["package"]["version"] == "2.9.9"
+assert fuse2["package"]["sha256"] == "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
+fuse2_prepare = fuse2["build"]["prepare"]
+assert "AC_CHECK_FUNCS([closefrom])" in fuse2_prepare
+assert "HAVE_CLOSEFROM" in fuse2_prepare
+assert "autoreconf -fi -I/usr/share/gettext/m4" in fuse2_prepare
+assert "AM_GNU_GETTEXT_VERSION([0.26])" in fuse2_prepare
+fuse2_patch_script = re.search(
+    r"python3 - <<'PY'\n(.*?)\nPY",
+    fuse2_prepare,
+    re.DOTALL,
+)
+assert fuse2_patch_script, "fuse2 must contain the checked glibc compatibility patch"
+compile(fuse2_patch_script.group(1), "fuse2-prepare-patch", "exec")
+fuse2_prepare_syntax = subprocess.run(
+    ["bash", "-n"], input=fuse2_prepare, text=True, capture_output=True, check=False
+)
+assert fuse2_prepare_syntax.returncode == 0, (
+    f"fuse2 compatibility patch has invalid shell syntax: {fuse2_prepare_syntax.stderr}"
+)
+fuse2_install = fuse2["build"]["install"]
+assert "rm -f %{pkgdir}/etc/fuse.conf" in fuse2_install
+assert "%{pkgdir}/usr/lib/udev/rules.d/99-fuse.rules" in fuse2_install
+fuse2_post_install = fuse2.get("hooks", {}).get("post_install", "")
+assert "chown root:root /usr/bin/fusermount" in fuse2_post_install
+assert "chmod 4755 /usr/bin/fusermount" in fuse2_post_install
+
+appimage = recipe("gui", "appimage-support")
+assert appimage["build"]["install"], "appimage-support must produce an installable meta-package archive"
+assert {"fuse2", "fuse3"} <= set(appimage["depends"]["run"])
+require_deps("gui", "gui-session", "run", {"appimage-support"})
+require_deps("xfce", "xfce-session", "run", {"appimage-support"})
+require_deps("cosmic", "cosmic-desktop", "run", {"appimage-support"})
+assert recipe("cosmic", "cosmic-desktop")["package"]["rel"] >= 2
+
+for name in ("fuse3", "fuse2", "json-glib", "bubblewrap"):
     assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
         r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
     ), f"{name} must have a SHA-256 field"

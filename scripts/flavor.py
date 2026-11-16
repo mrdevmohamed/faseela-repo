@@ -186,7 +186,7 @@ def main(argv=None):
                 print(f"{n:<12} {f.get('summary', '')}")
             return 0
         if a.cmd == "services":
-            print("\\n".join(
+            print("\n".join(
                 f"{action} {service}" for action, service in resolve_services(flavors, a.name)
             ))
             return 0

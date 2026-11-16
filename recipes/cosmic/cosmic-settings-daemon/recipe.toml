@@ -18,8 +18,8 @@ sha256 = "1cc494c028a59a0356547c834421495da326622f837221726c15fceb14f3f9f0"
 strip_components = 1
 
 [depends]
-build = ["rust", "pkgconf", "eudev", "libxkbcommon", "wayland", "libpulse"]
-run = ["eudev", "libxkbcommon", "wayland", "mesa", "dbus", "upower", "elogind", "libpulse"]
+build = ["rust", "pkgconf", "eudev", "libxkbcommon", "wayland", "libpulse", "pipewire"]
+run = ["eudev", "libxkbcommon", "wayland", "mesa", "dbus", "upower", "elogind", "libpulse", "pipewire"]
 
 [fetch.cargo]
 dir = "."
@@ -30,19 +30,23 @@ install = '''
 install -Dm755 target/release/cosmic-settings-daemon %{pkgdir}/usr/bin/cosmic-settings-daemon
 # System shortcut actions live in the cosmic-config schema directory; the
 # polkit rule guards the privileged system-action D-Bus methods.
-# Upstream actions call `busctl` (systemd) for input-source switching, volume
-# and brightness keys. Faseela has no systemd, so rewrite them to dbus-send
-# (shipped by the dbus package):
-#   busctl --user call DEST PATH IFACE METHOD  ->  dbus-send ... IFACE.METHOD
+# Upstream actions use busctl for session-D-Bus calls and systemctl for
+# suspension. Keep the distro integration native to D-Bus + elogind (runit):
+#   busctl --user call DEST PATH IFACE METHOD -> dbus-send ... IFACE.METHOD
+#   systemctl suspend -> loginctl suspend
 install -d -m755 %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1
-sed 's|busctl --user call \([^ ]*\) \([^ ]*\) \([^ ]*\) \([A-Za-z]*\)"|dbus-send --session --type=method_call --dest=\1 \2 \3.\4"|' \
+sed -E \
+    -e 's|busctl --user call ([^ ]+) ([^ ]+) ([^ ]+) ([[:alpha:]_][[:alnum:]_]*)(")|dbus-send --session --type=method_call --dest=\1 \2 \3.\4\5|g' \
+    -e 's|systemctl suspend|loginctl suspend|g' \
     data/system_actions.ron \
     > %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
 chmod 644 %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
-if grep -q busctl %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions; then
-    echo "cosmic-settings-daemon: busctl still referenced in system_actions" >&2
+if grep -Eq 'busctl|systemctl' %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions; then
+    echo "cosmic-settings-daemon: unsupported busctl/systemctl command remains in system_actions" >&2
     exit 1
 fi
+grep -Fq 'dbus-send --session' %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
+grep -Fq 'loginctl suspend' %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
 install -Dm644 data/polkit-1/rules.d/cosmic-settings-daemon.rules \
     %{pkgdir}/usr/share/polkit-1/rules.d/cosmic-settings-daemon.rules
 # The geonames timezone cache is embedded in the binary (include_bytes!),

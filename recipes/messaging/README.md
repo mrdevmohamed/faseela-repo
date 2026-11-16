@@ -18,13 +18,13 @@ keeps the executable and its private Qt/QML runtime under
 Install on an existing Faseela system:
 
 ~~~sh
-sudo nawa install nectarlink
+doas nawa install nectarlink
 ~~~
 
 Or install the messaging group (NectarLink is its default selection):
 
 ~~~sh
-sudo nawa group install messaging
+doas nawa group install messaging
 ~~~
 
 The Android companion app is not part of the Linux package; get it from the
@@ -42,7 +42,7 @@ enabled automatically.
 updates in its Settings and upgrade it with:
 
 ~~~sh
-sudo nawa upgrade nectarlink
+doas nawa upgrade nectarlink
 ~~~
 
 The upstream tarball updater is not aware of Nawa and can install a separate
@@ -67,7 +67,7 @@ separate manual WebKit installation.
 Install on an existing Faseela system:
 
 ~~~sh
-sudo nawa install telegram-desktop
+doas nawa install telegram-desktop
 ~~~
 
 WebKitGTK is intentionally not part of the default Sway or Xfce ISO flavors.

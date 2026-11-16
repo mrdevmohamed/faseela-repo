@@ -9,7 +9,8 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop stack, Flatpak/AppStream runtime and shared services (opt-in)
+├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── flatpak/     optional Flatpak runtime, OSTree, GPGME and AppStream stack (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
@@ -25,15 +26,15 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 62 system + 8 boot + 98 extra =
-**217 core packages**. Optional categories contain 147 GUI, 22 COSMIC, 2 greeter,
-29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
-12 security, 1 peripheral and 16 developer packages. The recipe tree contains
-**557 recipes** in total.
+Current set: 10 toolchain + 39 base + 57 system + 8 boot + 98 extra =
+**212 core packages**. Optional categories contain 142 GUI, 23 COSMIC, 11 Flatpak,
+2 greeter, 29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging,
+1 networking, 12 security, 1 peripheral and 16 developer packages. The recipe
+tree contains **559 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
-only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
-security, peripheral, developer, Xfce and Xorg packages remain opt-in.
+only when `WITH_GUI=1`; Flatpak, COSMIC, browser, media, creative, messaging,
+networking, security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 

@@ -58,7 +58,7 @@ split = false
 install = '''
 set -eu
 
-bundle="Nectarlink-%{version}-linux-x86_64"
+bundle="."
 test -x "$bundle/nectarlink-desktop" || {
     echo "nectarlink: upstream desktop executable is missing" >&2
     exit 1

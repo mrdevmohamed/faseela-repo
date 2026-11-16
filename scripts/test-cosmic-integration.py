@@ -154,6 +154,8 @@ greeter_run = set(greeter["depends"]["run"])
 greeter_build = set(greeter["depends"]["build"])
 assert {"greetd", "elogind", "seatd-runit", "runit", "cosmic-locker", "eudev"} <= greeter_run
 assert "eudev" in greeter_build, "cosmic-greeter daemon's libudev-sys needs libudev.pc"
+assert "libinput" in greeter_build, "cosmic-greeter daemon links libinput"
+assert "libinput" in greeter_run, "cosmic-greeter daemon dynamically links libinput"
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
 assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
 locker = recipe("cosmic", "cosmic-locker")

@@ -5,7 +5,7 @@
 [package]
 name = "cosmic-greeter"
 version = "1.11.0"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "COSMIC login greeter (greetd session with PAM authentication)"
 license = ["GPL-3.0-only"]
@@ -66,17 +66,28 @@ cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
 #!/bin/sh
 exec 2>&1
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-# Provision the dedicated greeter account at service start, when the real
-# installed account databases are available (package-build hook sandboxes may
-# intentionally omit runtime account state).
-/usr/libexec/faseela/ensure-system-account group video
-/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
-greeter_uid=$(awk -F: '$1 == "cosmic-greeter" { print $3; exit }' /etc/passwd)
-video_gid=$(awk -F: '$1 == "video" { print $3; exit }' /etc/group)
-[ -n "$greeter_uid" ] && [ -n "$video_gid" ] || {
-    echo "cosmic-greeter: account provisioning failed" >&2
+set -eu
+[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
+
+# The package post-install hook provisions the account. Do not mutate passwd
+# and group databases from a long-running service startup script.
+if ! greeter_uid=$(id -u cosmic-greeter 2>/dev/null); then
+    echo "cosmic-greeter: service account is missing; reinstall cosmic-greeter" >&2
+    exit 1
+fi
+
+video_gid=
+while IFS=: read -r group_name _ group_id _; do
+    if [ "$group_name" = video ]; then
+        video_gid=$group_id
+        break
+    fi
+done < /etc/group
+[ -n "$video_gid" ] || {
+    echo "cosmic-greeter: required video group is missing; reinstall seatd-runit" >&2
     exit 1
 }
+
 install -d -m750 /var/lib/cosmic-greeter /run/cosmic-greeter
 chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter
 exec greetd
@@ -86,6 +97,28 @@ chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
 
 [hooks]
 post_install = '''
+# Provision the greeter identity while the package transaction is running.
+# base-files owns this helper; using it here avoids relying on useradd/groupadd
+# or mutating the account databases from the runit service startup script.
+set -eu
+/usr/libexec/faseela/ensure-system-account group video
+/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
+
+greeter_uid=$(id -u cosmic-greeter)
+video_gid=
+while IFS=: read -r group_name _ group_id _; do
+    if [ "$group_name" = video ]; then
+        video_gid=$group_id
+        break
+    fi
+done < /etc/group
+[ -n "$video_gid" ] || {
+    echo "cosmic-greeter: account provisioning failed: video group has no GID" >&2
+    exit 1
+}
+install -d -m750 /var/lib/cosmic-greeter
+chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter
+
 # Use the COSMIC greeter only while greetd still has its stock agreety sample.
 # Preserve any administrator-authored greetd configuration.
 if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
@@ -95,7 +128,7 @@ if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
     echo "cosmic-greeter: configured greetd to start the COSMIC greeter"
 fi
 
-echo "cosmic-greeter: service account is provisioned when the optional runit service starts."
+echo "cosmic-greeter: system account provisioned."
 echo "cosmic-greeter: enable with: nawa service enable cosmic-greeter"
 echo "cosmic-greeter: disable getty-tty1 first if it owns VT 1."
 '''

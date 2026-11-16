@@ -120,6 +120,7 @@ assert "chown root:root /usr/bin/fusermount" in fuse2_post_install
 assert "chmod 4755 /usr/bin/fusermount" in fuse2_post_install
 
 appimage = recipe("gui", "appimage-support")
+assert appimage["build"]["install"], "appimage-support must produce an installable meta-package archive"
 assert {"fuse2", "fuse3"} <= set(appimage["depends"]["run"])
 require_deps("gui", "gui-session", "run", {"appimage-support"})
 require_deps("xfce", "xfce-session", "run", {"appimage-support"})

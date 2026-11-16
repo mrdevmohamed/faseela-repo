@@ -1,0 +1,20 @@
+# gui recipe: libxmlb — indexed XML database used by AppStream.
+[package]
+name = "libxmlb"
+version = "0.3.23"
+rel = 1
+arch = ["x86_64"]
+summary = "Library to create and query indexed binary XML databases"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/hughsie/libxmlb/releases/download/%{version}/libxmlb-%{version}.tar.xz"
+sha256 = "ab86eb2073592448a4e0263ab56e222de092c0a3964b66a8d696cac071c8ee3c"
+source_dir = "libxmlb-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "xz", "zstd"]
+run = ["glib", "xz", "zstd"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dgtkdoc=false -Dintrospection=false -Dtests=false -Dstemmer=false -Dlzma=enabled -Dzstd=enabled -Dcli=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

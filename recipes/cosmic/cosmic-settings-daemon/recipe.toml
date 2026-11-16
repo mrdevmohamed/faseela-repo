@@ -5,7 +5,7 @@
 [package]
 name = "cosmic-settings-daemon"
 version = "1.11.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "COSMIC settings daemon (shortcuts, input configuration, system actions)"
 license = ["GPL-3.0-or-later"]
@@ -18,8 +18,8 @@ sha256 = "1cc494c028a59a0356547c834421495da326622f837221726c15fceb14f3f9f0"
 strip_components = 1
 
 [depends]
-build = ["rust", "pkgconf", "eudev", "libxkbcommon", "wayland", "libpulse", "pipewire", "llvm"]
-run = ["eudev", "libxkbcommon", "wayland", "mesa", "dbus", "upower", "elogind", "libpulse", "pipewire"]
+build = ["rust", "pkgconf", "eudev", "libxkbcommon", "wayland", "libpulse", "pipewire", "llvm", "libinput"]
+run = ["eudev", "libxkbcommon", "wayland", "mesa", "dbus", "upower", "elogind", "libpulse", "pipewire", "libinput"]
 
 [fetch.cargo]
 dir = "."

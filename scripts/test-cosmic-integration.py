@@ -151,7 +151,9 @@ assert "org.freedesktop.impl.portal.desktop.cosmic.service" in portal_install
 # Optional greeter includes PAM + greetd and ships its service disabled.
 greeter = recipe("greeter", "cosmic-greeter")
 greeter_run = set(greeter["depends"]["run"])
-assert {"greetd", "elogind", "seatd-runit", "runit", "cosmic-locker"} <= greeter_run
+greeter_build = set(greeter["depends"]["build"])
+assert {"greetd", "elogind", "seatd-runit", "runit", "cosmic-locker", "eudev"} <= greeter_run
+assert "eudev" in greeter_build, "cosmic-greeter daemon's libudev-sys needs libudev.pc"
 assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
 assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
 locker = recipe("cosmic", "cosmic-locker")
@@ -241,6 +243,8 @@ daemon_build = set(daemon["depends"]["build"])
 daemon_run = set(daemon["depends"]["run"])
 assert {"dbus", "elogind", "pipewire"} <= daemon_run
 assert "pipewire" in daemon_build, "libspa-sys needs PipeWire development metadata"
+assert "libinput" in daemon_build, "cosmic-settings-daemon links libinput"
+assert "libinput" in daemon_run, "cosmic-settings-daemon dynamically links libinput"
 assert "llvm" in daemon_build, "libspa-sys bindgen requires libclang from Faseela's llvm package"
 assert "sed 's|systemctl suspend|loginctl suspend|g'" in daemon_install
 assert "grep -q 'systemctl'" in daemon_install

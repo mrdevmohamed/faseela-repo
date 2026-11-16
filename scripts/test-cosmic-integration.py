@@ -212,7 +212,7 @@ audio_install = audio["build"]["install"]
 assert audio["package"]["rel"] >= 3
 assert "*COSMIC*|*cosmic*) session_process=cosmic-session ;;" in audio_install
 
-# Group selection and ISO contents keep the login manager opt-in.
+# The login remains optional for ad-hoc group installs; the complete COSMIC image selects it.
 groups = tomllib.loads((ROOT / "groups.toml").read_text(encoding="utf-8"))
 cosmic_group = next(g for g in groups["group"] if g["id"] == "cosmic")
 assert cosmic_group["mandatory"] == ["cosmic-desktop"]
@@ -220,9 +220,14 @@ assert cosmic_group["optional"] == ["cosmic-greeter"]
 
 flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))
 cosmic_flavor = flavors["flavor"]["iso-cosmic"]
-assert "@cosmic" in cosmic_flavor["include"]
-assert "cosmic-greeter" not in cosmic_flavor.get("exclude", [])
-assert "greetd" not in cosmic_flavor.get("exclude", [])
+assert {"@cosmic", "greetd", "cosmic-greeter"} <= set(cosmic_flavor["include"])
+assert {"lightdm", "lightdm-gtk-greeter"} <= set(cosmic_flavor["exclude"])
+assert {"getty-tty1", "lightdm"} <= set(cosmic_flavor["disable_services"])
+assert cosmic_flavor["enable_services"] == ["cosmic-greeter"]
+
+xfce_flavor = flavors["flavor"]["iso-xfce"]
+assert {"lightdm", "lightdm-gtk-greeter"} <= set(xfce_flavor["include"])
+assert {"greetd", "cosmic-greeter"} <= set(xfce_flavor["exclude"])
 
 
 # COSMIC Launcher has two executables: a Wayland frontend and its IPC backend.

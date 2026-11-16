@@ -20,46 +20,46 @@ run = []
 
 [build]
 prepare = '''
-# glibc 2.34 added closefrom(3); FUSE 2.9.9 still defines its fallback.
-# Detect the libc implementation and only compile the fallback when needed.
-# Regenerate the gettext files against Faseela's pinned gettext 0.26 macros.
+# Regenerate gettext metadata using the version shipped by Faseela.
 sed -i '/AM_GNU_GETTEXT_VERSION/s/.*/AM_GNU_GETTEXT_VERSION([0.26])/' configure.ac
-patch -Np1 <<'PATCH'
-diff --git a/configure.ac b/configure.ac
---- a/configure.ac
-+++ b/configure.ac
-@@ -55,6 +55,7 @@
- AC_CHECK_FUNCS([fork setxattr fdatasync splice vmsplice utimensat])
- AC_CHECK_FUNCS([posix_fallocate])
-+AC_CHECK_FUNCS([closefrom])
- AC_CHECK_MEMBERS([struct stat.st_atim])
- AC_CHECK_MEMBERS([struct stat.st_atimespec])
-diff --git a/util/ulockmgr_server.c b/util/ulockmgr_server.c
---- a/util/ulockmgr_server.c
-+++ b/util/ulockmgr_server.c
-@@ -22,6 +22,10 @@
- #include <sys/socket.h>
- #include <sys/wait.h>
-+#ifdef HAVE_CONFIG_H
-+	#include "config.h"
-+#endif
-+
- struct message {
-@@ -124,6 +128,7 @@ static int receive_message(int sock, void *buf, size_t buflen, int *fdp,
- 	return res;
- }
- 
-+#if !defined(HAVE_CLOSEFROM)
- static int closefrom(int minfd)
- {
-@@ -141,6 +146,7 @@ static int closefrom(int minfd)
- 	return 0;
- }
-+#endif
- 
- static void send_reply(int cfd, struct message *msg)
- {
-PATCH
+
+# FUSE 2.9.9 predates glibc's closefrom(3). Backport the upstream compatibility
+# fix using checked, idempotent anchors rather than brittle line-number hunks.
+python3 - <<'PY'
+from pathlib import Path
+
+
+def replace_once(filename, anchor, replacement):
+    path = Path(filename)
+    data = path.read_text(encoding="utf-8")
+    if replacement in data:
+        return
+    if data.count(anchor) != 1:
+        raise SystemExit(f"{filename}: expected one compatibility patch anchor")
+    path.write_text(data.replace(anchor, replacement, 1), encoding="utf-8")
+
+
+replace_once(
+    "configure.ac",
+    "AC_CHECK_FUNCS([posix_fallocate])",
+    "AC_CHECK_FUNCS([posix_fallocate])\\nAC_CHECK_FUNCS([closefrom])",
+)
+replace_once(
+    "util/ulockmgr_server.c",
+    "#include <sys/wait.h>\\n",
+    "#include <sys/wait.h>\\n#ifdef HAVE_CONFIG_H\\n\\t#include \\"config.h\\"\\n#endif\\n",
+)
+replace_once(
+    "util/ulockmgr_server.c",
+    "static int closefrom(int minfd)\\n",
+    "#if !defined(HAVE_CLOSEFROM)\\nstatic int closefrom(int minfd)\\n",
+)
+replace_once(
+    "util/ulockmgr_server.c",
+    "static void send_reply(int cfd, struct message *msg)\\n",
+    "#endif\\n\\nstatic void send_reply(int cfd, struct message *msg)\\n",
+)
+PY
 autoreconf -fi -I/usr/share/gettext/m4
 '''
 configure = "./configure --prefix=/usr --disable-static INIT_D_PATH=/tmp/init.d"

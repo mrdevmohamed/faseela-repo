@@ -200,8 +200,6 @@ assert "@cosmic" in cosmic_flavor["include"]
 assert "cosmic-greeter" not in cosmic_flavor.get("exclude", [])
 assert "greetd" not in cosmic_flavor.get("exclude", [])
 
-print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes, 2 optional greeter recipes and Faseela integration checks passed")
-
 # Default shortcuts, input-source switching and elogind-native actions.
 assert "keybindings.ron" in comp["build"]["install"]
 assert "CosmicSettings.Shortcuts/v1/defaults" in comp["build"]["install"]

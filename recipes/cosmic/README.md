@@ -57,15 +57,24 @@ system helper. The helper is started on demand by the system D-Bus. Its
 `SystemdService` activation hint and all systemd unit/sysusers/tmpfiles
 outputs are removed; no Flatpak runit service or systemd unit is installed.
 
-Flathub is installed as a signed static remote at
+Flathub is preconfigured as a signed **system-wide** remote at
 `/usr/share/flatpak/remotes.d/flathub.flatpakrepo`. No network request is
-performed by the package hook. Verify the detected remote with:
+performed by the package hook. The Flatpak user installation has its own
+remote list, so each user should import the same signed definition once:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub /usr/share/flatpak/remotes.d/flathub.flatpakrepo
+```
+
+After that, COSMIC Store discovers Flathub in its user backend. Verify both
+installations with:
 
 ```sh
 flatpak remotes --show-details
+flatpak --user remotes --show-details
 ```
 
-User installations are available directly from COSMIC Store and the CLI:
+User installations can then be installed from COSMIC Store or the CLI:
 
 ```sh
 flatpak install --user flathub org.mozilla.firefox

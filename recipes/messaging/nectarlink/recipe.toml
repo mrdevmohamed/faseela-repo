@@ -23,7 +23,6 @@ run = [
     "glib",
     "krb5",
     # System libraries required by upstream's Linux package dependency list.
-    "libgcc",
     "dbus",
     "ca-certificates",
     "fontconfig",
@@ -41,7 +40,6 @@ run = [
     "libXcomposite",
     "libXi",
     "libxcb",
-    "libX11-xcb",
     "xcb-util",
     "xcb-util-cursor",
     "xcb-util-image",

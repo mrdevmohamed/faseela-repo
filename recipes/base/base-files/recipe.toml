@@ -198,67 +198,69 @@ valid_name() {
 }
 
 ensure_group() {
-    name=$1
-    requested_gid=${2:-}
-    valid_name "$name"
+    # POSIX shell function variables are global. Prefix every local variable
+    # so calling ensure_group from ensure_user cannot overwrite user fields.
+    group_name=$1
+    group_requested_gid=${2:-}
+    valid_name "$group_name"
     [ -f /etc/group ] || fail "/etc/group is missing"
 
-    if ! grep -q "^$name:" /etc/group; then
-        if [ -n "$requested_gid" ]; then
-            case "$requested_gid" in
-                *[!0-9]*|'') fail "invalid GID: $requested_gid" ;;
+    if ! grep -q "^$group_name:" /etc/group; then
+        if [ -n "$group_requested_gid" ]; then
+            case "$group_requested_gid" in
+                *[!0-9]*|'') fail "invalid GID: $group_requested_gid" ;;
             esac
-            gid=$requested_gid
+            group_gid=$group_requested_gid
         else
-            gid=81
-            while grep -q "^[^:]*:[^:]*:$gid:" /etc/group; do
-                gid=$((gid + 1))
-                [ "$gid" -lt 60000 ] || fail "no free system GID"
+            group_gid=81
+            while grep -q "^[^:]*:[^:]*:$group_gid:" /etc/group; do
+                group_gid=$((group_gid + 1))
+                [ "$group_gid" -lt 60000 ] || fail "no free system GID"
             done
         fi
-        printf '%s:x:%s:\n' "$name" "$gid" >> /etc/group
+        printf '%s:x:%s:\n' "$group_name" "$group_gid" >> /etc/group
     fi
 
-    if [ -f /etc/gshadow ] && ! grep -q "^$name:" /etc/gshadow; then
-        printf '%s:!::\n' "$name" >> /etc/gshadow
+    if [ -f /etc/gshadow ] && ! grep -q "^$group_name:" /etc/gshadow; then
+        printf '%s:!::\n' "$group_name" >> /etc/gshadow
         chmod 0600 /etc/gshadow
     fi
 }
 
 ensure_user() {
-    name=$1
-    group=$2
-    gecos=$3
-    home=$4
-    shell=$5
-    valid_name "$name"
-    valid_name "$group"
-    case "$gecos$home$shell" in
+    user_name=$1
+    user_group=$2
+    user_gecos=$3
+    user_home=$4
+    user_shell=$5
+    valid_name "$user_name"
+    valid_name "$user_group"
+    case "$user_gecos$user_home$user_shell" in
         *:*) fail "GECOS, home and shell must not contain ':'" ;;
     esac
     [ -f /etc/passwd ] || fail "/etc/passwd is missing"
     [ -f /etc/group ] || fail "/etc/group is missing"
 
     # Repair a missing primary group for an already-created service account.
-    if grep -q "^$name:" /etc/passwd; then
-        old_gid=$(grep "^$name:" /etc/passwd | head -n 1 | cut -d: -f4)
-        if ! grep -q "^$group:" /etc/group; then
-            ensure_group "$group" "$old_gid"
+    if grep -q "^$user_name:" /etc/passwd; then
+        user_old_gid=$(grep "^$user_name:" /etc/passwd | head -n 1 | cut -d: -f4)
+        if ! grep -q "^$user_group:" /etc/group; then
+            ensure_group "$user_group" "$user_old_gid"
         fi
         return 0
     fi
 
-    ensure_group "$group"
-    gid=$(grep "^$group:" /etc/group | head -n 1 | cut -d: -f3)
-    uid=81
-    while grep -q "^[^:]*:[^:]*:$uid:" /etc/passwd; do
-        uid=$((uid + 1))
-        [ "$uid" -lt 60000 ] || fail "no free system UID"
+    ensure_group "$user_group"
+    user_gid=$(grep "^$user_group:" /etc/group | head -n 1 | cut -d: -f3)
+    user_uid=81
+    while grep -q "^[^:]*:[^:]*:$user_uid:" /etc/passwd; do
+        user_uid=$((user_uid + 1))
+        [ "$user_uid" -lt 60000 ] || fail "no free system UID"
     done
 
-    printf '%s:x:%s:%s:%s:%s:%s\n' "$name" "$uid" "$gid" "$gecos" "$home" "$shell" >> /etc/passwd
-    if [ -f /etc/shadow ] && ! grep -q "^$name:" /etc/shadow; then
-        printf '%s:*:19980:0:99999:7:::\n' "$name" >> /etc/shadow
+    printf '%s:x:%s:%s:%s:%s:%s\n' "$user_name" "$user_uid" "$user_gid" "$user_gecos" "$user_home" "$user_shell" >> /etc/passwd
+    if [ -f /etc/shadow ] && ! grep -q "^$user_name:" /etc/shadow; then
+        printf '%s:*:19980:0:99999:7:::\n' "$user_name" >> /etc/shadow
         chmod 0600 /etc/shadow
     fi
 }

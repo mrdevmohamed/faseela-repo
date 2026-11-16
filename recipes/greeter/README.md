@@ -1,4 +1,4 @@
-# recipes/greeter — optional login managers
+# recipes/greeter — selectable login managers
 
 This category contains login daemons and greeter applications that should not
 be pulled into a desktop session merely because its desktop packages are

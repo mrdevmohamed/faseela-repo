@@ -192,6 +192,23 @@ assert "ensure-system-account" not in greeter_post_install
 assert "account_name _ account_uid" not in greeter_post_install
 assert "grep -q 'agreety'" in greeter_post_install
 
+# The shared account helper is POSIX sh: function variables are global, so
+# ensure_group must never overwrite ensure_user's account fields. This caught
+# the bug that wrote every COSMIC service account as another "video" entry.
+base_files = recipe("base", "base-files")
+base_install = base_files["build"]["install"]
+helper_start = "cat > %{pkgdir}/usr/libexec/faseela/ensure-system-account <<'ACCOUNT'\\n"
+helper_end = "\\nACCOUNT\\nchmod 0755 %{pkgdir}/usr/libexec/faseela/ensure-system-account"
+assert helper_start in base_install and helper_end in base_install
+account_helper = base_install.split(helper_start, 1)[1].split(helper_end, 1)[0]
+assert "group_name=$1" in account_helper
+assert "group_requested_gid=${2:-}" in account_helper
+assert "user_name=$1" in account_helper
+assert 'ensure_group "$user_group"' in account_helper
+assert 'printf \'%s:x:%s:%s:%s:%s:%s\\n\' "$user_name" "$user_uid" "$user_gid" "$user_gecos" "$user_home" "$user_shell"' in account_helper
+assert "    name=$1" not in account_helper
+assert 'printf \'%s:x:%s:\\n\' "$name" "$gid"' not in account_helper
+
 greetd = recipe("greeter", "greetd")
 assert "linux-pam" in greetd["depends"]["run"]
 

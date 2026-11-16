@@ -80,8 +80,10 @@ it does not shell out to a second package manager.
   repository manager.
 - **Authorization:** system operations go through Flatpak's
   `org.freedesktop.Flatpak.SystemHelper` on the system D-Bus and are authorized
-  by the existing Polkit daemon. Polkit uses `elogind` session tracking;
-  `dbus-system` and `polkitd` remain supervised by **runit**.
+  by the existing Polkit daemon. COSMIC starts the GTK Polkit authentication
+  agent inside its own session so password prompts are visible. Polkit uses
+  `elogind` session tracking; `dbus-system` and `polkitd` remain supervised
+  by **runit**.
 - **No systemd dependency:** Flatpak and OSTree are built without systemd
   support. The system helper is D-Bus activated, not installed as a systemd
   unit or a permanently running runit daemon.

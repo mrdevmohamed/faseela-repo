@@ -42,22 +42,35 @@ def replace_once(filename, anchor, replacement):
 replace_once(
     "configure.ac",
     "AC_CHECK_FUNCS([posix_fallocate])",
-    "AC_CHECK_FUNCS([posix_fallocate])\\nAC_CHECK_FUNCS([closefrom])",
+    """AC_CHECK_FUNCS([posix_fallocate])
+AC_CHECK_FUNCS([closefrom])""",
 )
 replace_once(
     "util/ulockmgr_server.c",
-    "#include <sys/wait.h>\\n",
-    "#include <sys/wait.h>\\n#ifdef HAVE_CONFIG_H\\n\\t#include \\"config.h\\"\\n#endif\\n",
+    """#include <sys/wait.h>
+""",
+    """#include <sys/wait.h>
+#ifdef HAVE_CONFIG_H
+	#include "config.h"
+#endif
+""",
 )
 replace_once(
     "util/ulockmgr_server.c",
-    "static int closefrom(int minfd)\\n",
-    "#if !defined(HAVE_CLOSEFROM)\\nstatic int closefrom(int minfd)\\n",
+    """static int closefrom(int minfd)
+""",
+    """#if !defined(HAVE_CLOSEFROM)
+static int closefrom(int minfd)
+""",
 )
 replace_once(
     "util/ulockmgr_server.c",
-    "static void send_reply(int cfd, struct message *msg)\\n",
-    "#endif\\n\\nstatic void send_reply(int cfd, struct message *msg)\\n",
+    """static void send_reply(int cfd, struct message *msg)
+""",
+    """#endif
+
+static void send_reply(int cfd, struct message *msg)
+""",
 )
 PY
 autoreconf -fi -I/usr/share/gettext/m4

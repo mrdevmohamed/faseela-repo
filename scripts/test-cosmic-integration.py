@@ -201,3 +201,13 @@ assert "cosmic-greeter" not in cosmic_flavor.get("exclude", [])
 assert "greetd" not in cosmic_flavor.get("exclude", [])
 
 print(f"test-cosmic-integration: {len(EXPECTED)} COSMIC recipes, 2 optional greeter recipes and Faseela integration checks passed")
+
+# Default shortcuts, input-source switching and the busctl-free system actions.
+assert "keybindings.ron" in comp["build"]["install"]
+assert "CosmicSettings.Shortcuts/v1/defaults" in comp["build"]["install"]
+daemon = recipe("cosmic", "cosmic-settings-daemon")
+assert "dbus-send --session" in daemon["build"]["install"]
+assert "dbus" in daemon["depends"]["run"]
+desktop = recipe("cosmic", "cosmic-desktop")
+assert "CosmicComp/v1/xkb_config" in desktop["build"]["install"]
+assert "grp:alt_shift_toggle" in desktop["build"]["install"]

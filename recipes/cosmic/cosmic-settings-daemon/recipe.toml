@@ -5,7 +5,7 @@
 [package]
 name = "cosmic-settings-daemon"
 version = "1.11.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "COSMIC settings daemon (shortcuts, input configuration, system actions)"
 license = ["GPL-3.0-or-later"]
@@ -30,8 +30,19 @@ install = '''
 install -Dm755 target/release/cosmic-settings-daemon %{pkgdir}/usr/bin/cosmic-settings-daemon
 # System shortcut actions live in the cosmic-config schema directory; the
 # polkit rule guards the privileged system-action D-Bus methods.
-install -Dm644 data/system_actions.ron \
-    %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
+# Upstream actions call `busctl` (systemd) for input-source switching, volume
+# and brightness keys. Faseela has no systemd, so rewrite them to dbus-send
+# (shipped by the dbus package):
+#   busctl --user call DEST PATH IFACE METHOD  ->  dbus-send ... IFACE.METHOD
+install -d -m755 %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1
+sed 's|busctl --user call \([^ ]*\) \([^ ]*\) \([^ ]*\) \([A-Za-z]*\)"|dbus-send --session --type=method_call --dest=\1 \2 \3.\4"|' \
+    data/system_actions.ron \
+    > %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
+chmod 644 %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions
+if grep -q busctl %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions; then
+    echo "cosmic-settings-daemon: busctl still referenced in system_actions" >&2
+    exit 1
+fi
 install -Dm644 data/polkit-1/rules.d/cosmic-settings-daemon.rules \
     %{pkgdir}/usr/share/polkit-1/rules.d/cosmic-settings-daemon.rules
 # The geonames timezone cache is embedded in the binary (include_bytes!),

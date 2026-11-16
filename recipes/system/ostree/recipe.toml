@@ -1,0 +1,22 @@
+# system recipe: OSTree — content-addressed deployment and repository engine for Flatpak.
+# Flatpak needs libostree and the ostree utility; explicitly disable systemd
+# integration so no systemd units, generators, or libsystemd dependencies ship.
+[package]
+name = "ostree"
+version = "2026.6"
+rel = 1
+arch = ["x86_64"]
+summary = "OSTree content-addressed filesystem deployment engine"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/ostreedev/ostree/releases/download/v%{version}/libostree-%{version}.tar.xz"
+sha256 = "164b8226aea6a0e6601036de02a5e3b62307bae25890ed557fb4e19020bd5974"
+source_dir = "libostree-%{version}"
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "bison", "gettext", "glib", "curl", "libarchive", "libcap", "gpgme", "fuse3", "e2fsprogs", "util-linux"]
+run = ["glib", "curl", "libarchive", "libcap", "gpgme", "fuse3", "util-linux", "zstd"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --without-libsystemd --with-curl --without-soup --without-soup3 --without-avahi --without-composefs --without-dracut --without-mkinitcpio --disable-gtk-doc --disable-man"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

@@ -244,7 +244,8 @@ assert cosmic_flavor["enable_services"] == ["cosmic-greeter"]
 
 xfce_flavor = flavors["flavor"]["iso-xfce"]
 assert {"lightdm", "lightdm-gtk-greeter"} <= set(xfce_flavor["include"])
-assert {"greetd", "cosmic-greeter"} <= set(xfce_flavor["exclude"])
+assert "greetd" not in xfce_flavor.get("include", [])
+assert "cosmic-greeter" not in xfce_flavor.get("include", [])
 
 
 # COSMIC Launcher has two executables: a Wayland frontend and its IPC backend.

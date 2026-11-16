@@ -44,6 +44,49 @@ infrastructure rather than introducing systemd:
 The desktop meta-package is a normal opt-in package. It does not enable a
 login manager, take over a virtual terminal, or install a greeter service.
 
+## Flatpak in COSMIC Store
+
+`cosmic-store` is built with its native Flatpak backend enabled. The
+store enumerates both the per-user and system installations; PackageKit and
+the systemd-scope backend remain disabled. This matches Faseela's package
+model (Nawa), `elogind` and runit.
+
+The `flatpak` runtime package supplies OSTree, GPGME/GnuPG, AppStream,
+Bubblewrap, `xdg-dbus-proxy`, FUSE 3, seccomp and the Flatpak D-Bus
+system helper. The helper is started on demand by the system D-Bus. Its
+`SystemdService` activation hint and all systemd unit/sysusers/tmpfiles
+outputs are removed; no Flatpak runit service or systemd unit is installed.
+
+Flathub is preconfigured as a signed **system-wide** remote at
+`/usr/share/flatpak/remotes.d/flathub.flatpakrepo`. No network request is
+performed by the package hook. The Flatpak user installation has its own
+remote list, so each user should import the same signed definition once:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub /usr/share/flatpak/remotes.d/flathub.flatpakrepo
+```
+
+After that, COSMIC Store discovers Flathub in its user backend. Verify both
+installations with:
+
+```sh
+flatpak remotes --show-details
+flatpak --user remotes --show-details
+```
+
+User installations can then be installed from COSMIC Store or the CLI:
+
+```sh
+flatpak install --user flathub org.mozilla.firefox
+```
+
+System installations use Flatpak's privileged D-Bus helper and Polkit
+authorization. COSMIC's `cosmic-osd` registers the session authentication
+agent on the system bus. The Faseela recipe explicitly points that agent to
+`/usr/lib/polkit-1/polkit-agent-helper-1`, the helper path installed by
+the `polkit` package. Polkit policy remains in force: this does not grant
+administrator rights to all local users.
+
 ## Optional login greeter
 
 The greeter stack is separate from `cosmic-desktop`. Install it only when

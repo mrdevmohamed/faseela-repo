@@ -1,0 +1,19 @@
+# gui recipe: libxmlb — indexed XML database used by AppStream and Flatpak.
+[package]
+name = "libxmlb"
+version = "0.3.30"
+rel = 1
+arch = ["x86_64"]
+summary = "Indexed XML database library"
+license = ["LGPL-2.1-or-later"]
+source = "https://github.com/hughsie/libxmlb/releases/download/%{version}/libxmlb-%{version}.tar.xz"
+sha256 = "2cb894b873aac5fc9e9b6228d4e795f7236d16e429ed2de8f95179a131be3a68"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "xz", "zstd"]
+run = ["glib", "xz", "zstd"]
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtkdoc=false -D introspection=false -D tests=false -D stemmer=false -D cli=true -D lzma=enabled -D zstd=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

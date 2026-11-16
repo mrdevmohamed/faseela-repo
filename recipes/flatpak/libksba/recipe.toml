@@ -1,0 +1,19 @@
+# system recipe: libksba — X.509 and CMS support library for GnuPG.
+[package]
+name = "libksba"
+version = "1.8.1"
+rel = 1
+arch = ["x86_64"]
+summary = "X.509 and CMS support library for GnuPG"
+license = ["LGPL-2.1-or-later"]
+source = "https://www.gnupg.org/ftp/gcrypt/libksba/libksba-%{version}.tar.bz2"
+sha256 = "c2f84393011827219ae117131dba8e7684c2bed0961eed11b0642c2acba440b5"
+
+[depends]
+build = ["libgpg-error"]
+run = ["libgpg-error"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

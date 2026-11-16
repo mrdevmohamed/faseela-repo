@@ -10,6 +10,7 @@ recipes/
 ├── system/      networking, udev, kmod, shadow, runit, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── flatpak/     optional Flatpak runtime, OSTree, GPGME and AppStream stack (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
@@ -26,14 +27,14 @@ recipes/
 ```
 
 Current set: 10 toolchain + 39 base + 57 system + 8 boot + 98 extra =
-**212 core packages**. Optional categories contain 141 GUI, 22 COSMIC, 2 greeter,
-29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
-12 security, 1 peripheral and 16 developer packages. The recipe tree contains
-**546 recipes** in total.
+**212 core packages**. Optional categories contain 142 GUI, 23 COSMIC, 11 Flatpak,
+2 greeter, 29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging,
+1 networking, 12 security, 1 peripheral and 16 developer packages. The recipe
+tree contains **559 recipes** in total.
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
-only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
-security, peripheral, developer, Xfce and Xorg packages remain opt-in.
+only when `WITH_GUI=1`; Flatpak, COSMIC, browser, media, creative, messaging,
+networking, security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
@@ -130,6 +131,23 @@ Verify any dependency chain — or the complete recipe graph — with:
 nawa --recipes recipes deps <name>
 nawa --recipes recipes deps-all        # full-tree topological order
 ```
+
+## Flatpak and application stores
+
+The opt-in `flatpak/` category contains the runtime and its supporting
+stack: `flatpak`, `ostree`, GPGME/GnuPG, AppStream, libxmlb, libfyaml and
+pyparsing. It is intentionally separate from `gui/`, so Sway and Xfce images
+do not pull in a second application manager. Installing `cosmic-store`
+pulls in this category through its runtime dependency.
+
+COSMIC Store enables its native Flatpak feature, exposing user and system
+installations without enabling PackageKit or systemd-scope integration.
+Flathub is preconfigured as a signed system-wide remote under
+`/usr/share/flatpak/remotes.d/`; each user can import that same signed
+definition into their own installation. The privileged system helper is
+activated on demand by D-Bus and authorized by Polkit. COSMIC OSD registers
+the session authentication agent and uses Faseela's Polkit helper path. No
+systemd unit or runit service is required.
 
 ## Optional hardware integrations
 

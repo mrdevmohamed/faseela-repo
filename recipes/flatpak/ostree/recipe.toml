@@ -1,0 +1,20 @@
+# gui recipe: OSTree — content-addressed repository and deployment library for Flatpak.
+# The build uses libsoup 3 and GPGME, and explicitly excludes systemd integration.
+[package]
+name = "ostree"
+version = "2026.7"
+rel = 2
+arch = ["x86_64"]
+summary = "Content-addressed repository library and tools"
+license = ["LGPL-2.0-or-later"]
+source = "https://github.com/ostreedev/ostree/releases/download/v%{version}/libostree-%{version}.tar.xz"
+sha256 = "43e0295e869927edfd41e7cb9cdf5ca8f8515a6f1460af4b381f1f701168494c"
+
+[depends]
+build = ["pkgconf", "bison", "glib", "xz", "zlib", "e2fsprogs", "libsoup3", "gpgme", "libarchive", "util-linux"]
+run = ["glib", "xz", "zlib", "e2fsprogs", "libsoup3", "gpgme", "libarchive", "util-linux"]
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --with-soup3 --with-gpgme --with-libarchive --without-curl --without-selinux --without-smack --without-avahi --without-libsystemd --without-composefs --with-libmount --disable-man"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

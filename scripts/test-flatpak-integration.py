@@ -107,6 +107,12 @@ assert "packagekit" not in store_compile
 desktop = recipe("cosmic", "cosmic-desktop")
 assert desktop["package"]["rel"] >= 3
 assert "flatpak" in desktop["depends"]["run"]
+assert "mate-polkit" in desktop["depends"]["run"]
+agent = recipe("gui", "mate-polkit")
+assert "polkit" in agent["depends"]["run"]
+assert "gtk3" in agent["depends"]["run"]
+assert "OnlyShowIn=COSMIC;" in agent["build"]["prepare"]
+assert "OnlyShowIn=MATE;" not in agent["build"]["prepare"]
 
 # AppStream and its XML/YAML dependencies are packaged, rather than relying on
 # the pure-Rust catalog parser alone or host libraries from the build runner.

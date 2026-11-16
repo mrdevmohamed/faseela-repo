@@ -5,7 +5,7 @@
 [package]
 name = "cosmic-greeter"
 version = "1.11.0"
-rel = 7
+rel = 8
 arch = ["x86_64"]
 summary = "COSMIC login greeter (greetd session with PAM authentication)"
 license = ["GPL-3.0-only"]
@@ -68,8 +68,12 @@ exec 2>&1
 set -eu
 [ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
 
-# The package post-install hook provisions the account. Do not mutate passwd
-# and group databases from a long-running service startup script.
+# Provision accounts at service runtime, not in the package-build hook.
+# Nawa executes post_install in its isolated build root; only this runit
+# service runs against the installed machine's real passwd/group databases.
+/usr/libexec/faseela/ensure-system-account group video
+/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
+
 greeter_uid=
 while IFS=: read -r account_name _ account_uid _; do
     if [ "$account_name" = cosmic-greeter ]; then
@@ -78,7 +82,7 @@ while IFS=: read -r account_name _ account_uid _; do
     fi
 done < /etc/passwd
 [ -n "$greeter_uid" ] || {
-    echo "cosmic-greeter: service account is missing; reinstall cosmic-greeter" >&2
+    echo "cosmic-greeter: account provisioning failed: cosmic-greeter has no passwd entry" >&2
     exit 1
 }
 
@@ -103,38 +107,9 @@ chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
 
 [hooks]
 post_install = '''
-# Provision the greeter identity while the package transaction is running.
-# base-files owns this helper; using it here avoids relying on useradd/groupadd
-# or mutating the account databases from the runit service startup script.
-set -eu
-/usr/libexec/faseela/ensure-system-account group video
-/usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
-
-greeter_uid=
-while IFS=: read -r account_name _ account_uid _; do
-    if [ "$account_name" = cosmic-greeter ]; then
-        greeter_uid=$account_uid
-        break
-    fi
-done < /etc/passwd
-[ -n "$greeter_uid" ] || {
-    echo "cosmic-greeter: account provisioning failed: cosmic-greeter has no passwd entry" >&2
-    exit 1
-}
-
-video_gid=
-while IFS=: read -r group_name _ group_id _; do
-    if [ "$group_name" = video ]; then
-        video_gid=$group_id
-        break
-    fi
-done < /etc/group
-[ -n "$video_gid" ] || {
-    echo "cosmic-greeter: account provisioning failed: video group has no GID" >&2
-    exit 1
-}
-install -d -m750 /var/lib/cosmic-greeter
-chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter
+# Do not provision system accounts here: package hooks run in Nawa's build
+# root during builds. The optional runit service creates the account on the
+# installed system immediately before starting greetd.
 
 # Use the COSMIC greeter only while greetd still has its stock agreety sample.
 # Preserve any administrator-authored greetd configuration.
@@ -145,7 +120,6 @@ if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
     echo "cosmic-greeter: configured greetd to start the COSMIC greeter"
 fi
 
-echo "cosmic-greeter: system account provisioned."
 echo "cosmic-greeter: enable with: nawa service enable cosmic-greeter"
 echo "cosmic-greeter: disable getty-tty1 first if it owns VT 1."
 '''

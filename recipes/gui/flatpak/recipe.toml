@@ -47,4 +47,8 @@ install -d -m755 %{pkgdir}/var/lib/flatpak
 post_install = '''
 /usr/libexec/faseela/ensure-system-account user flatpak flatpak "Flatpak system helper" /nonexistent /usr/bin/false
 install -d -m755 -o root -g root /var/lib/flatpak
+# Import Flathub into the system installation at package-install time.
+# This reads the signed descriptor locally and does not fetch application data.
+flatpak remote-add --system --if-not-exists flathub \
+    /usr/share/flatpak/remotes.d/flathub.flatpakrepo
 '''

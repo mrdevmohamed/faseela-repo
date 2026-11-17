@@ -21,17 +21,17 @@ before the offline build.
 
 ## Faseela integration
 
-Faseela uses runit as PID 1. COSMIC therefore uses the existing system
-infrastructure rather than introducing systemd:
+Faseela uses systemd as PID 1. COSMIC uses the system's own
+infrastructure:
 
 - **Session:** run `start-cosmic` from a tty. The upstream launcher creates a
   private D-Bus session and starts the COSMIC session manager. The desktop
   session entry is installed under `/usr/share/wayland-sessions`.
 - **Seat and DRM:** `cosmic-comp` uses libseat with
-  `LIBSEAT_BACKEND=seatd`. The shared `seatd-runit` package owns the runit
-  service and render-node udev rule used by both COSMIC and Sway.
+  `LIBSEAT_BACKEND=seatd`. The shared `seatd-systemd` package owns the systemd
+  unit and render-node udev rule used by both COSMIC and Sway.
 - **Login/session tracking:** COSMIC's login1 D-Bus calls are served by
-  elogind. The compositor and core session do not require systemd.
+  systemd-logind.
 - **Audio:** `cosmic-desktop` adds an XDG autostart entry that runs the shared
   `faseela-audio-session` helper. The helper keeps PipeWire, WirePlumber and
   pipewire-pulse alive for the COSMIC session.
@@ -48,7 +48,7 @@ login manager, take over a virtual terminal, or install a greeter service.
 
 The greeter stack stays separate from `cosmic-desktop` so the desktop can be
 installed without taking over a terminal. The complete `iso-cosmic` flavor
-selects it and enables its runit service in the image:
+selects it and enables its systemd unit in the image:
 
 ```sh
 doas nawa install cosmic-greeter
@@ -56,12 +56,12 @@ doas nawa service enable cosmic-greeter
 ```
 
 The package includes greetd, its COSMIC greeter, PAM integration through
-`pam_elogind.so`, and a runit service shipped disabled. Its dedicated
-service account is provisioned when that runit service starts, against the
+`pam_systemd.so`, and a systemd unit shipped disabled. Its dedicated
+service account is provisioned when that unit starts, against the
 installed account databases. The privileged
 `cosmic-greeter-daemon` is started on demand by the system D-Bus activation
-file, so this path does not depend on a systemd unit. The COSMIC image flavor
-disables `getty-tty1` and an enabled LightDM service before enabling
+file, so no separate unit is needed for it. The COSMIC image flavor
+disables `getty@tty1` and an enabled LightDM service before enabling
 `cosmic-greeter`. A manual install on an existing system must perform that
 switch explicitly. The package hook preserves a custom `/etc/greetd/config.toml`;
 it only replaces the stock agreety sample.
@@ -69,7 +69,7 @@ it only replaces the stock agreety sample.
 ## Build and install
 
 The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
-`cosmic-greeter`. It excludes LightDM and configures runit to start the COSMIC
+`cosmic-greeter`. It excludes LightDM and configures systemd to start the COSMIC
 greeter instead of a console getty on VT 1. The `cosmic` group keeps the greeter
 optional for users who install the desktop onto an existing system.
 

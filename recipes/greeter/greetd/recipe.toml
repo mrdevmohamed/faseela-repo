@@ -1,11 +1,11 @@
 # cosmic recipe: greetd — minimal, flexible login manager daemon.
 # COSMIC's own greeter (cosmic-greeter) is designed to run under greetd, and
 # greetd itself is a small PAM client: it needs no systemd, so it works as a
-# plain runit service started by the optional cosmic-greeter integration.
+# plain systemd service started by the optional cosmic-greeter integration.
 [package]
 name = "greetd"
 version = "0.10.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Minimal and flexible login manager (greeter daemon for cosmic-greeter)"
 license = ["GPL-3.0-only"]
@@ -36,7 +36,7 @@ install -Dm755 target/release/agreety %{pkgdir}/usr/bin/agreety
 install -d -m755 %{pkgdir}/etc/greetd
 install -m644 config.toml %{pkgdir}/etc/greetd/config.toml
 # PAM stack for the default service name; the COSMIC greeter has its own PAM
-# service and elogind session registration.
+# service and systemd-logind session registration.
 install -d -m755 %{pkgdir}/etc/pam.d
 cat > %{pkgdir}/etc/pam.d/greetd <<'PAM'
 #%PAM-1.0
@@ -46,13 +46,13 @@ auth      required pam_unix.so
 account   required pam_unix.so
 password  required pam_unix.so
 session   required pam_unix.so
-session   optional pam_elogind.so class=user type=wayland
+session   optional pam_systemd.so class=user type=wayland
 PAM
 chmod 644 %{pkgdir}/etc/pam.d/greetd
 '''
 
 [hooks]
 post_install = '''
-echo "greetd: COSMIC's optional cosmic-greeter package supplies the runit service."
+echo "greetd: COSMIC's optional cosmic-greeter package supplies the systemd unit."
 echo "greetd: configure /etc/greetd/config.toml if you need a custom session."
 '''

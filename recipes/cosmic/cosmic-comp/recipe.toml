@@ -1,9 +1,9 @@
 # cosmic recipe: cosmic-comp — COSMIC Wayland compositor (smithay-based).
 # Built without the "systemd" default feature: that feature links libsystemd
 # and only adds sd-journal logging / a logind-zbus seat backend, neither of
-# which exists on Faseela (runit + elogind). Seat access goes through libseat
+# which exists on Faseela (systemd). Seat access goes through libseat
 # (the packaged seatd recipe builds libseat with its seatd backend), session
-# tracking and power actions go through elogind's login1 D-Bus API.
+# tracking and power actions go through systemd-logind's login1 D-Bus API.
 [package]
 name = "cosmic-comp"
 version = "1.11.0"

@@ -1,8 +1,8 @@
-# gui recipe: PolicyKit authorization framework (elogind session tracking, shadow authentication).
+# gui recipe: PolicyKit authorization framework (systemd-logind session tracking, shadow authentication).
 [package]
 name = "polkit"
 version = "126"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "PolicyKit authorization framework and privileged action helper"
 license = ["GPL-2.0-or-later"]
@@ -15,7 +15,7 @@ run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "co
 
 [build]
 prepare = '''set -eu
-# Polkit 126 selects libelogind for session tracking, but its polkitd target
+# Polkit 126 selects the logind library for session tracking, but its polkitd target
 # does not inherit that dependency from the static backend library. The daemon
 # itself includes systemd/sd-daemon.h and calls sd_notify(), so give the target
 # the selected logind dependency directly (headers + link flags).
@@ -40,20 +40,30 @@ if count != 1:
 path.write_text(data.replace(old, new, 1), encoding="utf-8")
 PY
 '''
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=elogind -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=logind -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
-install -d -m755 %{pkgdir}/etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default
-cat > %{pkgdir}/etc/sv/polkitd/run <<'RUN'
-#!/bin/sh
-# no D-Bus yet: exit so runsv retries and `sv status` shows the flapping,
-# instead of hanging in a loop that still reports "run"
-[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-exec /usr/lib/polkit-1/polkitd --no-debug
-RUN
-chmod 755 %{pkgdir}/etc/sv/polkitd/run
-ln -s /etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default/polkitd
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/polkit.service <<'EOF'
+[Unit]
+Description=Authorization Manager
+Documentation=man:polkit(8)
+After=dbus.service
+Wants=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.PolicyKit1
+ExecStart=/usr/lib/polkit-1/polkitd --no-debug
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/polkit.service
+install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
+printf '%s\n' 'enable polkit.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-polkit.preset
 # Setuid programs must be root-owned on the installed system. Keep the mode
 # in the archive as well; post_install reasserts ownership and mode.
 chmod 4755 %{pkgdir}/usr/bin/pkexec %{pkgdir}/usr/lib/polkit-1/polkit-agent-helper-1
@@ -65,4 +75,5 @@ post_install = '''
 install -d -m755 -o polkitd -g polkitd /var/lib/polkit-1
 chown root:root /usr/bin/pkexec /usr/lib/polkit-1/polkit-agent-helper-1
 chmod 4755 /usr/bin/pkexec /usr/lib/polkit-1/polkit-agent-helper-1
+systemctl preset polkit.service 2>/dev/null || true
 '''

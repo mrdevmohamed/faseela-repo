@@ -71,20 +71,13 @@ jobs:
         run: python3 -I scripts/test-kernel-audio.py
       - name: Mesa Vulkan drivers and Zed runtime closure
         run: python3 -I scripts/test-vulkan-stack.py
-      # These three integration suites describe the pre-systemd runit/elogind
-      # desktop stack. Keep them active on main; phase 2 will replace them with
-      # systemd-native LightDM, COSMIC and XFCE service/PAM coverage.
-      - name: Desktop integration dependencies and session activation (runit/elogind)
-        if: ${{ hashFiles('recipes/system/systemd/recipe.toml') == '' }}
-        run: python3 -I scripts/test-desktop-integration.py
       - name: Core systemd init, units and system D-Bus integration
-        if: ${{ hashFiles('recipes/system/systemd/recipe.toml') != '' }}
         run: python3 -I scripts/test-systemd-core.py
-      - name: COSMIC recipes and runit desktop integration
-        if: ${{ hashFiles('recipes/system/systemd/recipe.toml') == '' }}
+      - name: Desktop integration dependencies and session activation (systemd)
+        run: python3 -I scripts/test-desktop-integration.py
+      - name: COSMIC recipes and systemd desktop integration
         run: python3 -I scripts/test-cosmic-integration.py
-      - name: XFCE smoke-test checklist and runit service definitions
-        if: ${{ hashFiles('recipes/system/systemd/recipe.toml') == '' }}
+      - name: XFCE smoke-test checklist and systemd unit definitions
         run: python3 -I scripts/test-xfce-smoke-checklist.py
       - name: mpv X11/EGL, Wayland/EGL and DRM output backends
         run: python3 -I scripts/test-mpv-x11.py

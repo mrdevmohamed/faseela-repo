@@ -3,7 +3,7 @@
 # optional integrations this tree cannot satisfy turned off explicitly
 # (features default to auto, so absence alone would work, but stating them
 # keeps the build reproducible when a dependency appears later):
-#   systemd     runit supervises services; no systemd user units
+#   systemd     systemd supervises system services; no systemd user units
 #   man-pages   scdoc is not packaged
 #   logind      logind inhibitor/gamemode; there is no logind here (swayidle
 #               handles idle/lock instead)

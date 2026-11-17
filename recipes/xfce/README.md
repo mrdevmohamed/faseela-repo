@@ -4,7 +4,7 @@ The Xfce desktop, its applications and panel plugins, plus LightDM and its
 GTK greeter. The Xorg server and client utilities live in `recipes/xorg/`.
 The `xfce-session` meta-package supplies the core X11/Xfce runtime closure,
 Faseela's keyboard-layout configuration, shared per-user PipeWire startup,
-elogind session tracking, the XFCE Polkit agent, and removable-storage
+systemd-logind session tracking, the XFCE Polkit agent, and removable-storage
 integration through GVfs and UDisks2.
 
 Everything is opt-in. The supported image is `iso-xfce`, which includes
@@ -32,7 +32,7 @@ required by `xfce-session`; it can be installed separately.
   `thunar-archive-plugin` adds create/extract actions backed by `xarchiver`.
   Archive command-line helpers are declared as Xarchiver runtime dependencies.
 * **Display manager**: LightDM 1.33.1 and `lightdm-gtk-greeter` are
-  packaged with standalone Linux-PAM. LightDM's runit service is not
+  packaged with standalone Linux-PAM. LightDM's systemd unit is not
   pre-enabled because its current X-server launch path inherits the daemon's
   root UID. Rootless LightDM requires a separate unprivileged X-server
   launcher and Xorg seat-management integration.
@@ -67,12 +67,12 @@ autostart entry starts PipeWire, WirePlumber and `pipewire-pulse` as the
 logged-in user; the same supervisor is used by Sway, so the two desktops do
 not maintain separate audio startup implementations.
 
-Faseela does not use systemd. LightDM uses the login1 D-Bus API provided by
-elogind, and its PAM stacks load `pam_elogind.so` (never `pam_systemd`) to
-register the user and greeter sessions. Elogind creates the per-user
+LightDM uses the login1 D-Bus API provided by
+systemd-logind, and its PAM stacks load `pam_systemd.so` to
+register the user and greeter sessions. logind creates the per-user
 `XDG_RUNTIME_DIR` used by PipeWire and Polkit. The Xfce launcher keeps a
 private mode-0700 `/tmp/runtime-<uid>` fallback only for sessions started
-outside PAM/elogind, such as a direct start from a TTY.
+outside PAM/logind, such as a direct start from a TTY.
 
 Users who need direct ALSA device access must belong to the `audio` group.
 After installing the desktop, add the account to `audio` and log out/in so
@@ -82,17 +82,14 @@ the new group membership applies.
 ## Session tracking and Polkit authentication
 
 LightDM's login1 client discovers seats through the system D-Bus, while
-`pam_elogind.so` creates and closes the greeter and user sessions. Elogind is
-supervised by runit and also provides D-Bus activation; it does not require
-systemd. Polkit is built with `-Dsession_tracking=elogind` and links against
-`libelogind`, allowing authorization decisions to identify an active local
+`pam_systemd.so` creates and closes the greeter and user sessions.
+systemd-logind is supervised by systemd and activated on the system bus.
+Polkit is built with `-Dsession_tracking=logind` and links against
+`libsystemd`, allowing authorization decisions to identify an active local
 desktop session.
 
-Elogind is built with `-Dpolkit=enabled`, so login1 power-off and reboot
-requests are checked through PolicyKit. Elogind uses its own D-Bus client for
-these checks; its optional `polkit-gobject-1` dependency is only a version probe
-for legacy `.pkla` handling, not a link-time dependency. This allows Polkit to
-be built with `-Dsession_tracking=elogind` without creating a build cycle.
+systemd-logind checks login1 power-off and reboot requests through
+PolicyKit.
 The `xfce-session` meta-package installs both components in the same desktop
 closure. Verify the actual power actions in a disposable installed VM.
 
@@ -123,10 +120,10 @@ administrator authentication. Devices classified by UDisks2 as system
 devices (normally fixed, non-removable disks) use the separate
 `filesystem-mount-system` action and retain an administrator challenge even
 for the active session. No blanket mount permission is added for all users. The system D-Bus daemon
-(`dbus-system`) is supervised by runit; it activates `udisksd` on demand
+(`dbus-system`) is supervised by systemd; it activates `udisksd` on demand
 from `org.freedesktop.UDisks2.service`. The package removes the upstream
-`SystemdService` activation hint and does not install a systemd unit or a
-second runit service.
+`SystemdService` activation hint and does not install a second
+systemd unit.
 
 The Xfce session already starts a per-user D-Bus session with
 `dbus-run-session`. GVfs session services are therefore activated on that
@@ -174,5 +171,5 @@ for desktop audio; it is not itself an X11 screen-capture backend. Sway keeps
 its separate GTK + wlr portal selection and PipeWire ScreenCast integration.
 
 The frontend and backend are activated by the per-user D-Bus session. They
-are not runit services and must not be added to XFCE autostart, which would
+are not system services and must not be added to XFCE autostart, which would
 create a second activation path.

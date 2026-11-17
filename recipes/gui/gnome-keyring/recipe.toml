@@ -1,6 +1,6 @@
 # gui recipe: GNOME Keyring — D-Bus Secret Service for desktop applications
 # This is a per-user session daemon, activated on demand by the session D-Bus
-# service file org.freedesktop.secrets.service. It is not a systemd/runit
+# service file org.freedesktop.secrets.service. It is not a standalone
 # system service. PAM and SSH-agent integration are intentionally disabled.
 [package]
 name = "gnome-keyring"

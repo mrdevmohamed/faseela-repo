@@ -2,7 +2,7 @@
 # The appstream metadata parser (jackpot51/appstream) is pure Rust — it reads
 # catalog XML files; repository backends are queried over D-Bus. Keep Flatpak,
 # PackageKit and systemd-scope integrations disabled: Faseela has no Flatpak or
-# PackageKit service and uses elogind/runit rather than systemd.
+# PackageKit service and uses systemd and systemd-logind.
 [package]
 name = "cosmic-store"
 version = "1.11.0"

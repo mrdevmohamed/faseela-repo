@@ -1,4 +1,4 @@
-# gui recipe: gui-session — Sway session wiring; seatd is provided by seatd-runit
+# gui recipe: gui-session — Sway session wiring; seatd is provided by seatd-systemd
 [package]
 name = "gui-session"
 version = "0.1"
@@ -9,7 +9,7 @@ license = ["MIT"]
 
 [depends]
 build = ["shadow"]
-run = ["appimage-support", "sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd-runit", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "systemd", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["appimage-support", "sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd-systemd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "systemd", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -121,7 +121,7 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
 fi
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=sway
-# Start per-user audio services; system services are supervised by runit.
+# Start per-user audio services; system services are supervised by systemd.
 if command -v dbus-run-session >/dev/null 2>&1; then
     exec dbus-run-session -- sh -c '
         pw= wp= pp=

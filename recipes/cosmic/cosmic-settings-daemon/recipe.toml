@@ -1,6 +1,6 @@
 # cosmic recipe: cosmic-settings-daemon — COSMIC settings daemon.
 # Applies keyboard/input/shortcuts configuration, handles system actions
-# (shortcuts) and geonames timezone data. It talks to elogind (login1) and
+# (shortcuts) and geonames timezone data. It talks to systemd-logind (login1) and
 # UPower over the session/system D-Bus buses.
 [package]
 name = "cosmic-settings-daemon"
@@ -30,9 +30,9 @@ install = '''
 install -Dm755 target/release/cosmic-settings-daemon %{pkgdir}/usr/bin/cosmic-settings-daemon
 # System shortcut actions live in the cosmic-config schema directory; the
 # polkit rule guards the privileged system-action D-Bus methods.
-# Faseela's elogind package already ships /usr/bin/busctl, so retain the
+# Faseela's systemd package already ships /usr/bin/busctl, so retain the
 # upstream D-Bus calls unchanged. Only replace the systemd-specific suspend
-# command with loginctl, which is provided by elogind.
+# command with loginctl, which is provided by systemd.
 install -d -m755 %{pkgdir}/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1
 sed 's|systemctl suspend|loginctl suspend|g' \
     data/system_actions.ron \

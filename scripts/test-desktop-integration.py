@@ -25,14 +25,14 @@ assert session["package"]["rel"] >= 29, "Bump gui-session rel for AppImage runti
 require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
-seatd_runit = recipe("gui", "seatd-runit")
+seatd_runit = recipe("gui", "seatd-systemd")
 seatd_install = seatd_runit["build"]["install"]
-require_deps("gui", "gui-session", "run", {"seatd-runit"})
+require_deps("gui", "gui-session", "run", {"seatd-systemd"})
 assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" not in install_script
 assert "%{pkgdir}/etc/sv/seatd/run" not in install_script
 assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
-assert "%{pkgdir}/etc/sv/seatd/run" in seatd_install
-assert "/etc/runit/runsvdir/default/seatd" in seatd_install
+assert "%{pkgdir}/usr/lib/systemd/system/seatd.service" in seatd_install
+assert "ExecStart=/usr/bin/seatd -g seat" in seatd_install
 assert "ensure-system-account group" in seatd_runit["hooks"]["post_install"]
 assert (chr(36) + "{pkgdir}") not in install_script, (
     "Use the recipe %{pkgdir} macro; an unset shell variable breaks package staging"
@@ -176,7 +176,7 @@ assert "update-desktop-database" not in xfce_session_hooks.get("post_install", "
 )
 
 # XFCE must start the same audio supervisor and establish a private runtime dir
-# before the desktop is launched from LightDM (which has no pam_systemd).
+# before the desktop is launched from LightDM.
 xfce_session = recipe("xfce", "xfce-session")
 assert xfce_session["package"]["rel"] >= 14, (
     "Bump xfce-session rel when adding XFCE XDG Desktop Portal integration"
@@ -228,28 +228,28 @@ assert "xfconf_file" in xfce4_install and "sed -i" in xfce4_install, (
     "xfce4-session must update the upstream-owned Xfconf profile in place"
 )
 lightdm = recipe("xfce", "lightdm")
-assert not re.search(
-    r"^\s*(?:auth|account|password|session)\s+\S+\s+pam_systemd\.so",
+assert re.search(
+    r"^\s*session\s+optional\s+pam_systemd\.so",
     lightdm["build"]["install"],
     re.MULTILINE,
-), "LightDM PAM must not load pam_systemd"
+), "LightDM PAM must register sessions through pam_systemd"
 
-# LightDM, elogind and Polkit must use one login1 session-tracking backend.
-assert lightdm["package"]["rel"] >= 8
+# LightDM, systemd-logind and Polkit must use one login1 session-tracking backend.
+assert lightdm["package"]["rel"] >= 9
 lightdm_install = lightdm["build"]["install"]
-assert "pam_elogind.so class=user type=x11 desktop=xfce" in lightdm_install
-assert "pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
-require_deps("xfce", "lightdm", "run", {"elogind"})
-require_deps("xfce", "xfce-session", "run", {"elogind", "xfce-polkit"})
+assert "pam_systemd.so class=user type=x11 desktop=xfce" in lightdm_install
+assert "pam_systemd.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
+require_deps("xfce", "lightdm", "run", {"systemd"})
+require_deps("xfce", "xfce-session", "run", {"systemd", "xfce-polkit"})
 
 polkit = recipe("gui", "polkit")
-assert polkit["package"]["rel"] >= 5, "Bump Polkit rel when wiring logind_dep into polkitd"
-require_deps("gui", "polkit", "build", {"elogind"})
-require_deps("gui", "polkit", "run", {"elogind"})
-assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
+assert polkit["package"]["rel"] >= 6, "Bump Polkit rel when wiring logind_dep into polkitd"
+require_deps("gui", "polkit", "build", {"systemd"})
+require_deps("gui", "polkit", "run", {"systemd"})
+assert "-Dsession_tracking=logind" in polkit["build"]["configure"]
 polkit_prepare = polkit["build"].get("prepare", "")
 assert "dependencies: [libpolkit_gobject_dep, logind_dep]" in polkit_prepare, (
-    "Polkit's polkitd executable must receive libelogind include and link flags directly"
+    "Polkit's polkitd executable must receive the logind include and link flags directly"
 )
 assert "src/polkitbackend/meson.build" in polkit_prepare
 polkit_prepare_syntax = subprocess.run(
@@ -259,66 +259,12 @@ assert polkit_prepare_syntax.returncode == 0, (
     f"polkit prepare patch has invalid shell syntax: {polkit_prepare_syntax.stderr}"
 )
 
-elogind = recipe("gui", "elogind")
-assert elogind["package"]["version"] == "257.16"
-assert elogind["package"]["rel"] >= 5, "Bump elogind rel when changing Elogind PolicyKit authorization"
-assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
-require_deps("gui", "elogind", "build", {
-    "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
-    "linux-pam", "util-linux", "python-jinja2", "python-markupsafe",
-})
-require_deps("gui", "elogind", "run", {
-    "acl", "libcap", "eudev", "linux-pam", "util-linux",
-    "dbus-system", "runit", "coreutils",
-})
-for flag in (
-    "-Dcgroup-controller=elogind",
-    "-Dpam=enabled",
-    "-Dpamlibdir=/usr/lib/security",
-    "-Dpolkit=enabled",
-    "-Dnss-elogind=false",
-    "-Duserdb=true",
-    "-Dvarlink=true",
-    "-Ddefault-kill-user-processes=false",
-    "-Dsysvinit-path=''",
-    "-Dsysvrcnd-path=''",
-):
-    assert flag in elogind["build"]["configure"], (
-        f"elogind must use the standalone runit/PAM configuration: {flag}"
-    )
-elogind_prepare = elogind["build"]["prepare"]
-assert "043d7fe5de1b151054735450f23a6ab1b4e31e0f" in elogind_prepare
-assert "get_option('userdb') != false" in elogind_prepare
-assert "ENABLE_USERDB || ENABLE_NSS_ELOGIND" in elogind_prepare, (
-    "UserDatabase must retain its local libc NSS fallback without installing the nss-elogind module"
-)
-assert "get_option('nss-elogind') != false or get_option('userdb') != false" in elogind_prepare
-assert "src/shared/userdb.c" in elogind_prepare
-prepare_syntax = subprocess.run(
-    ["bash", "-n"], input=elogind_prepare, text=True, capture_output=True, check=False
-)
-assert prepare_syntax.returncode == 0, (
-    f"elogind prepare backport script has invalid shell syntax: {prepare_syntax.stderr}"
-)
-
-elogind_install = elogind["build"]["install"]
-for required in (
-    "/usr/lib/elogind/elogind",
-    "/usr/lib/elogind/elogind-userdbd",
-    "/usr/lib/elogind/elogind-userwork",
-    "/usr/lib/security/pam_elogind.so",
-    "libelogind.pc",
-    "org.freedesktop.login1.service",
-    "Exec=/usr/lib/elogind/elogind --daemon",
-    "/etc/sv/elogind",
-    "/etc/runit/runsvdir/default/elogind",
-    "/etc/sv/elogind-userdbd",
-    "exec /usr/lib/elogind/elogind-userdbd",
-    "/etc/runit/runsvdir/default/elogind-userdbd",
-):
-    assert required in elogind_install, (
-        f"elogind install must provide/validate: {required}"
-    )
+# systemd replaces elogind: it provides login1, libudev and pam_systemd.so.
+systemd = recipe("system", "systemd")
+assert systemd["package"]["version"] == "261.5"
+require_deps("system", "systemd", "build", {"meson", "ninja", "pkgconf", "gperf", "libcap", "kmod", "linux-pam", "util-linux"})
+assert "pamlibdir" in systemd["build"]["configure"], "pam_systemd.so must land in /usr/lib/security"
+assert "usr/lib/systemd/systemd-logind" in systemd["build"]["install"]
 
 jinja = recipe("media", "python-jinja2")
 assert jinja["package"]["version"] == "3.1.6"
@@ -367,11 +313,11 @@ libblockdev = recipe("gui", "libblockdev")
 assert libblockdev["package"]["version"] == "3.5.0"
 assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
 require_deps("gui", "libblockdev", "build", {
-    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "glib", "systemd", "kmod", "util-linux", "e2fsprogs",
     "libbytesize", "libnvme", "cryptsetup", "keyutils",
 })
 require_deps("gui", "libblockdev", "run", {
-    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "glib", "systemd", "kmod", "util-linux", "e2fsprogs",
     "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm",
 })
 libblockdev_configure = libblockdev["build"]["configure"]
@@ -589,7 +535,6 @@ for package_name in (
 for category, package_name in (
     ("gui", "audio-session"),
     ("gui", "udisks2"),
-    ("gui", "elogind"),
     ("media", "python-jinja2"),
     ("gui", "python-markupsafe"),
     ("xfce", "lightdm"),
@@ -844,8 +789,8 @@ gudev = recipe("gui", "libgudev")
 assert gudev["package"]["version"] == "238"
 assert re.fullmatch(r"[0-9a-f]{64}", gudev["package"]["sha256"])
 assert gudev["package"]["sha256"] != "0" * 64, "libgudev source checksum must be pinned"
-require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "eudev"})
-require_deps("gui", "libgudev", "run", {"glib", "eudev"})
+require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "systemd"})
+require_deps("gui", "libgudev", "run", {"glib", "systemd"})
 assert "-D gtk_doc=false" in gudev["build"]["configure"]
 
 upower = recipe("gui", "upower")

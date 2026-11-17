@@ -1,4 +1,4 @@
-# gui recipe: swayidle — without logind (no systemd/elogind here).
+# gui recipe: swayidle — built without logind (idle detection via the Wayland idle protocol).
 # sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r swayidle` pins it.
 [package]
 name = "swayidle"

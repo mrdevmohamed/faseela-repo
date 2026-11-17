@@ -1,4 +1,4 @@
-# gui recipe: libgudev — GObject bindings for the eudev/libudev API.
+# gui recipe: libgudev — GObject bindings for the udev/libudev API.
 # Introspection and documentation are not needed by UPower or Faseela's Sway session.
 [package]
 name = "libgudev"

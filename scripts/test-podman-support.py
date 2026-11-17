@@ -146,7 +146,7 @@ common = recipe("recipes/system/containers-common/recipe.toml")
 common_pkg = common["package"]
 assert common_pkg["name"] == "containers-common"
 assert common_pkg["source_date_epoch"] == 1767225600
-assert common_pkg["rel"] == 3
+assert common_pkg["rel"] == 4
 assert common_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
 assets = common["assets"]["include"]
 assert set(assets) == {"containers.conf", "storage.conf", "registries.conf", "policy.json"}
@@ -160,7 +160,7 @@ storage_conf = tomllib.loads((common_dir / "storage.conf").read_text(encoding="u
 registries_conf = tomllib.loads((common_dir / "registries.conf").read_text(encoding="utf-8"))
 policy = json.loads((common_dir / "policy.json").read_text(encoding="utf-8"))
 assert policy["default"], "policy.json needs a default policy"
-assert containers_conf["engine"]["cgroup_manager"] == "cgroupfs"
+assert containers_conf["engine"]["cgroup_manager"] == "systemd"
 assert containers_conf["engine"]["runtime"] == "crun"
 assert containers_conf["network"]["network_backend"] == "netavark"
 assert containers_conf["network"]["default_rootless_network_cmd"] == "pasta"

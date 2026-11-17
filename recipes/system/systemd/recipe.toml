@@ -27,7 +27,7 @@ summary = "systemd init system with udev, journald, logind, networkd, resolved a
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
 source = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
 sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
-source_dir = "systemd-%{version}"
+source_dir = "."
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
@@ -40,9 +40,21 @@ import re
 import sys
 from pathlib import Path
 
-src = Path("meson.options")
-if not src.exists():
-    src = Path("meson_options.txt")
+# Source archives can use different top-level directory names. Find the real
+# systemd source root by the two files that identify its Meson project.
+option_files = sorted(
+    path for path in Path(".").rglob("meson_options.txt")
+    if (path.parent / "meson.build").is_file()
+)
+if len(option_files) != 1:
+    found = ", ".join(str(path) for path in option_files) or "none"
+    sys.exit(
+        "systemd recipe: expected one Meson source root containing "
+        "meson_options.txt and meson.build; found: " + found
+    )
+
+src = option_files[0]
+source_root = src.parent.resolve()
 text = src.read_text(encoding="utf-8")
 
 # name -> declared type ("feature", "boolean", "string", "combo", ...)
@@ -105,7 +117,7 @@ want = {
 }
 
 required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]
-missing = [n for n in required if n not in declared]
+missing = [name for name in required if name not in declared]
 if missing:
     sys.exit("systemd recipe: required meson options missing from this release: " + ", ".join(missing))
 
@@ -125,12 +137,15 @@ for name, value in sorted(want.items()):
     else:
         skipped.append(f"{name}(type {kind})")
 
+Path(".faseela-source-root").write_text(str(source_root) + "\n", encoding="utf-8")
 Path(".faseela-meson-args").write_text("\n".join(args) + "\n", encoding="utf-8")
+print("systemd: source root is", source_root, file=sys.stderr)
 print("systemd: passing", len(args), "meson options", file=sys.stderr)
 print("systemd: skipped (not in this release):", " ".join(skipped) or "none", file=sys.stderr)
 PY
 
-meson setup build \
+SOURCE_ROOT="$(cat .faseela-source-root)"
+meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT" \
   --prefix=/usr \
   --libdir=lib \
   --sysconfdir=/etc \
@@ -138,9 +153,13 @@ meson setup build \
   --buildtype=release \
   $(cat .faseela-meson-args)
 '''
-compile = "ninja -C build"
+compile = '''set -eu
+SOURCE_ROOT="$(cat .faseela-source-root)"
+ninja -C "$SOURCE_ROOT/build"
+'''
 install = '''set -eu
-DESTDIR=%{pkgdir} meson install -C build --no-rebuild
+SOURCE_ROOT="$(cat .faseela-source-root)"
+DESTDIR=%{pkgdir} meson install -C "$SOURCE_ROOT/build" --no-rebuild
 
 for f in usr/lib/systemd/systemd usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
          usr/lib/systemd/systemd-logind usr/lib/systemd/systemd-networkd \

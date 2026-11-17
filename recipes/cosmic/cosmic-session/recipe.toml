@@ -4,7 +4,7 @@
 # workspaces and OSD, and exports the compositor environment to D-Bus
 # activation. Explicitly disable the upstream default "systemd" feature;
 # enable only "logind" (pure zbus calls to org.freedesktop.login1, provided by
-# elogind on Faseela) and "autostart" for XDG autostart entries.
+# systemd-logind on Faseela) and "autostart" for XDG autostart entries.
 [package]
 name = "cosmic-session"
 version = "1.11.0"
@@ -34,7 +34,7 @@ install -Dm755 target/release/cosmic-session %{pkgdir}/usr/bin/cosmic-session
 # Upstream session start script: re-executes through the login shell for the
 # environment, then wraps cosmic-session in a per-session D-Bus bus. The
 # systemd branches are guarded by `command -v systemctl` and stay off under
-# runit.
+# systemd.
 install -m755 data/start-cosmic %{pkgdir}/usr/bin/start-cosmic
 # Wayland session entry for display managers / greetd.
 install -Dm644 data/cosmic.desktop %{pkgdir}/usr/share/wayland-sessions/cosmic.desktop

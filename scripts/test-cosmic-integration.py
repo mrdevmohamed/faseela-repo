@@ -72,8 +72,8 @@ for name in ("cosmic-greeter", "greetd"):
 
 desktop = recipe("cosmic", "cosmic-desktop")
 desktop_run = set(desktop["depends"]["run"])
-assert {"cosmic-session", "cosmic-osk", "cosmic-comp", "seatd-runit", "audio-session",
-        "elogind", "dbus-system", "xdg-desktop-portal-cosmic"} <= desktop_run
+assert {"cosmic-session", "cosmic-osk", "cosmic-comp", "seatd-systemd", "audio-session",
+        "systemd", "dbus-system", "xdg-desktop-portal-cosmic"} <= desktop_run
 assert not {"greetd", "cosmic-greeter", "linux-pam"} & desktop_run, (
     "The core COSMIC desktop must not install or enable the optional login stack"
 )
@@ -131,12 +131,12 @@ osd = recipe("cosmic", "cosmic-osd")
 assert {"pipewire", "libpulse"} <= set(osd["depends"]["build"])
 assert "libpulse" in osd["depends"]["run"]
 
-# COSMIC is built without systemd-only features; session login1 calls use elogind.
+# COSMIC is built without systemd-only features; session login1 calls use systemd-logind.
 comp = recipe("cosmic", "cosmic-comp")
 assert "--no-default-features" in comp["build"]["compile"]
 assert "seatd" in comp["depends"]["run"]
 session = recipe("cosmic", "cosmic-session")
-assert "elogind" in session["depends"]["run"]
+assert "systemd" in session["depends"]["run"]
 assert "cosmic-locker" in session["depends"]["run"], "cosmic-session must install its regular-user lock UI"
 assert "--no-default-features --features logind,autostart" in session["build"]["compile"]
 assert "systemd" not in session["build"]["compile"]
@@ -152,22 +152,23 @@ assert "org.freedesktop.impl.portal.desktop.cosmic.service" in portal_install
 greeter = recipe("greeter", "cosmic-greeter")
 greeter_run = set(greeter["depends"]["run"])
 greeter_build = set(greeter["depends"]["build"])
-assert {"greetd", "elogind", "seatd-runit", "runit", "cosmic-locker", "eudev"} <= greeter_run
-assert "eudev" in greeter_build, "cosmic-greeter daemon's libudev-sys needs libudev.pc"
+assert {"greetd", "systemd", "seatd-systemd", "cosmic-locker"} <= greeter_run
+assert "systemd" in greeter_build, "cosmic-greeter daemon's libudev-sys needs libudev.pc (from systemd)"
 assert "libinput" in greeter_build, "cosmic-greeter daemon links libinput"
 assert "libinput" in greeter_run, "cosmic-greeter daemon dynamically links libinput"
-assert "/etc/sv/cosmic-greeter/run" in greeter["build"]["install"]
-assert "/etc/runit/runsvdir/default/cosmic-greeter" not in greeter["build"]["install"]
+assert "/usr/lib/systemd/system/cosmic-greeter.service" in greeter["build"]["install"]
+assert "WantedBy=" not in greeter["build"]["install"], "the greeter unit must ship disabled"
+assert "Conflicts=getty@tty1.service" in greeter["build"]["install"]
 locker = recipe("cosmic", "cosmic-locker")
 locker_run = set(locker["depends"]["run"])
 locker_install = locker["build"]["install"]
-assert {"linux-pam", "elogind", "wayland"} <= locker_run
+assert {"linux-pam", "systemd", "wayland"} <= locker_run
 assert "target/release/cosmic-greeter" in locker_install
-assert "pam_elogind.so" in locker_install
+assert "pam_systemd.so" in locker_install
 assert "class=user type=wayland desktop=COSMIC" in locker_install
 assert "cosmic-locker" in greeter_run
 assert "install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter" not in greeter["build"]["install"]
-assert "pam_elogind.so" not in greeter["build"]["install"]
+assert "pam_systemd.so" not in greeter["build"]["install"]
 greeter_install = greeter["build"]["install"]
 assert "system-services/com.system76.CosmicGreeter.service" in greeter_install
 assert "Name=com.system76.CosmicGreeter" in greeter_install
@@ -213,13 +214,13 @@ greetd = recipe("greeter", "greetd")
 assert "linux-pam" in greetd["depends"]["run"]
 
 # Shared seatd integration is owned once, not by the Sway or COSMIC session.
-seatd = recipe("gui", "seatd-runit")
+seatd = recipe("gui", "seatd-systemd")
 seatd_install = seatd["build"]["install"]
-assert "/etc/runit/runsvdir/default/seatd" in seatd_install
+assert "/usr/lib/systemd/system/seatd.service" in seatd_install
 assert "/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
 assert "ensure-system-account group" in seatd["hooks"]["post_install"]
 gui_session = recipe("gui", "gui-session")
-assert "seatd-runit" in gui_session["depends"]["run"]
+assert "seatd-systemd" in gui_session["depends"]["run"]
 assert "/etc/sv/seatd/run" not in gui_session["build"]["install"]
 assert "/etc/udev/rules.d/70-faseela-drm.rules" not in gui_session["build"]["install"]
 
@@ -239,7 +240,7 @@ flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))
 cosmic_flavor = flavors["flavor"]["iso-cosmic"]
 assert {"@cosmic", "greetd", "cosmic-greeter"} <= set(cosmic_flavor["include"])
 assert {"lightdm", "lightdm-gtk-greeter"} <= set(cosmic_flavor["exclude"])
-assert {"getty-tty1", "lightdm"} <= set(cosmic_flavor["disable_services"])
+assert {"getty@tty1", "lightdm"} <= set(cosmic_flavor["disable_services"])
 assert cosmic_flavor["enable_services"] == ["cosmic-greeter"]
 
 xfce_flavor = flavors["flavor"]["iso-xfce"]
@@ -266,7 +267,7 @@ assert "/usr/lib/pop-launcher/plugins" in pop_install
 assert "ln -s /usr/bin/pop-launcher" in pop_install
 assert {"fd"} <= set(pop["depends"]["run"])
 
-# Default shortcuts, input-source switching and elogind-native actions.
+# Default shortcuts, input-source switching and logind-native actions.
 assert "keybindings.ron" in comp["build"]["install"]
 assert "CosmicSettings.Shortcuts/v1/defaults" in comp["build"]["install"]
 
@@ -274,7 +275,7 @@ daemon = recipe("cosmic", "cosmic-settings-daemon")
 daemon_install = daemon["build"]["install"]
 daemon_build = set(daemon["depends"]["build"])
 daemon_run = set(daemon["depends"]["run"])
-assert {"dbus", "elogind", "pipewire"} <= daemon_run
+assert {"dbus", "systemd", "pipewire"} <= daemon_run
 assert "pipewire" in daemon_build, "libspa-sys needs PipeWire development metadata"
 assert "libinput" in daemon_build, "cosmic-settings-daemon links libinput"
 assert "libinput" in daemon_run, "cosmic-settings-daemon dynamically links libinput"
@@ -282,7 +283,7 @@ assert "llvm" in daemon_build, "libspa-sys bindgen requires libclang from Faseel
 assert "sed 's|systemctl suspend|loginctl suspend|g'" in daemon_install
 assert "grep -q 'systemctl'" in daemon_install
 assert "busctl --user call" in daemon_install
-assert "dbus-send" not in daemon_install, "Faseela's elogind already ships busctl"
+assert "dbus-send" not in daemon_install, "Faseela's systemd already ships busctl"
 assert "loginctl suspend" in daemon_install
 
 desktop = recipe("cosmic", "cosmic-desktop")

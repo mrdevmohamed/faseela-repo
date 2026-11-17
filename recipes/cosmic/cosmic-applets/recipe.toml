@@ -85,7 +85,7 @@ done
 # Status-area tray support: D-Bus activation for the StatusNotifierWatcher
 # (the @bindir@ placeholder upstream substitutes with the prefix). The
 # SystemdService= key is only meaningful under systemd and is ignored by
-# dbus-daemon on a runit system, so it ships as upstream wrote it.
+# dbus-daemon on a systemd system, so it ships as upstream wrote it.
 install -d -m755 %{pkgdir}/usr/share/dbus-1/services
 sed "s|@bindir@|/usr/bin|" \
     cosmic-applet-status-area/data/dbus-1/com.system76.CosmicStatusNotifierWatcher.service.in \

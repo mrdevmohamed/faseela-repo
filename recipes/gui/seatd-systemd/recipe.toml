@@ -1,12 +1,12 @@
-# gui recipe: seatd-runit — shared seatd service and DRM device permissions.
+# gui recipe: seatd-systemd — shared seatd unit and DRM device permissions.
 # Both Sway and COSMIC use libseat with the seatd backend. Keeping the service
 # and render-node rule here avoids desktop-specific duplicate file ownership.
 [package]
-name = "seatd-runit"
+name = "seatd-systemd"
 version = "0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
-summary = "Shared runit supervision and DRM permissions for seatd-based Wayland desktops"
+summary = "Shared systemd unit and DRM permissions for seatd-based Wayland desktops"
 license = ["MIT"]
 source = ""
 
@@ -17,14 +17,24 @@ run = ["seatd", "systemd", "base-files", "coreutils"]
 [build]
 install = '''
 # seatd runs as root and grants access through the `seat` group.
-install -d -m755 %{pkgdir}/etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default
-cat > %{pkgdir}/etc/sv/seatd/run <<'RUN'
-#!/bin/sh
-exec 2>&1
-exec seatd -g seat
-RUN
-chmod 755 %{pkgdir}/etc/sv/seatd/run
-ln -s /etc/sv/seatd %{pkgdir}/etc/runit/runsvdir/default/seatd
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/seatd.service <<'EOF'
+[Unit]
+Description=Seat management daemon
+Documentation=man:seatd(1)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/seatd -g seat
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/seatd.service
+install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
+printf '%s\n' 'enable seatd.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-seatd.preset
 
 # Render nodes are safe for unprivileged GPU command submission. Keep the
 # primary DRM nodes restricted; compositor clients only need render access.
@@ -43,5 +53,6 @@ done
 udevadm control --reload-rules 2>/dev/null || true
 udevadm trigger --subsystem-match=drm 2>/dev/null || true
 udevadm settle 2>/dev/null || true
-echo "seatd-runit: add desktop users to seat,video,render,input."
+systemctl preset seatd.service 2>/dev/null || true
+echo "seatd-systemd: add desktop users to seat,video,render,input."
 '''

@@ -5,7 +5,7 @@
 [package]
 name = "cosmic-greeter"
 version = "1.11.0"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "COSMIC login greeter (greetd session with PAM authentication)"
 license = ["GPL-3.0-only"]
@@ -19,7 +19,7 @@ strip_components = 1
 
 [depends]
 build = ["rust", "pkgconf", "systemd", "libinput"]
-run = ["cosmic-locker", "cosmic-comp", "cosmic-randr", "dbus", "dbus-system", "systemd", "greetd", "seatd-runit", "base-files", "coreutils", "libinput"]
+run = ["cosmic-locker", "cosmic-comp", "cosmic-randr", "dbus", "dbus-system", "systemd", "greetd", "seatd-systemd", "base-files", "coreutils", "libinput"]
 
 [fetch.cargo]
 dir = "."
@@ -46,8 +46,7 @@ install -Dm644 cosmic-greeter.toml %{pkgdir}/etc/greetd/cosmic-greeter.toml
 # System-bus policy that lets the greeter talk to its root daemon.
 install -Dm644 dbus/com.system76.CosmicGreeter.conf \
     %{pkgdir}/usr/share/dbus-1/system.d/com.system76.CosmicGreeter.conf
-# On runit there is no systemd Type=dbus unit. Let the system bus
-# activate the privileged daemon when the greeter first requests its API.
+# Let the system bus activate the privileged daemon when the greeter first requests its API.
 install -d -m755 %{pkgdir}/usr/share/dbus-1/system-services
 cat > %{pkgdir}/usr/share/dbus-1/system-services/com.system76.CosmicGreeter.service <<'DBUS'
 [D-BUS Service]
@@ -59,18 +58,13 @@ chmod 644 %{pkgdir}/usr/share/dbus-1/system-services/com.system76.CosmicGreeter.
 # The "cosmic-greeter" PAM service is installed by cosmic-locker so the
 # normal-user locker and this optional login UI share the same auth policy.
 
-# Optional runit service. Ship it disabled so installing the greeter never
-# unexpectedly takes over VT 1 or conflicts with the active getty.
-install -d -m755 %{pkgdir}/etc/sv/cosmic-greeter
-cat > %{pkgdir}/etc/sv/cosmic-greeter/run <<'RUN'
+# Provision accounts when the unit starts, not in the package-build hook.
+# Nawa executes post_install in its isolated build root; only this helper runs
+# against the installed machine's real passwd/group databases.
+install -d -m755 %{pkgdir}/usr/libexec/faseela
+cat > %{pkgdir}/usr/libexec/faseela/cosmic-greeter-prepare <<'PREP'
 #!/bin/sh
-exec 2>&1
 set -eu
-[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-
-# Provision accounts at service runtime, not in the package-build hook.
-# Nawa executes post_install in its isolated build root; only this runit
-# service runs against the installed machine's real passwd/group databases.
 /usr/libexec/faseela/ensure-system-account group video
 /usr/libexec/faseela/ensure-system-account user cosmic-greeter video "Cosmic Greeter Account" /var/lib/cosmic-greeter /usr/bin/false
 
@@ -94,21 +88,42 @@ while IFS=: read -r group_name _ group_id _; do
     fi
 done < /etc/group
 [ -n "$video_gid" ] || {
-    echo "cosmic-greeter: required video group is missing; reinstall seatd-runit" >&2
+    echo "cosmic-greeter: required video group is missing; reinstall seatd-systemd" >&2
     exit 1
 }
 
 install -d -m750 /var/lib/cosmic-greeter /run/cosmic-greeter
 chown "$greeter_uid:$video_gid" /var/lib/cosmic-greeter /run/cosmic-greeter
-exec greetd
-RUN
-chmod 755 %{pkgdir}/etc/sv/cosmic-greeter/run
+PREP
+chmod 755 %{pkgdir}/usr/libexec/faseela/cosmic-greeter-prepare
+
+# Optional unit. Ship it disabled so installing the greeter never unexpectedly
+# takes over VT 1; Conflicts= stops getty@tty1 when the greeter is started.
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/cosmic-greeter.service <<'EOF'
+[Unit]
+Description=COSMIC greeter (greetd)
+After=systemd-user-sessions.service systemd-logind.service dbus.service seatd.service getty@tty1.service
+Wants=dbus.service seatd.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+ExecStartPre=/usr/libexec/faseela/cosmic-greeter-prepare
+ExecStart=/usr/bin/greetd
+Restart=on-failure
+TTYPath=/dev/tty1
+
+[Install]
+Alias=display-manager.service
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/cosmic-greeter.service
 '''
 
 [hooks]
 post_install = '''
 # Do not provision system accounts here: package hooks run in Nawa's build
-# root during builds. The optional runit service creates the account on the
+# root during builds. The unit's ExecStartPre creates the account on the
 # installed system immediately before starting greetd.
 
 # Use the COSMIC greeter only while greetd still has its stock agreety sample.
@@ -120,6 +135,5 @@ if [ -f /etc/greetd/config.toml ] && [ -f /etc/greetd/cosmic-greeter.toml ] \
     echo "cosmic-greeter: configured greetd to start the COSMIC greeter"
 fi
 
-echo "cosmic-greeter: enable with: nawa service enable cosmic-greeter"
-echo "cosmic-greeter: disable getty-tty1 first if it owns VT 1."
+echo "cosmic-greeter: enable with: systemctl enable cosmic-greeter  (it takes over VT 1 from getty@tty1)"
 '''

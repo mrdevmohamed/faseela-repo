@@ -1,6 +1,6 @@
 # system recipe: linux-pam — Pluggable Authentication Modules
-# Standalone PAM implementation for LightDM. Elogind ships pam_elogind.so
-# separately; this package does not ship systemd or elogind PAM modules.
+# Standalone PAM implementation. pam_systemd.so ships with the systemd package;
+# this package does not ship systemd PAM modules.
 [package]
 name = "linux-pam"
 version = "1.7.3"

@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import re
+import subprocess
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,7 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
+require(systemd_pkg["rel"] >= 2, "Bump systemd rel when fixing initrd/hibernate build options")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
     re.fullmatch(r"[0-9a-f]{64}", systemd_pkg["sha256"]) is not None,
@@ -38,15 +40,57 @@ for kind in ("build", "run"):
         f"systemd {kind} dependencies still contain replaced packages: {sorted(dependencies & obsolete)}",
     )
 
+require(
+    systemd_pkg.get("source_dir") == ".",
+    "systemd must start at the extracted archive root and discover its real Meson project directory",
+)
+
 configure = systemd["build"]["configure"]
 for marker in (
-    "meson.options",
+    'Path(".").rglob("meson_options.txt")',
+    '(path.parent / "meson.build").is_file()',
     'required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]',
-    "Path(\".faseela-meson-args\")",
-    "meson setup build",
-    "$(cat .faseela-meson-args)",
+    'Path(".faseela-meson-args")',
+    '"hibernate": "off", "initrd": "off",',
+    'Path(".faseela-source-root")',
+    'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
+    '$(cat .faseela-meson-args)',
 ):
     require(marker in configure, f"systemd configure phase is missing: {marker}")
+
+compile_script = systemd["build"]["compile"]
+require(
+    'SOURCE_ROOT="$(cat .faseela-source-root)"' in compile_script
+    and 'ninja -C "$SOURCE_ROOT/build"' in compile_script,
+    "systemd compile phase must use the detected source root",
+)
+
+install_script = systemd["build"]["install"]
+require(
+    'SOURCE_ROOT="$(cat .faseela-source-root)"' in install_script
+    and 'meson install -C "$SOURCE_ROOT/build" --no-rebuild' in install_script,
+    "systemd install phase must use the same detected source root",
+)
+
+for phase_name, phase_script in (
+    ("configure", configure),
+    ("compile", compile_script),
+    ("install", install_script),
+):
+    syntax = subprocess.run(
+        ["bash", "-n"], input=phase_script, text=True, capture_output=True, check=False
+    )
+    require(
+        syntax.returncode == 0,
+        f"systemd {phase_name} phase has invalid shell syntax: {syntax.stderr}",
+    )
+
+python_block = re.search(r"python3 - <<'PY'\n(.*?)\nPY", configure, re.DOTALL)
+require(python_block is not None, "systemd configure phase must contain its Meson option filter")
+try:
+    compile(python_block.group(1), "systemd-configure-options", "exec")
+except SyntaxError as error:
+    raise AssertionError(f"systemd Meson option filter has invalid Python syntax: {error}") from error
 
 systemd_install = systemd["build"]["install"]
 for path in (

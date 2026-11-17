@@ -35,13 +35,13 @@ flavor. The `iso-xfce` flavor selects the Xorg runtime through
 
 * Xorg is built with `suid_wrapper=false`: no SUID `Xorg.wrap` is installed,
   and the server is intended to run with the logged-in user's privileges.
-* Faseela uses runit and seatd, but upstream Xorg does not currently use
+* Faseela uses systemd and seatd, but upstream Xorg does not currently use
   libseat to acquire active-seat DRM/input/VT resources. Device discovery via
   udev alone does not grant an unprivileged process those permissions; a
   reviewed libseat integration is still required for reliable rootless Xorg.
 * The display manager is optional and lives under `recipes/xfce/`.
-  LightDM uses Linux-PAM services without `pam_systemd` and ships a runit
-  service, but it is not pre-enabled: the current LightDM daemon launches
+  LightDM uses Linux-PAM services with `pam_systemd` and ships a systemd
+  unit, but it is not pre-enabled: the current LightDM daemon launches
   its X server under the daemon's root UID. Do not enable it until a
   non-root X-server launcher and seat-management integration are in place.
 * An X11 session itself does not require a display manager.

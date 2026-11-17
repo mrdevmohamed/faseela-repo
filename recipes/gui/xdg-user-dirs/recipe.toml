@@ -2,7 +2,7 @@
 # xdg-user-dirs-update (started once per session by gui-session) creates the
 # well-known directories and keeps ~/.config/user-dirs.dirs in sync with the
 # locale. 0.20 builds with meson; systemd is not found (and not used) on this
-# runit system, docs need the xml toolchain, and nls is off together with the
+# systemd system, docs need the xml toolchain, and nls is off together with the
 # rest of the gettext stack (user-dirs.defaults stays English).
 [package]
 name = "xdg-user-dirs"

@@ -2,12 +2,12 @@
 # Faseela (meta package in the gui-session/xfce-session style: no upstream
 # source, only configuration and service wiring on top of the real packages).
 #
-# Faseela runs runit as PID 1 with the system D-Bus and elogind, so this
+# Faseela runs systemd as PID 1 with the system D-Bus and logind, so this
 # package wires COSMIC into that stack:
 #   * the per-session bus starts via dbus-run-session inside start-cosmic
 #     (upstream script; its systemd branches are guarded by `command -v`)
-#   * cosmic-session's login1 calls resolve to elogind
-#   * seatd-runit provides the shared libseat daemon and DRM device rules
+#   * cosmic-session's login1 calls resolve to systemd-logind
+#   * seatd-systemd provides the shared libseat daemon and DRM device rules
 #   * PipeWire/WirePlumber start per session through faseela-audio-session
 #     (XDG autostart entry below, OnlyShowIn=COSMIC)
 [package]
@@ -15,12 +15,12 @@ name = "cosmic-desktop"
 version = "0.1"
 rel = 2
 arch = ["x86_64"]
-summary = "COSMIC Wayland desktop session integration for Faseela (runit + dbus + elogind)"
+summary = "COSMIC Wayland desktop session integration for Faseela (systemd + dbus)"
 license = ["MIT"]
 
 [depends]
 build = []
-run = ["appimage-support", "cosmic-session", "cosmic-osk", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings", "cosmic-settings-daemon", "cosmic-screenshot", "cosmic-randr", "cosmic-icons", "xdg-desktop-portal-cosmic", "mesa", "dbus", "dbus-system", "systemd", "polkit", "pipewire", "wireplumber", "network-manager", "bluez", "upower", "seatd-runit", "base-files", "faseela-branding", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "gnome-keyring", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["appimage-support", "cosmic-session", "cosmic-osk", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings", "cosmic-settings-daemon", "cosmic-screenshot", "cosmic-randr", "cosmic-icons", "xdg-desktop-portal-cosmic", "mesa", "dbus", "dbus-system", "systemd", "polkit", "pipewire", "wireplumber", "network-manager", "bluez", "upower", "seatd-systemd", "base-files", "faseela-branding", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "gnome-keyring", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [build]
 install = '''
@@ -87,13 +87,13 @@ chmod 644 %{pkgdir}/usr/share/cosmic/com.system76.CosmicComp/v1/xkb_config
 
 [hooks]
 post_install = '''
-# The shared seatd-runit package creates seat/video/render/input groups.
+# The shared seatd-systemd package creates seat/video/render/input groups.
 # COSMIC's per-user audio helper needs the audio group.
 /usr/libexec/faseela/ensure-system-account group audio
 
 echo "cosmic-desktop: add your user to the desktop groups:"
 echo "cosmic-desktop:   usermod -aG seat,video,render,input,audio <user>"
 echo "cosmic-desktop: start the session from a tty:  start-cosmic"
-echo "cosmic-desktop: optional login greeter: install cosmic-greeter, then enable its runit service"
+echo "cosmic-desktop: optional login greeter: install cosmic-greeter, then enable its unit (systemctl enable cosmic-greeter)"
 echo "cosmic-desktop: disable getty-tty1 first if it owns VT 1"
 '''

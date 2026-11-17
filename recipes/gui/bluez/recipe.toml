@@ -2,7 +2,7 @@
 [package]
 name = "bluez"
 version = "5.87"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -22,15 +22,33 @@ configure = "./configure --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libex
 compile = "make -j%{jobs}"
 install = '''
 make DESTDIR=%{pkgdir} install
-install -d -m755 %{pkgdir}/etc/sv/bluetoothd %{pkgdir}/etc/runit/runsvdir/default
-cat > %{pkgdir}/etc/sv/bluetoothd/run <<'RUN'
-#!/bin/sh
-# Wait for the system bus before starting bluetoothd.
-# no D-Bus yet: exit so runsv retries and `sv status` shows the flapping,
-# instead of hanging in a loop that still reports "run"
-[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-exec /usr/libexec/bluetooth/bluetoothd --nodetach
-RUN
-chmod 755 %{pkgdir}/etc/sv/bluetoothd/run
-ln -s /etc/sv/bluetoothd %{pkgdir}/etc/runit/runsvdir/default/bluetoothd
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+# --disable-systemd above keeps BlueZ's own unit out; it is shipped here with
+# Type=dbus because this bluetoothd has no sd_notify support.
+cat > %{pkgdir}/usr/lib/systemd/system/bluetooth.service <<'EOF'
+[Unit]
+Description=Bluetooth service
+Documentation=man:bluetoothd(8)
+ConditionPathIsDirectory=/sys/class/bluetooth
+After=dbus.service
+Wants=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.bluez
+ExecStart=/usr/libexec/bluetooth/bluetoothd -n
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=dbus-org.bluez.service
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/bluetooth.service
+install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
+printf '%s\n' 'enable bluetooth.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-bluetooth.preset
+'''
+
+[hooks]
+post_install = '''
+systemctl preset bluetooth.service 2>/dev/null || true
 '''

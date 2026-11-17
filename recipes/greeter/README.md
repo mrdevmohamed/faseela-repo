@@ -8,12 +8,12 @@ selected by category.
 
 - `greetd` is the small PAM-aware login daemon.
 - `cosmic-greeter` supplies the COSMIC greeter UI and its daemon integration.
-  It depends on greetd, installs a PAM service using `pam_elogind.so`, and
-  ships its runit service disabled.
+  It depends on greetd, installs a PAM service using `pam_systemd.so`, and
+  ships its systemd unit disabled.
 
-The `iso-cosmic` image flavor includes this stack and applies its runit
+The `iso-cosmic` image flavor includes this stack and applies its systemd
 service policy when the image root is assembled: it enables
-`cosmic-greeter`, disables `getty-tty1`, and removes an enabled LightDM link
+`cosmic-greeter`, disables `getty@tty1`, and removes an enabled LightDM link
 when present. The greeter then owns VT 1 on first boot.
 
 A normal `nawa install cosmic-desktop` remains session-only and does not

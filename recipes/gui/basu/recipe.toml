@@ -1,6 +1,6 @@
 # gui recipe: basu — sd-bus library extracted from elogind, without systemd
 # sway's tray, mako and xdg-desktop-portal-wlr all speak D-Bus through sd-bus;
-# basu provides that API on a runit system with no systemd or elogind.
+# basu provides that API on a systemd system with no systemd or elogind.
 # gperf is required by the upstream Meson build to generate lookup tables.
 [package]
 name = "basu"

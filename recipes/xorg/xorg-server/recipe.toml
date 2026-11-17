@@ -1,7 +1,7 @@
 # xorg recipe: xorg-server — The X.Org X server
 # full Xorg for the Xfce session. No Xwayland here: sway sessions use the
 # separate standalone xwayland package (24.1 series). No Xvfb/Xnest/Xephyr
-# DDXes, no systemd-logind (runit system), no SELinux/audit. GLX and DRI3
+# DDXes, no systemd-logind (not needed here), no SELinux/audit. GLX and DRI3
 # through the Mesa GLX ABI (mesa is built with glx=dri, glvnd=disabled).
 [package]
 name = "xorg-server"

@@ -1,6 +1,6 @@
 # gui recipe: udisks2 — storage daemon used by GVfs and Thunar.
 # UDisks2 is activated by the existing system D-Bus daemon. Do not add a
-# second runit service or install systemd units on this runit-based system.
+# second service or install systemd units of its own.
 [package]
 name = "udisks2"
 version = "2.11.2"

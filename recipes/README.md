@@ -9,7 +9,7 @@ recipes/
 ├── base/        core userland: libs, shells, compressors, interpreters
 ├── system/      networking, systemd (init, udev, logind), kmod, shadow, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-systemd, ... (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
@@ -120,9 +120,9 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 (extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
 and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
 
-**gui, desktop services** — dbus-system → elogind → polkit; bluez and
-network-manager; pipewire → wireplumber. Elogind provides login1 and PAM
-session tracking while runit remains PID 1. NetworkManager uses wpa_supplicant and replaces dhcpcd;
+**gui, desktop services** — dbus-system → systemd (logind) → polkit; bluez and
+network-manager; pipewire → wireplumber. systemd-logind provides login1 and
+`pam_systemd` session tracking. NetworkManager uses wpa_supplicant and conflicts with systemd-networkd (a preset switches between them);
 PipeWire and WirePlumber start in the user's Sway session.
 
 Verify any dependency chain — or the complete recipe graph — with:
@@ -160,8 +160,8 @@ the default ISO and the Sway flavor:
   management still needs libseat integration with Faseela's seatd.
 * **`gui/`** — shared storage services: `libblockdev` supplies UDisks2's
   filesystem and partition operations; `udisks2` is activated on demand by
-  the system D-Bus and integrates with polkit and eudev without a systemd or
-  dedicated runit service.
+  the system D-Bus and integrates with polkit and udev (from systemd) without a
+  dedicated systemd unit.
 * **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
   (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
   `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop
@@ -170,7 +170,7 @@ the default ISO and the Sway flavor:
   applications and panel plugins. The `xfce-session` meta-package pulls in
   the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
   LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
-  they use Linux-PAM with `pam_elogind.so` and no systemd modules. The LightDM runit service is
+  they use Linux-PAM with `pam_systemd.so`. The LightDM systemd unit is
   shipped but not pre-enabled because its X-server child currently inherits
   the daemon's root UID; rootless LightDM remains pending.
 
@@ -178,7 +178,7 @@ Everything is built X11-only (the upstream Wayland backends of libxfce4ui,
 the panel, xfdesktop and the terminal are disabled), reuses the packaged
 GTK3/mesa/dbus/polkit/pipewire stack, and needs no systemd: session power
 actions go through polkit's shadow backend, UPower and PipeWire keep their
-D-Bus/runit activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
+D-Bus/systemd activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
 upstream GitHub releases. SHA-256 pins are recorded in each recipe.
 
 The `iso-xfce` flavor includes Xfce, Xorg, LightDM and the standard desktop
@@ -196,14 +196,14 @@ The `cosmic/` category contains 21 recipes for the System76 COSMIC Wayland
 desktop, all pinned to the `epoch-1.0.8` source snapshot. Each Rust package
 uses Nawa's Cargo fetch phase and locked workspace dependency graph.
 `cosmic-desktop` is the Faseela integration meta-package: it connects the
-session to runit, D-Bus, elogind, PipeWire/WirePlumber, NetworkManager and the
-COSMIC portal backend. It uses the shared `seatd-runit` package, which also
+session to systemd, D-Bus, systemd-logind, PipeWire/WirePlumber, NetworkManager and the
+COSMIC portal backend. It uses the shared `seatd-systemd` package, which also
 owns the seatd service and DRM render-node udev rule used by Sway; the service
 is not duplicated in desktop-specific packages.
 
 The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
-`cosmic-greeter`, then enables the greeter's runit service while disabling
-`getty-tty1` and LightDM in the image. The separate `greeter/` category keeps
+`cosmic-greeter`, then enables the greeter's systemd unit while disabling
+`getty@tty1` and LightDM in the image. The separate `greeter/` category keeps
 the login stack out of other desktop flavors; the `cosmic` package group still
 makes it optional for an existing desktop installation. To inspect the dependency closure:
 

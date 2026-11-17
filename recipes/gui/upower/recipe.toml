@@ -1,5 +1,5 @@
 # gui recipe: UPower — D-Bus system service for power-device information.
-# UPower is activated on demand by the system D-Bus; runit supervises dbus-system,
+# UPower is activated on demand by the system D-Bus; systemd supervises dbus-system,
 # not a second always-running UPower service. Systemd unit installation is disabled.
 [package]
 name = "upower"
@@ -22,7 +22,7 @@ compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build
 # UPower must be available through the system D-Bus activation path. Do not
-# replace this with a runit service: dbus-system already supervises the bus.
+# replace this with a systemd unit: dbus-system already supervises the bus.
 DBUS_SERVICE="%{pkgdir}/usr/share/dbus-1/system-services/org.freedesktop.UPower.service"
 DBUS_POLICY="%{pkgdir}/usr/share/dbus-1/system.d/org.freedesktop.UPower.conf"
 UPOWERD="%{pkgdir}/usr/libexec/upowerd"

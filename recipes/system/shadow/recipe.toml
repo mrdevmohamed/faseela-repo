@@ -5,7 +5,7 @@
 [package]
 name = "shadow"
 version = "4.18.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Shadow password suite (useradd, passwd, ...)"
 license = ["BSD-3-Clause"]
@@ -29,15 +29,17 @@ for helper in newuidmap newgidmap; do
     chmod 4755 "%{pkgdir}/usr/bin/$helper"
 done
 
-# PAM services for the tools that talk to PAM. pam_systemd registers the console
+# PAM services for the tools that talk to PAM. `nullok` is required by the live
+# session: root and `live` have an empty password there (the installer sets real
+# ones), and shadow's own login accepted that before it was built with PAM. pam_systemd registers the console
 # login with systemd-logind; pam_nologin honours /etc/nologin.
 install -d -m755 %{pkgdir}/etc/pam.d
 cat > %{pkgdir}/etc/pam.d/login <<'PAM'
 #%PAM-1.0
 auth      requisite pam_nologin.so
-auth      required  pam_unix.so
+auth      required  pam_unix.so nullok
 account   required  pam_unix.so
-password  required  pam_unix.so sha512 shadow try_first_pass
+password  required  pam_unix.so nullok sha512 shadow try_first_pass
 session   required  pam_limits.so
 session   required  pam_unix.so
 session   optional  pam_systemd.so
@@ -45,18 +47,18 @@ PAM
 cat > %{pkgdir}/etc/pam.d/su <<'PAM'
 #%PAM-1.0
 auth      sufficient pam_rootok.so
-auth      required   pam_unix.so
+auth      required   pam_unix.so nullok
 account   required   pam_unix.so
-password  required   pam_unix.so sha512 shadow try_first_pass
+password  required   pam_unix.so nullok sha512 shadow try_first_pass
 session   required   pam_limits.so
 session   required   pam_unix.so
 PAM
 cp %{pkgdir}/etc/pam.d/su %{pkgdir}/etc/pam.d/su-l
 cat > %{pkgdir}/etc/pam.d/passwd <<'PAM'
 #%PAM-1.0
-auth      required  pam_unix.so
+auth      required  pam_unix.so nullok
 account   required  pam_unix.so
-password  required  pam_unix.so sha512 shadow try_first_pass
+password  required  pam_unix.so nullok sha512 shadow try_first_pass
 PAM
 for svc in chfn chsh; do
 cat > %{pkgdir}/etc/pam.d/$svc <<'PAM'

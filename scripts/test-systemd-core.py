@@ -163,6 +163,7 @@ shadow_install = shadow["build"]["install"]
 for svc in ("login", "su", "su-l", "passwd", "chfn", "chsh", "chpasswd", "newusers"):
     require(f"etc/pam.d/{svc}" in shadow_install or svc in shadow_install, f"shadow does not ship PAM service {svc}")
 require("pam_systemd.so" in shadow_install, "shadow login must register console sessions with pam_systemd")
+require("nullok" in shadow_install, "shadow login must accept the live session's empty password (nullok)")
 require("chmod 4755" in shadow["hooks"]["post_install"], "shadow must restore SUID on su/passwd")
 
 print("SYSTEMD CORE INTEGRATION VALIDATION PASSED")

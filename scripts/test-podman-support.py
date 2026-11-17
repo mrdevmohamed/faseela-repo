@@ -14,7 +14,7 @@ def recipe(path: str) -> dict:
 
 
 shadow = recipe("recipes/system/shadow/recipe.toml")
-assert shadow["package"]["rel"] == 4
+assert shadow["package"]["rel"] == 5
 assert "--enable-subids" in shadow["build"]["configure"]
 shadow_install = shadow["build"]["install"]
 for helper in ("newuidmap", "newgidmap"):

@@ -51,7 +51,7 @@ The repository already has Go and Rust toolchains. Two compiled source recipes h
 crun recipe explicitly disables systemd integration and links to the declared
 libcap, libseccomp and json-c dependencies. A third recipe, `containers-common`,
 packages local, version-controlled defaults using Nawa's recipe-local asset
-support. It selects `cgroupfs`, `crun`, Netavark, rootless
+support. It selects the `systemd` cgroup manager, `crun`, Netavark, rootless
 `pasta`, and enforcing short-name resolution. It leaves Netavark's default
 rootless network directory under the user's graphroot instead of forcing the
 rootful `/etc/containers/networks` path on unprivileged users. Its storage defaults
@@ -120,35 +120,22 @@ uses it offline. Never download unpinned dependencies during compilation.
 - Document required kernel features: user namespaces, namespaces, cgroups
   (prefer unified v2), seccomp, OverlayFS, veth/bridge, and nftables support.
 
-## Cgroup behavior without systemd
+## Cgroup behavior with systemd
 
-Faseela deliberately does not ship systemd. The shared configuration therefore
-selects `cgroupfs` instead of relying on a systemd user manager. This is not
-equivalent to systemd delegation: upstream Podman documents that the cgroupfs
-manager does not manage container cgroups in rootless mode. Rootless containers
-can still run, but per-container CPU, memory and PID cgroup limits must not be
-claimed as supported on this configuration. Rootful cgroup management remains
-a separate path.
+Faseela runs systemd as PID 1, so the shared configuration selects the
+`systemd` cgroup manager. Rootful containers get transient scopes under
+`machine.slice`. Rootless containers use the per-user manager (`systemd --user`),
+which exists only when the login went through `pam_systemd` (LightDM, greetd,
+SSH). Per-container CPU, memory and PID limits additionally need those
+controllers delegated to the user (`Delegate=` on `user@.service`); this is not
+configured by default. A plain console login with shadow's `login` has no
+PAM session, so there is no user manager: Podman then falls back to `cgroupfs`
+and rootless limits do not apply. Do not claim rootless resource limits as
+supported until that path has been tested in a VM.
 
-systemd mounts the unified cgroup v2 hierarchy at `/sys/fs/cgroup` during
-early boot. This makes the host hierarchy available; it does **not** by itself
-delegate a subtree or controllers to an unprivileged user. Delegation through a
-systemd user session (`cgroup_manager = "systemd"`) is a follow-up. After reboot, verify the
-mount and the controllers with:
-
-```sh
-findmnt -t cgroup2
-cat /sys/fs/cgroup/cgroup.controllers
-```
-
-
-The acceptance suite must distinguish these capabilities:
-
-- Rootless baseline: image pull, container lifecycle, networking, mounts,
-  volumes and cleanup without assuming cgroup resource limits.
 - Rootless cgroup controls: not supported until Faseela has an explicit,
-  per-user cgroup delegation design (systemd user sessions) and tests.
-- Rootful smoke tests: validate cgroupfs controller setup independently.
+  per-user cgroup delegation design (delegated controllers on `user@.service`) and tests.
+- Rootful smoke tests: validate the systemd scope and controller setup independently.
 
 ## Rootless provisioning and kernel contract
 

@@ -10,8 +10,8 @@ source = "https://kernel.org/pub/linux/utils/usb/usbutils/usbutils-%{version}.ta
 sha256 = "a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b"
 
 [depends]
-build = ["libusb", "eudev"]
-run = ["libusb", "eudev"]
+build = ["libusb", "systemd"]
+run = ["libusb", "systemd"]
 
 [build]
 configure = "./configure --prefix=/usr"

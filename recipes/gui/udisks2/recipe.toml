@@ -13,8 +13,8 @@ sha256 = "18630a8aad806bea0bc626ce97e71e50ec82c742956ac1c834a4275f8f22207b"
 source_dir = "udisks-%{version}"
 
 [depends]
-build = ["pkgconf", "gettext", "glib", "libgudev", "polkit", "libblockdev", "eudev", "util-linux", "e2fsprogs"]
-run = ["dbus-system", "polkit", "glib", "libgudev", "libblockdev", "eudev", "util-linux", "e2fsprogs"]
+build = ["pkgconf", "gettext", "glib", "libgudev", "polkit", "libblockdev", "systemd", "util-linux", "e2fsprogs"]
+run = ["dbus-system", "polkit", "glib", "libgudev", "libblockdev", "systemd", "util-linux", "e2fsprogs"]
 
 [build]
 # SMART is optional in UDisks2; disable it because libblockdev deliberately

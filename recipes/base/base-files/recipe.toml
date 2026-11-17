@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -21,7 +21,7 @@ install -d -m750 %{pkgdir}/root
 install -d -m1777 %{pkgdir}/tmp %{pkgdir}/var/tmp
 install -d -m755 %{pkgdir}/usr/bin %{pkgdir}/usr/include %{pkgdir}/usr/lib %{pkgdir}/usr/lib64 %{pkgdir}/usr/sbin %{pkgdir}/usr/share %{pkgdir}/usr/src
 install -d -m755 %{pkgdir}/usr/local/bin %{pkgdir}/usr/local/etc %{pkgdir}/usr/local/include %{pkgdir}/usr/local/lib %{pkgdir}/usr/local/sbin %{pkgdir}/usr/local/share %{pkgdir}/usr/local/src
-install -d -m755 %{pkgdir}/var/cache %{pkgdir}/var/lib %{pkgdir}/var/local %{pkgdir}/var/lock %{pkgdir}/var/log %{pkgdir}/var/mail %{pkgdir}/var/opt %{pkgdir}/var/run %{pkgdir}/var/spool
+install -d -m755 %{pkgdir}/var/cache %{pkgdir}/var/lib %{pkgdir}/var/local %{pkgdir}/var/log %{pkgdir}/var/mail %{pkgdir}/var/opt %{pkgdir}/var/spool
 install -d -m755 %{pkgdir}/etc/opt %{pkgdir}/etc/profile.d %{pkgdir}/etc/skel %{pkgdir}/etc/ld.so.conf.d
 
 # merged-usr layout (LFS 12 style): everything lives in /usr
@@ -32,8 +32,12 @@ ln -s usr/lib %{pkgdir}/lib
 # from (build chroot vs /sysroot) and makes installs write into the wrong tree
 ln -s usr/lib64 %{pkgdir}/lib64
 ln -s /proc/mounts %{pkgdir}/etc/mtab
+# /var/run and /var/lock live on the tmpfs /run, as systemd's tmpfiles expects
+# (a real directory here makes systemd-tmpfiles complain on every boot)
+ln -s ../run %{pkgdir}/var/run
+ln -s ../run/lock %{pkgdir}/var/lock
 
-# /bin/sh: shebang scripts (every ./configure, init/runit services) resolve
+# /bin/sh: shebang scripts (every ./configure, init scripts) resolve
 # here, and the seed flow demands it when this rootfs is a build seed (§: the
 # stage2 scripts use bash constructs, so bash — not dash — is the sh)
 ln -sfv bash %{pkgdir}/usr/bin/sh

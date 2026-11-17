@@ -35,7 +35,7 @@ sha256 = "4eb6b98d678299a4b96138d886345b294130695760345ef84596225a8224078a"
 source_dir = "xwayland-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libxshmfence", "libxkbfile", "libXfont2", "font-util", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "wayland-protocols", "libxcb", "libX11", "libXau", "openssl", "eudev"]
+build = ["meson", "ninja", "pkgconf", "xorgproto", "xtrans", "libxshmfence", "libxkbfile", "libXfont2", "font-util", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "wayland-protocols", "libxcb", "libX11", "libXau", "openssl", "systemd"]
 run = ["libxshmfence", "libxkbfile", "libXfont2", "libxcvt", "pixman", "libdrm", "mesa", "libepoxy", "wayland", "libxcb", "libX11", "openssl", "xkbcomp", "xkeyboard-config"]
 
 [build]

@@ -1,29 +1,44 @@
-# gui recipe: system D-Bus daemon supervised by runit.
+# gui recipe: system D-Bus daemon supervised by systemd.
 # The existing dbus recipe supplies the binaries and configuration; this small
-# integration package adds the system-bus account and a persistent service.
+# integration package adds the system-bus account and the dbus.service unit.
+#
+# The dbus recipe is built with -D systemd=disabled (no libsystemd, so no
+# socket activation and no --address=systemd:). The daemon therefore creates
+# its own socket, and ExecStartPost holds dbus.service in "activating" until the
+# socket exists so that units ordered After=dbus.service really find the bus.
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
-summary = "System D-Bus service and messagebus account for runit systems"
+summary = "System D-Bus service and messagebus account for systemd"
 license = ["MIT"]
 
 [depends]
 build = []
-run = ["dbus", "runit", "base-files", "coreutils"]
+run = ["dbus", "base-files", "coreutils"]
 
 [build]
 install = '''
-install -d -m755 %{pkgdir}/etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default
-cat > %{pkgdir}/etc/sv/dbus/run <<'RUN'
-#!/bin/sh
-install -d -m755 /run/dbus
-dbus-uuidgen --ensure=/etc/machine-id
-exec dbus-daemon --system --nofork --nopidfile
-RUN
-chmod 755 %{pkgdir}/etc/sv/dbus/run
-ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/dbus.service <<'EOF'
+[Unit]
+Description=D-Bus System Message Bus
+Documentation=man:dbus-daemon(1)
+
+[Service]
+Type=simple
+RuntimeDirectory=dbus
+ExecStart=/usr/bin/dbus-daemon --system --nofork --nopidfile
+ExecStartPost=/bin/sh -c 'i=0; while [ ! -S /run/dbus/system_bus_socket ] && [ "$$i" -lt 100 ]; do sleep 0.1; i=$$(($$i + 1)); done'
+ExecReload=/usr/bin/dbus-send --print-reply --system --type=method_call --dest=org.freedesktop.DBus / org.freedesktop.DBus.ReloadConfig
+Restart=on-failure
+OOMScoreAdjust=-900
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/dbus.service
 '''
 
 [hooks]

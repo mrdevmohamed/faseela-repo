@@ -20,7 +20,7 @@ include = ["conf", "emptty.1", "runit-run", "LICENSE"]
 
 [depends]
 build = ["golang", "gcc", "libxcrypt"]
-run = ["gui-session", "libxcrypt", "shadow", "runit", "coreutils", "util-linux"]
+run = ["gui-session", "libxcrypt", "shadow", "coreutils", "util-linux"]
 
 [build]
 configure = "go test -tags nopam ./..."

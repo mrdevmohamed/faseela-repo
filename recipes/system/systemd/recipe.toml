@@ -1,0 +1,170 @@
+# system recipe: systemd — init system and service manager, with udev, journald,
+# logind, networkd, resolved and timesyncd. It replaces runit, eudev, elogind,
+# sysklogd, dhcpcd, chrony and cronie.
+#
+# Faseela specifics:
+#   * merged /usr (base-files): sbin and bin are the same directory, so
+#     split-bin is off and everything installs under /usr/bin.
+#   * no cryptsetup, tpm2, fido2, openssl, gnutls, audit, selinux, homed,
+#     machined, nspawn, importd, remote, coredump, efi/bootloader/ukify: those
+#     either pull dependency cycles (cryptsetup -> lvm2 -> libudev) or are not
+#     part of the distribution (Podman replaces nspawn/machined).
+#   * the PAM service file (systemd-user) is shipped by systemd-units, not here,
+#     because Faseela has no system-auth/system-account stacks to include.
+#
+# Meson options are applied through a filter that reads the source tree's own
+# option file. systemd renames and drops options between releases, and an
+# unknown -D option aborts `meson setup`. Options absent from this release are
+# skipped and listed in the build log; options that are required are checked.
+#
+# The source archive SHA-256 is pinned from the SourceForge mirror metadata for v261.5.
+[package]
+name = "systemd"
+version = "261.5"
+rel = 1
+arch = ["x86_64"]
+summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
+license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+source = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
+sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
+source_dir = "systemd-%{version}"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
+run = ["libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
+
+[build]
+configure = '''set -eu
+python3 - <<'PY'
+import re
+import sys
+from pathlib import Path
+
+src = Path("meson.options")
+if not src.exists():
+    src = Path("meson_options.txt")
+text = src.read_text(encoding="utf-8")
+
+# name -> declared type ("feature", "boolean", "string", "combo", ...)
+declared = {}
+for block in re.split(r"\n(?=option\()", text):
+    name = re.match(r"option\(\s*'([^']+)'", block)
+    if not name:
+        continue
+    kind = re.search(r"type\s*:\s*'([a-z]+)'", block)
+    declared[name.group(1)] = kind.group(1) if kind else None
+
+# "on"/"off" follow the option's own type (feature: enabled/disabled,
+# boolean: true/false). Anything else is passed through as a literal value.
+want = {
+    # --- on -----------------------------------------------------------------
+    "acl": "on", "pam": "on", "kmod": "on", "seccomp": "on",
+    "xz": "on", "zstd": "on", "lz4": "on", "zlib": "on", "pcre2": "on",
+    "polkit": "on", "userdb": "on", "logind": "on", "hostnamed": "on",
+    "localed": "on", "timedated": "on", "timesyncd": "on", "networkd": "on",
+    "resolve": "on", "firstboot": "on", "hibernate": "on", "vconsole": "on",
+    "tmpfiles": "on", "sysusers": "on", "hwdb": "on", "binfmt": "on",
+    "rfkill": "on", "backlight": "on", "randomseed": "on", "oomd": "on",
+    "adm-group": "on", "wheel-group": "on", "install-sysconfdir": "on",
+    # --- off ----------------------------------------------------------------
+    "libcryptsetup": "off", "libcryptsetup-plugins": "off", "tpm": "off",
+    "tpm2": "off", "fido2": "off", "openssl": "off", "gnutls": "off",
+    "libcurl": "off", "microhttpd": "off", "gcrypt": "off", "audit": "off",
+    "selinux": "off", "apparmor": "off", "smack": "off", "ima": "off",
+    "xkbcommon": "off", "qrencode": "off", "pwquality": "off",
+    "passwdqc": "off", "p11kit": "off", "elfutils": "off", "bzip2": "off",
+    "libidn2": "off", "libidn": "off", "libiptc": "off", "libfdisk": "off",
+    "libarchive": "off", "bpf-framework": "off", "vmlinux-h": "off",
+    "homed": "off", "machined": "off", "portabled": "off", "importd": "off",
+    "remote": "off", "nspawn": "off", "sysext": "off", "repart": "off",
+    "sysupdate": "off", "coredump": "off", "pstore": "off", "efi": "off",
+    "bootloader": "off", "ukify": "off", "kernel-install": "off",
+    "mountfsd": "off", "nsresourced": "off", "imds": "off", "initrd": "off",
+    "man": "off", "html": "off", "translations": "off", "tests": "off",
+    "quotacheck": "off", "ldconfig": "off", "create-log-dirs": "off",
+    # --- literal values -----------------------------------------------------
+    "mode": "lit:release",
+    "split-bin": "lit:false",
+    "rootprefix": "lit:/usr",
+    "rootlibdir": "lit:/usr/lib",
+    "pamlibdir": "lit:/usr/lib/security",
+    # systemd-units ships /etc/pam.d/systemd-user itself
+    "pamconfdir": "lit:no",
+    "dbuspolicydir": "lit:/usr/share/dbus-1/system.d",
+    "nobody-user": "lit:nobody",
+    "nobody-group": "lit:nogroup",
+    "dev-kvm-mode": "lit:0660",
+    "group-render-mode": "lit:0660",
+    "default-dnssec": "lit:no",
+    "default-llmnr": "lit:no",
+    "default-mdns": "lit:no",
+    "default-dns-over-tls": "lit:no",
+    # SysV script support was removed upstream; older releases still read these
+    "sysvinit-path": "lit:",
+    "sysvrcnd-path": "lit:",
+}
+
+required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]
+missing = [n for n in required if n not in declared]
+if missing:
+    sys.exit("systemd recipe: required meson options missing from this release: " + ", ".join(missing))
+
+args, skipped = [], []
+for name, value in sorted(want.items()):
+    if name not in declared:
+        skipped.append(name)
+        continue
+    if value.startswith("lit:"):
+        args.append(f"-D{name}={value[4:]}")
+        continue
+    kind = declared[name]
+    if kind == "feature":
+        args.append(f"-D{name}={'enabled' if value == 'on' else 'disabled'}")
+    elif kind == "boolean":
+        args.append(f"-D{name}={'true' if value == 'on' else 'false'}")
+    else:
+        skipped.append(f"{name}(type {kind})")
+
+Path(".faseela-meson-args").write_text("\n".join(args) + "\n", encoding="utf-8")
+print("systemd: passing", len(args), "meson options", file=sys.stderr)
+print("systemd: skipped (not in this release):", " ".join(skipped) or "none", file=sys.stderr)
+PY
+
+meson setup build \
+  --prefix=/usr \
+  --libdir=lib \
+  --sysconfdir=/etc \
+  --localstatedir=/var \
+  --buildtype=release \
+  $(cat .faseela-meson-args)
+'''
+compile = "ninja -C build"
+install = '''set -eu
+DESTDIR=%{pkgdir} meson install -C build --no-rebuild
+
+for f in usr/lib/systemd/systemd usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
+         usr/lib/systemd/systemd-logind usr/lib/systemd/systemd-networkd \
+         usr/lib/systemd/systemd-resolved usr/lib/systemd/systemd-timesyncd \
+         usr/bin/systemctl usr/bin/journalctl usr/bin/loginctl usr/bin/udevadm \
+         usr/bin/systemd-tmpfiles usr/bin/systemd-sysusers usr/bin/networkctl; do
+    test -x "%{pkgdir}/$f" || { echo "systemd: $f was not installed" >&2; exit 1; }
+done
+
+# PID 1 for direct disk boots: with merged /usr the kernel's /sbin/init lookup
+# resolves to /usr/bin/init through /sbin -> usr/bin (created by base-files).
+ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init
+
+# systemd answers poweroff/reboot/halt/shutdown through systemctl.
+for c in poweroff reboot halt shutdown; do
+    [ -e %{pkgdir}/usr/bin/$c ] || ln -s systemctl %{pkgdir}/usr/bin/$c
+done
+'''
+
+[hooks]
+# Create the accounts systemd's units expect (systemd-journal, systemd-network,
+# systemd-resolve, systemd-timesync, ...) and compile the udev hardware
+# database used by udev rules and libinput. Both are no-ops when they cannot run.
+post_install = '''
+systemd-sysusers 2>/dev/null || true
+udevadm hwdb --update 2>/dev/null || true
+'''

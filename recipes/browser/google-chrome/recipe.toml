@@ -23,7 +23,7 @@ run = [
     "coreutils",
     "curl",
     "dbus",
-    "eudev",
+    "systemd",
     "expat",
     "fontconfig",
     "freetype",

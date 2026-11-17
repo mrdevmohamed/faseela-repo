@@ -20,8 +20,8 @@ sha256 = "c07778440f25e909358a37f293ddf403a28a153b02eedb30b61b846a7142ba60"
 strip_components = 1
 
 [depends]
-build = ["rust", "pkgconf", "seatd", "libinput", "libxkbcommon", "libdisplay-info", "eudev", "wayland", "pixman", "mesa"]
-run = ["seatd", "libinput", "libxkbcommon", "libdisplay-info", "eudev", "wayland", "pixman", "mesa", "xkeyboard-config", "dbus"]
+build = ["rust", "pkgconf", "seatd", "libinput", "libxkbcommon", "libdisplay-info", "systemd", "wayland", "pixman", "mesa"]
+run = ["seatd", "libinput", "libxkbcommon", "libdisplay-info", "systemd", "wayland", "pixman", "mesa", "xkeyboard-config", "dbus"]
 
 [fetch.cargo]
 dir = "."

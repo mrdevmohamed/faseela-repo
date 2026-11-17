@@ -12,7 +12,7 @@ source = ""
 
 [depends]
 build = []
-run = ["seatd", "runit", "eudev", "base-files", "coreutils"]
+run = ["seatd", "systemd", "base-files", "coreutils"]
 
 [build]
 install = '''

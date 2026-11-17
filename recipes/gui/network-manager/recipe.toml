@@ -12,8 +12,8 @@ sha256 = "262864cfd198123d3e5dbe91937441b97ee9059d6d712e1a5bfbb1c54668d14d"
 source_dir = "NetworkManager-%{version}"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "dbus", "glib", "eudev", "libndp", "libpsl", "util-linux", "polkit"]
-run = ["dbus-system", "glib", "eudev", "libndp", "libpsl", "util-linux", "wpa_supplicant", "polkit", "iproute2"]
+build = ["meson", "ninja", "pkgconf", "dbus", "glib", "systemd", "libndp", "libpsl", "util-linux", "polkit"]
+run = ["dbus-system", "glib", "systemd", "libndp", "libpsl", "util-linux", "wpa_supplicant", "polkit", "iproute2"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Ddocs=false -Dman=false -Dtests=no -Dqt=false -Dintrospection=false -Dnmcli=true -Dnmtui=false -Dnm_cloud_setup=false -Dwifi=true -Diwd=false -Dconfig_wifi_backend_default=wpa_supplicant -Dconfig_dhcp_default=internal -Dppp=false -Dmodem_manager=false -Dofono=false -Dovs=false -Dteamdctl=false -Dnbft=false -Dclat=false -Dconcheck=false -Dlibaudit=no -Dlibpsl=true -Dcrypto=null -Dpolkit=true -Dpolkit_agent_helper_1=/usr/lib/polkit-1/polkit-agent-helper-1 -Dsystemd_journal=false -Dsystemdsystemunitdir=no -Dsystemdsystemgeneratordir=no -Dsession_tracking=no -Dsuspend_resume=auto -Dsession_tracking_consolekit=false -Dconfig_logging_backend_default=syslog -Dselinux=false -Dfirewalld_zone=false -Difupdown=false"

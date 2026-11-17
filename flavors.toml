@@ -89,5 +89,5 @@ summary = "Live system with COSMIC, COSMIC Greeter, PipeWire, Firefox and networ
 extends = ["iso-nogui"]
 include = ["@cosmic", "firefox", "greetd", "cosmic-greeter"]
 exclude = ["lightdm", "lightdm-gtk-greeter"]
-disable_services = ["getty-tty1", "lightdm"]
+disable_services = ["getty@tty1", "lightdm"]
 enable_services = ["cosmic-greeter"]

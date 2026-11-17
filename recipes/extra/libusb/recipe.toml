@@ -10,8 +10,8 @@ source = "https://github.com/libusb/libusb/releases/download/v%{version}/libusb-
 sha256 = "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
 
 [depends]
-build = ["eudev"]
-run = ["eudev"]
+build = ["systemd"]
+run = ["systemd"]
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

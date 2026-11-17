@@ -13,8 +13,8 @@ source = "https://github.com/storaged-project/libblockdev/releases/download/%{ve
 sha256 = "bccd30e6b5d11504de60d9889ff6a2a25b07a4ec8f04070f2387e168301b3e3a"
 
 [depends]
-build = ["pkgconf", "glib", "eudev", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils"]
-run = ["glib", "eudev", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm"]
+build = ["pkgconf", "glib", "systemd", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils"]
+run = ["glib", "systemd", "kmod", "util-linux", "e2fsprogs", "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm"]
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --with-part --with-fs --without-btrfs --with-loop --with-crypto --without-escrow --without-dm --without-lvm --without-lvm_dbus --with-mdraid --without-mpath --with-swap --without-nvdimm --with-nvme --without-smart --without-smartmontools --without-tools --without-s390 --without-python3 --without-gtk-doc --disable-introspection --disable-tests"

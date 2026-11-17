@@ -4,7 +4,7 @@ Status: prerequisite recipes are being implemented; the Podman CLI is not packag
 
 Podman is an optional developer/container feature. It must not enter
 `bootstrap`, `rootfs-min`, `iso-nogui`, `iso-sway`, `iso-xfce`, or the default build
-closure. Faseela uses **runit**, not systemd. Podman is daemonless, so the
+closure. Faseela uses **systemd**. Podman is daemonless, so the
 engine itself must not be packaged as a permanently enabled system service.
 
 ## Target user experience
@@ -28,7 +28,7 @@ Keep the components separate so they can be upgraded and tested independently:
 | Package | Responsibility |
 |---|---|
 | `podman` | CLI, engine, API client and configuration |
-| `containers-common` | runit-compatible engine, storage and registry defaults |
+| `containers-common` | engine, storage and registry defaults |
 | `conmon` | OCI container monitor |
 | `catatonit` | per-container pause/init process and child reaping |
 | `crun` | default OCI runtime |
@@ -51,7 +51,7 @@ The repository already has Go and Rust toolchains. Two compiled source recipes h
 crun recipe explicitly disables systemd integration and links to the declared
 libcap, libseccomp and json-c dependencies. A third recipe, `containers-common`,
 packages local, version-controlled defaults using Nawa's recipe-local asset
-support. It selects `cgroupfs` for the runit host, `crun`, Netavark, rootless
+support. It selects `cgroupfs`, `crun`, Netavark, rootless
 `pasta`, and enforcing short-name resolution. It leaves Netavark's default
 rootless network directory under the user's graphroot instead of forcing the
 rootful `/etc/containers/networks` path on unprivileged users. Its storage defaults
@@ -103,7 +103,7 @@ uses it offline. Never download unpinned dependencies during compilation.
 - No systemd units, generators, socket activation, or systemd libraries as
   mandatory runtime dependencies.
 - No always-on Podman daemon. The optional API socket may be started per-user
-  with a user-managed runit-compatible mechanism only if a real use case needs it.
+  with a systemd user unit only if a real use case needs it.
 - Install documented default `containers.conf`, `storage.conf`,
   `registries.conf`, and signature policy without overwriting administrator
   configuration on upgrades.
@@ -130,10 +130,10 @@ can still run, but per-container CPU, memory and PID cgroup limits must not be
 claimed as supported on this configuration. Rootful cgroup management remains
 a separate path.
 
-The installed `runit-services` stage-1 script mounts the unified cgroup v2
-hierarchy at `/sys/fs/cgroup` during boot when it is not already mounted.
-This makes the host hierarchy available without systemd; it does **not** delegate
-a subtree or controllers to an unprivileged user. After reboot, verify the
+systemd mounts the unified cgroup v2 hierarchy at `/sys/fs/cgroup` during
+early boot. This makes the host hierarchy available; it does **not** by itself
+delegate a subtree or controllers to an unprivileged user. Delegation through a
+systemd user session (`cgroup_manager = "systemd"`) is a follow-up. After reboot, verify the
 mount and the controllers with:
 
 ```sh
@@ -147,7 +147,7 @@ The acceptance suite must distinguish these capabilities:
 - Rootless baseline: image pull, container lifecycle, networking, mounts,
   volumes and cleanup without assuming cgroup resource limits.
 - Rootless cgroup controls: not supported until Faseela has an explicit,
-  runit-compatible per-user cgroup delegation design and tests.
+  per-user cgroup delegation design (systemd user sessions) and tests.
 - Rootful smoke tests: validate cgroupfs controller setup independently.
 
 ## Rootless provisioning and kernel contract

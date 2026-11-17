@@ -60,7 +60,7 @@ def load_flavors(path: Path):
                 for service in services
             ):
                 raise FlavorError(
-                    f"flavor {name}: {key} must contain valid runit service names"
+                    f"flavor {name}: {key} must contain valid systemd unit names (without the .service suffix)"
                 )
         overlap = set(f.get("enable_services", [])) & set(f.get("disable_services", []))
         if overlap:

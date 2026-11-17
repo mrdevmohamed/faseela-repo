@@ -22,7 +22,7 @@ strip_components = 1
 
 [depends]
 build = ["rust"]
-run = ["dbus", "dbus-system", "elogind", "xdg-desktop-portal-cosmic", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-locker", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings-daemon", "cosmic-files", "cosmic-randr"]
+run = ["dbus", "dbus-system", "systemd", "xdg-desktop-portal-cosmic", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-locker", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings-daemon", "cosmic-files", "cosmic-randr"]
 
 [fetch.cargo]
 dir = "."

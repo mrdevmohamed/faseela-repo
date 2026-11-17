@@ -22,7 +22,7 @@ for helper in ("newuidmap", "newgidmap"):
 assert "chmod 4755" in shadow_install
 
 linux = recipe("recipes/boot/linux/recipe.toml")
-assert linux["package"]["rel"] == 24
+assert linux["package"]["rel"] == 25
 kernel_config = linux["build"]["configure"]
 for option in (
     "PID_NS", "NET_NS", "IPC_NS", "UTS_NS", "CGROUPS", "CGROUP_PIDS",
@@ -33,18 +33,11 @@ for option in (
     assert f"--enable {option}" in kernel_config, f"kernel config does not enable {option}"
     assert f"require_config CONFIG_{option} y" in kernel_config, f"kernel config does not assert {option}"
 
-runit_services = recipe("recipes/system/runit-services/recipe.toml")
-assert runit_services["package"]["rel"] == 13
-runit_install = runit_services["build"]["install"]
-stage1 = runit_install.split("cat > %{pkgdir}/etc/runit/1 <<'EOF'\n", 1)[1].split(
-    "\nEOF\ncat > %{pkgdir}/etc/runit/2", 1
-)[0]
-assert "mkdir -p /sys/fs/cgroup" in stage1
-assert "mountpoint -q /sys/fs/cgroup" in stage1
-assert "mount -t cgroup2 none /sys/fs/cgroup" in stage1
-assert stage1.index("mount -a") < stage1.index("mount -t cgroup2"), (
-    "cgroup2 should be mounted after fstab mounts have been processed"
-)
+# systemd (PID 1) mounts the unified cgroup v2 hierarchy itself; the kernel must
+# provide the cgroup controllers it needs (asserted above) and systemd must be built.
+systemd = recipe("recipes/system/systemd/recipe.toml")
+assert systemd["package"]["name"] == "systemd"
+assert "libseccomp" in systemd["depends"]["build"]
 
 crun = recipe("recipes/system/crun/recipe.toml")
 crun_pkg = crun["package"]
@@ -204,7 +197,7 @@ for default in ("bootstrap", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce"):
     assert all(name not in section for name in ("podman", "developer-containers", "containers-common", "conmon", "catatonit", "crun", "libseccomp", "protobuf-compiler", "netavark", "aardvark-dns", "fuse-overlayfs", "passt"))
 
 docs = (ROOT / "docs/podman-support.md").read_text(encoding="utf-8")
-assert "Faseela uses **runit**, not systemd" in docs
+assert "Faseela uses **systemd**" in docs
 assert "Rootless operation is a release" in docs
 assert "libseccomp" in docs
 assert "\\n" not in docs, "documentation contains literal escaped newline sequences"

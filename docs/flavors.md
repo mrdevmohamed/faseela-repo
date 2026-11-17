@@ -32,8 +32,8 @@ MPV and FFmpeg are not flavors. Install them with Nawa when needed.
 | `extends` | Inherit packages from another flavor. |
 | `exclude` | Package names removed from the resolved result. |
 | `closure` | `run` (runtime dependencies) or `build` (build and runtime dependencies). |
-| `enable_services` | Runit services to enable in the image's default runsvdir. |
-| `disable_services` | Runit services to disable; already-disabled or absent services are ignored. |
+| `enable_services` | systemd units to enable in the image (names without `.service`, e.g. `getty@tty1`). |
+| `disable_services` | systemd units to disable; already-disabled or absent units are ignored. |
 
 An `@category` item expands to every recipe in that category. The default
 closure is `run`; bootstrap profiles use `build` to include everything

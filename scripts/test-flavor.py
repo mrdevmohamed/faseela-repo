@@ -125,7 +125,7 @@ class RealTree(unittest.TestCase):
         self.assertNotIn("cosmic-greeter", got["iso-xfce"])
         self.assertEqual(
             flavor.resolve_services(flavors, "iso-cosmic"),
-            [("disable", "getty-tty1"), ("disable", "lightdm"), ("enable", "cosmic-greeter")],
+            [("disable", "getty@tty1"), ("disable", "lightdm"), ("enable", "cosmic-greeter")],
         )
         self.assertNotIn("cosmic-desktop", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])

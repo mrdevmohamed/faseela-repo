@@ -10,8 +10,8 @@ source = "https://gitlab.freedesktop.org/libinput/libinput/-/archive/%{version}/
 sha256 = "5c1c4150f217fea1db2d1fd88e2607b2f1928cfde65c34da65a9f24dcfd69464"
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "libevdev", "mtdev", "eudev"]
-run = ["libevdev", "mtdev", "eudev"]
+build = ["meson", "ninja", "pkgconf", "libevdev", "mtdev", "systemd"]
+run = ["libevdev", "mtdev", "systemd"]
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D libwacom=false -D debug-gui=false -D tests=false -D documentation=false -D udev-dir=/usr/lib/udev"

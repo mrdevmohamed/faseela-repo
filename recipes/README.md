@@ -7,7 +7,7 @@ Every package in the distribution is described by a declarative
 recipes/
 ├── toolchain/   compiler + libc + headers (built first, stage 2)
 ├── base/        core userland: libs, shells, compressors, interpreters
-├── system/      networking, udev, kmod, shadow, runit, man pages, ...
+├── system/      networking, systemd (init, udev, logind), kmod, shadow, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
@@ -89,8 +89,8 @@ libunistring → libidn2 → less → rust → nawa (self-hosting)
 **system** — attr → acl (POSIX ACLs), libcap → iputils (ping, arping,
 clockdiff, tracepath), liburcu → bind-tools (dig, host, nslookup),
 libndp, efivar (UEFI variable libraries and tools), then libpsl → curl → git → shadow → procps-ng →
-psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
-libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
+psmisc → e2fsprogs → kmod → libpipeline → groff → man-db →
+libmnl → iproute2 + net-tools → systemd → systemd-units
 
 **boot** — linux; efibootmgr → grub → busybox
 
@@ -102,13 +102,14 @@ includes this category; inspect the current inventory with
 
 **system, later additions** — attr/acl (extended attributes and POSIX ACLs),
 libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
-chrony (NTP, runit service
-`chronyd`, enabled by default), krb5 (MIT Kerberos/GSSAPI runtime libraries), libnl → iw and wpa_supplicant (Wi-Fi, runit service
-`wpa_supplicant`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
+krb5 (MIT Kerberos/GSSAPI runtime libraries), libnl → iw and wpa_supplicant (Wi-Fi, systemd unit
+`wpa_supplicant@IFACE`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
 dmidecode, lm-sensors, iperf3. `tzdata` defaults to `Africa/Cairo` while preserving
 an administrator's existing `/etc/localtime`; choose another zone by linking it
 from `/usr/share/zoneinfo`. `wpa_supplicant` remains opt-in:
-`nawa service enable wpa_supplicant`.
+`systemctl enable --now wpa_supplicant@wlan0`. Time sync (`systemd-timesyncd`),
+DHCP (`systemd-networkd`), DNS (`systemd-resolved`) and logging (`journald`)
+come with systemd; there are no separate chrony, dhcpcd, cronie or sysklogd packages.
 
 Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `flex` (base) pulls `m4` (toolchain) and `texinfo` (base);

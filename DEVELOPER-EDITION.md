@@ -88,7 +88,7 @@ shipping only a binary is not a complete package.
 | `sqlite` | Available |
 | `postgresql`, `mariadb`, `redis`, `mongosh` | Planned |
 
-Database server recipes must ship explicit runit service definitions and must
+Database server recipes must ship explicit systemd units and must
 not initialize or enable a database automatically during package installation.
 
 ### Debugging, testing and profiling
@@ -112,7 +112,7 @@ Every new package must:
 5. Install only into `%{pkgdir}`, use `/usr` as the prefix, and pass Nawa lint.
 6. Include architecture constraints and upstream license metadata.
 7. Avoid collisions with existing package file ownership.
-8. Add service hooks only where needed; Faseela uses runit, not systemd.
+8. Add service hooks only where needed; Faseela uses systemd, so ship a unit under `/usr/lib/systemd/system` and `systemctl preset` it from `post_install`.
 9. Be tested by the recipe validator, dependency resolver, package build workflow,
    and an install/runtime smoke test before being added to a flavor.
 

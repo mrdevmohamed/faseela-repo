@@ -5,6 +5,8 @@
 # Faseela specifics:
 #   * merged /usr (base-files): sbin and bin are the same directory, so
 #     split-bin is off and everything installs under /usr/bin.
+#   * no initrd/hibernate integration yet: Faseela's initramfs is built by saq,
+#     so systemd's initrd units and hibernate-resume path stay disabled here.
 #   * no cryptsetup, tpm2, fido2, openssl, gnutls, audit, selinux, homed,
 #     machined, nspawn, importd, remote, coredump, efi/bootloader/ukify: those
 #     either pull dependency cycles (cryptsetup -> lvm2 -> libudev) or are not
@@ -21,7 +23,7 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
@@ -74,7 +76,7 @@ want = {
     "xz": "on", "zstd": "on", "lz4": "on", "zlib": "on", "pcre2": "on",
     "polkit": "on", "userdb": "on", "logind": "on", "hostnamed": "on",
     "localed": "on", "timedated": "on", "timesyncd": "on", "networkd": "on",
-    "resolve": "on", "firstboot": "on", "hibernate": "on", "vconsole": "on",
+    "resolve": "on", "firstboot": "on", "vconsole": "on",
     "tmpfiles": "on", "sysusers": "on", "hwdb": "on", "binfmt": "on",
     "rfkill": "on", "backlight": "on", "randomseed": "on", "oomd": "on",
     "adm-group": "on", "wheel-group": "on", "install-sysconfdir": "on",
@@ -87,6 +89,7 @@ want = {
     "passwdqc": "off", "p11kit": "off", "elfutils": "off", "bzip2": "off",
     "libidn2": "off", "libidn": "off", "libiptc": "off", "libfdisk": "off",
     "libarchive": "off", "bpf-framework": "off", "vmlinux-h": "off",
+    "hibernate": "off", "initrd": "off",
     "homed": "off", "machined": "off", "portabled": "off", "importd": "off",
     "remote": "off", "nspawn": "off", "sysext": "off", "repart": "off",
     "sysupdate": "off", "coredump": "off", "pstore": "off", "efi": "off",

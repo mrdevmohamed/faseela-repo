@@ -83,7 +83,7 @@ for phase_name, phase_script in (
         f"systemd {phase_name} phase has invalid shell syntax: {syntax.stderr}",
     )
 
-python_block = re.search(r"python3 - <<'PY'\\n(.*?)\\nPY", configure, re.DOTALL)
+python_block = re.search(r"python3 - <<'PY'\n(.*?)\nPY", configure, re.DOTALL)
 require(python_block is not None, "systemd configure phase must contain its Meson option filter")
 try:
     compile(python_block.group(1), "systemd-configure-options", "exec")

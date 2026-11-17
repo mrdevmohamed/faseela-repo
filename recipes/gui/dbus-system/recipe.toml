@@ -1,17 +1,14 @@
-# gui recipe: system D-Bus daemon supervised by systemd.
-# The existing dbus recipe supplies the binaries and configuration; this small
-# integration package adds the system-bus account and the dbus.service unit.
-#
-# The dbus recipe is built with -D systemd=disabled (no libsystemd, so no
-# socket activation and no --address=systemd:). The daemon therefore creates
-# its own socket, and ExecStartPost holds dbus.service in "activating" until the
-# socket exists so that units ordered After=dbus.service really find the bus.
+# gui recipe: system D-Bus integration for systemd.
+# The dbus recipe is built with libsystemd and ships upstream's dbus.socket and
+# dbus.service (socket activation, `--systemd-activation`); dbus.socket is wanted by
+# sockets.target out of the box. This small package adds the `messagebus` account
+# the daemon drops to, and fixes the launch helper's mode on the target.
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 5
+rel = 6
 arch = ["x86_64"]
-summary = "System D-Bus service and messagebus account for systemd"
+summary = "System D-Bus messagebus account and launch-helper setup for systemd"
 license = ["MIT"]
 
 [depends]
@@ -20,25 +17,10 @@ run = ["dbus", "base-files", "coreutils"]
 
 [build]
 install = '''
-install -d -m755 %{pkgdir}/usr/lib/systemd/system
-cat > %{pkgdir}/usr/lib/systemd/system/dbus.service <<'EOF'
-[Unit]
-Description=D-Bus System Message Bus
-Documentation=man:dbus-daemon(1)
-
-[Service]
-Type=simple
-RuntimeDirectory=dbus
-ExecStart=/usr/bin/dbus-daemon --system --nofork --nopidfile
-ExecStartPost=/bin/sh -c 'i=0; while [ ! -S /run/dbus/system_bus_socket ] && [ "$$i" -lt 100 ]; do sleep 0.1; i=$$(($$i + 1)); done'
-ExecReload=/usr/bin/dbus-send --print-reply --system --type=method_call --dest=org.freedesktop.DBus / org.freedesktop.DBus.ReloadConfig
-Restart=on-failure
-OOMScoreAdjust=-900
-
-[Install]
-WantedBy=multi-user.target
-EOF
-chmod 644 %{pkgdir}/usr/lib/systemd/system/dbus.service
+# Nothing to stage: the units come from the dbus package. Keep an empty marker so
+# the package is not empty.
+install -d -m755 %{pkgdir}/usr/share/doc/dbus-system
+printf '%s\n' 'System bus units: dbus.socket and dbus.service (from dbus).' > %{pkgdir}/usr/share/doc/dbus-system/README
 '''
 
 [hooks]

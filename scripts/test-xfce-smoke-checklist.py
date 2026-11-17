@@ -260,13 +260,13 @@ assert "pam_elogind" not in lightdm_install, (
 # systemd owns the persistent system services. Validate each unit file and its
 # preset, with package-specific failures.
 dbus = require_deps("gui", "dbus-system", "run", {"dbus"})
-dbus_install = dbus["build"]["install"]
-dbus_unit = extract_heredoc(dbus_install, "usr/lib/systemd/system/dbus.service", "EOF")
-for required in (
-    "ExecStart=/usr/bin/dbus-daemon --system --nofork --nopidfile",
-    "WantedBy=multi-user.target",
-):
-    assert required in dbus_unit, f"gui/dbus-system: missing unit entry: {required}"
+dbus_pkg = recipe("browser", "dbus")
+assert "-D systemd=enabled" in dbus_pkg["build"]["configure"], (
+    "browser/dbus: system bus must be built with systemd socket activation"
+)
+assert "sockets.target.wants/dbus.socket" in dbus_pkg["build"]["install"], (
+    "browser/dbus: dbus.socket must be wanted by sockets.target"
+)
 
 polkit = require_deps("gui", "polkit", "run", {"dbus-system", "systemd"})
 polkit_install = polkit["build"]["install"]

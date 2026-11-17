@@ -17,7 +17,7 @@
 # unknown -D option aborts `meson setup`. Options absent from this release are
 # skipped and listed in the build log; options that are required are checked.
 #
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r systemd` pins it.
+# The source archive SHA-256 is pinned from the SourceForge mirror metadata for v261.5.
 [package]
 name = "systemd"
 version = "261.5"
@@ -25,8 +25,8 @@ rel = 1
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
-source = "https://github.com/systemd/systemd/archive/refs/tags/v%{version}.tar.gz"
-sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+source = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
+sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
 source_dir = "systemd-%{version}"
 
 [depends]

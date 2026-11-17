@@ -143,12 +143,16 @@ dbus_system = recipe("gui", "dbus-system")
 dbus_run = set(dbus_system["depends"]["run"])
 require({"dbus", "base-files"} <= dbus_run, "dbus-system runtime closure is incomplete")
 dbus_install = dbus_system["build"]["install"]
-for marker in (
-    "usr/lib/systemd/system/dbus.service",
-    "ExecStart=/usr/bin/dbus-daemon --system --nofork --nopidfile",
-    "ExecStartPost=",
-):
-    require(marker in dbus_install, f"dbus-system is missing its systemd unit integration: {marker}")
+require("usr/lib/systemd/system" not in dbus_install,
+        "dbus-system must not ship its own dbus units: dbus.socket/dbus.service come from dbus")
+require("ensure-system-account user messagebus" in dbus_system["hooks"]["post_install"],
+        "dbus-system must create the messagebus account")
+dbus_pkg = recipe("browser", "dbus")
+require("-D systemd=enabled" in dbus_pkg["build"]["configure"], "dbus must be built with systemd support")
+require("systemd" in dbus_pkg["depends"]["build"] and "systemd" in dbus_pkg["depends"]["run"],
+        "dbus must depend on systemd (libsystemd)")
+require("sockets.target.wants/dbus.socket" in dbus_pkg["build"]["install"],
+        "dbus install must verify socket activation wiring")
 require("/etc/sv/dbus" not in dbus_install, "dbus-system must not install a runit service")
 
 print("SYSTEMD CORE INTEGRATION VALIDATION PASSED")

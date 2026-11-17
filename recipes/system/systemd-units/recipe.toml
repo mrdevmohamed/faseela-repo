@@ -11,7 +11,7 @@
 [package]
 name = "systemd-units"
 version = "0.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Faseela systemd presets, network/time/journal defaults and PAM service"
 license = ["MIT"]
@@ -33,7 +33,7 @@ enable getty@tty1.service
 enable systemd-networkd.service
 enable systemd-resolved.service
 enable systemd-timesyncd.service
-enable dbus.service
+enable dbus.socket
 # available, not enabled: systemctl enable --now sshd
 disable sshd.service
 EOF
@@ -159,5 +159,5 @@ post_install = '''
 PATH=/usr/bin:/usr/sbin:/bin:/sbin
 export PATH
 # Works offline too: in a chroot systemctl only manages the unit symlinks.
-systemctl preset getty@tty1.service systemd-networkd.service systemd-resolved.service systemd-timesyncd.service dbus.service 2>/dev/null || true
+systemctl preset getty@tty1.service systemd-networkd.service systemd-resolved.service systemd-timesyncd.service dbus.socket 2>/dev/null || true
 '''

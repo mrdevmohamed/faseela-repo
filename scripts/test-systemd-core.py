@@ -155,4 +155,14 @@ require("sockets.target.wants/dbus.socket" in dbus_pkg["build"]["install"],
         "dbus install must verify socket activation wiring")
 require("/etc/sv/dbus" not in dbus_install, "dbus-system must not install a runit service")
 
+shadow = recipe("system", "shadow")
+require("--with-libpam" in shadow["build"]["configure"], "shadow must be built with PAM")
+require({"linux-pam"} <= set(shadow["depends"]["build"]) and {"linux-pam", "systemd"} <= set(shadow["depends"]["run"]),
+        "shadow must depend on linux-pam (build/run) and systemd (pam_systemd)")
+shadow_install = shadow["build"]["install"]
+for svc in ("login", "su", "su-l", "passwd", "chfn", "chsh", "chpasswd", "newusers"):
+    require(f"etc/pam.d/{svc}" in shadow_install or svc in shadow_install, f"shadow does not ship PAM service {svc}")
+require("pam_systemd.so" in shadow_install, "shadow login must register console sessions with pam_systemd")
+require("chmod 4755" in shadow["hooks"]["post_install"], "shadow must restore SUID on su/passwd")
+
 print("SYSTEMD CORE INTEGRATION VALIDATION PASSED")

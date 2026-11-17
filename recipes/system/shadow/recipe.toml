@@ -1,8 +1,11 @@
-# system recipe: Shadow password suite (useradd, passwd, ...)
+# system recipe: Shadow password suite (useradd, passwd, login, su, ...)
+# Built with Linux-PAM: login/su/passwd/chsh/chfn authenticate through the PAM
+# services shipped in /etc/pam.d, so a console login registers a systemd-logind
+# session (pam_systemd: /run/user/<uid>, systemd --user) like the display managers do.
 [package]
 name = "shadow"
 version = "4.18.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Shadow password suite (useradd, passwd, ...)"
 license = ["BSD-3-Clause"]
@@ -10,11 +13,11 @@ source = "https://github.com/shadow-maint/shadow/releases/download/4.18.0/shadow
 sha256 = "add4604d3bc410344433122a819ee4154b79dd8316a56298c60417e637c07608"
 
 [depends]
-build = ["libxcrypt"]
-run = ["libxcrypt"]
+build = ["libxcrypt", "linux-pam"]
+run = ["libxcrypt", "linux-pam", "systemd"]
 
 [build]
-configure = "./configure --sysconfdir=/etc --disable-static --without-libbsd --with-group-name-max-length=32 --enable-subids"
+configure = "./configure --sysconfdir=/etc --disable-static --without-libbsd --with-group-name-max-length=32 --enable-subids --with-libpam"
 compile = "make -j%{jobs}"
 install = """
 make DESTDIR=%{pkgdir} exec_prefix=/usr install
@@ -25,4 +28,70 @@ for helper in newuidmap newgidmap; do
     }
     chmod 4755 "%{pkgdir}/usr/bin/$helper"
 done
+
+# PAM services for the tools that talk to PAM. pam_systemd registers the console
+# login with systemd-logind; pam_nologin honours /etc/nologin.
+install -d -m755 %{pkgdir}/etc/pam.d
+cat > %{pkgdir}/etc/pam.d/login <<'PAM'
+#%PAM-1.0
+auth      requisite pam_nologin.so
+auth      required  pam_unix.so
+account   required  pam_unix.so
+password  required  pam_unix.so sha512 shadow try_first_pass
+session   required  pam_limits.so
+session   required  pam_unix.so
+session   optional  pam_systemd.so
+PAM
+cat > %{pkgdir}/etc/pam.d/su <<'PAM'
+#%PAM-1.0
+auth      sufficient pam_rootok.so
+auth      required   pam_unix.so
+account   required   pam_unix.so
+password  required   pam_unix.so sha512 shadow try_first_pass
+session   required   pam_limits.so
+session   required   pam_unix.so
+PAM
+cp %{pkgdir}/etc/pam.d/su %{pkgdir}/etc/pam.d/su-l
+cat > %{pkgdir}/etc/pam.d/passwd <<'PAM'
+#%PAM-1.0
+auth      required  pam_unix.so
+account   required  pam_unix.so
+password  required  pam_unix.so sha512 shadow try_first_pass
+PAM
+for svc in chfn chsh; do
+cat > %{pkgdir}/etc/pam.d/$svc <<'PAM'
+#%PAM-1.0
+auth      sufficient pam_rootok.so
+auth      required   pam_unix.so
+account   required   pam_unix.so
+session   required   pam_unix.so
+PAM
+done
+for svc in chpasswd newusers; do
+cat > %{pkgdir}/etc/pam.d/$svc <<'PAM'
+#%PAM-1.0
+auth      sufficient pam_rootok.so
+auth      required   pam_deny.so
+account   required   pam_permit.so
+password  required   pam_unix.so sha512 shadow use_authtok
+PAM
+done
+chmod 644 %{pkgdir}/etc/pam.d/*
+for svc in login su su-l passwd chfn chsh chpasswd newusers; do
+    test -s %{pkgdir}/etc/pam.d/$svc || { echo "shadow: missing PAM service $svc" >&2; exit 1; }
+done
 """
+
+[hooks]
+# Nawa's secure archive extraction strips SUID/SGID bits: restore them on the
+# tools that need them (without SUID a normal user cannot run su or passwd).
+post_install = '''
+for f in /usr/bin/su /usr/bin/passwd /usr/bin/chfn /usr/bin/chsh /usr/bin/gpasswd \
+         /usr/bin/newgrp /usr/bin/expiry /usr/bin/chage; do
+    if [ -e "$f" ]; then
+        chown root:root "$f" 2>/dev/null || true
+        chmod 4755 "$f" 2>/dev/null || true
+    fi
+done
+true
+'''

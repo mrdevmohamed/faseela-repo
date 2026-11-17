@@ -22,6 +22,7 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
+require(systemd_pkg["rel"] >= 2, "Bump systemd rel when fixing initrd/hibernate build options")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
     re.fullmatch(r"[0-9a-f]{64}", systemd_pkg["sha256"]) is not None,
@@ -50,6 +51,7 @@ for marker in (
     '(path.parent / "meson.build").is_file()',
     'required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]',
     'Path(".faseela-meson-args")',
+    '"hibernate": "off", "initrd": "off",',
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',

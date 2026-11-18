@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 10
+rel = 11
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -176,6 +176,17 @@ LOGO=faseela
 HOME_URL="https://mrdevmohamed.github.io/faseela/"
 BUG_REPORT_URL="https://github.com/mrdevmohamed/faseela/issues"
 EOF
+
+# Distribution-owned runtime policy, separate from package build profiles.
+install -d -m755 %{pkgdir}/usr/share/nawa
+cat > %{pkgdir}/usr/share/nawa/system-profile.toml <<'PROFILE'
+schema = 1
+distribution = "faseela"
+architecture = "x86_64"
+
+[providers]
+init-system = "systemd"
+PROFILE
 
 # permissions that must not be inherited from the build umask
 chmod 1777 %{pkgdir}/tmp %{pkgdir}/var/tmp

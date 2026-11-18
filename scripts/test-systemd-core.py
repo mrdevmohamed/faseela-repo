@@ -112,6 +112,17 @@ require(
     "systemd must provide the merged-/usr PID 1 entry point",
 )
 
+base_files = recipe("base", "base-files")
+base_install = base_files["build"]["install"]
+require(base_files["package"]["rel"] >= 11, "base-files rel must include the Nawa system profile")
+for marker in (
+    "usr/share/nawa/system-profile.toml",
+    'distribution = "faseela"',
+    'architecture = "x86_64"',
+    'init-system = "systemd"',
+):
+    require(marker in base_install, f"base-files must ship the Nawa system profile: {marker}")
+
 units = recipe("system", "systemd-units")
 units_run = set(units["depends"]["run"])
 require(
@@ -137,7 +148,10 @@ for marker in (
 ):
     require(marker in units_install, f"systemd-units is missing core integration: {marker}")
 require("pam_elogind.so" not in units_install, "systemd-units must use pam_systemd, not pam_elogind")
-require("systemctl preset" in units.get("hooks", {}).get("post_install", ""), "systemd presets are not applied")
+require(
+    "post_install" not in units.get("hooks", {}),
+    "systemd-units must ship preset files, not apply service policy from a package hook",
+)
 
 dbus_system = recipe("gui", "dbus-system")
 dbus_run = set(dbus_system["depends"]["run"])

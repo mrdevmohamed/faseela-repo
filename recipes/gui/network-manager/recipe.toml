@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -93,10 +93,3 @@ printf '%s\n' 'enable NetworkManager.service' 'disable systemd-networkd.service'
     > %{pkgdir}/usr/lib/systemd/system-preset/70-network-manager.preset
 '''
 
-[hooks]
-post_install = '''
-# NetworkManager owns DHCP when enabled; the preset turns systemd-networkd off
-# so two independent clients do not configure the same interface.
-systemctl preset NetworkManager.service systemd-networkd.service systemd-networkd-wait-online.service 2>/dev/null || true
-echo "NetworkManager: enabled; systemd-networkd was disabled."
-'''

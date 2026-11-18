@@ -22,6 +22,36 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent / "recipes"
 ZERO = "0" * 64
 
+SERVICE_MANAGER_COMMAND = re.compile(
+    r"(?im)(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)\s*(?:if\s+)?(?:!\s*)?"
+    r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*)\s+)*(?:(?:command|sudo|doas)\s+)*"
+    r"(?:/usr/bin/)?(systemctl|sv|service|rc-service)\s+"
+    r"(preset(?:-all)?|enable|disable|start|stop|restart|try-restart|reload|"
+    r"reload-or-restart|daemon-reload|mask|unmask|revert|link|isolate|"
+    r"up|down|force-stop|halt|shutdown)\b"
+)
+
+
+def service_hook_policy(recs):
+    """Reject service-manager mutations from privileged package hooks."""
+    errors = []
+    for name, recipe in recs.items():
+        hooks = recipe.get("hooks", {})
+        if not isinstance(hooks, dict):
+            continue
+        for hook_name, body in hooks.items():
+            if not isinstance(body, str):
+                continue
+            for match in SERVICE_MANAGER_COMMAND.finditer(body):
+                line = body.count("\n", 0, match.start()) + 1
+                manager, action = match.group(1), match.group(2)
+                errors.append(
+                    f"{recipe['_path']}: hook {hook_name} line {line} invokes "
+                    f"{manager} {action}; service activation belongs to "
+                    "distribution provisioning or the administrator"
+                )
+    return errors
+
 
 def load():
     recs, errors = {}, []
@@ -105,6 +135,7 @@ def main():
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)
+    errors += service_hook_policy(recs)
     if not errors:
         try:
             order(recs, list(recs))

@@ -2,8 +2,10 @@
 """Regression checks for the staged systemd core migration."""
 
 from pathlib import Path
+import importlib.util
 import re
 import subprocess
+import tempfile
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -179,5 +181,67 @@ for svc in ("login", "su", "su-l", "passwd", "chfn", "chsh", "chpasswd", "newuse
 require("pam_systemd.so" in shadow_install, "shadow login must register console sessions with pam_systemd")
 require("nullok" in shadow_install, "shadow login must accept the live session's empty password (nullok)")
 require("chmod 4755" in shadow["hooks"]["post_install"], "shadow must restore SUID on su/passwd")
+
+
+# Nawa also executes .sh files from /usr/lib/nawa/transaction-hooks.d.
+# Verify that the recipe CI guard inspects those sources, not only [hooks].
+checker_spec = importlib.util.spec_from_file_location(
+    "check_recipes", ROOT / "scripts" / "check-recipes.py"
+)
+require(
+    checker_spec is not None and checker_spec.loader is not None,
+    "could not load the recipe policy checker",
+)
+checker = importlib.util.module_from_spec(checker_spec)
+checker_spec.loader.exec_module(checker)
+
+with tempfile.TemporaryDirectory(prefix="faseela-trigger-policy-") as temporary:
+    trigger_dir = Path(temporary)
+    trigger_recipe_path = trigger_dir / "recipe.toml"
+    trigger_recipe_path.write_text(
+        """[package]
+name = "trigger-fixture"
+[build]
+install = "install refresh.sh %{pkgdir}/usr/lib/nawa/transaction-hooks.d/refresh.sh"
+""",
+        encoding="utf-8",
+    )
+    trigger_asset = trigger_dir / "refresh.sh"
+    trigger_asset.write_text(
+        """#!/bin/sh
+systemctl preset example.service
+""",
+        encoding="utf-8",
+    )
+    fixture = {
+        "trigger-fixture": {
+            "_path": trigger_recipe_path,
+            "hooks": {},
+            "build": {
+                "install": (
+                    "install refresh.sh "
+                    "%{pkgdir}/usr/lib/nawa/transaction-hooks.d/refresh.sh"
+                )
+            },
+        }
+    }
+    trigger_errors = checker.service_hook_policy(fixture)
+    require(
+        any(
+            "transaction-trigger source" in error and "systemctl preset" in error
+            for error in trigger_errors
+        ),
+        "recipe policy must reject service-manager calls in transaction-trigger assets",
+    )
+    trigger_asset.write_text(
+        """#!/bin/sh
+update-desktop-database -q
+""",
+        encoding="utf-8",
+    )
+    require(
+        not checker.service_hook_policy(fixture),
+        "recipe policy should allow non-service transaction-trigger work",
+    )
 
 print("SYSTEMD CORE INTEGRATION VALIDATION PASSED")

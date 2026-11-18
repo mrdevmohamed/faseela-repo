@@ -10,9 +10,13 @@ A package hook is privileged shell code executed as root. It must not call
 systemctl, sv, service or rc-service to preset, enable, disable, start, stop,
 restart, mask, unmask or otherwise change service state. Hooks are not trusted
 migration handlers and must not modify GRUB, initramfs, PID 1 selection or a
-migration journal. The recipe checker rejects direct service manager
-mutations in hook bodies. This is a policy guard, not a sandbox for arbitrary
-shell code.
+migration journal. The recipe checker rejects direct service-manager
+mutations in [hooks] fields. It also detects recipes that install files into
+Nawa's `/usr/lib/nawa/transaction-hooks.d` directory and scans their build
+install scripts and recipe-local `*.sh` assets for the same commands. Nawa
+executes these triggers after package-changing transactions, so they share
+the same trust boundary. This is a static policy guard, not a sandbox for
+arbitrary shell code.
 
 Hooks may still perform narrowly scoped package setup that is not service
 control, for example creating a system account or reloading udev rules when

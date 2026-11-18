@@ -2,7 +2,7 @@
 [package]
 name = "bluez"
 version = "5.87"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -48,7 +48,3 @@ install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
 printf '%s\n' 'enable bluetooth.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-bluetooth.preset
 '''
 
-[hooks]
-post_install = '''
-systemctl preset bluetooth.service 2>/dev/null || true
-'''

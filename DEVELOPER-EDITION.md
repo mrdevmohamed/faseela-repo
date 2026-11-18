@@ -112,7 +112,7 @@ Every new package must:
 5. Install only into `%{pkgdir}`, use `/usr` as the prefix, and pass Nawa lint.
 6. Include architecture constraints and upstream license metadata.
 7. Avoid collisions with existing package file ownership.
-8. Add service hooks only where needed; Faseela uses systemd, so ship a unit under `/usr/lib/systemd/system` and `systemctl preset` it from `post_install`.
+8. Ship units under `/usr/lib/systemd/system` and preset policy under `/usr/lib/systemd/system-preset`. Do not call `systemctl`, `sv`, `service` or `rc-service` from package hooks to change service state. Faseela applies vendor presets during image provisioning; administrators control services after installation.
 9. Be tested by the recipe validator, dependency resolver, package build workflow,
    and an install/runtime smoke test before being added to a flavor.
 

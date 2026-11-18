@@ -22,6 +22,67 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent / "recipes"
 ZERO = "0" * 64
 
+SERVICE_MANAGER_COMMAND = re.compile(
+    r"(?im)(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)\s*(?:if\s+)?(?:!\s*)?"
+    r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*)\s+)*(?:(?:command|sudo|doas)\s+)*"
+    r"(?:/usr/bin/)?(systemctl|sv|service|rc-service)\s+"
+    r"(preset(?:-all)?|enable|disable|start|stop|restart|try-restart|reload|"
+    r"reload-or-restart|daemon-reload|mask|unmask|revert|link|isolate|"
+    r"up|down|force-stop|halt|shutdown)\b"
+)
+
+
+def service_hook_policy(recs):
+    """Reject service state changes in package hooks and transaction triggers."""
+    errors = []
+    for name, recipe in recs.items():
+        recipe_path = Path(recipe["_path"])
+        hooks = recipe.get("hooks", {})
+        if isinstance(hooks, dict):
+            for hook_name, body in hooks.items():
+                if not isinstance(body, str):
+                    continue
+                for match in SERVICE_MANAGER_COMMAND.finditer(body):
+                    line = body.count("\n", 0, match.start()) + 1
+                    manager, action = match.group(1), match.group(2)
+                    errors.append(
+                        f"{recipe_path}: hook {hook_name} line {line} invokes "
+                        f"{manager} {action}; service activation belongs to "
+                        "distribution provisioning or the administrator"
+                    )
+
+        # Nawa executes regular *.sh files from this directory after
+        # package-changing transactions. Inspect every recipe-local shell
+        # asset when the recipe declares the transaction-trigger directory.
+        try:
+            recipe_source = recipe_path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(f"{recipe_path}: cannot read recipe for trigger policy: {error}")
+            continue
+        if "transaction-hooks.d" not in recipe_source:
+            continue
+
+        trigger_sources = []
+        for phase, body in recipe.get("build", {}).items():
+            if isinstance(body, str):
+                trigger_sources.append((f"{recipe_path} [build.{phase}]", body))
+        for asset in sorted(recipe_path.parent.rglob("*.sh")):
+            try:
+                trigger_sources.append((str(asset), asset.read_text(encoding="utf-8")))
+            except (OSError, UnicodeError) as error:
+                errors.append(f"{asset}: cannot inspect transaction-trigger source: {error}")
+
+        for source_name, body in trigger_sources:
+            for match in SERVICE_MANAGER_COMMAND.finditer(body):
+                line = body.count("\n", 0, match.start()) + 1
+                manager, action = match.group(1), match.group(2)
+                errors.append(
+                    f"{source_name}: transaction-trigger source line {line} invokes "
+                    f"{manager} {action}; service activation belongs to "
+                    "distribution provisioning or the administrator"
+                )
+    return errors
+
 
 def load():
     recs, errors = {}, []
@@ -105,6 +166,7 @@ def main():
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)
+    errors += service_hook_policy(recs)
     if not errors:
         try:
             order(recs, list(recs))

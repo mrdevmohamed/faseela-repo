@@ -2,8 +2,10 @@
 """Regression checks for the staged systemd core migration."""
 
 from pathlib import Path
+import importlib.util
 import re
 import subprocess
+import tempfile
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,6 +114,17 @@ require(
     "systemd must provide the merged-/usr PID 1 entry point",
 )
 
+base_files = recipe("base", "base-files")
+base_install = base_files["build"]["install"]
+require(base_files["package"]["rel"] >= 11, "base-files rel must include the Nawa system profile")
+for marker in (
+    "usr/share/nawa/system-profile.toml",
+    'distribution = "faseela"',
+    'architecture = "x86_64"',
+    'init-system = "systemd"',
+):
+    require(marker in base_install, f"base-files must ship the Nawa system profile: {marker}")
+
 units = recipe("system", "systemd-units")
 units_run = set(units["depends"]["run"])
 require(
@@ -137,7 +150,10 @@ for marker in (
 ):
     require(marker in units_install, f"systemd-units is missing core integration: {marker}")
 require("pam_elogind.so" not in units_install, "systemd-units must use pam_systemd, not pam_elogind")
-require("systemctl preset" in units.get("hooks", {}).get("post_install", ""), "systemd presets are not applied")
+require(
+    "post_install" not in units.get("hooks", {}),
+    "systemd-units must ship preset files, not apply service policy from a package hook",
+)
 
 dbus_system = recipe("gui", "dbus-system")
 dbus_run = set(dbus_system["depends"]["run"])
@@ -165,5 +181,67 @@ for svc in ("login", "su", "su-l", "passwd", "chfn", "chsh", "chpasswd", "newuse
 require("pam_systemd.so" in shadow_install, "shadow login must register console sessions with pam_systemd")
 require("nullok" in shadow_install, "shadow login must accept the live session's empty password (nullok)")
 require("chmod 4755" in shadow["hooks"]["post_install"], "shadow must restore SUID on su/passwd")
+
+
+# Nawa also executes .sh files from /usr/lib/nawa/transaction-hooks.d.
+# Verify that the recipe CI guard inspects those sources, not only [hooks].
+checker_spec = importlib.util.spec_from_file_location(
+    "check_recipes", ROOT / "scripts" / "check-recipes.py"
+)
+require(
+    checker_spec is not None and checker_spec.loader is not None,
+    "could not load the recipe policy checker",
+)
+checker = importlib.util.module_from_spec(checker_spec)
+checker_spec.loader.exec_module(checker)
+
+with tempfile.TemporaryDirectory(prefix="faseela-trigger-policy-") as temporary:
+    trigger_dir = Path(temporary)
+    trigger_recipe_path = trigger_dir / "recipe.toml"
+    trigger_recipe_path.write_text(
+        """[package]
+name = "trigger-fixture"
+[build]
+install = "install refresh.sh %{pkgdir}/usr/lib/nawa/transaction-hooks.d/refresh.sh"
+""",
+        encoding="utf-8",
+    )
+    trigger_asset = trigger_dir / "refresh.sh"
+    trigger_asset.write_text(
+        """#!/bin/sh
+systemctl preset example.service
+""",
+        encoding="utf-8",
+    )
+    fixture = {
+        "trigger-fixture": {
+            "_path": trigger_recipe_path,
+            "hooks": {},
+            "build": {
+                "install": (
+                    "install refresh.sh "
+                    "%{pkgdir}/usr/lib/nawa/transaction-hooks.d/refresh.sh"
+                )
+            },
+        }
+    }
+    trigger_errors = checker.service_hook_policy(fixture)
+    require(
+        any(
+            "transaction-trigger source" in error and "systemctl preset" in error
+            for error in trigger_errors
+        ),
+        "recipe policy must reject service-manager calls in transaction-trigger assets",
+    )
+    trigger_asset.write_text(
+        """#!/bin/sh
+update-desktop-database -q
+""",
+        encoding="utf-8",
+    )
+    require(
+        not checker.service_hook_policy(fixture),
+        "recipe policy should allow non-service transaction-trigger work",
+    )
 
 print("SYSTEMD CORE INTEGRATION VALIDATION PASSED")

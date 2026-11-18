@@ -4,7 +4,7 @@
 [package]
 name = "seatd-systemd"
 version = "0.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Shared systemd unit and DRM permissions for seatd-based Wayland desktops"
 license = ["MIT"]
@@ -53,6 +53,5 @@ done
 udevadm control --reload-rules 2>/dev/null || true
 udevadm trigger --subsystem-match=drm 2>/dev/null || true
 udevadm settle 2>/dev/null || true
-systemctl preset seatd.service 2>/dev/null || true
 echo "seatd-systemd: add desktop users to seat,video,render,input."
 '''

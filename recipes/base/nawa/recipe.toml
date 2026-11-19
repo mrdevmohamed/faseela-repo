@@ -19,8 +19,10 @@ license = ["GPL-3.0"]
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
 [depends]
-# Nawa is built from Rust sources; its ELF runtime links against glibc and libgcc.
-build = ["rust"]
+# Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that
+# bootstrap separate from the package dependency graph. Its ELF runtime links
+# against glibc and libgcc.
+build = []
 run = ["gcc", "glibc"]
 
 [capabilities]

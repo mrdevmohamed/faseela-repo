@@ -66,6 +66,27 @@ At a high level, the publisher:
 
 The index is published after the archive uploads so it does not point at assets that have not yet been uploaded.
 
+## Isolated schema-v5 publishing
+
+Schema-v5 publishing is a separate, manually confirmed workflow in
+**.github/workflows/publish-schema-v5.yml**. It accepts runs only from `main`
+with the explicit `PUBLISH_SCHEMA_V5` confirmation. It authenticates the
+schema-v3 source index, fetches only the current recipe archives it names,
+checks the recipe declarations and complete archive coverage, signs and
+validates the candidate, uploads immutable assets to **packages-v5-NNNN**, and
+publishes **index.toml.sig** before **index.toml** to **stable-v5**. It does
+not change **stable**, **stable-v3**, or **packages-NNNN**. The workflow uses
+the existing **NAWA_SIGN_KEY_B64** secret; clients must already trust the
+corresponding public key. It intentionally fails closed until every recipe has
+explicit runtime dependencies, capabilities, and package relations and a
+complete matching archive set is available.
+The publisher repository's **dist/nawa.pub** is a checked-in mirror of the
+Faseela distribution trust key; the workflow compares it with the distribution
+repository before using it.
+The declaration audit remains incomplete (542 of 1086 recipes); adding this
+tooling is not publication or release-readiness acceptance. No schema-v5
+publication, signing acceptance, or migration approval is claimed.
+
 ## Required settings
 
 Configure the repository under **Settings → Secrets and variables → Actions**.

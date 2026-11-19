@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Plan immutable GitHub Release shards for Nawa's schema-v3 repository.
+"""Plan immutable GitHub Release shards for Nawa's schema-v3/schema-v5 repositories.
 
 The stable release carries only index.toml + its signature. Package and recipe
-archives live in packages-NNNN releases; the signed v3 index stores each
-archive's HTTPS browser URL. This avoids GitHub's per-release 1,000-asset cap.
+archives live in schema-specific immutable shards; the signed index stores each
+archive's HTTPS browser URL. Schema-v5 shards are isolated from the existing
+schema-v3 namespace and carry detached signatures for every archive.
 """
 from __future__ import annotations
 
@@ -18,7 +19,8 @@ from urllib.parse import quote
 PACKAGE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\.tar\.zst\Z")
 PACKAGE_SIG_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\.tar\.zst\.sig\Z")
 RECIPES_RE = re.compile(r"recipes-[A-Za-z0-9._-]+\.recipes\.tar\.zst\Z")
-SHARD_RE = re.compile(r"packages-(\d{4,})\Z")
+RECIPES_SIG_RE = re.compile(r"recipes-[A-Za-z0-9._-]+\.recipes\.tar\.zst\.sig\Z")
+SHARD_RE = re.compile(r"(packages(?:-v5)?)-(\d{4,})\Z")
 
 
 def flatten(value):
@@ -53,18 +55,39 @@ def is_shard(tag: str) -> bool:
     return bool(SHARD_RE.fullmatch(tag))
 
 
-def list_published(releases: list[dict], stable_tag: str) -> list[tuple[str, str]]:
+def shard_namespace(index_version: int) -> str:
+    if index_version == 3:
+        return "packages"
+    if index_version == 5:
+        return "packages-v5"
+    raise SystemExit("distributed-releases: index-version must be 3 or 5")
+
+
+def validate_endpoint(stable_tag: str, index_version: int) -> None:
+    if index_version == 5 and stable_tag != "stable-v5":
+        raise SystemExit("distributed-releases: schema-v5 requires the isolated stable-v5 endpoint")
+
+
+def list_published(
+    releases: list[dict], stable_tag: str, index_version: int = 3
+) -> list[tuple[str, str]]:
+    validate_endpoint(stable_tag, index_version)
     # Prefer a packages-NNNN copy to a legacy copy still present in stable.
     # If duplicated across shards, pick the lowest shard number deterministically.
     found: dict[str, tuple[tuple[int, int], str]] = {}
     for release in releases:
         tag = release["tag_name"]
-        if tag != stable_tag and not is_shard(tag):
+        match = SHARD_RE.fullmatch(tag)
+        if tag != stable_tag and (match is None or match.group(1) != shard_namespace(index_version)):
             continue
-        priority = (0, int(SHARD_RE.fullmatch(tag).group(1))) if is_shard(tag) else (1, 0)
+        priority = (0, int(match.group(2))) if match else (1, 0)
         for name in asset_names(release):
             if not PACKAGE_RE.fullmatch(name):
                 continue
+            if index_version == 5 and f"{name}.sig" not in asset_names(release):
+                raise SystemExit(
+                    f"distributed-releases: schema-v5 release {tag} has unsigned archive {name}"
+                )
             current = found.get(name)
             if current is None or priority < current[0]:
                 found[name] = (priority, tag)
@@ -86,11 +109,16 @@ def build_plan(
     stable_tag: str,
     recipe_file: str,
     max_assets: int,
+    index_version: int = 3,
 ) -> dict:
+    namespace = shard_namespace(index_version)
+    validate_endpoint(stable_tag, index_version)
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise SystemExit("distributed-releases: repository must be owner/name")
     if max_assets < 1 or max_assets > 900:
         raise SystemExit("distributed-releases: max-assets must be in the range 1..900")
+    if index_version == 5 and max_assets < 2:
+        raise SystemExit("distributed-releases: schema-v5 needs at least two asset slots per archive")
     if recipe_file and not RECIPES_RE.fullmatch(recipe_file):
         raise SystemExit(f"distributed-releases: unsafe recipe archive name: {recipe_file!r}")
 
@@ -100,20 +128,31 @@ def build_plan(
             raise SystemExit(f"distributed-releases: unsafe package archive name: {name!r}")
     desired = packages + ([recipe_file] if recipe_file else [])
     desired_set = set(desired)
+    if index_version == 5:
+        for name in desired:
+            signature = repo_dir / f"{name}.sig"
+            if not signature.is_file() or signature.stat().st_size == 0:
+                raise SystemExit(
+                    f"distributed-releases: schema-v5 archive {name} has no non-empty local signature {signature}"
+                )
 
     shard_releases = {
         release["tag_name"]: release
         for release in releases
-        if is_shard(release["tag_name"])
+        if (match := SHARD_RE.fullmatch(release["tag_name"]))
+        and match.group(1) == namespace
     }
     shard_tags = sorted(
         shard_releases,
-        key=lambda tag: int(SHARD_RE.fullmatch(tag).group(1)),
+        key=lambda tag: int(SHARD_RE.fullmatch(tag).group(2)),
     )
     counts = {tag: len(asset_names(shard_releases[tag])) for tag in shard_tags}
     locations: dict[str, list[str]] = defaultdict(list)
+    shard_assets: dict[str, set[str]] = {}
     for tag in shard_tags:
-        for name in asset_names(shard_releases[tag]):
+        names = asset_names(shard_releases[tag])
+        shard_assets[tag] = set(names)
+        for name in names:
             if is_archive(name):
                 locations[name].append(tag)
 
@@ -123,16 +162,21 @@ def build_plan(
     cleanup: set[tuple[str, str]] = set()
 
     next_number = max(
-        (int(SHARD_RE.fullmatch(tag).group(1)) for tag in shard_tags),
+        (int(SHARD_RE.fullmatch(tag).group(2)) for tag in shard_tags),
         default=0,
     ) + 1
 
-    def allocate() -> str:
+    def asset_slots(name: str) -> int:
+        # Schema-v5 archives and recipe snapshots are published with detached
+        # signatures in the same immutable shard.
+        return 2 if index_version == 5 else 1
+
+    def allocate(slots: int) -> str:
         nonlocal next_number
         for tag in reversed(shard_tags):
-            if counts[tag] < max_assets:
+            if counts[tag] + slots <= max_assets:
                 return tag
-        tag = f"packages-{next_number:04d}"
+        tag = f"{namespace}-{next_number:04d}"
         next_number += 1
         shard_tags.append(tag)
         counts[tag] = 0
@@ -142,33 +186,42 @@ def build_plan(
     for name in desired:
         existing = sorted(
             locations.get(name, []),
-            key=lambda tag: int(SHARD_RE.fullmatch(tag).group(1)),
+            key=lambda tag: int(SHARD_RE.fullmatch(tag).group(2)),
         )
         if existing:
             selected = existing[0]
+            if index_version == 5 and f"{name}.sig" not in shard_assets[selected]:
+                raise SystemExit(
+                    f"distributed-releases: schema-v5 shard {selected} has unsigned archive {name}"
+                )
             assignments[name] = selected
-            for duplicate in existing[1:]:
-                cleanup.add((duplicate, name))
+            if index_version == 3:
+                for duplicate in existing[1:]:
+                    cleanup.add((duplicate, name))
             continue
-        selected = allocate()
+        selected = allocate(asset_slots(name))
         assignments[name] = selected
         uploads[selected].append(name)
-        counts[selected] += 1
+        if index_version == 5:
+            uploads[selected].append(f"{name}.sig")
+        counts[selected] += asset_slots(name)
 
-    for tag in sorted(shard_releases, key=lambda t: int(SHARD_RE.fullmatch(t).group(1))):
-        for name in asset_names(shard_releases[tag]):
-            if PACKAGE_SIG_RE.fullmatch(name):
-                cleanup.add((tag, name))
-            elif is_archive(name) and (name not in desired_set or assignments.get(name) != tag):
-                cleanup.add((tag, name))
+    if index_version == 3:
+        for tag in sorted(shard_releases, key=lambda t: int(SHARD_RE.fullmatch(t).group(2))):
+            for name in asset_names(shard_releases[tag]):
+                if PACKAGE_SIG_RE.fullmatch(name):
+                    cleanup.add((tag, name))
+                elif is_archive(name) and (name not in desired_set or assignments.get(name) != tag):
+                    cleanup.add((tag, name))
 
     legacy_cleanup: list[str] = []
-    for release in releases:
-        if release["tag_name"] != stable_tag:
-            continue
-        for name in asset_names(release):
-            if PACKAGE_RE.fullmatch(name) or PACKAGE_SIG_RE.fullmatch(name) or RECIPES_RE.fullmatch(name):
-                legacy_cleanup.append(name)
+    if index_version == 3:
+        for release in releases:
+            if release["tag_name"] != stable_tag:
+                continue
+            for name in asset_names(release):
+                if PACKAGE_RE.fullmatch(name) or PACKAGE_SIG_RE.fullmatch(name) or RECIPES_RE.fullmatch(name):
+                    legacy_cleanup.append(name)
 
     locations_toml = ["schema = 1", "", "[package_urls]"]
     for name in packages:
@@ -180,17 +233,25 @@ def build_plan(
         url = f"https://github.com/{repository}/releases/download/{tag}/{quote(recipe_file, safe='._+-')}"
         locations_toml.extend(["", "[recipe_urls]", f"{quote_toml(recipe_file)} = {quote_toml(url)}"])
 
+    reused = [
+        {"tag": tag, "name": name}
+        for name, tag in sorted(assignments.items())
+        if name not in uploads.get(tag, [])
+    ]
+
     return {
         "schema": 1,
+        "index_version": index_version,
         "repository": repository,
         "stable_tag": stable_tag,
         "max_assets": max_assets,
         "archive_count": len(packages),
         "recipe_file": recipe_file,
         "assignments": assignments,
+        "reused": reused,
         "uploads": {tag: sorted(names) for tag, names in sorted(uploads.items())},
         "create_releases": sorted(
-            create_releases, key=lambda tag: int(SHARD_RE.fullmatch(tag).group(1))
+            create_releases, key=lambda tag: int(SHARD_RE.fullmatch(tag).group(2))
         ),
         "cleanup": [
             {"tag": tag, "name": name}
@@ -202,7 +263,9 @@ def build_plan(
 
 
 def cmd_list(args) -> int:
-    for tag, name in list_published(read_releases(args.releases_json), args.stable_tag):
+    for tag, name in list_published(
+        read_releases(args.releases_json), args.stable_tag, args.index_version
+    ):
         print(f"{tag}\t{name}")
     return 0
 
@@ -215,6 +278,7 @@ def cmd_plan(args) -> int:
         args.stable_tag,
         args.recipe_file,
         args.max_assets,
+        args.index_version,
     )
     args.output.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     args.manifest.write_text(plan.pop("locations_toml"), encoding="utf-8")
@@ -269,6 +333,7 @@ def main() -> int:
     listing = sub.add_parser("list", help="list published package archives and their release tags")
     listing.add_argument("--releases-json", type=Path, required=True)
     listing.add_argument("--stable-tag", required=True)
+    listing.add_argument("--index-version", type=int, choices=(3, 5), default=3)
     listing.set_defaults(func=cmd_list)
 
     plan = sub.add_parser("plan", help="plan shard allocation and write a v3 locations manifest")
@@ -278,6 +343,7 @@ def main() -> int:
     plan.add_argument("--stable-tag", required=True)
     plan.add_argument("--recipe-file", default="")
     plan.add_argument("--max-assets", type=int, default=900)
+    plan.add_argument("--index-version", type=int, choices=(3, 5), default=3)
     plan.add_argument("--output", type=Path, required=True)
     plan.add_argument("--manifest", type=Path, required=True)
     plan.set_defaults(func=cmd_plan)

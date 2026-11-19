@@ -46,7 +46,7 @@ include = ["base-devel", "nawa", "git", "curl", "ca-certificates"]
 # Keep full firmware out of the ISO; users can install it through Nawa.
 [flavor.iso-nogui]
 summary = "Base live system without a desktop environment"
-include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
+include = ["@toolchain", "@base", "@system", "@boot", "@extra", "dosfstools"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
 
 # Sway desktop image.

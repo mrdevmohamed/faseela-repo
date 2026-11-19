@@ -93,6 +93,10 @@ nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # the automation that runs it), so check their shape rather than one pin.
 assert nawa["package"]["rel"] >= 21
 assert nawa["package"]["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
+assert nawa["depends"]["build"] == []
+assert nawa["depends"]["run"] == ["gcc", "glibc"]
+assert nawa["capabilities"]["provides"] == []
+assert nawa["relations"] == {"schema": 1, "conflicts": [], "replaces": []}
 assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
 assert re.fullmatch(
     r"https://github\.com/mrdevmohamed/nawa/archive/[0-9a-f]{40}\.tar\.gz",

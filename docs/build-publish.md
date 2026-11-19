@@ -96,12 +96,19 @@ substitute an older version, or silently rebuild from a different recipe.
 
 Use this order:
 
-1. Merge the Nawa client and matching Nawa recipe update through the normal
-   review process. The Nawa recipe currently requests `nawa-1.0.0-33`, while
-   the currently published v3 storage contains `nawa-1.0.0-32`.
-2. Let **Build packages** publish the exact rel=33 archive and updated signed
-   `stable-v3` index. Verify the archive is present in the signed v3 index
-   before moving on.
+1. Merge/review the Nawa client first and choose its exact reviewed
+   commit. The current recipe pin is `207fb56f...`, which contains the
+   System Intelligence base but predates the critical-package-assessment
+   addition in the Nawa PR. In the faseela-repo checkout, run
+   `python3 scripts/pin-nawa-source.py <full-nawa-commit-sha>`. This downloads
+   the real GitHub source archive, calculates its SHA-256, updates the pinned
+   URL, and increments the Nawa recipe `rel` when the source bytes change.
+   Do not reuse the old digest or substitute the commit SHA for the archive
+   SHA.
+2. Let **Build packages** publish the exact Nawa archive identity produced by
+   that pin update, plus the updated signed `stable-v3` index. The current
+   published v3 storage contains `nawa-1.0.0-32`; verify that the new exact
+   identity is present in the signed v3 index before moving on.
 3. Complete the schema-v5 declaration audit for **every current recipe**.
    Every recipe must explicitly declare `[depends].run`,
    `[capabilities].provides`, and `[relations]`; use empty arrays only when

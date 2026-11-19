@@ -80,13 +80,21 @@ A new-schema recipe can declare several source artifacts using **[[package.sourc
 
 Nawa also supports fetch declarations for ecosystem dependencies, including **[fetch.cargo]** and **[fetch.go]**. These fetch steps run before compilation so the build can use the prepared dependency cache offline.
 
-Any recipe that uses the new schema tables must use this exact marker in **[package]**:
+Any recipe that uses the new schema tables must use the matching fail-closed marker in **[package]**:
 
-~~~toml
+- For **[[package.sources]]**, **[assets]**, or **[fetch.*]** without **[relations]**:
+
+~~~
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
 ~~~
 
-This marker deliberately causes older Nawa clients to fail closed rather than interpreting the recipe using the legacy schema. Do not use the marker on an otherwise legacy recipe. Do not mix **[[package.sources]]** with legacy **sha256**, **mirrors**, or **source_dir** fields.
+- When the recipe also declares **[relations] schema = 1**, use the stronger relation marker instead; it supersedes the source-schema marker:
+
+~~~
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+~~~
+
+These markers deliberately cause older Nawa clients to fail closed rather than interpreting the recipe using an incomplete schema. Do not use a marker on an otherwise legacy recipe. Do not mix **[[package.sources]]** with legacy **sha256**, **mirrors**, or **source_dir** fields.
 
 For the complete schema and validation rules, use the [Nawa recipe reference](https://github.com/mrdevmohamed/nawa/blob/master/docs/recipes.md) and [fetch-phase design](https://github.com/mrdevmohamed/nawa/blob/master/docs/design/fetch-phase.md).
 

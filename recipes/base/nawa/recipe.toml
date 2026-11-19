@@ -16,7 +16,7 @@ arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
 # Fail closed on Nawa versions that predate the multi-source recipe schema.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 # Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that

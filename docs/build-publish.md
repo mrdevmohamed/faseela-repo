@@ -87,6 +87,43 @@ The declaration audit remains incomplete (542 of 1086 recipes); adding this
 tooling is not publication or release-readiness acceptance. No schema-v5
 publication, signing acceptance, or migration approval is claimed.
 
+### Required release order
+
+The schema-v5 workflow is an **index publisher**, not a package builder. It
+imports the exact archive identities named by the current recipes from the
+authenticated `stable-v3` index. It must not manufacture a missing archive,
+substitute an older version, or silently rebuild from a different recipe.
+
+Use this order:
+
+1. Merge the Nawa client and matching Nawa recipe update through the normal
+   review process. The Nawa recipe currently requests `nawa-1.0.0-33`, while
+   the currently published v3 storage contains `nawa-1.0.0-32`.
+2. Let **Build packages** publish the exact rel=33 archive and updated signed
+   `stable-v3` index. Verify the archive is present in the signed v3 index
+   before moving on.
+3. Complete the schema-v5 declaration audit for **every current recipe**.
+   Every recipe must explicitly declare `[depends].run`,
+   `[capabilities].provides`, and `[relations]`; use empty arrays only when
+   the declaration is genuinely empty. A partially declared recipe tree is
+   not a publishable v5 repository.
+4. Rebuild and publish every current recipe archive whose embedded package
+   metadata must change. A source recipe edit alone is not proof that an old
+   archive contains the new runtime-dependency, capability, and relation
+   declarations.
+5. Run the publisher's fixture/CI tests, then verify that the current v3
+   index contains a matching signed archive for every current recipe. Only
+   after these checks pass should an operator dispatch **Publish schema-v5**
+   on `main` with the exact `PUBLISH_SCHEMA_V5` confirmation.
+6. Keep the installed Nawa configuration on `stable-v3` until the signed
+   `stable-v5` index is published, the new client is installed, and the
+   v5 repository has been verified end to end. Switching the default endpoint
+   is a separate package-recipe release; it is not part of this publisher.
+
+The publisher intentionally fails closed when any step is incomplete. Do not
+bypass the archive, declaration, signature, or trust checks to make a run
+green.
+
 ## Required settings
 
 Configure the repository under **Settings → Secrets and variables → Actions**.

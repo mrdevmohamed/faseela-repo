@@ -15,6 +15,19 @@ rel = 33
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
+
+[depends]
+# Nawa is built from Rust sources; its ELF runtime links against glibc and libgcc.
+build = ["rust"]
+run = ["gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 # Fail closed on Nawa versions that predate the multi-source recipe schema.
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
 

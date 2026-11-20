@@ -125,6 +125,36 @@ Use this order:
    repository has passed end-to-end verification. Switching the default
    endpoint is a separate, reviewed package-recipe release.
 
+### Current schema-v5 build limitation
+
+The current **Publish schema-v5** workflow is an index publisher: it fetches
+exact archive identities from the signed `stable-v3` index and then asks Nawa
+to create a schema-v5 index. It does **not** build packages.
+
+That is not yet a complete path for relation-bearing packages:
+
+- The normal **Build packages** workflow creates a schema-v3 index.
+- Nawa deliberately refuses to put an archive containing `[relations]`
+  metadata into schema-v1 through schema-v4 indexes.
+- The current v5 publisher requires the exact current recipe archive to exist
+  in the signed v3 index, and the v5 index builder requires the archive's own
+  `.PKGINFO` to carry explicit runtime dependencies, capabilities, and
+  relations.
+
+Therefore, do not add `[relations]` to release recipes and then run the
+ordinary schema-v3 publisher. That would fail closed by design. The v5
+rollout still needs a separate, complete package-build path that builds the
+v5-declared archive set without publishing those relation-bearing archives
+through `stable-v3`, then supplies that authenticated build output to the
+isolated v5 index publisher. This pipeline must also use new package release
+identities where the archive metadata changes. Keep the v5 workflow unused
+until that build-to-publisher handoff exists and has passed end-to-end tests.
+
+The Nawa rel=34 transition package is intentionally different: it carries
+explicit runtime dependencies and capabilities but no `[relations]`, so it
+remains publishable through `stable-v3`. The Nawa recipe must gain relations
+only in the later v5 package build.
+
 The publisher intentionally fails closed when any step is incomplete. Do not
 bypass the archive, declaration, signature, or trust checks to make a run
 green.

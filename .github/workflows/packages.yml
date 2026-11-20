@@ -1045,6 +1045,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
+          BUILD_OK: ${{ steps.build.outcome == 'success' }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -1060,10 +1061,15 @@ jobs:
           sudo cp -al "$out"/*.nawa.tar.zst "$repo/"
           sudo chown -R "$(id -u):$(id -g)" "$repo"
           stale=()
-          if [[ "$PRUNE" == 1 ]]; then
+          # Never remove the last published archive for a package whose new
+          # recipe failed to build. Partial publication is allowed, but pruning
+          # is only safe after every selected build completed successfully.
+          if [[ "$PRUNE" == 1 && "$BUILD_OK" == "true" ]]; then
             mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
             for s in "${stale[@]}"; do rm -f "$repo/$s"; done
             if (( ${#stale[@]} )); then printf 'superseded: %s\n' "${stale[@]}"; fi
+          elif [[ "$PRUNE" == 1 ]]; then
+            echo "::warning::Skipping stale-package pruning because at least one selected package failed to build; preserving last-known-good archives."
           fi
 
           rev="${GITHUB_SHA}"

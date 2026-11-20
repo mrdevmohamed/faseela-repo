@@ -27,6 +27,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # One-time release preparation: compute the authenticated source-archive
+      # digest for the reviewed Nawa commit through the repository's own pin helper.
+      - name: Calculate reviewed Nawa source archive pin
+        run: |
+          set -euo pipefail
+          python3 scripts/pin-nawa-source.py 28cbfed1b5bb8c6705fdd287cac2b11af9f43457
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text())["package"]
+          source = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text())["package"]["sources"][0]
+          print(f"NAWA_PIN version={p['version']} rel={p['rel']} url={source['url']} sha256={source['sha256']}")
+          PY
       - name: Huion HS64 kernel driver support regression check
         run: python3 -I scripts/test-huion-support.py
       - name: Huion tablet control-panel package regression check

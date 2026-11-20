@@ -27,7 +27,12 @@ run = ["efibootmgr"]
 # the host compiler; there is no x86_64- prefixed one). Never run ./configure in the source.
 configure = """
 mkdir build-pc build-efi
-(cd build-pc  && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
+# GRUB 2.14 detects GNU ld's --image-base and uses it for i386-pc; with current
+# binutils that can put another function before _start in kernel.img. The file
+# then starts at 0x9000 but enters later, so BIOS installs stop after "GRUB
+# loading". Force the historical -Ttext link for the BIOS build (upstream
+# workaround; see LFS #5857). Keep the EFI configure unchanged.
+(cd build-pc  && ax_cv_check_ldflags___Wl___image_base_0x400000=no ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
 (cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
 # the invariant this recipe depends on, checked where it breaks: nothing was linked into the source
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
@@ -38,6 +43,11 @@ fi
 compile = """
 make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
+# grub-mkimage checks only that .text starts at 0x9000, not that the entry is
+# _start there. Fail the package if the BIOS kernel is linked with a shifted
+# entry again; otherwise the installed MBR can hang before loading grub.cfg.
+entry=$(readelf -h build-pc/grub-core/kernel.img | awk '/Entry point address/ { print $4 }')
+test "$entry" = 0x9000
 """
 # BIOS: the full install (tools, modules, docs). EFI: a full install into a scratch directory,
 # of which only /usr/lib/grub/x86_64-efi is kept: the tools are the same host programs and

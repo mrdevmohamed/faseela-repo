@@ -21,7 +21,7 @@ run = ["efibootmgr"]
 # Buildroot for GRUB 2.14: the --image-base probe can move the BIOS entry point
 # away from 0x9000, and its follow-up diagnostic unnecessarily requires
 # autoconf-archive. Regenerate configure from the patched configure.ac.
-prepare = """
+prepare = '''
 set -eu
 # Revert GRUB 2.14's linker --image-base probe. This is the distro workaround
 # carried by Yocto/OpenEmbedded and Buildroot for the 0x9074 BIOS entry issue.
@@ -122,7 +122,7 @@ index 041cfbab4..209c0fb11 100644
  if test "x$TARGET_APPLE_LINKER" != x1 ; then
 PATCH
 autoreconf -fi
-"""
+'''
 
 configure = """
 set -eu

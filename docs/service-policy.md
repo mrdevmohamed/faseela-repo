@@ -7,11 +7,10 @@ sysusers declarations, udev rules and vendor preset files. These are package
 payload and describe what the distribution makes available.
 
 A package hook is privileged shell code executed as root. It must not call
-systemctl, sv, service or rc-service to preset, enable, disable, start, stop,
-restart, mask, unmask or otherwise change service state. Hooks are not trusted
-migration handlers and must not modify GRUB, initramfs, PID 1 selection or a
-migration journal. The recipe checker rejects direct service-manager
-mutations in [hooks] fields. It also detects recipes that install files into
+systemctl to preset, enable, disable, start, stop, restart, mask, unmask or
+otherwise change service state. Hooks must not modify GRUB, initramfs or PID 1
+selection. The recipe checker rejects direct service-manager mutations in
+[hooks] fields. It also detects recipes that install files into
 Nawa's `/usr/lib/nawa/transaction-hooks.d` directory and scans their build
 install scripts and recipe-local `*.sh` assets for the same commands. Nawa
 executes these triggers after package-changing transactions, so they share
@@ -47,7 +46,7 @@ sees all installed preset files together, so package installation order does
 not determine which preset wins.
 
 The system profile at /usr/share/nawa/system-profile.toml is separate from
-service presets. It declares the distribution's desired init provider for
-Nawa's system inspection and transition planner. An administrator may supply
+service presets. It declares the distribution's required systemd init provider
+for Nawa's system inspection. An administrator may supply
 /etc/nawa/system-profile.toml to override distribution defaults without
 editing package-owned files.

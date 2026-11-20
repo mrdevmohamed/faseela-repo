@@ -5,7 +5,7 @@
 # service, the sshd unit (available, not enabled) and compatibility links for
 # the /sbin paths that systemd's getty units hardcode.
 #
-# It replaces runit-services. Service management on Faseela is systemctl:
+# Service management on Faseela is exclusively through systemctl:
 #   systemctl enable --now sshd
 #   journalctl -b
 [package]

@@ -5,7 +5,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -107,19 +107,12 @@ autoreconf -fi
 configure = """
 set -eu
 mkdir build-pc build-efi
-# Match Void Linux's proven GRUB build flags: avoid PIE, disable stack
-# protection for freestanding code, and use -Os instead of -O2. Replace the
-# optimization flag rather than appending -Os before a later -O2.
-CFLAGS="$(printf '%s' "${CFLAGS:--O2 -pipe}" | sed 's/-O2/-Os/g')"
-CXXFLAGS="$(printf '%s' "${CXXFLAGS:--O2 -pipe}" | sed 's/-O2/-Os/g')"
-export CFLAGS CXXFLAGS
-unset CC AS LD RANLIB CPP
-freestanding_cflags="-fno-stack-protector -fno-PIE -fno-pie"
-CFLAGS="$CFLAGS $freestanding_cflags"
-export CFLAGS
+# Preserve Nawa's native compiler/toolchain environment for configure's
+# executable test. Freestanding flags here can produce a test binary that the
+# configure probe cannot run; GRUB's own target flags control its image code.
 # BIOS: native pc platform. EFI: a separate x86_64-efi target build.
 (cd build-pc && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
-(cd build-efi && CFLAGS="$freestanding_cflags" ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
+(cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
 # The source tree must remain unconfigured; otherwise EFI can consume i386 headers.
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
     echo "grub: source tree was configured in tree; EFI would use the wrong headers" >&2

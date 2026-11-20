@@ -109,7 +109,7 @@ diff --git a/configure.ac b/configure.ac
 index 041cfbab4..209c0fb11 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1794,11 +1794,6 @@ LIBS=""
+@@ -1794,11 +1794,5 @@ LIBS=""
  # Defined in acinclude.m4.
  grub_ASM_USCORE
  grub_PROG_TARGET_CC

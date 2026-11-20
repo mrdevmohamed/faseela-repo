@@ -134,7 +134,7 @@ CFLAGS="$(printf '%s' "${CFLAGS:--O2 -pipe}" | sed 's/-O2/-Os/g')"
 CXXFLAGS="$(printf '%s' "${CXXFLAGS:--O2 -pipe}" | sed 's/-O2/-Os/g')"
 export CFLAGS CXXFLAGS
 unset CC AS LD RANLIB CPP
-freestanding_cflags="-fno-stack-protector"
+freestanding_cflags="-fno-stack-protector -fno-PIE -fno-pie"
 CFLAGS="$CFLAGS $freestanding_cflags"
 export CFLAGS
 # BIOS: native pc platform. EFI: a separate x86_64-efi target build.

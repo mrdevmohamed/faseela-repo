@@ -969,12 +969,17 @@ jobs:
           "$identity" = "https://example.invalid/$identity"
           EOF
 
-          # This exercises the same schema-v3 writer used by the main-branch
-          # publisher. Relation-bearing archives must fail here rather than
-          # being silently downgraded into the stable-v3 index.
+          # Schema-v2+ indexes must be signed. Generate an ephemeral test-only
+          # keypair inside the throwaway build root; never read the production
+          # NAWA_SIGN_KEY_B64 secret during a pull-request build.
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa keygen \
+            --out /tmp/nawa-v3-smoke/keys
           sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create \
             /tmp/nawa-v3-smoke --out /tmp/nawa-v3-smoke/index.toml \
-            --index-version 3 --locations /tmp/nawa-v3-smoke/locations.toml
+            --index-version 3 --locations /tmp/nawa-v3-smoke/locations.toml \
+            --sign --key /tmp/nawa-v3-smoke/keys/nawa.sec
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa verify \
+            /tmp/nawa-v3-smoke/index.toml --key /tmp/nawa-v3-smoke/keys/nawa.pub
 
           python3 -I - "$smoke/index.toml" "$identity" <<'PY'
           import sys

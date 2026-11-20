@@ -23,13 +23,14 @@ run = ["efibootmgr"]
 # autoconf-archive. Regenerate configure from the patched configure.ac.
 prepare = """
 set -eu
+# Revert GRUB 2.14's linker --image-base probe. This is the distro workaround
+# carried by Yocto/OpenEmbedded and Buildroot for the 0x9074 BIOS entry issue.
 patch -p1 <<'PATCH'
 From 3a9d2dd2f5fb07b75a74c307d61b9b9fc5d20a62 Mon Sep 17 00:00:00 2001
 From: Yi Zhao <yi.zhao@windriver.com>
 Date: Fri, 27 Feb 2026 11:46:54 +0800
-Subject: [PATCH 1/2] Revert "configure: Check linker for --image-base support"
+Subject: [PATCH] Revert "configure: Check linker for --image-base support"
 
-This restores the historical -Wl,-Ttext linker option for GRUB image bases.
 ---
  acinclude.m4 |  5 -----
  configure.ac | 14 ++------------
@@ -72,9 +73,9 @@ index d8ca1b7c1..041cfbab4 100644
  fi
 
 @@ -1798,18 +1800,6 @@ grub_PROG_TARGET_CC
--m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
--must install it to generate the configure script.])])
--
+ m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
+ must install it to generate the configure script.])])
+
  if test "x$TARGET_APPLE_LINKER" != x1 ; then
 -AX_CHECK_LINK_FLAG([-Wl,--image-base,0x400000],
 -    [TARGET_IMG_BASE_LDOPT="-Wl,--image-base"],
@@ -92,8 +93,34 @@ index d8ca1b7c1..041cfbab4 100644
  fi
  grub_PROG_LD_BUILD_ID_NONE
 PATCH
-# The second upstream change added an autoconf-archive-only fatal check.
-# Keep configure regeneration self-contained after removing AX_CHECK_LINK_FLAG.
+# Revert the follow-up fatal check too: AX_CHECK_LINK_FLAG was removed above,
+# so configure regeneration no longer requires autoconf-archive.
+patch -p1 <<'PATCH'
+From d0f516385dc73e8dd92b78ce08c1df100434fe67 Mon Sep 17 00:00:00 2001
+From: Yi Zhao <yi.zhao@windriver.com>
+Date: Fri, 27 Feb 2026 13:58:44 +0800
+Subject: [PATCH] Revert "configure: Print a more helpful error if autoconf-archive is not installed"
+
+---
+ configure.ac | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 041cfbab4..209c0fb11 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1794,11 +1794,6 @@ LIBS=""
+ # Defined in acinclude.m4.
+ grub_ASM_USCORE
+ grub_PROG_TARGET_CC
+-
+-# The error message produced by autoconf if autoconf-archive is not installed
+-# is quite misleading and not very helpful. So, try point people in the right direction.
+-m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
+-must install it to generate the configure script.])])
+-
+ if test "x$TARGET_APPLE_LINKER" != x1 ; then
+PATCH
 autoreconf -fi
 """
 
@@ -126,7 +153,7 @@ make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
 # Exercise GRUB's own BIOS image validation path; it checks the generated
 # i386-pc kernel image rather than inspecting an unrelated ELF entry field.
-build-pc/grub-mkimage -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
+build-pc/grub-mkimage -d build-pc/grub-core -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
 test -s build-pc/grub-core/test-core.img
 """
 

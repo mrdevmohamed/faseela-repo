@@ -96,36 +96,34 @@ substitute an older version, or silently rebuild from a different recipe.
 
 Use this order:
 
-1. Merge/review the Nawa client first and choose its exact reviewed
-   commit. The current recipe pin is `207fb56f...`, which contains the
-   System Intelligence base but predates the critical-package-assessment
-   addition in the Nawa PR. In the faseela-repo checkout, run
-   `python3 scripts/pin-nawa-source.py <full-nawa-commit-sha>`. This downloads
-   the real GitHub source archive, calculates its SHA-256, updates the pinned
-   URL, and increments the Nawa recipe `rel` when the source bytes change.
-   Do not reuse the old digest or substitute the commit SHA for the archive
-   SHA.
-2. Let **Build packages** publish the exact Nawa archive identity produced by
-   that pin update, plus the updated signed `stable-v3` index. The current
-   published v3 storage contains `nawa-1.0.0-32`; verify that the new exact
-   identity is present in the signed v3 index before moving on.
-3. Complete the schema-v5 declaration audit for **every current recipe**.
-   Every recipe must explicitly declare `[depends].run`,
-   `[capabilities].provides`, and `[relations]`; use empty arrays only when
-   the declaration is genuinely empty. A partially declared recipe tree is
-   not a publishable v5 repository.
-4. Rebuild and publish every current recipe archive whose embedded package
-   metadata must change. A source recipe edit alone is not proof that an old
-   archive contains the new runtime-dependency, capability, and relation
-   declarations.
-5. Run the publisher's fixture/CI tests, then verify that the current v3
-   index contains a matching signed archive for every current recipe. Only
-   after these checks pass should an operator dispatch **Publish schema-v5**
-   on `main` with the exact `PUBLISH_SCHEMA_V5` confirmation.
-6. Keep the installed Nawa configuration on `stable-v3` until the signed
-   `stable-v5` index is published, the new client is installed, and the
-   v5 repository has been verified end to end. Switching the default endpoint
-   is a separate package-recipe release; it is not part of this publisher.
+1. Merge/review Nawa PR #58, whose tested head is
+   `28cbfed1b5bb8c6705fdd287cac2b11af9f43457`. The Nawa recipe is now pinned
+   to that exact source archive: `nawa-1.0.0-34`, SHA-256
+   `20e903a78a0ee3ef90794daaae16bd6f8a1493f27c3b650ef646b849b6367094`.
+   The digest was calculated by `scripts/pin-nawa-source.py` from the actual
+   GitHub archive, not inferred from the commit ID.
+2. Merge this repository PR after its CI and Nawa package build pass. The
+   main-branch **Build packages** workflow detects the updated recipe, builds
+   Nawa rel=34, publishes the signed pair into `nawa-transition`, and then
+   publishes the new signed `stable-v3` index. The installed legacy client
+   can use the standalone transition package before relying on the refreshed
+   v3 index. Verify that both the archive/signature pair and its v3 index entry
+   are present before proceeding.
+3. Complete the schema-v5 declaration and matching-archive audit for every
+   current recipe/package archive. Every recipe must explicitly declare
+   `[depends].run`, `[capabilities].provides`, and `[relations]`; empty
+   arrays are valid only when that package genuinely has no entries. The
+   publisher intentionally refuses incomplete coverage.
+4. Rebuild and publish every package archive whose embedded metadata needs to
+   change. A recipe edit alone does not update already-published `.PKGINFO`.
+5. Run the publisher's fixture/CI tests, then verify that the signed v3 source
+   index has a matching archive for every current recipe. Only after these
+   checks pass should an operator dispatch **Publish schema-v5** on `main`
+   with the exact `PUBLISH_SCHEMA_V5` confirmation.
+6. Keep installed Nawa configurations on `stable-v3` until the signed
+   `stable-v5` index is published, the new client is installed, and the v5
+   repository has passed end-to-end verification. Switching the default
+   endpoint is a separate, reviewed package-recipe release.
 
 The publisher intentionally fails closed when any step is incomplete. Do not
 bypass the archive, declaration, signature, or trust checks to make a run

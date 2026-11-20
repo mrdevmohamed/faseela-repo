@@ -11,7 +11,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -46,8 +46,13 @@ make -C build-efi -j%{jobs}
 # grub-mkimage checks only that .text starts at 0x9000, not that the entry is
 # _start there. Fail the package if the BIOS kernel is linked with a shifted
 # entry again; otherwise the installed MBR can hang before loading grub.cfg.
-entry=$(readelf -h build-pc/grub-core/kernel.exec | awk '/Entry point address/ { print $4 }')
-test "$entry" = 0x9000
+entry=$(readelf -h build-pc/grub-core/kernel.exec | sed -n 's/^[[:space:]]*Entry point address:[[:space:]]*//p')
+printf 'grub: BIOS kernel.exec ELF entry point: %s (expected 0x9000)\\n' "${entry:-<missing>}"
+if [ "$entry" != 0x9000 ]; then
+    echo "grub: BIOS kernel entry-point validation failed; ELF header follows:" >&2
+    readelf -h build-pc/grub-core/kernel.exec >&2
+    exit 1
+fi
 """
 # BIOS: the full install (tools, modules, docs). EFI: a full install into a scratch directory,
 # of which only /usr/lib/grub/x86_64-efi is kept: the tools are the same host programs and

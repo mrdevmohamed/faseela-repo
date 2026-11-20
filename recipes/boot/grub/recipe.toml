@@ -96,8 +96,8 @@ PATCH
 # The companion Yocto revert removes the archive-only fatal check. The
 # source tarball's surrounding comments differ, so remove the two-line macro
 # block by its exact macro name rather than depending on line-number context.
-sed -i '/^[[:space:]]*m4_ifndef(\\[AX_CHECK_LINK_FLAG\\]/,+1d' configure.ac
-if grep -q 'm4_ifndef(\\[AX_CHECK_LINK_FLAG\\]' configure.ac; then
+sed -i '/^[[:space:]]*m4_ifndef.*AX_CHECK_LINK_FLAG/,+1d' configure.ac
+if grep -q 'm4_ifndef.*AX_CHECK_LINK_FLAG' configure.ac; then
     echo "grub: autoconf-archive fatal check remains after the configure revert" >&2
     exit 1
 fi

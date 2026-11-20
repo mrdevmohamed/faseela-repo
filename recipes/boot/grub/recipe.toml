@@ -93,34 +93,14 @@ index d8ca1b7c1..041cfbab4 100644
  fi
  grub_PROG_LD_BUILD_ID_NONE
 PATCH
-# Revert the follow-up fatal check too: AX_CHECK_LINK_FLAG was removed above,
-# so configure regeneration no longer requires autoconf-archive.
-patch -p1 <<'PATCH'
-From d0f516385dc73e8dd92b78ce08c1df100434fe67 Mon Sep 17 00:00:00 2001
-From: Yi Zhao <yi.zhao@windriver.com>
-Date: Fri, 27 Feb 2026 13:58:44 +0800
-Subject: [PATCH] Revert "configure: Print a more helpful error if autoconf-archive is not installed"
-
----
- configure.ac | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/configure.ac b/configure.ac
-index 041cfbab4..209c0fb11 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -1794,11 +1794,5 @@ LIBS=""
- # Defined in acinclude.m4.
- grub_ASM_USCORE
- grub_PROG_TARGET_CC
--
--# The error message produced by autoconf if autoconf-archive is not installed
--# is quite misleading and not very helpful. So, try point people in the right direction.
--m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
--must install it to generate the configure script.])])
--
- if test "x$TARGET_APPLE_LINKER" != x1 ; then
-PATCH
+# The companion Yocto revert removes the archive-only fatal check. The
+# source tarball's surrounding comments differ, so remove the two-line macro
+# block by its exact macro name rather than depending on line-number context.
+sed -i '/^[[:space:]]*m4_ifndef(\\[AX_CHECK_LINK_FLAG\\]/,+1d' configure.ac
+if grep -q 'm4_ifndef(\\[AX_CHECK_LINK_FLAG\\]' configure.ac; then
+    echo "grub: autoconf-archive fatal check remains after the configure revert" >&2
+    exit 1
+fi
 autoreconf -fi
 '''
 

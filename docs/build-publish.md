@@ -66,6 +66,99 @@ At a high level, the publisher:
 
 The index is published after the archive uploads so it does not point at assets that have not yet been uploaded.
 
+## Isolated schema-v5 publishing
+
+Schema-v5 publishing is a separate, manually confirmed workflow in
+**.github/workflows/publish-schema-v5.yml**. It accepts runs only from `main`
+with the explicit `PUBLISH_SCHEMA_V5` confirmation. It authenticates the
+schema-v3 source index, fetches only the current recipe archives it names,
+checks the recipe declarations and complete archive coverage, signs and
+validates the candidate, uploads immutable assets to **packages-v5-NNNN**, and
+publishes **index.toml.sig** before **index.toml** to **stable-v5**. It does
+not change **stable**, **stable-v3**, or **packages-NNNN**. The workflow uses
+the existing **NAWA_SIGN_KEY_B64** secret; clients must already trust the
+corresponding public key. It intentionally fails closed until every recipe has
+explicit runtime dependencies, capabilities, and package relations and a
+complete matching archive set is available.
+The publisher repository's **dist/nawa.pub** is a checked-in mirror of the
+Faseela distribution trust key; the workflow compares it with the distribution
+repository before using it.
+The declaration audit remains incomplete (542 of 1086 recipes); adding this
+tooling is not publication or release-readiness acceptance. No schema-v5
+publication, signing acceptance, or migration approval is claimed.
+
+### Required release order
+
+The schema-v5 workflow is an **index publisher**, not a package builder. It
+imports the exact archive identities named by the current recipes from the
+authenticated `stable-v3` index. It must not manufacture a missing archive,
+substitute an older version, or silently rebuild from a different recipe.
+
+Use this order:
+
+1. Merge/review Nawa PR #58, whose tested head is
+   `28cbfed1b5bb8c6705fdd287cac2b11af9f43457`. The Nawa recipe is now pinned
+   to that exact source archive: `nawa-1.0.0-34`, SHA-256
+   `20e903a78a0ee3ef90794daaae16bd6f8a1493f27c3b650ef646b849b6367094`.
+   The digest was calculated by `scripts/pin-nawa-source.py` from the actual
+   GitHub archive, not inferred from the commit ID.
+2. Merge this repository PR after its CI and Nawa package build pass. The
+   main-branch **Build packages** workflow detects the updated recipe, builds
+   Nawa rel=34, publishes the signed pair into `nawa-transition`, and then
+   publishes the new signed `stable-v3` index. The installed legacy client
+   can use the standalone transition package before relying on the refreshed
+   v3 index. Verify that both the archive/signature pair and its v3 index entry
+   are present before proceeding.
+3. Complete the schema-v5 declaration and matching-archive audit for every
+   current recipe/package archive. Every recipe must explicitly declare
+   `[depends].run`, `[capabilities].provides`, and `[relations]`; empty
+   arrays are valid only when that package genuinely has no entries. The
+   publisher intentionally refuses incomplete coverage.
+4. Rebuild and publish every package archive whose embedded metadata needs to
+   change. A recipe edit alone does not update already-published `.PKGINFO`.
+5. Run the publisher's fixture/CI tests, then verify that the signed v3 source
+   index has a matching archive for every current recipe. Only after these
+   checks pass should an operator dispatch **Publish schema-v5** on `main`
+   with the exact `PUBLISH_SCHEMA_V5` confirmation.
+6. Keep installed Nawa configurations on `stable-v3` until the signed
+   `stable-v5` index is published, the new client is installed, and the v5
+   repository has passed end-to-end verification. Switching the default
+   endpoint is a separate, reviewed package-recipe release.
+
+### Current schema-v5 build limitation
+
+The current **Publish schema-v5** workflow is an index publisher: it fetches
+exact archive identities from the signed `stable-v3` index and then asks Nawa
+to create a schema-v5 index. It does **not** build packages.
+
+That is not yet a complete path for relation-bearing packages:
+
+- The normal **Build packages** workflow creates a schema-v3 index.
+- Nawa deliberately refuses to put an archive containing `[relations]`
+  metadata into schema-v1 through schema-v4 indexes.
+- The current v5 publisher requires the exact current recipe archive to exist
+  in the signed v3 index, and the v5 index builder requires the archive's own
+  `.PKGINFO` to carry explicit runtime dependencies, capabilities, and
+  relations.
+
+Therefore, do not add `[relations]` to release recipes and then run the
+ordinary schema-v3 publisher. That would fail closed by design. The v5
+rollout still needs a separate, complete package-build path that builds the
+v5-declared archive set without publishing those relation-bearing archives
+through `stable-v3`, then supplies that authenticated build output to the
+isolated v5 index publisher. This pipeline must also use new package release
+identities where the archive metadata changes. Keep the v5 workflow unused
+until that build-to-publisher handoff exists and has passed end-to-end tests.
+
+The Nawa rel=34 transition package is intentionally different: it carries
+explicit runtime dependencies and capabilities but no `[relations]`, so it
+remains publishable through `stable-v3`. The Nawa recipe must gain relations
+only in the later v5 package build.
+
+The publisher intentionally fails closed when any step is incomplete. Do not
+bypass the archive, declaration, signature, or trust checks to make a run
+green.
+
 ## Required settings
 
 Configure the repository under **Settings → Secrets and variables → Actions**.

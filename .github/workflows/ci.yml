@@ -87,6 +87,8 @@ jobs:
           [ "$(wc -l < "$RUNNER_TEMP/ids.txt")" -eq "$(ls recipes/*/*/recipe.toml | wc -l)" ]
       - name: distributed-release planner (GitHub Releases asset limits)
         run: python3 -I scripts/test-distributed-releases.py
+      - name: isolated schema-v5 publisher validation
+        run: python3 -I scripts/test-publish-schema-v5.py
       - name: Telegram notification regression checks
         run: python3 -I scripts/test-telegram-notify.py
 

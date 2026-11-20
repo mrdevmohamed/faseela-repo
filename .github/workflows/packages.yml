@@ -935,6 +935,69 @@ jobs:
               BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
               bash /faseela/bootstrap/build-packages-inner.sh
           fi
+      - name: Verify built Nawa transition archive is schema-v3 indexable
+        if: ${{ always() && steps.build.conclusion == 'success' && steps.published.conclusion == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ " $PKGS " != *" nawa "* ]]; then
+            echo "Nawa was not selected; schema-v3 transition smoke test is not applicable."
+            exit 0
+          fi
+
+          identity="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text())["package"]
+          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
+          PY
+          )"
+          archive="$T/build/out/$identity"
+          [[ -s "$archive" ]] || {
+            echo "::error::the selected Nawa recipe did not produce $identity"
+            exit 1
+          }
+
+          smoke="$T/tmp/nawa-v3-smoke"
+          sudo rm -rf "$smoke"
+          sudo install -d -m 0755 "$smoke"
+          sudo install -m 0644 "$archive" "$smoke/$identity"
+          sudo tee "$smoke/locations.toml" >/dev/null <<EOF
+          schema = 1
+
+          [package_urls]
+          "$identity" = "https://example.invalid/$identity"
+          EOF
+
+          # Schema-v2+ indexes must be signed. Generate an ephemeral test-only
+          # keypair inside the throwaway build root; never read the production
+          # NAWA_SIGN_KEY_B64 secret during a pull-request build.
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa keygen \
+            --out /tmp/nawa-v3-smoke/keys
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create \
+            /tmp/nawa-v3-smoke --out /tmp/nawa-v3-smoke/index.toml \
+            --index-version 3 --locations /tmp/nawa-v3-smoke/locations.toml \
+            --sign --key /tmp/nawa-v3-smoke/keys/nawa.sec
+          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa verify \
+            /tmp/nawa-v3-smoke/index.toml --key /tmp/nawa-v3-smoke/keys/nawa.pub
+
+          python3 -I - "$smoke/index.toml" "$identity" <<'PY'
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          index = tomllib.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          identity = sys.argv[2]
+          if index.get("repository", {}).get("schema") != 3:
+              raise SystemExit("Nawa transition smoke test did not produce schema-v3 metadata")
+          matches = [entry for entry in index.get("package", []) if entry.get("file") == identity]
+          if len(matches) != 1:
+              raise SystemExit(f"schema-v3 index does not contain exactly one {identity}")
+          if matches[0].get("relations") is not None:
+              raise SystemExit("schema-v3 transition index unexpectedly contains package relations")
+          print(f"schema-v3 transition index accepted {identity}")
+          PY
+
       - name: Save reusable package builds for this pull request
         if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
         run: |

@@ -11,17 +11,29 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 32
+rel = 34
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
 # Fail closed on Nawa versions that predate the multi-source recipe schema.
 source = "local:/nawa-schema-2-requires-a-newer-nawa"
 
+[depends]
+# Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that
+# bootstrap separate from the package dependency graph. Its ELF runtime links
+# against glibc and libgcc.
+build = []
+run = ["gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+# Package relations are intentionally deferred to the schema-v5 package
+# release. This bootstrap client must remain publishable through stable-v3.
 [[package.sources]]
 name = "nawa"
-url = "https://github.com/mrdevmohamed/nawa/archive/66ed2098c6be13db04d0c5dc0904c26fe3d5b233.tar.gz"
-sha256 = "e39f24a8d6c84f2cab84eb458bb64d858c523f8124229ec73e53473bb529ab49"
+url = "https://github.com/mrdevmohamed/nawa/archive/28cbfed1b5bb8c6705fdd287cac2b11af9f43457.tar.gz"
+sha256 = "20e903a78a0ee3ef90794daaae16bd6f8a1493f27c3b650ef646b849b6367094"
 strip_components = 1
 
 [fetch.cargo]

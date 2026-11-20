@@ -30,7 +30,7 @@ class PackageSelectionTests(unittest.TestCase):
             "nawa": ("base", {"build": ["rust"], "run": ["bash"]}),
             "base-devel": ("base", {"run": ["bash"]}),
             "kernel": ("boot", {"build": ["gcc"]}),
-            "runit": ("system", {}),
+            "systemd": ("system", {}),
             "curl": ("extra", {"run": ["bash"]}),
             "sway": ("gui", {"run": ["bash"]}),
             "firefox": ("browser", {"run": ["sway"]}),
@@ -78,7 +78,7 @@ class PackageSelectionTests(unittest.TestCase):
     def test_all_includes_every_current_non_toolchain_category(self):
         plan = self.resolve(all_packages=True)
         self.assertEqual(set(plan["packages"]), {
-            "base-files", "bash", "nawa", "base-devel", "kernel", "runit", "curl",
+            "base-files", "bash", "nawa", "base-devel", "kernel", "systemd", "curl",
             "sway", "firefox", "mpv", "creative-app", "telegram-desktop", "docs-tool",
         })
         self.assertNotIn("gcc", plan["packages"])
@@ -91,10 +91,10 @@ class PackageSelectionTests(unittest.TestCase):
         self.assertEqual(plan["packages"], ["telegram-desktop"])
         self.assertEqual(plan["category_counts"], {"messaging": 1})
 
-    def test_core_keeps_the_legacy_base_system_boot_extra_scope(self):
+    def test_core_includes_the_systemd_base_system_boot_extra_scope(self):
         plan = self.resolve(core=True)
         self.assertEqual(set(plan["packages"]), {
-            "base-files", "bash", "nawa", "base-devel", "kernel", "runit", "curl",
+            "base-files", "bash", "nawa", "base-devel", "kernel", "systemd", "curl",
         })
         self.assertNotIn("sway", plan["packages"])
         self.assertNotIn("docs-tool", plan["packages"])
@@ -197,9 +197,9 @@ class PackageSelectionTests(unittest.TestCase):
             subprocess.run(["git", "add", "recipes"], check=True)
             subprocess.run(["git", "commit", "-qm", "push B"], check=True)
 
-            runit_file = self.recipes_dir / "system" / "runit" / "recipe.toml"
-            runit_file.parent.mkdir(parents=True, exist_ok=True)
-            runit_file.write_text('[package]\\nname = "runit"\\n', encoding="utf-8")
+            systemd_file = self.recipes_dir / "system" / "systemd" / "recipe.toml"
+            systemd_file.parent.mkdir(parents=True, exist_ok=True)
+            systemd_file.write_text('[package]\\nname = "systemd"\\n', encoding="utf-8")
             subprocess.run(["git", "add", "recipes"], check=True)
             subprocess.run(["git", "commit", "-qm", "push C"], check=True)
             head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -207,7 +207,7 @@ class PackageSelectionTests(unittest.TestCase):
             changed = select_packages.changed_recipes(
                 Path("recipes"), last_successful, head, cwd=self.root,
             )
-            self.assertEqual(changed, ["bash", "runit"])
+            self.assertEqual(changed, ["bash", "systemd"])
         finally:
             os.chdir(previous_cwd)
 

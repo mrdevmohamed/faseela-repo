@@ -1,6 +1,5 @@
-# system recipe: systemd — init system and service manager, with udev, journald,
-# logind, networkd, resolved and timesyncd. It replaces runit, eudev, elogind,
-# sysklogd, dhcpcd, chrony and cronie.
+# system recipe: systemd — Faseela's sole init system and service manager,
+# providing udev, journald, logind, networkd, resolved and timesyncd.
 #
 # Faseela specifics:
 #   * merged /usr (base-files): sbin and bin are the same directory, so

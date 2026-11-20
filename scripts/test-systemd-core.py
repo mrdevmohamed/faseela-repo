@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression checks for the staged systemd core migration."""
+"""Regression checks for Faseela's systemd-only core integration."""
 
 from pathlib import Path
 import importlib.util
@@ -169,7 +169,6 @@ require("systemd" in dbus_pkg["depends"]["build"] and "systemd" in dbus_pkg["dep
         "dbus must depend on systemd (libsystemd)")
 require("sockets.target.wants/dbus.socket" in dbus_pkg["build"]["install"],
         "dbus install must verify socket activation wiring")
-require("/etc/sv/dbus" not in dbus_install, "dbus-system must not install a runit service")
 
 shadow = recipe("system", "shadow")
 require("--with-libpam" in shadow["build"]["configure"], "shadow must be built with PAM")

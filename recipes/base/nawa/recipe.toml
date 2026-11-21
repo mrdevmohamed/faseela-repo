@@ -11,12 +11,12 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 35
+rel = 36
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
 # Fail closed on Nawa versions that predate the multi-source recipe schema.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 # Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that
@@ -28,8 +28,13 @@ run = ["gcc", "glibc"]
 [capabilities]
 provides = []
 
-# Package relations are intentionally deferred to the schema-v5 package
-# release. This bootstrap client must remain publishable through stable-v3.
+# This recipe is schema-v5-only. The previously published stable-v3 Nawa
+# archive and the standalone signed nawa-transition release remain the
+# bootstrap path; this relation-aware build is published only in stable-v5.
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 [[package.sources]]
 name = "nawa"
 url = "https://github.com/mrdevmohamed/nawa/archive/1a8d457421fef48ae6953ca081c2479340700cdb.tar.gz"

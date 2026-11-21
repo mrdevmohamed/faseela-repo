@@ -104,6 +104,18 @@ for category, name, old_package, expected_workdir in (
         f"{name} must declare an explicit empty capabilities list",
     )
 
+# The network-manager build closure rebuilds these from source in a closure
+# build root, which contains base-devel only. Their configure/make steps run
+# flex and bison, so both must be declared or the PR package build fails with
+# "flex not found" at libnl's configure.
+for category, name in (("system", "libnl"), ("system", "iproute2")):
+    build_deps = recipe(category, name).get("depends", {}).get("build", [])
+    for tool in ("flex", "bison"):
+        require(
+            tool in build_deps,
+            f"{name} must declare {tool} as a build dependency (not part of base-devel)",
+        )
+
 # Rebuilt USB tooling must stop retaining eudev as a reverse dependency before
 # systemd can safely replace eudev. Keep the source generator in sync with the
 # checked-in recipes so regenerating extra3 cannot reintroduce the old provider.

@@ -10,7 +10,9 @@ source = "https://cdn.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.3.0.tar
 sha256 = "5c1789d290bba048a6135ed1ab81b0402dd0fb528d1f1421765c42b1fc3d6289"
 
 [depends]
-build = ["libmnl"]
+# tc generates its ematch lexer/parser at build time, so flex and bison are
+# required (base-devel does not ship them).
+build = ["libmnl", "flex", "bison"]
 run = ["libmnl"]
 
 [build]

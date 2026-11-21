@@ -128,7 +128,7 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         import json
         manifest = json.loads((self.cache_dir / cache.MANIFEST_NAME).read_text(encoding="utf-8"))
         entry = manifest["packages"][0]
-        self.assertEqual(manifest["schema"], 2)
+        self.assertEqual(manifest["schema"], 3)
         self.assertEqual(entry["archive_sha256"], cache.sha256_file(self.cache_dir / entry["archive"]))
 
     def test_successful_toolchain_stage3_output_is_cacheable(self):
@@ -159,6 +159,42 @@ class PullRequestPackageCacheTests(unittest.TestCase):
             (self.root / "toolchain-restored" / archive.name).read_bytes(),
             b"stage3 toolchain archive",
         )
+
+    def test_split_archives_are_cached_and_restored(self):
+        self.write_archive()
+        doc = self.out_dir / "demo-app-doc-1.0-1.nawa.tar.zst"
+        lang = self.out_dir / "demo-app-lang-1.0-1.nawa.tar.zst"
+        doc.write_bytes(b"documentation")
+        lang.write_bytes(b"language")
+        os.utime(doc, (time.time(), time.time()))
+        os.utime(lang, (time.time(), time.time()))
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
+        doc.unlink()
+        lang.unlink()
+        (self.out_dir / "demo-app-1.0-1.nawa.tar.zst").unlink()
+        restored, rejected = cache.restore_cache(self.recipes, self.cache_dir, self.out_dir)
+        self.assertEqual((restored, rejected), (1, 0))
+        self.assertEqual(doc.read_bytes(), b"documentation")
+        self.assertEqual(lang.read_bytes(), b"language")
+
+    def test_relation_archive_invalidation_removes_base_and_split_files(self):
+        app_recipe = self.recipes / "extra" / "demo-app" / "recipe.toml"
+        app_recipe.write_text(
+            app_recipe.read_text(encoding="utf-8")
+            + "\n[relations]\nschema = 1\nconflicts = []\nreplaces = []\n",
+            encoding="utf-8",
+        )
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        names = (
+            "demo-app-1.0-1.nawa.tar.zst",
+            "demo-app-doc-1.0-1.nawa.tar.zst",
+            "demo-app-lang-1.0-1.nawa.tar.zst",
+        )
+        for name in names:
+            (self.out_dir / name).write_bytes(b"legacy v3 archive")
+        removed = cache.invalidate_relation_archives(self.recipes, self.out_dir, ["demo-app"])
+        self.assertEqual(removed, 3)
+        self.assertFalse(any((self.out_dir / name).exists() for name in names))
 
     def test_recipe_release_change_invalidates_cached_archive(self):
         self.write_archive()

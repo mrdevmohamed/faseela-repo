@@ -4,36 +4,27 @@
 # a configured source tree makes the second platform pick up the wrong headers.
 [package]
 name = "grub"
-version = "2.14"
-rel = 10
+version = "2.16"
+rel = 1
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz"
-sha256 = "bc8d3c73535b8838d8c8e2654d73edc4e6ae8c8acdb45d5df5dc9a1547446d43"
+source = "https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/grub-2.16/grub-2.16.tar.xz"
+sha256 = "f0db0104927df0b9a48bc41b735c702936190d17eb2d73d3018fa77474a0cabe"
 
 [depends]
-build = ["bison", "flex", "gettext", "libtool"]
+build = ["bison", "flex", "gettext", "libtool", "pkgconf"]
 run = ["efibootmgr"]
 
 [build]
-# Build the unmodified GNU release tarball in separate BIOS and EFI trees.
-# GRUB 2.14's --image-base capability probe is known to shift the i386-pc
-# kernel image start address to 0x9074. Set its Autoconf cache result to "no"
-# for the BIOS configure only, without patching or regenerating upstream files.
-# See the GRUB 2.14 i386-pc regression documented by LFS/Buildroot/OpenEmbedded.
+# Use the official upstream 2.16 release as published: its i386-pc linker
+# script is now part of the source release, so no local source patch or
+# configure-time workaround is needed. Keep BIOS and EFI builds isolated.
 configure = """
 set -eu
 mkdir build-pc build-efi
-(
-    cd build-pc
-    ax_cv_check_ldflags___Wl___image_base_0x400000=no \
-        ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls
-)
-(
-    cd build-efi
-    ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64
-)
+(cd build-pc && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
+(cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
     echo "grub: source tree was configured in tree; EFI would use the wrong headers" >&2
     exit 1
@@ -44,7 +35,7 @@ compile = """
 set -eu
 make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
-# Validate generation of a BIOS core image using GRUB's own tooling.
+# Validate BIOS core generation with GRUB's own i386-pc image tooling.
 build-pc/grub-mkimage -d build-pc/grub-core -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
 test -s build-pc/grub-core/test-core.img
 """

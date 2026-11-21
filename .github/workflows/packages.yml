@@ -361,8 +361,7 @@ jobs:
           transition_needed=0
           if [[ "$GITHUB_EVENT_NAME" != pull_request && "$GITHUB_REF" != "refs/heads/feat/cosmic-desktop-support" ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
             pkgs+=" nawa"
-            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
-            pkgs="$(echo $pkgs)"
+            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | paste -sd ' ' -)"
             transition_needed=1
             echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
           fi
@@ -422,16 +421,18 @@ jobs:
           print("true" if has_relations else "false")
           PY
           )"
-          echo "schema_v5_only=$schema_v5_only" >> "$GITHUB_OUTPUT"
+          dry_run="${INPUT_DRY_RUN:-false}"
+          {
+            echo "schema_v5_only=$schema_v5_only"
+            echo "pkgs=$pkgs"
+            echo "toolchain_pkgs=$toolchain_pkgs"
+            echo "toolchain_all=$toolchain_all"
+            echo "rootfs=$rootfs"
+            echo "dry_run=$dry_run"
+          } >> "$GITHUB_OUTPUT"
           if [[ "$schema_v5_only" == true && "$GITHUB_EVENT_NAME" != pull_request ]]; then
             echo "::notice::The selected recipes carry schema-v5 relations. The ordinary workflow will not build/publish them through stable-v3; use the reviewed PR build cache and the separate schema-v5 publisher."
           fi
-          echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
-          echo "toolchain_pkgs=$toolchain_pkgs" >> "$GITHUB_OUTPUT"
-          echo "toolchain_all=$toolchain_all" >> "$GITHUB_OUTPUT"
-          echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
-          dry_run="${INPUT_DRY_RUN:-false}"
-          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
           python3 - "$selection" "$pkgs" "$toolchain_pkgs" "$toolchain_all" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))

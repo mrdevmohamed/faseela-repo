@@ -44,7 +44,7 @@ require(
     and not systemd_pkg.get("source_dir"),
     "systemd must not mix legacy source fields with [[package.sources]]",
 )
-expected_replacements = {"eudev", "elogind", "runit-services"}
+expected_replacements = {"eudev", "elogind"}
 relations = systemd.get("relations", {})
 require(
     relations.get("schema") == 1
@@ -167,14 +167,22 @@ for path in (
     "usr/bin/varlinkctl",
 ):
     require(path in systemd_install, f"systemd install phase does not verify {path}")
+# Init and power-control entry points are not a generic package replacement:
+# they remain owned by runit-services until the separately approved migration.
+for forbidden in (
+    "usr/bin/init",
+    "usr/bin/poweroff",
+    "usr/bin/reboot",
+    "usr/bin/halt",
+    "usr/bin/shutdown",
+):
+    require(
+        forbidden not in systemd_install,
+        f"systemd must not take migration-owned compatibility path {forbidden}",
+    )
 require(
-    "ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init" in systemd_install,
-    "systemd must provide the merged-/usr PID 1 entry point",
-)
-require(
-    'test -x "%{pkgdir}/usr/bin/$c"' in systemd_install
-    and "for c in init poweroff reboot halt shutdown" in systemd_install,
-    "systemd must verify its init and power-control compatibility commands after creating them",
+    "Nawa's explicitly approved runit -> systemd migration" in systemd_install,
+    "systemd recipe must document the migration-only init handoff",
 )
 for path in (
     "etc/udev/udev.conf",

@@ -46,6 +46,8 @@ run = ["libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcr
 [capabilities]
 provides = ["init-system=systemd"]
 
+# These two packages own the legacy udev and logind payloads that systemd
+# now supplies. PID 1 and power-control links remain a separate migration.
 [relations]
 schema = 1
 conflicts = ["eudev", "elogind"]

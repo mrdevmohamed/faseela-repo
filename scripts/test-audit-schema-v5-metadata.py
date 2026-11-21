@@ -52,7 +52,7 @@ class AuditTests(unittest.TestCase):
     def test_retired_legacy_replacement_target_is_allowed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.write_recipe(root, "systemd", 'replaces = ["eudev"]\\n')
+            self.write_recipe(root, "systemd", 'replaces = ["eudev"]\n')
             report = AUDIT.audit(root)
             self.assertEqual(report["error_count"], 0)
 

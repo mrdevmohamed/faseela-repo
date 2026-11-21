@@ -14,7 +14,7 @@ sha256 = "f0db0104927df0b9a48bc41b735c702936190d17eb2d73d3018fa77474a0cabe"
 
 [depends]
 build = ["bison", "flex", "gettext", "libtool", "pkgconf"]
-run = ["efibootmgr"]
+run = ["efibootmgr", "xz"]
 
 [build]
 # Use the official upstream 2.16 release as published: its i386-pc linker

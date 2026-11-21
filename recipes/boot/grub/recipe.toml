@@ -254,7 +254,9 @@ data = data.replace(
 p.write_text(data)
 PY
 autoreconf -fi
-''' """
+'''
+
+configure = """
 set -eu
 mkdir build-pc build-efi
 # Preserve Nawa's native compiler/toolchain environment for configure's

@@ -131,8 +131,8 @@ for kind in ("build", "run"):
     )
 
 require(
-    not systemd_pkg.get("workdir"),
-    "systemd source workspace must remain rooted at the source archive extraction workspace",
+    systemd_pkg.get("workdir") == ".",
+    "systemd must preserve the legacy source_dir='.' extraction root as workdir='.'",
 )
 
 configure = systemd["build"]["configure"]

@@ -194,7 +194,7 @@ for f in etc/udev/udev.conf usr/include/libudev.h \
 done
 
 # Do not stage PID 1 or power-control compatibility links here. Those paths
-# remain owned by runit-services until Nawa's explicitly approved migration.
+# remain owned by runit-services until Nawa's explicitly approved runit -> systemd migration.
 '''
 
 [hooks]

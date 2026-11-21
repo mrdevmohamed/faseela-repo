@@ -383,6 +383,25 @@ jobs:
               [[ "$p" == rust || "$p" == nawa ]] && echo "::warning::$p is in the list but the min rootfs has no rust: it would be compiled first (hours). Use rootfs=seed."
             done
           fi
+          schema_v5_only="$(python3 -I - "$pkgs" "$toolchain_pkgs" <<'PY'
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          selected = set(sys.argv[1].split()) | set(sys.argv[2].split())
+          has_relations = False
+          for path in Path("recipes").glob("*/*/recipe.toml"):
+              doc = tomllib.loads(path.read_text(encoding="utf-8"))
+              if doc.get("package", {}).get("name") in selected and "relations" in doc:
+                  has_relations = True
+                  break
+          print("true" if has_relations else "false")
+          PY
+          )"
+          echo "schema_v5_only=$schema_v5_only" >> "$GITHUB_OUTPUT"
+          if [[ "$schema_v5_only" == true && "$GITHUB_EVENT_NAME" != pull_request ]]; then
+            echo "::notice::The selected recipes carry schema-v5 relations. The ordinary workflow will not build/publish them through stable-v3; use the reviewed PR build cache and the separate schema-v5 publisher."
+          fi
           echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
           echo "toolchain_pkgs=$toolchain_pkgs" >> "$GITHUB_OUTPUT"
           echo "toolchain_all=$toolchain_all" >> "$GITHUB_OUTPUT"
@@ -415,7 +434,7 @@ jobs:
   build:
     name: build and publish
     needs: select
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' && (github.event_name == 'pull_request' || needs.select.outputs.schema_v5_only != 'true') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:

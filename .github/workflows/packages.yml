@@ -191,6 +191,7 @@ jobs:
       toolchain_all: ${{ steps.s.outputs.toolchain_all }}
       rootfs: ${{ steps.s.outputs.rootfs }}
       dry_run: ${{ steps.s.outputs.dry_run }}
+      schema_v5_only: ${{ steps.s.outputs.schema_v5_only }}
     steps:
       - uses: actions/checkout@v4
         with:

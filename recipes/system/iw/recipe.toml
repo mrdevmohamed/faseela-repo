@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "iw: nl80211 wireless configuration tool (scan, link, regdom)"
 license = ["ISC"]
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
-workdir = "iw-%{version}"
+workdir = "iw-6.9"
 
 [[package.sources]]
 name = "iw"

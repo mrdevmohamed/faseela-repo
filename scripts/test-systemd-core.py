@@ -142,12 +142,15 @@ require(
 
 configure = systemd["build"]["configure"]
 for marker in (
+    "install_rpath : pkglibdir",
+    "expected exactly one libcore install stanza to add its private RUNPATH",
     'Path(".").rglob("meson_options.txt")',
     '(path.parent / "meson.build").is_file()',
     'required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]',
     'Path(".faseela-meson-args")',
     '"hibernate": "off", "initrd": "off",',
     '"shared-lib-tag": "lit:261",',
+    'install_rpath : pkglibdir',
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',

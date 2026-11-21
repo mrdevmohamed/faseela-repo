@@ -211,6 +211,7 @@ jobs:
               "",
               f"- Recipes audited: **{report['recipe_count']}**",
               f"- Missing declarations: **{report['missing_count']}**",
+              f"- Missing by field: `{report['missing_by_field']}`",
               f"- Invalid declarations/references: **{report['error_count']}**",
               f"- Relation entries: `{report['relation_entries']}`",
               "",

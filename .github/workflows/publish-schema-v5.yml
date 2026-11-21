@@ -20,6 +20,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 concurrency:
   group: schema-v5-publish
@@ -46,6 +47,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      pull-requests: read
     env:
       GH_TOKEN: ${{ github.token }}
       BUILD_RUN_ID: ${{ inputs.build_run_id }}
@@ -143,16 +145,65 @@ jobs:
           head_repository = run.get("head_repository") or {}
           if head_repository.get("full_name") != repository:
               failures.append("package-build run must come from a branch in this repository")
-          if not run.get("pull_requests"):
-              failures.append("package-build run is not associated with a pull request")
+          pull_requests = run.get("pull_requests") or []
+          if len(pull_requests) != 1 or not isinstance(pull_requests[0].get("number"), int):
+              failures.append("package-build run must identify exactly one pull request")
           if failures:
               raise SystemExit("invalid schema-v5 build artifact source:\n- " + "\n- ".join(failures))
-          print(
-              "Accepted complete-build candidate source:",
-              f"run={run.get('id')}",
-              f"head={run.get('head_sha')}",
-              f"branch={run.get('head_branch')}",
-          )
+          print(f"PR_NUMBER={pull_requests[0]['number']}")
+          PY
+          pr_number="$(python3 -I - "$RUNNER_TEMP/schema-v5-build-run.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          prs = value.get("pull_requests") or []
+          if len(prs) != 1:
+              raise SystemExit("expected exactly one associated pull request")
+          print(prs[0]["number"])
+          PY
+          )"
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$pr_number" > "$RUNNER_TEMP/schema-v5-build-pr.json"
+          python3 -I - "$RUNNER_TEMP/schema-v5-build-run.json" \
+            "$RUNNER_TEMP/schema-v5-build-pr.json" "$GITHUB_REPOSITORY" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          run = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          pr = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          repository = sys.argv[3]
+          failures = []
+          run_pr = (run.get("pull_requests") or [{}])[0]
+          if pr.get("state") != "closed" or pr.get("merged") is not True:
+              failures.append("the package-build pull request must already be merged")
+          if (pr.get("base") or {}).get("ref") != "main":
+              failures.append("the package-build pull request must target main")
+          if (pr.get("base") or {}).get("repo", {}).get("full_name") != repository:
+              failures.append("the package-build pull request base must be this repository")
+          if (pr.get("head") or {}).get("repo", {}).get("full_name") != repository:
+              failures.append("the package-build pull request must come from this repository")
+          if (pr.get("head") or {}).get("sha") != (run_pr.get("head") or {}).get("sha"):
+              failures.append("the package-build run is not from the pull request's final head")
+          merge_sha = pr.get("merge_commit_sha")
+          if not isinstance(merge_sha, str) or len(merge_sha) != 40:
+              failures.append("the merged pull request has no valid merge commit")
+          if failures:
+              raise SystemExit("untrusted schema-v5 build artifact source:\n- " + "\n- ".join(failures))
+          Path(sys.argv[1]).with_name("schema-v5-merge-sha").write_text(merge_sha + "\n", encoding="utf-8")
+          print(f"Accepted merged package-build PR #{pr['number']} at {merge_sha}.")
+          PY
+          merge_sha="$(cat "$RUNNER_TEMP/schema-v5-merge-sha")"
+          gh api "repos/$GITHUB_REPOSITORY/compare/$merge_sha...$GITHUB_SHA" \
+            > "$RUNNER_TEMP/schema-v5-merge-compare.json"
+          python3 -I - "$RUNNER_TEMP/schema-v5-merge-compare.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          comparison = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if comparison.get("status") not in {"ahead", "identical"} or comparison.get("behind_by") != 0:
+              raise SystemExit("the merged build PR is not an ancestor of the current main branch")
+          print("Verified: the build PR merge commit is contained in current main.")
           PY
 
       - name: Restore and authenticate the package-build cache

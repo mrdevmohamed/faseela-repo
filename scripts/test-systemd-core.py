@@ -57,6 +57,17 @@ require(
     "systemd must declare its init-system capability",
 )
 
+# Rebuilt USB tooling must stop retaining eudev as a reverse dependency before
+# systemd can safely replace eudev. Keep the source generator in sync with the
+# checked-in recipes so regenerating extra3 cannot reintroduce the old provider.
+libusb = recipe("extra", "libusb")
+usbutils = recipe("extra", "usbutils")
+for pkg in (libusb, usbutils):
+    deps = set(pkg.get("depends", {}).get("build", [])) | set(pkg.get("depends", {}).get("run", []))
+    require("systemd" in deps and "eudev" not in deps,
+            f"{pkg['package']['name']} must use systemd's libudev provider, not eudev")
+
+
 obsolete = {
     "runit", "runit-services", "eudev", "elogind",
     "sysklogd", "dhcpcd", "chrony", "cronie",

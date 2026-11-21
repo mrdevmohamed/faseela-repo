@@ -73,24 +73,38 @@ Schema-v5 publishing is a separate, manually confirmed workflow in
 the explicit **PUBLISH_SCHEMA_V5** confirmation and a **build_run_id** pointing
 to a successful, same-repository **Build packages** pull-request run.
 
-The build run must contain the complete current package set. PR builds save
-successful archives into a resumable cache artifact; later runs for the same PR
-restore that cache and continue. The v5 publisher verifies the run identity,
-restores the artifact, checks every archive SHA-256 and the current recipe plus
-recursive build-dependency fingerprints, then stages only exact current
-recipe archive identities. The staging audit fails unless every current
-recipe has a matching archive and rejects stale or extra archives. Nawa then
-creates, signs, and verifies the schema-v5 index before immutable
-**packages-v5-NNNN** assets and the **stable-v5** index are uploaded.
+The pull-request workflow keeps resumable package caches in draft GitHub
+Releases, not Actions artifacts. This avoids relying on the GitHub Free Actions
+artifact-storage quota for a complete package set. Each PR has its own draft
+manifest release and category shards, with no more than 900 archive assets per
+shard (below GitHub's 1,000-asset Release limit). These draft releases are not
+referenced by **stable-v3**, **stable-v5**, or any package index.
+
+Each cache entry is bound to the exact current recipe and recursive build
+dependency fingerprints and carries SHA-256 digests for the base archive and
+any `-doc` / `-lang` split archives. A candidate manifest records the PR
+number, build run ID, PR head SHA, manifest digest, and shard list. The
+candidate manifest is uploaded last, after all archive shards are present.
+On the next PR build run, the workflow validates the candidate and restores
+only entries whose recipe fingerprint and archive digest still match. Before
+building a relation-bearing package, it invalidates any old schema-v3 archive
+with the same package identity so the old payload cannot suppress a required
+v5 rebuild.
+
+The v5 publisher independently verifies the selected build run, requires its
+PR to have been merged into the current **main**, verifies that the candidate
+manifest matches that exact run and final PR head, downloads the draft shards,
+and rechecks every archive digest and recipe/build-dependency fingerprint.
+It then stages only exact current recipe archive identities. The staging audit
+fails unless every current recipe has a matching archive and rejects stale or
+extra archives. Nawa creates, signs, and verifies the schema-v5 index before
+immutable **packages-v5-NNNN** assets and the **stable-v5** index are uploaded.
 
 This is a build-to-publisher handoff, not a way to reuse old schema-v3 package
-archives: the cache must contain the newly built archives whose embedded
+archives: the cache must contain newly built archives whose embedded
 `.PKGINFO` records carry the current runtime dependencies, capabilities, and
-relations. The cache manifest includes a SHA-256 digest for each archive; a
-changed recipe, build dependency, archive identity, or archive byte sequence
-causes that cache entry to be rejected. The build run must finish successfully;
-a run that still reports deferred or failed packages is not an accepted
-publishing input.
+relations. The build run must finish successfully; a run that reports deferred
+or failed packages is not an accepted publishing input.
 
 The workflow does not change **stable**, **stable-v3**, or **packages-NNNN**.
 It uses the existing **NAWA_SIGN_KEY_B64** secret and the checked-in
@@ -105,15 +119,14 @@ key.
    `[relations]` with `schema = 1`. Empty arrays are valid only after the
    package has been reviewed and found to have no entries; missing metadata is
    not an empty declaration.
-2. Convert any legacy source declarations to the Nawa recipe schema required
-   by `[relations]`, preserving the exact source URL, digest, source working
-   directory, and reproducible build inputs. Bump package release identities
+2. Convert legacy source declarations to the Nawa recipe schema required by
+   `[relations]`, preserving source URLs, pinned digests, source working
+   directories, and reproducible build inputs. Bump package release identities
    when archive metadata changes.
 3. Build the complete current recipe set through the **Build packages**
-   pull-request workflow. It may take multiple runs: the PR cache carries
-   successful outputs forward. Keep the same PR open and use the final
-   successful run ID only after the package set is complete. The cache
-   retention period is 14 days.
+   pull-request workflow. It may take multiple runs: the draft-release cache
+   carries successful outputs forward. Keep the same PR open and use the final
+   successful run ID only after the package set is complete.
 4. Dispatch **Publish schema-v5** on **main**, enter that successful run ID,
    and provide the exact **PUBLISH_SCHEMA_V5** confirmation. The workflow
    independently verifies every cache entry, complete package coverage,
@@ -125,14 +138,14 @@ key.
 
 ### Current readiness
 
-The v5 build-artifact handoff and per-archive cache integrity checks are now
-implemented in this repository branch, but the full release is **not ready**.
-The current main branch still has 542 recipes, with no recipe-level
-`[relations]` declarations; only the specifically documented replacement
-cases are being added to this focused PR. The remaining recipe declarations,
-matching new archive set, full-build PR run, and end-to-end install/replacement
-test are outstanding. Do not merge the metadata PR into the active v3
-publisher or dispatch **Publish schema-v5** until those gates pass.
+The v5 draft-release build handoff and per-archive cache integrity checks are
+implemented in this branch, but the full release is **not ready**. The current
+main branch still has 542 recipes, with no recipe-level `[relations]`
+declarations; only the specifically documented replacement cases are being
+added to this focused PR. The remaining recipe declarations, matching new
+archive set, full-build PR run, and end-to-end install/replacement test remain
+outstanding. Do not merge the metadata PR into the active v3 publisher or
+dispatch **Publish schema-v5** until those gates pass.
 
 Nawa's migration security rules remain separate: `runit-services` and its
 `/usr/bin/init` ownership are not a generic package replacement. Only the

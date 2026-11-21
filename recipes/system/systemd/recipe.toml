@@ -45,8 +45,8 @@ provides = ["init-system=systemd"]
 
 [relations]
 schema = 1
-conflicts = ["eudev", "elogind", "runit-services"]
-replaces = ["eudev", "elogind", "runit-services"]
+conflicts = ["eudev", "elogind"]
+replaces = ["eudev", "elogind"]
 
 [build]
 configure = '''set -eu
@@ -193,17 +193,9 @@ for f in etc/udev/udev.conf usr/include/libudev.h \
     test -e "%{pkgdir}/$f" || { echo "systemd: missing udev compatibility file $f" >&2; exit 1; }
 done
 
-# PID 1 for direct disk boots: with merged /usr the kernel's /sbin/init lookup
-# resolves to /usr/bin/init through /sbin -> usr/bin (created by base-files).
-ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init
-
-# systemd answers poweroff/reboot/halt/shutdown through systemctl.
-for c in poweroff reboot halt shutdown; do
-    [ -e %{pkgdir}/usr/bin/$c ] || ln -s systemctl %{pkgdir}/usr/bin/$c
-done
-for c in init poweroff reboot halt shutdown; do
-    test -x "%{pkgdir}/usr/bin/$c" || { echo "systemd: missing compatibility command $c" >&2; exit 1; }
-done
+# Do not ship /usr/bin/init or the power-control aliases here. They are
+# owned by runit-services on a runit host and may only be handed over by
+# Nawa's explicitly approved runit -> systemd migration, never by install.
 '''
 
 [hooks]

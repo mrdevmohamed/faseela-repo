@@ -131,6 +131,35 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], 2)
         self.assertEqual(entry["archive_sha256"], cache.sha256_file(self.cache_dir / entry["archive"]))
 
+    def test_successful_toolchain_stage3_output_is_cacheable(self):
+        toolchain_root = self.recipes / "toolchain" / "gcc"
+        toolchain_root.mkdir(parents=True)
+        (toolchain_root / "recipe.toml").write_text(
+            '[package]\nname = "gcc"\nversion = "14.2"\nrel = 3\n'
+            '[depends]\nbuild = []\n',
+            encoding="utf-8",
+        )
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        archive = self.out_dir / "gcc-14.2-3.nawa.tar.zst"
+        archive.write_bytes(b"stage3 toolchain archive")
+        os.utime(archive, (time.time(), time.time()))
+        self.report.write_text(
+            "BUILT    gcc-14.2-3  (Bootstrap Stage 3)\n",
+            encoding="utf-8",
+        )
+        added, total = cache.save_cache(
+            self.recipes, self.cache_dir, self.out_dir, self.marker, self.report,
+        )
+        self.assertEqual((added, total), (1, 1))
+        restored, rejected = cache.restore_cache(
+            self.recipes, self.cache_dir, self.root / "toolchain-restored",
+        )
+        self.assertEqual((restored, rejected), (1, 0))
+        self.assertEqual(
+            (self.root / "toolchain-restored" / archive.name).read_bytes(),
+            b"stage3 toolchain archive",
+        )
+
     def test_recipe_release_change_invalidates_cached_archive(self):
         self.write_archive()
         cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)

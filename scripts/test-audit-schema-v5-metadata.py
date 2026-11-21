@@ -20,7 +20,7 @@ class AuditTests(unittest.TestCase):
             '[depends]\nrun = []\n'
             '[capabilities]\nprovides = []\n'
             '[relations]\nschema = 1\nconflicts = []\nreplaces = []\n'
-            + extra,
+            .replace('replaces = []\\n', extra or 'replaces = []\\n'),
             encoding="utf-8",
         )
 

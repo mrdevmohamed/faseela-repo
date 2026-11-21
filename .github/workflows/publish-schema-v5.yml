@@ -206,19 +206,73 @@ jobs:
           print("Verified: the build PR merge commit is contained in current main.")
           PY
 
-      - name: Restore and authenticate the package-build cache
+      - name: Restore and authenticate the package-build cache from draft releases
         shell: bash
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/schema-v5"
           mkdir -p "$root/build-cache" "$root/built" "$root/packages"
-          gh run download "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name pr-package-cache --dir "$root/build-cache"
+          pr_number="$(python3 -I - "$RUNNER_TEMP/schema-v5-build-run.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          prs = value.get("pull_requests") or []
+          if len(prs) != 1:
+              raise SystemExit("expected exactly one pull request on build run")
+          print(prs[0]["number"])
+          PY
+          )"
+          pr_head_sha="$(python3 -I - "$RUNNER_TEMP/schema-v5-build-run.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          prs = value.get("pull_requests") or []
+          print((prs[0].get("head") or {}).get("sha", ""))
+          PY
+          )"
+          manifest_tag="schema-v5-build-pr-$pr_number-manifest"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$manifest_tag" \
+            > "$root/build-cache-release.json"
+          python3 -I - "$root/build-cache-release.json" "$manifest_tag" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if value.get("tag_name") != sys.argv[2] or value.get("draft") is not True:
+              raise SystemExit("PR build cache manifest must be an authenticated draft Release")
+          PY
+          gh release download "$manifest_tag" --repo "$GITHUB_REPOSITORY" \
+            --pattern manifest.json --pattern candidate.json --dir "$root/build-cache"
+          python3 -I scripts/pr-build-release-cache.py verify-candidate \
+            --candidate "$root/build-cache/candidate.json" \
+            --manifest "$root/build-cache/manifest.json" \
+            --pr-number "$pr_number" \
+            --build-run-id "$BUILD_RUN_ID" \
+            --head-sha "$pr_head_sha"
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+              > "$root/cache-shard-release.json"
+            python3 -I - "$root/cache-shard-release.json" "$tag" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if value.get("tag_name") != sys.argv[2] or value.get("draft") is not True:
+              raise SystemExit(f"PR build cache shard is not a draft Release: {sys.argv[2]}")
+          PY
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir "$root/build-cache"
+          done < <(python3 - "$root/build-cache/candidate.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          for tag in value["shards"]:
+              print(tag)
+          PY
+          )
           python3 -I scripts/pr-build-cache.py restore \
             --recipes recipes \
             --cache-dir "$root/build-cache" \
             --out-dir "$root/built"
-          echo "Restored candidate archives from Build packages run $BUILD_RUN_ID."
+          echo "Restored and SHA-256-verified candidate archives from merged PR #$pr_number, run $BUILD_RUN_ID."
 
       - name: Prepare and verify the complete isolated schema-v5 candidate
         id: prepare

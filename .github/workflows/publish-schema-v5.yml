@@ -12,9 +12,14 @@ on:
         options:
           - NO
           - PUBLISH_SCHEMA_V5
+      build_run_id:
+        description: Successful same-repository Build packages PR run ID with the complete package-cache artifact
+        required: true
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: schema-v5-publish
@@ -40,8 +45,10 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: write
+      actions: read
     env:
       GH_TOKEN: ${{ github.token }}
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
       NAWA_SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
     steps:
       - uses: actions/checkout@v4
@@ -109,23 +116,57 @@ jobs:
           cargo build --manifest-path "$source_dir/Cargo.toml" --release --locked
           echo "NAWA_BIN=$source_dir/target/release/nawa" >> "$GITHUB_ENV"
 
-      - name: Verify the signed schema-v3 source index and fetch exact recipe archives
+      - name: Validate the successful package-build run
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/schema-v5/source-index" "$RUNNER_TEMP/schema-v5/packages"
-          gh release download stable-v3 --repo "$GITHUB_REPOSITORY" \
-            --dir "$RUNNER_TEMP/schema-v5/source-index" \
-            --pattern index.toml --pattern index.toml.sig
-          "$NAWA_BIN" verify "$RUNNER_TEMP/schema-v5/source-index/index.toml" \
-            --key dist/nawa.pub
-          python3 -I scripts/publish-schema-v5.py fetch-v3 \
-            --index "$RUNNER_TEMP/schema-v5/source-index/index.toml" \
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]] || {
+            echo "::error::build_run_id must be a numeric GitHub Actions run ID"
+            exit 1
+          }
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN_ID" > "$RUNNER_TEMP/schema-v5-build-run.json"
+          python3 -I - "$RUNNER_TEMP/schema-v5-build-run.json" "$GITHUB_REPOSITORY" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          run = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          repository = sys.argv[2]
+          failures = []
+          if run.get("path") != ".github/workflows/packages.yml":
+              failures.append("run is not from .github/workflows/packages.yml")
+          if run.get("event") != "pull_request":
+              failures.append("run must be a pull_request build, not a publishing/manual run")
+          if run.get("status") != "completed" or run.get("conclusion") != "success":
+              failures.append("package-build run must have completed successfully")
+          head_repository = run.get("head_repository") or {}
+          if head_repository.get("full_name") != repository:
+              failures.append("package-build run must come from a branch in this repository")
+          if not run.get("pull_requests"):
+              failures.append("package-build run is not associated with a pull request")
+          if failures:
+              raise SystemExit("invalid schema-v5 build artifact source:\n- " + "\n- ".join(failures))
+          print(
+              "Accepted complete-build candidate source:",
+              f"run={run.get('id')}",
+              f"head={run.get('head_sha')}",
+              f"branch={run.get('head_branch')}",
+          )
+          PY
+
+      - name: Restore and authenticate the package-build cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/schema-v5"
+          mkdir -p "$root/build-cache" "$root/built" "$root/packages"
+          gh run download "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name pr-package-cache --dir "$root/build-cache"
+          python3 -I scripts/pr-build-cache.py restore \
             --recipes recipes \
-            --archive-dir "$RUNNER_TEMP/schema-v5/packages" \
-            --nawa "$NAWA_BIN" \
-            --public-key dist/nawa.pub \
-            --repository "$GITHUB_REPOSITORY"
+            --cache-dir "$root/build-cache" \
+            --out-dir "$root/built"
+          echo "Restored candidate archives from Build packages run $BUILD_RUN_ID."
 
       - name: Prepare and verify the complete isolated schema-v5 candidate
         id: prepare
@@ -139,6 +180,7 @@ jobs:
             "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$root/releases.json"
           python3 -I scripts/publish-schema-v5.py prepare \
             --recipes recipes \
+            --source-dir "$root/built" \
             --archive-dir "$root/packages" \
             --nawa "$NAWA_BIN" \
             --signing-key "$root/nawa.sec" \

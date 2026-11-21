@@ -153,7 +153,7 @@ def valid_entry(
     cache_dir: Path,
     *,
     verify_digest: bool = True,
-) -> tuple[Recipe, Path] | None:
+) -> tuple[Recipe, Path, list[tuple[str, Path]]] | None:
     name = entry.get("name")
     archive = entry.get("archive")
     key = entry.get("build_key")
@@ -338,6 +338,53 @@ def save_cache(
     return added, len(entries)
 
 
+def invalidate_relation_archives(
+    recipes_root: Path,
+    out_dir: Path,
+    names: list[str],
+) -> int:
+    """Remove old published-format archives for selected relation-bearing recipes.
+
+    A v3 archive may have the same filename as a v5 rebuild. Leaving it in the
+    build output causes build-packages-inner.sh to treat it as current and skip
+    the rebuild, so selected relation recipes must be invalidated before cache
+    restoration and build planning.
+    """
+    selected = set(names)
+    if not selected:
+        return 0
+    removed = 0
+    for recipe_file in sorted(recipes_root.glob("*/*/recipe.toml")):
+        try:
+            data = tomllib.loads(recipe_file.read_text(encoding="utf-8"))
+            package = data["package"]
+            name = str(package["name"])
+            version = str(package["version"])
+            rel = str(package.get("rel", 1))
+        except (OSError, KeyError, TypeError, tomllib.TOMLDecodeError) as exc:
+            raise CacheError(f"cannot read package metadata from {recipe_file}: {exc}") from exc
+        if name not in selected or "relations" not in data:
+            continue
+        identities = [
+            f"{name}-{version}-{rel}.nawa.tar.zst",
+            f"{name}-doc-{version}-{rel}.nawa.tar.zst",
+            f"{name}-lang-{version}-{rel}.nawa.tar.zst",
+        ]
+        for filename in identities:
+            path = out_dir / filename
+            if path.is_file():
+                path.unlink()
+                print(f"invalidated legacy archive for schema-v5 rebuild: {filename}")
+                removed += 1
+    unknown = selected - {
+        tomllib.loads(path.read_text(encoding="utf-8"))["package"]["name"]
+        for path in recipes_root.glob("*/*/recipe.toml")
+    }
+    if unknown:
+        raise CacheError("selected package(s) have no recipe: " + ", ".join(sorted(unknown)))
+    return removed
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -349,15 +396,22 @@ def main(argv: list[str] | None = None) -> int:
         if name == "save":
             command.add_argument("--since", type=Path, required=True)
             command.add_argument("--report", type=Path, required=True)
+    invalidate = sub.add_parser("invalidate-relations")
+    invalidate.add_argument("--recipes", type=Path, required=True)
+    invalidate.add_argument("--out-dir", type=Path, required=True)
+    invalidate.add_argument("--names", default="")
     args = parser.parse_args(argv)
 
     try:
         if args.command == "restore":
             restored, rejected = restore_cache(args.recipes, args.cache_dir, args.out_dir)
             print(f"PR package cache: restored {restored} archive(s); rejected {rejected} stale or invalid entrie(s).")
-        else:
+        elif args.command == "save":
             added, total = save_cache(args.recipes, args.cache_dir, args.out_dir, args.since, args.report)
             print(f"PR package cache: saved {added} new archive(s); {total} reusable archive(s) retained.")
+        else:
+            removed = invalidate_relation_archives(args.recipes, args.out_dir, args.names.split())
+            print(f"Invalidated {removed} legacy archive(s) for selected schema-v5 package(s).")
         return 0
     except (CacheError, OSError) as exc:
         print(f"::error::PR package cache: {exc}", file=sys.stderr)

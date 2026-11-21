@@ -110,7 +110,7 @@ def main() -> None:
         default_run_path = recipe(default_run_root, "default-run")
         default_run_text = default_run_path.read_text(encoding="utf-8")
         default_run_path.write_text(
-            default_run_text.replace("\\n[depends]\\nrun = []\\n", ""),
+            default_run_text.replace("\n[depends]\nrun = []\n", ""),
             encoding="utf-8",
         )
         assert "default-run-1.0-1.nawa.tar.zst" in PUBLISHER.recipes(default_run_root)

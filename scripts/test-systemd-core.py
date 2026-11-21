@@ -83,6 +83,11 @@ for category, name, old_package, expected_workdir in (
         and not package_meta.get("source_dir"),
         f"{name} must pin its source in the new-schema source table",
     )
+    if name == "network-manager":
+        require(
+            "gettext" in package_doc.get("depends", {}).get("build", []),
+            "network-manager must declare gettext because Meson requires msgfmt",
+        )
     package_relations = package_doc.get("relations", {})
     require(
         package_relations.get("schema") == 1

@@ -13,7 +13,7 @@ on:
           - NO
           - PUBLISH_SCHEMA_V5
       build_run_id:
-        description: Successful same-repository Build packages PR run ID with the complete package-cache artifact
+        description: Successful same-repository Build packages PR run ID whose merged PR draft-release cache contains the complete package set
         required: true
         type: string
 

@@ -165,16 +165,16 @@ for path in (
     "usr/bin/busctl",
     "usr/bin/userdbctl",
     "usr/bin/varlinkctl",
-    "usr/bin/init",
-    "usr/bin/poweroff",
-    "usr/bin/reboot",
-    "usr/bin/halt",
-    "usr/bin/shutdown",
 ):
     require(path in systemd_install, f"systemd install phase does not verify {path}")
 require(
     "ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init" in systemd_install,
     "systemd must provide the merged-/usr PID 1 entry point",
+)
+require(
+    'test -x "%{pkgdir}/usr/bin/$c"' in systemd_install
+    and "for c in init poweroff reboot halt shutdown" in systemd_install,
+    "systemd must verify its init and power-control compatibility commands after creating them",
 )
 for path in (
     "etc/udev/udev.conf",

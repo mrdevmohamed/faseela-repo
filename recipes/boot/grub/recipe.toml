@@ -5,7 +5,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -13,107 +13,18 @@ source = "https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz"
 sha256 = "bc8d3c73535b8838d8c8e2654d73edc4e6ae8c8acdb45d5df5dc9a1547446d43"
 
 [depends]
-build = ["autoconf", "automake", "bison", "flex", "gettext", "libtool"]
+build = ["bison", "flex", "gettext", "libtool"]
 run = ["efibootmgr"]
 
 [build]
-# Revert the two upstream configure changes used by Yocto/OpenEmbedded and
-# Buildroot for GRUB 2.14: the --image-base probe can move the BIOS entry point
-# away from 0x9000, and its follow-up diagnostic unnecessarily requires
-# autoconf-archive. Regenerate configure from the patched configure.ac.
-prepare = '''
-set -eu
-# Revert GRUB 2.14's linker --image-base probe. This is the distro workaround
-# carried by Yocto/OpenEmbedded and Buildroot for the 0x9074 BIOS entry issue.
-patch -p1 <<'PATCH'
-From 3a9d2dd2f5fb07b75a74c307d61b9b9fc5d20a62 Mon Sep 17 00:00:00 2001
-From: Yi Zhao <yi.zhao@windriver.com>
-Date: Fri, 27 Feb 2026 11:46:54 +0800
-Subject: [PATCH] Revert "configure: Check linker for --image-base support"
-
----
- acinclude.m4 |  5 -----
- configure.ac | 14 ++------------
- 2 files changed, 2 insertions(+), 17 deletions(-)
-
-diff --git a/acinclude.m4 b/acinclude.m4
-index 70c1912f8..fa7840f09 100644
---- a/acinclude.m4
-+++ b/acinclude.m4
-@@ -79,11 +79,6 @@ AC_DEFUN([grub_PROG_OBJCOPY_ABSOLUTE],
- [AC_MSG_CHECKING([whether ${TARGET_OBJCOPY} works for absolute addresses])
- AC_CACHE_VAL(grub_cv_prog_objcopy_absolute,
- [cat > conftest.c <<\EOF
--asm (
--    ".globl start, _start, __start\n"
--    ".ifdef cmain; .set start = _start = __start = cmain\n.endif\n"
--    ".ifdef _cmain; .set start = _start = __start = _cmain\n.endif\n"
--);
- void cmain (void);
- void
- cmain (void)
-diff --git a/configure.ac b/configure.ac
-index d8ca1b7c1..041cfbab4 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -1461,6 +1461,7 @@ elif test x$grub_cv_target_cc_link_format = x-mi386pe || test x$grub_cv_target_c
-   TARGET_IMG_LDSCRIPT='$(top_srcdir)'"/conf/i386-cygwin-img-ld.sc"
-   TARGET_IMG_LDFLAGS="-Wl,-T${TARGET_IMG_LDSCRIPT}"
-   TARGET_IMG_LDFLAGS_AC="-Wl,-T${srcdir}/conf/i386-cygwin-img-ld.sc"
-+  TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
-   TARGET_IMG_CFLAGS=
- else
-   TARGET_APPLE_LINKER=0
-@@ -1468,6 +1469,7 @@ else
-   TARGET_IMG_LDSCRIPT=
-   TARGET_IMG_LDFLAGS='-Wl,-N'
-   TARGET_IMG_LDFLAGS_AC='-Wl,-N'
-+  TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
-   TARGET_IMG_CFLAGS=
- fi
-
-@@ -1798,18 +1800,6 @@ grub_PROG_TARGET_CC
- m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
- must install it to generate the configure script.])])
-
- if test "x$TARGET_APPLE_LINKER" != x1 ; then
--AX_CHECK_LINK_FLAG([-Wl,--image-base,0x400000],
--    [TARGET_IMG_BASE_LDOPT="-Wl,--image-base"],
--    [TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"],
--    [],
--    [AC_LANG_SOURCE([
--asm (".globl start; start:");
--asm (".globl _start; _start:");
--asm (".globl __start; __start:");
--void __main (void);
--void __main (void) {}
--int main (void);
--    ])])
- grub_PROG_OBJCOPY_ABSOLUTE
- fi
- grub_PROG_LD_BUILD_ID_NONE
-PATCH
-# The companion Yocto revert removes the archive-only fatal check. The
-# source tarball's surrounding comments differ, so remove the two-line macro
-# block by its exact macro name rather than depending on line-number context.
-sed -i '/^[[:space:]]*m4_ifndef.*AX_CHECK_LINK_FLAG/,+1d' configure.ac
-if grep -q 'm4_ifndef.*AX_CHECK_LINK_FLAG' configure.ac; then
-    echo "grub: autoconf-archive fatal check remains after the configure revert" >&2
-    exit 1
-fi
-autoreconf -fi
-'''
-
+# Build the unmodified GNU release tarball in separate BIOS and EFI trees.
+# Keeping both builds out of tree prevents GRUB's generated CPU/machine
+# headers from leaking between the two platform configurations.
 configure = """
 set -eu
 mkdir build-pc build-efi
-# Preserve Nawa's native compiler/toolchain environment for configure's
-# executable test. Freestanding flags here can produce a test binary that the
-# configure probe cannot run; GRUB's own target flags control its image code.
-# BIOS: native pc platform. EFI: a separate x86_64-efi target build.
 (cd build-pc && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
 (cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
-# The source tree must remain unconfigured; otherwise EFI can consume i386 headers.
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
     echo "grub: source tree was configured in tree; EFI would use the wrong headers" >&2
     exit 1
@@ -124,8 +35,7 @@ compile = """
 set -eu
 make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
-# Exercise GRUB's own BIOS image validation path; it checks the generated
-# i386-pc kernel image rather than inspecting an unrelated ELF entry field.
+# Validate generation of a BIOS core image using GRUB's own tooling.
 build-pc/grub-mkimage -d build-pc/grub-core -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
 test -s build-pc/grub-core/test-core.img
 """

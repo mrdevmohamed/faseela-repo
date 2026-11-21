@@ -162,12 +162,33 @@ for path in (
     "usr/bin/journalctl",
     "usr/bin/loginctl",
     "usr/bin/udevadm",
+    "usr/bin/busctl",
+    "usr/bin/userdbctl",
+    "usr/bin/varlinkctl",
+    "usr/bin/init",
+    "usr/bin/poweroff",
+    "usr/bin/reboot",
+    "usr/bin/halt",
+    "usr/bin/shutdown",
 ):
     require(path in systemd_install, f"systemd install phase does not verify {path}")
 require(
     "ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init" in systemd_install,
     "systemd must provide the merged-/usr PID 1 entry point",
 )
+for path in (
+    "etc/udev/udev.conf",
+    "usr/include/libudev.h",
+    "usr/lib/libudev.so",
+    "usr/lib/libudev.so.1",
+    "usr/lib/pkgconfig/libudev.pc",
+    "usr/lib/udev/ata_id",
+    "usr/lib/udev/rules.d/50-udev-default.rules",
+):
+    require(
+        f'test -e "%{{pkgdir}}/$f"' in systemd_install and path in systemd_install,
+        f"systemd install phase must verify the eudev replacement file {path}",
+    )
 
 base_files = recipe("base", "base-files")
 base_install = base_files["build"]["install"]

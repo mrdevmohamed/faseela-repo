@@ -102,6 +102,10 @@ def cache_entries(recipes_root: Path, cache_dir: Path) -> list[dict]:
         for path in files:
             if not ASSET_RE.fullmatch(path.name):
                 raise CacheReleaseError(f"unsafe package archive name: {path.name}")
+            if path.stat().st_size >= 2 * 1024 * 1024 * 1024:
+                raise CacheReleaseError(
+                    f"GitHub Release asset must be smaller than 2 GiB: {path.name}"
+                )
         selected.append({
             "name": recipe.name,
             "category": category,

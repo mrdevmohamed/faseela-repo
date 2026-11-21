@@ -16,14 +16,14 @@ class AuditTests(unittest.TestCase):
         directory = root / name
         directory.mkdir(parents=True)
         content = (
-            f'[package]\\nname = "{name}"\\nversion = "1"\\n'
-            '[depends]\\nrun = []\\n'
-            '[capabilities]\\nprovides = []\\n'
-            '[relations]\\nschema = 1\\nconflicts = []\\n'
-            'replaces = []\\n'
+            f'[package]\nname = "{name}"\nversion = "1"\n'
+            '[depends]\nrun = []\n'
+            '[capabilities]\nprovides = []\n'
+            '[relations]\nschema = 1\nconflicts = []\n'
+            'replaces = []\n'
         )
         if extra:
-            content = content.replace('replaces = []\\n', extra)
+            content = content.replace('replaces = []\n', extra)
         (directory / "recipe.toml").write_text(content, encoding="utf-8")
 
     def test_complete_explicit_empty_metadata_is_valid(self):

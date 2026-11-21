@@ -61,7 +61,7 @@ jobs:
               "",
               "Report-only: missing metadata is never inferred as an empty declaration.",
           ]
-          Path(sys.argv[2]).open("a", encoding="utf-8").write("\\n".join(lines) + "\\n")
+          Path(sys.argv[2]).open("a", encoding="utf-8").write("\n".join(lines) + "\n")
           PY
       - name: Upload schema-v5 metadata audit report
         if: always()

@@ -893,6 +893,9 @@ jobs:
           # can represent the complete recipe set.
           toolchain_built="$RUNNER_TEMP/toolchain-built.txt"
           : > "$toolchain_built"
+          # Ensure the PR cache saver has a report even when Bootstrap fails
+          # before the ordinary package builder starts.
+          touch "$T/build/report.txt"
 
           # Toolchain recipes are never sent to build-packages-inner.sh.
           # Rebuild them through the distribution Stage 1/2/3 bootstrap pipeline.

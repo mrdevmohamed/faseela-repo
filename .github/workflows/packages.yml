@@ -216,7 +216,7 @@ jobs:
               "",
               "This is report-only until every recipe has been reviewed; missing metadata is never inferred as an empty list.",
           ]
-          summary.open("a", encoding="utf-8").write("\\n".join(lines) + "\\n")
+          summary.open("a", encoding="utf-8").write("\n".join(lines) + "\n")
           PY
       - id: s
         env:

@@ -112,6 +112,24 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         self.assertEqual((added, total), (0, 0))
         self.assertFalse((self.cache_dir / "demo-app-1.0-1.nawa.tar.zst").exists())
 
+    def test_tampered_cached_archive_is_rejected_by_digest(self):
+        self.write_archive()
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
+        cached = self.cache_dir / "demo-app-1.0-1.nawa.tar.zst"
+        cached.write_bytes(b"tampered archive")
+        restored, rejected = cache.restore_cache(self.recipes, self.cache_dir, self.out_dir)
+        self.assertEqual((restored, rejected), (0, 1))
+        self.assertFalse((self.out_dir / cached.name).exists())
+
+    def test_manifest_records_archive_sha256(self):
+        self.write_archive()
+        cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
+        import json
+        manifest = json.loads((self.cache_dir / cache.MANIFEST_NAME).read_text(encoding="utf-8"))
+        entry = manifest["packages"][0]
+        self.assertEqual(manifest["schema"], 2)
+        self.assertEqual(entry["archive_sha256"], cache.sha256_file(self.cache_dir / entry["archive"]))
+
     def test_recipe_release_change_invalidates_cached_archive(self):
         self.write_archive()
         cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)

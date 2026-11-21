@@ -165,8 +165,8 @@ SECTIONS
 
 replace_once(
     "conf/Makefile.extra-dist",
-    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\\n",
-    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\\nEXTRA_DIST += conf/i386-pc-kernel.lds\\n",
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\n",
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\nEXTRA_DIST += conf/i386-pc-kernel.lds\n
 )
 
 replace_once(
@@ -201,8 +201,8 @@ fi
 )
 replace_once(
     "configure.ac",
-    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\\n",
-    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\\nAC_SUBST(TARGET_IMG_BASE_LDOPT_ARG_SEP)\\n",
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\n",
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\nAC_SUBST(TARGET_IMG_BASE_LDOPT_ARG_SEP)\n
 )
 
 replace_once(
@@ -225,21 +225,21 @@ replace_once(
 p = Path("grub-core/Makefile.core.def")
 data = p.read_text()
 data, count = re.subn(
-    r"(?m)^([ \\t]*i386_[A-Za-z0-9_]*_ldflags[ \\t]*=[ \\t]*'\\$\\(TARGET_IMG_BASE_LDOPT\\)),",
+    r"(?m)^([ \t]*i386_[A-Za-z0-9_]*_ldflags[ \t]*=[ \t]*'\$\(TARGET_IMG_BASE_LDOPT\)),",
     r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
     data,
 )
 if count < 6:
     raise SystemExit(f"grub-core/Makefile.core.def: expected >=6 i386 linker flag updates, got {count}")
 data, nodist_count = re.subn(
-    r"(?m)^([ \\t]*ldflags[ \\t]*=[ \\t]*'[^'\\n]*\\$\\(TARGET_IMG_BASE_LDOPT\\)),",
+    r"(?m)^([ \t]*ldflags[ \t]*=[ \t]*'[^'\n]*\$\(TARGET_IMG_BASE_LDOPT\)),",
     r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
     data,
 )
 if nodist_count < 1:
     raise SystemExit("grub-core/Makefile.core.def: i386-pc no-dist linker flags were not updated")
 
-needle = "  common = genmod.sh.in;\\n"
+needle = "  common = genmod.sh.in;\n"
 if data.count(needle) != 1:
     raise SystemExit("grub-core/Makefile.core.def: genmod.sh transform block changed")
 data = data.replace(

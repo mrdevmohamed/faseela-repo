@@ -5,7 +5,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -111,7 +111,22 @@ mkdir build-pc build-efi
 # executable test. Freestanding flags here can produce a test binary that the
 # configure probe cannot run; GRUB's own target flags control its image code.
 # BIOS: native pc platform. EFI: a separate x86_64-efi target build.
-(cd build-pc && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
+#
+# BIOS kernel.img must start with startup.S's `_start` (entry point 0x9000): lzma_decompress
+# jumps to the first byte of the decompressed kernel. Nawa builds with CFLAGS="-O2 -pipe", and
+# GCC then splits functions into .text.unlikely / .text.startup / hot-cold parts that GNU ld
+# places BEFORE .text, i.e. before startup.S. The published grub 2.14-3, 2.14-4 and 2.14-9 all
+# have `Entry point address: 0x9023` and a 35-byte cold fragment (`sub $0xc,%esp; push ...;
+# call`) at 0x9000, so a BIOS-installed disk executes that instead of startup.S and dies before
+# GRUB's first message (UEFI is unaffected: its image is relocated, not a flat binary).
+# TARGET_CC is the compiler GRUB uses for the i386-pc image code only; the wrapper adds the two
+# flags LAST so they win however configure composes its own flags. Host tools are untouched.
+cat > $PWD/target-cc <<'WRAP'
+#!/bin/sh
+exec gcc "$@" -fno-reorder-functions -fno-reorder-blocks-and-partition
+WRAP
+chmod +x $PWD/target-cc
+(cd build-pc && TARGET_CC=$PWD/../target-cc ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
 (cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
 # The source tree must remain unconfigured; otherwise EFI can consume i386 headers.
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
@@ -124,8 +139,14 @@ compile = """
 set -eu
 make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
-# Exercise GRUB's own BIOS image validation path; it checks the generated
-# i386-pc kernel image rather than inspecting an unrelated ELF entry field.
+# The invariant above, checked where it breaks: fail the package build instead of publishing a
+# bootloader that cannot start. readelf runs on the unstripped build output.
+entry=$(readelf -h build-pc/grub-core/kernel.exec | awk '/Entry point address/ {print $4}')
+if [ "$entry" != 0x9000 ]; then
+    echo "grub: i386-pc kernel.exec entry point is '$entry', not 0x9000: code was linked before startup.S (see configure)" >&2
+    exit 1
+fi
+# Exercise GRUB's own BIOS image validation path.
 build-pc/grub-mkimage -d build-pc/grub-core -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
 test -s build-pc/grub-core/test-core.img
 """
@@ -135,6 +156,13 @@ test -s build-pc/grub-core/test-core.img
 install = """
 set -eu
 make -C build-pc DESTDIR=%{pkgdir} install
+# modinfo.sh records the target compiler; with the configure wrapper that is a sandbox path,
+# which Nawa's lint rejects. Nothing at run time uses it, so record the plain compiler name.
+sed -i "s|^grub_target_cc='[^']*target-cc'|grub_target_cc='gcc'|" %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh
+if grep -q /build/src %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh; then
+    echo "grub: modinfo.sh still records a sandbox path" >&2
+    exit 1
+fi
 efi_stage=$PWD/efi-stage
 make -C build-efi DESTDIR=$efi_stage install
 cp -a $efi_stage/usr/lib/grub/x86_64-efi %{pkgdir}/usr/lib/grub/

@@ -977,17 +977,6 @@ jobs:
               bash /faseela/bootstrap/build-packages-inner.sh
           fi
 
-          # Preserve successful Stage 3 archives in the same authenticated PR
-          # build cache as ordinary packages. Keep records separate until after
-          # build-packages-inner.sh, which initializes its own report file.
-          if [[ -s "$toolchain_built" ]]; then
-            report="$T/build/report.txt"
-            touch "$report"
-            while IFS= read -r stem; do
-              [[ -n "$stem" ]] || continue
-              printf 'BUILT    %s  (Bootstrap Stage 3)\n' "$stem" >> "$report"
-            done < "$toolchain_built"
-          fi
       - name: Detect schema-v5-only package selections
         id: schema_v5_policy
         if: ${{ always() && steps.published.conclusion == 'success' }}
@@ -1093,6 +1082,16 @@ jobs:
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
           mkdir -p "$cache_dir"
+          # Stage 3 output can be complete even when a later ordinary
+          # package fails. Preserve each successfully imported Toolchain
+          # archive in the resumable cache before evaluating the final report.
+          if [[ -s "$RUNNER_TEMP/toolchain-built.txt" ]]; then
+            touch "$T/build/report.txt"
+            while IFS= read -r stem; do
+              [[ -n "$stem" ]] || continue
+              printf 'BUILT    %s  (Bootstrap Stage 3)\\n' "$stem" >> "$T/build/report.txt"
+            done < "$RUNNER_TEMP/toolchain-built.txt"
+          fi
           python3 -I scripts/pr-build-cache.py save \
             --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out" \
             --since "$T/build/.run-start" --report "$T/build/report.txt"

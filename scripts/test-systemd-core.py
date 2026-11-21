@@ -155,7 +155,7 @@ for marker in (
     'Path(".faseela-meson-args")',
     '"hibernate": "off", "initrd": "off",',
     '"shared-lib-tag": "lit:261",',
-    'install_rpath : '$ORIGIN'',
+    "install_rpath : '$ORIGIN'",
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',
@@ -197,7 +197,7 @@ except SyntaxError as error:
     raise AssertionError(f"systemd Meson option filter has invalid Python syntax: {error}") from error
 
 rpath_patch = re.search(
-    r'python3 - "\\$SOURCE_ROOT/src/core/meson.build" <<\'PATCH\'\n(.*?)\nPATCH',
+    r"python3 - \"\$SOURCE_ROOT/src/core/meson\.build\" <<'PATCH'\n(.*?)\nPATCH",
     configure,
     re.DOTALL,
 )

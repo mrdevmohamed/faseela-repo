@@ -174,7 +174,7 @@ replace_once(
 
 replace_once(
     "configure.ac",
-    '''else
+    """else
   TARGET_APPLE_LINKER=0
   TARGET_IMG_LDSCRIPT=
   TARGET_IMG_LDFLAGS='-Wl,-N'
@@ -182,8 +182,8 @@ replace_once(
   TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
   TARGET_IMG_CFLAGS=
 fi
-''',
-    '''else
+""",
+    """else
   TARGET_APPLE_LINKER=0
   TARGET_IMG_LDSCRIPT=
   TARGET_IMG_LDFLAGS='-Wl,-N'
@@ -200,7 +200,7 @@ fi
   fi
   TARGET_IMG_CFLAGS=
 fi
-''',
+""",
 )
 replace_once(
     "configure.ac",
@@ -211,9 +211,9 @@ replace_once(
 
 replace_once(
     "acinclude.m4",
-    '''  if AC_TRY_COMMAND([${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${TARGET_IMG_BASE_LDOPT},$link_addr conftest.o -o conftest.exec]); then :
-''',
-    '''  target_img_base_ld="${TARGET_IMG_BASE_LDOPT}"
+    """  if AC_TRY_COMMAND([${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${TARGET_IMG_BASE_LDOPT},$link_addr conftest.o -o conftest.exec]); then :
+""",
+    """  target_img_base_ld="${TARGET_IMG_BASE_LDOPT}"
   case "$target_img_base_ld" in
     *_grub_text_base)
       target_img_base_ld="${TARGET_IMG_BASE_LDOPT}=$link_addr"
@@ -223,7 +223,7 @@ replace_once(
     ;;
   esac
   if AC_TRY_COMMAND([${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${target_img_base_ld} conftest.o -o conftest.exec]); then :
-''',
+""",
 )
 
 p = Path("grub-core/Makefile.core.def")

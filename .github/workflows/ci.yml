@@ -42,7 +42,35 @@ jobs:
       - name: Test schema-v5 metadata audit
         run: python3 -I scripts/test-audit-schema-v5-metadata.py
       - name: Report schema-v5 metadata coverage
-        run: python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/schema-v5-metadata.json"
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --json "$report"
+          python3 -I - "$report" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lines = [
+              "## Schema-v5 metadata audit",
+              "",
+              f"- Recipes audited: **{report['recipe_count']}**",
+              f"- Missing declarations: **{report['missing_count']}**",
+              f"- Missing by field: `{report['missing_by_field']}`",
+              f"- Invalid declarations/references: **{report['error_count']}**",
+              f"- Relation entries: `{report['relation_entries']}`",
+              "",
+              "Report-only: missing metadata is never inferred as an empty declaration.",
+          ]
+          Path(sys.argv[2]).open("a", encoding="utf-8").write("\\n".join(lines) + "\\n")
+          PY
+      - name: Upload schema-v5 metadata audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-v5-metadata-audit
+          path: ${{ runner.temp }}/schema-v5-metadata.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Telegram WebKitGTK 4.1 and optional-flavor regression checks
         run: python3 -I scripts/test-webkitgtk.py
       - name: Validate package groups against recipes

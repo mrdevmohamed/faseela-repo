@@ -8,7 +8,7 @@ arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
-workdir = "NetworkManager-%{version}"
+workdir = "NetworkManager-1.58.1"
 
 [[package.sources]]
 name = "network-manager"

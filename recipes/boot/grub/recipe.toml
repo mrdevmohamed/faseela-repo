@@ -18,13 +18,22 @@ run = ["efibootmgr"]
 
 [build]
 # Build the unmodified GNU release tarball in separate BIOS and EFI trees.
-# Keeping both builds out of tree prevents GRUB's generated CPU/machine
-# headers from leaking between the two platform configurations.
+# GRUB 2.14's --image-base capability probe is known to shift the i386-pc
+# kernel image start address to 0x9074. Set its Autoconf cache result to "no"
+# for the BIOS configure only, without patching or regenerating upstream files.
+# See the GRUB 2.14 i386-pc regression documented by LFS/Buildroot/OpenEmbedded.
 configure = """
 set -eu
 mkdir build-pc build-efi
-(cd build-pc && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls)
-(cd build-efi && ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64)
+(
+    cd build-pc
+    ax_cv_check_ldflags___Wl___image_base_0x400000=no \
+        ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls
+)
+(
+    cd build-efi
+    ../configure --prefix=/usr --sysconfdir=/etc --disable-werror --disable-efiemu --disable-nls --with-platform=efi --target=x86_64
+)
 if [ -e include/grub/cpu ] || [ -e include/grub/machine ]; then
     echo "grub: source tree was configured in tree; EFI would use the wrong headers" >&2
     exit 1

@@ -22,7 +22,7 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]

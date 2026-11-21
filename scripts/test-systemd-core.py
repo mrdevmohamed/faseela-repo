@@ -148,7 +148,6 @@ require(
 
 configure = systemd["build"]["configure"]
 for marker in (
-    "install_rpath : pkglibdir",
     "expected exactly one libcore install stanza to add its private RUNPATH",
     'Path(".").rglob("meson_options.txt")',
     '(path.parent / "meson.build").is_file()',
@@ -156,7 +155,7 @@ for marker in (
     'Path(".faseela-meson-args")',
     '"hibernate": "off", "initrd": "off",',
     '"shared-lib-tag": "lit:261",',
-    'install_rpath : pkglibdir',
+    'install_rpath : '$ORIGIN'',
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',
@@ -196,6 +195,17 @@ try:
     compile(python_block.group(1), "systemd-configure-options", "exec")
 except SyntaxError as error:
     raise AssertionError(f"systemd Meson option filter has invalid Python syntax: {error}") from error
+
+rpath_patch = re.search(
+    r'python3 - "\\$SOURCE_ROOT/src/core/meson.build" <<\'PATCH\'\n(.*?)\nPATCH',
+    configure,
+    re.DOTALL,
+)
+require(rpath_patch is not None, "systemd configure phase must patch libcore RUNPATH")
+try:
+    compile(rpath_patch.group(1), "systemd-private-rpath-patch", "exec")
+except SyntaxError as error:
+    raise AssertionError(f"systemd private RUNPATH patch has invalid Python syntax: {error}") from error
 
 systemd_install = systemd["build"]["install"]
 for path in (

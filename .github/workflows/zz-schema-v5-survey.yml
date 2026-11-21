@@ -1,0 +1,61 @@
+name: schema-v5 survey (temporary)
+
+# TEMPORARY. Collects two facts that cannot be derived offline for the schema-v5
+# conversion: how every upstream source archive is laid out, and which published
+# packages ship the same file. Results are printed to the job log. Delete this
+# file once the conversion is merged into the PR.
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/zz-schema-v5-survey.yml
+      - scripts/survey-source-layout.py
+
+permissions:
+  contents: read
+
+jobs:
+  layout:
+    name: source layout
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Survey upstream archive layouts
+        run: python3 -I scripts/survey-source-layout.py --out "$RUNNER_TEMP/layout.json" --jobs 12
+
+  overlap:
+    name: file overlap
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PKG_REPO: ${{ github.repository }}
+      PKG_V3_TAG: ${{ vars.PKG_V3_TAG || 'stable-v3' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          set -euo pipefail
+          command -v zstd >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq zstd; }
+      - name: Download the published schema-v3 index and the archives it lists
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 8 --retry-all-errors \
+            --connect-timeout 30 --max-time 300 \
+            --output "$RUNNER_TEMP/index.toml" \
+            "https://github.com/$PKG_REPO/releases/download/$PKG_V3_TAG/index.toml"
+          python3 -I - "$RUNNER_TEMP/index.toml" > "$RUNNER_TEMP/published.tsv" <<'PY'
+          import sys, tomllib
+          index = tomllib.loads(open(sys.argv[1], encoding="utf-8").read())
+          for package in index["package"]:
+              tag = package["download_url"].split("/releases/download/")[1].split("/")[0]
+              print(f"{tag}\t{package['file']}")
+          PY
+          echo "$(wc -l < "$RUNNER_TEMP/published.tsv") archive(s) listed by the index"
+          python3 -I scripts/fetch-published-archives.py \
+            --list "$RUNNER_TEMP/published.tsv" --repo "$PKG_REPO" \
+            --out "$RUNNER_TEMP/archives" --jobs 4 --index "$RUNNER_TEMP/index.toml"
+      - name: Report files shared between packages
+        run: |
+          set -euo pipefail
+          python3 -I scripts/check-file-conflicts.py "$RUNNER_TEMP/archives" --all 2>&1 | sed 's/^/OVERLAP /' || true

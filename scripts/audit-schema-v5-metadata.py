@@ -14,6 +14,10 @@ import tomllib
 from collections import Counter
 from pathlib import Path
 
+# These names intentionally have no current recipe: they are legacy package
+# identities that current recipes may supersede during an upgrade.
+LEGACY_PACKAGE_NAMES = {"eudev", "elogind", "dhcpcd", "wireless-tools"}
+
 
 def audit(root: Path) -> dict:
     records = {}
@@ -69,13 +73,14 @@ def audit(root: Path) -> dict:
                 relation_counts[field] += 1
                 if target == name:
                     errors.append({"package": name, "path": str(path), "kind": f"self-{field}"})
-                elif target not in records:
+                elif target not in records and target not in LEGACY_PACKAGE_NAMES:
                     errors.append({"package": name, "path": str(path), "kind": f"unknown-{field}-target", "detail": target})
 
     return {
         "recipe_count": len(records),
         "missing_declarations": missing,
         "missing_count": len(missing),
+        "missing_by_field": dict(Counter(item["field"] for item in missing)),
         "errors": errors,
         "error_count": len(errors),
         "relation_entries": dict(relation_counts),
@@ -95,6 +100,7 @@ def main() -> int:
         args.json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"Schema-v5 metadata audit: {report['recipe_count']} recipes")
     print(f"  missing declarations: {report['missing_count']}")
+    print(f"  missing by field: {report['missing_by_field']}")
     print(f"  invalid metadata/references: {report['error_count']}")
     print(f"  declared relations: {report['relation_entries']}")
     for item in report["errors"]:

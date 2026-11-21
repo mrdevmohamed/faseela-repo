@@ -116,6 +116,7 @@ class PullRequestPackageCacheTests(unittest.TestCase):
         self.write_archive()
         cache.save_cache(self.recipes, self.cache_dir, self.out_dir, self.marker, self.report)
         cached = self.cache_dir / "demo-app-1.0-1.nawa.tar.zst"
+        (self.out_dir / cached.name).unlink()
         cached.write_bytes(b"tampered archive")
         restored, rejected = cache.restore_cache(self.recipes, self.cache_dir, self.out_dir)
         self.assertEqual((restored, rejected), (0, 1))

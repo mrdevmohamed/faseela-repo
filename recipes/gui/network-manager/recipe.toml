@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -24,7 +24,7 @@ conflicts = ["dhcpcd"]
 replaces = ["dhcpcd"]
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "dbus", "glib", "systemd", "libndp", "libpsl", "util-linux", "polkit"]
+build = ["meson", "ninja", "pkgconf", "gettext", "dbus", "glib", "systemd", "libndp", "libpsl", "util-linux", "polkit"]
 run = ["glibc", "dbus-system", "glib", "systemd", "libndp", "libpsl", "util-linux", "wpa_supplicant", "polkit", "iproute2"]
 
 [build]

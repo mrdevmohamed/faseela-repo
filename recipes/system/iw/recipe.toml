@@ -25,7 +25,7 @@ replaces = ["wireless-tools"]
 
 [depends]
 build = ["libnl", "pkgconf"]
-run = ["libnl"]
+run = ["glibc", "libnl"]
 
 [build]
 compile = "make -j%{jobs} PREFIX=/usr"

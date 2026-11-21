@@ -67,6 +67,24 @@ for pkg in (libusb, usbutils):
     require("systemd" in deps and "eudev" not in deps,
             f"{pkg['package']['name']} must use systemd's libudev provider, not eudev")
 
+# The extra3 generator is the source of truth for these generated recipes.
+# Guard both layers so a future regeneration cannot restore the reverse edge.
+extra_data_spec = importlib.util.spec_from_file_location(
+    "recipe_data_extra", ROOT / "scripts" / "recipe_data_extra.py"
+)
+require(
+    extra_data_spec is not None and extra_data_spec.loader is not None,
+    "could not load the extra recipe source data",
+)
+extra_data = importlib.util.module_from_spec(extra_data_spec)
+extra_data_spec.loader.exec_module(extra_data)
+generated = {item["name"]: item for item in extra_data.EXTRA}
+for name in ("libusb", "usbutils"):
+    item = generated[name]
+    deps = set(item.get("bdeps", [])) | set(item.get("rdeps", []))
+    require("systemd" in deps and "eudev" not in deps,
+            f"extra3 generator data for {name} must not reintroduce eudev")
+
 
 obsolete = {
     "runit", "runit-services", "eudev", "elogind",

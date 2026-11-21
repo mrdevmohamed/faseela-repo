@@ -22,7 +22,7 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
@@ -41,7 +41,7 @@ sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
-run = ["glibc", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
+run = ["glibc", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files >= 0.4-12", "coreutils"]
 
 [capabilities]
 provides = ["init-system=systemd"]

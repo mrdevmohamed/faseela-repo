@@ -50,7 +50,7 @@ require(
     relations.get("schema") == 1
     and set(relations.get("conflicts", [])) == expected_replacements
     and set(relations.get("replaces", [])) == expected_replacements,
-    "systemd must explicitly conflict with and replace the three legacy file owners",
+    "systemd must explicitly conflict with and replace the two legacy udev/logind file owners",
 )
 require(
     systemd.get("capabilities", {}).get("provides") == ["init-system=systemd"],
@@ -59,15 +59,20 @@ require(
 
 # These existing recipe comments already describe real supersession behavior.
 # Make it solver-visible rather than leaving it as prose only.
-for category, name, old_package in (
-    ("system", "iw", "wireless-tools"),
-    ("gui", "network-manager", "dhcpcd"),
+for category, name, old_package, expected_workdir in (
+    ("system", "iw", "wireless-tools", "iw-6.9"),
+    ("gui", "network-manager", "dhcpcd", "NetworkManager-1.58.1"),
 ):
     package_doc = recipe(category, name)
     package_meta = package_doc["package"]
     require(
         package_meta["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
         f"{name} relations must use the fail-closed relations marker",
+    )
+    require(
+        package_meta.get("workdir") == expected_workdir
+        and "%{" not in package_meta.get("workdir", ""),
+        f"{name} new-schema workdir must be a literal directory in the staged workspace",
     )
     sources = package_meta.get("sources", [])
     require(

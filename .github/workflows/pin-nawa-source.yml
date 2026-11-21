@@ -1,0 +1,33 @@
+name: Temporary Nawa source pin calculation
+
+on:
+  push:
+    branches: [fix/systemd-schema-v5-relations]
+    paths:
+      - ".github/workflows/pin-nawa-source.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  calculate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Calculate authenticated Nawa archive pin
+        run: |
+          python3 scripts/pin-nawa-source.py f6cbfe23d9524ec5407d3f45b487b5382746809c
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          recipe = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text())
+          source = recipe["package"]["sources"][0]
+          print("NAWA_VERSION=" + recipe["package"]["version"])
+          print("NAWA_REL=" + str(recipe["package"]["rel"]))
+          print("NAWA_URL=" + source["url"])
+          print("NAWA_SHA256=" + source["sha256"])
+          PY

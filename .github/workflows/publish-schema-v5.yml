@@ -274,6 +274,12 @@ jobs:
             --out-dir "$root/built"
           echo "Restored and SHA-256-verified candidate archives from merged PR #$pr_number, run $BUILD_RUN_ID."
 
+      - name: Require complete schema-v5 metadata before publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict
+
       - name: Prepare and verify the complete isolated schema-v5 candidate
         id: prepare
         shell: bash

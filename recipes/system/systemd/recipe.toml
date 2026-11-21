@@ -184,7 +184,7 @@ old = """        link_with : libshared,
 new = """        link_with : libshared,
         install : true,
         install_dir : pkglibdir,
-        install_rpath : pkglibdir)"""
+        install_rpath : '$ORIGIN')"""
 if text.count(old) != 1:
     raise SystemExit(
         "systemd: expected exactly one libcore install stanza to add its private RUNPATH"

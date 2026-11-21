@@ -39,6 +39,10 @@ jobs:
           python3 -I scripts/test-huiontablet-package.py "$deb"
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
+      - name: Test schema-v5 metadata audit
+        run: python3 -I scripts/test-audit-schema-v5-metadata.py
+      - name: Report schema-v5 metadata coverage
+        run: python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes
       - name: Telegram WebKitGTK 4.1 and optional-flavor regression checks
         run: python3 -I scripts/test-webkitgtk.py
       - name: Validate package groups against recipes

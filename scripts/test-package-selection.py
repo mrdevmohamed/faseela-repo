@@ -264,15 +264,20 @@ class RealRecipeTreeTests(unittest.TestCase):
         workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
         self.assertIn("  pull_request:", workflow)
         self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
-        self.assertIn("Restore previous package builds from this pull request", workflow)
+        self.assertIn("Restore previous package builds from the PR draft-release cache", workflow)
+        self.assertIn("pr-build-cache.py invalidate-relations", workflow)
+        self.assertIn("pr-build-release-cache.py verify-candidate", workflow)
+        self.assertIn("gh release download", workflow)
         self.assertIn("pr-build-cache.py restore", workflow)
-        self.assertIn("for previous_run in", workflow)
-        self.assertIn("reverse | .[].id", workflow)
-        self.assertIn("gh run download", workflow)
+        self.assertIn("Save reusable package builds to draft PR releases", workflow)
         self.assertIn("pr-build-cache.py save", workflow)
-        self.assertIn("name: pr-package-cache", workflow)
+        self.assertIn("pr-build-release-cache.py plan", workflow)
+        self.assertIn("gh release create \"$tag\" --repo \"$PKG_REPO\" --draft", workflow)
+        self.assertNotIn("gh run download", workflow)
+        self.assertNotIn("name: pr-package-cache", workflow)
+        self.assertIn("schema_v5_only != 'true'", workflow)
         self.assertIn(
-            "if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}",
+            "if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}",
             workflow,
         )
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)

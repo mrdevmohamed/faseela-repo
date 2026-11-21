@@ -191,10 +191,34 @@ jobs:
       toolchain_all: ${{ steps.s.outputs.toolchain_all }}
       rootfs: ${{ steps.s.outputs.rootfs }}
       dry_run: ${{ steps.s.outputs.dry_run }}
+      schema_v5_only: ${{ steps.s.outputs.schema_v5_only }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Audit schema-v5 metadata across every recipe
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/schema-v5-metadata.json"
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --json "$report"
+          python3 -I - "$report" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          summary = Path(sys.argv[2])
+          lines = [
+              "## Schema-v5 metadata audit",
+              "",
+              f"- Recipes audited: **{report['recipe_count']}**",
+              f"- Missing declarations: **{report['missing_count']}**",
+              f"- Missing by field: `{report['missing_by_field']}`",
+              f"- Invalid declarations/references: **{report['error_count']}**",
+              f"- Relation entries: `{report['relation_entries']}`",
+              "",
+              "This is report-only until every recipe has been reviewed; missing metadata is never inferred as an empty list.",
+          ]
+          summary.open("a", encoding="utf-8").write("\n".join(lines) + "\n")
+          PY
       - id: s
         env:
           INPUT_ALL: ${{ inputs.all }}
@@ -337,8 +361,7 @@ jobs:
           transition_needed=0
           if [[ "$GITHUB_EVENT_NAME" != pull_request && "$GITHUB_REF" != "refs/heads/feat/cosmic-desktop-support" ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
             pkgs+=" nawa"
-            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | tr '\n' ' ')"
-            pkgs="$(echo $pkgs)"
+            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | paste -sd ' ' -)"
             transition_needed=1
             echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
           fi
@@ -383,12 +406,33 @@ jobs:
               [[ "$p" == rust || "$p" == nawa ]] && echo "::warning::$p is in the list but the min rootfs has no rust: it would be compiled first (hours). Use rootfs=seed."
             done
           fi
-          echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
-          echo "toolchain_pkgs=$toolchain_pkgs" >> "$GITHUB_OUTPUT"
-          echo "toolchain_all=$toolchain_all" >> "$GITHUB_OUTPUT"
-          echo "rootfs=$rootfs" >> "$GITHUB_OUTPUT"
+          schema_v5_only="$(python3 -I - "$pkgs" "$toolchain_pkgs" <<'PY'
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          selected = set(sys.argv[1].split()) | set(sys.argv[2].split())
+          has_relations = False
+          for path in Path("recipes").glob("*/*/recipe.toml"):
+              doc = tomllib.loads(path.read_text(encoding="utf-8"))
+              if doc.get("package", {}).get("name") in selected and "relations" in doc:
+                  has_relations = True
+                  break
+          print("true" if has_relations else "false")
+          PY
+          )"
           dry_run="${INPUT_DRY_RUN:-false}"
-          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
+          {
+            echo "schema_v5_only=$schema_v5_only"
+            echo "pkgs=$pkgs"
+            echo "toolchain_pkgs=$toolchain_pkgs"
+            echo "toolchain_all=$toolchain_all"
+            echo "rootfs=$rootfs"
+            echo "dry_run=$dry_run"
+          } >> "$GITHUB_OUTPUT"
+          if [[ "$schema_v5_only" == true && "$GITHUB_EVENT_NAME" != pull_request ]]; then
+            echo "::notice::The selected recipes carry schema-v5 relations. The ordinary workflow will not build/publish them through stable-v3; use the reviewed PR build cache and the separate schema-v5 publisher."
+          fi
           python3 - "$selection" "$pkgs" "$toolchain_pkgs" "$toolchain_all" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -415,7 +459,7 @@ jobs:
   build:
     name: build and publish
     needs: select
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' && (github.event_name == 'pull_request' || needs.select.outputs.schema_v5_only != 'true') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:
@@ -448,6 +492,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'feat/cosmic-desktop-support' || github.event.pull_request.head.ref == 'fix/cosmic-shortcuts-layout-switch') }}
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           python3 -I scripts/update-cosmic-epoch.py
@@ -459,7 +504,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add recipes/cosmic recipes/greeter/cosmic-greeter recipes/gui/pop-launcher
             git commit -m "Update COSMIC and pop-launcher source pins"
-            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            git push origin "HEAD:$PR_HEAD_REF"
           else
             echo "All COSMIC source archives already match Epoch 1.11.0."
           fi
@@ -484,6 +529,7 @@ jobs:
           cp -a groups.toml distro/groups.toml
           # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
           # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.
+          # shellcheck disable=SC2016
           grep -Fq 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' distro/bootstrap/fetch-nawa.sh || {
             echo "::error::DISTRO_REF must use recipe-driven Nawa fetching (update Faseela to the revision containing bootstrap/fetch-nawa.sh's recipe pin support)"
             exit 1
@@ -820,6 +866,7 @@ jobs:
               failed="$RUNNER_TEMP/package-downloads.failed"
               : > "$failed"
               export failed
+              # shellcheck disable=SC2016
               xargs -0 -r -n 2 -P "$jobs" bash -c '
                 bash scripts/fetch-published-package.sh "$1" "$2" \
                   || printf "%s\0%s\0" "$1" "$2" >> "$failed"
@@ -846,46 +893,69 @@ jobs:
           sleep 2
           sudo touch "$T/build/.run-start"
 
-      - name: Restore previous package builds from this pull request
+      - name: Restore previous package builds from the PR draft-release cache
         if: ${{ github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_PACKAGES_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
           mkdir -p "$cache_dir"
-          mapfile -t candidate_runs < <(
-            gh api "repos/$PKG_REPO/actions/workflows/packages.yml/runs?event=pull_request&per_page=100" |
-              jq -r --argjson pr "$PR_NUMBER" --arg current "$GITHUB_RUN_ID" \
-              '[.workflow_runs[] | select((.id | tostring) != $current) | select(any(.pull_requests[]?; .number == $pr))] | sort_by(.created_at) | reverse | .[].id'
+
+          # Old stable-v3 archives may have the same filename as a relation-
+          # bearing v5 rebuild. Remove those first so build-packages-inner.sh
+          # cannot incorrectly classify the legacy payload as already current.
+          python3 -I scripts/pr-build-cache.py invalidate-relations \
+            --recipes recipes --out-dir "$T/build/out" \
+            --names "$PKGS $TOOLCHAIN_PKGS"
+
+          manifest_tag="schema-v5-build-pr-$PR_NUMBER-manifest"
+          if gh release view "$manifest_tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
+            echo "Restoring previous PR cache from draft release $manifest_tag."
+            gh release download "$manifest_tag" --repo "$PKG_REPO" \
+              --pattern manifest.json --pattern candidate.json --dir "$cache_dir"
+            python3 -I scripts/pr-build-release-cache.py verify-candidate \
+              --candidate "$cache_dir/candidate.json" \
+              --manifest "$cache_dir/manifest.json" \
+              --pr-number "$PR_NUMBER"
+            while IFS= read -r tag; do
+              [[ -n "$tag" ]] || continue
+              gh release download "$tag" --repo "$PKG_REPO" --dir "$cache_dir"
+            done < <(python3 -I - "$cache_dir/candidate.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          for tag in value["shards"]:
+              print(tag)
+          PY
           )
-          restored_artifact=0
-          for previous_run in "${candidate_runs[@]}"; do
-            candidate_dir="$RUNNER_TEMP/pr-package-cache-$previous_run"
-            rm -rf "$candidate_dir"
-            mkdir -p "$candidate_dir"
-            echo "Checking package cache artifact from PR run $previous_run."
-            if gh run download "$previous_run" --repo "$PKG_REPO" --name pr-package-cache --dir "$candidate_dir"; then
-              cp -a "$candidate_dir/." "$cache_dir/"
-              rm -rf "$candidate_dir"
-              restored_artifact=1
-              echo "Restored the newest available package cache from PR run $previous_run."
-              break
-            fi
-            rm -rf "$candidate_dir"
-          done
-          if [[ "$restored_artifact" != 1 ]]; then
-            echo "No earlier PR run has a reusable package-cache artifact; starting with published packages only."
+            python3 -I scripts/pr-build-cache.py restore \
+              --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out"
+          else
+            echo "No draft-release cache exists for PR #$PR_NUMBER; starting with published packages only."
           fi
-          python3 -I scripts/pr-build-cache.py restore \
-            --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out"
 
       - name: Build ordinary packages and Bootstrap Toolchain targets
         id: build
         timeout-minutes: 320 # leaves ~35 min of the 355 for publishing and logs
         run: |
           set -euo pipefail
+
+          # The PR cache covers ordinary and Bootstrap Stage 3 recipe outputs.
+          # build-packages-inner.sh writes BUILT records for regular packages;
+          # Stage 3 records are appended after that script so the same cache
+          # can represent the complete recipe set.
+          toolchain_built="$RUNNER_TEMP/toolchain-built.txt"
+          : > "$toolchain_built"
+          # The rootfs build directory is root-owned after extraction.
+          # Create the report as root, then grant the runner write access so
+          # Bootstrap/ordinary build reporting can append to the same file.
+          sudo install -d -m 0755 "$T/build"
+          sudo touch "$T/build/report.txt"
+          sudo chown "$(id -u):$(id -g)" "$T/build/report.txt"
 
           # Toolchain recipes are never sent to build-packages-inner.sh.
           # Rebuild them through the distribution Stage 1/2/3 bootstrap pipeline.
@@ -915,6 +985,7 @@ jobs:
               }
               archive_name="$(basename "$archive")"
               sudo install -m 0644 "$archive" "$T/build/out/$archive_name"
+              printf '%s\n' "${archive_name%.nawa.tar.zst}" >> "$toolchain_built"
               # Install Stage 3 outputs into the package-build root as well:
               # subsequent ordinary packages must use the updated Toolchain.
               sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install \
@@ -935,8 +1006,43 @@ jobs:
               BUDGET_MIN="$BUDGET_MIN" KEEP_GOING="$KEEP_GOING" \
               bash /faseela/bootstrap/build-packages-inner.sh
           fi
+
+      - name: Detect schema-v5-only package selections
+        id: schema_v5_policy
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        env:
+          PKGS: ${{ needs.select.outputs.pkgs }}
+          TOOLCHAIN_PKGS: ${{ needs.select.outputs.toolchain_pkgs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          relation_packages="$(python3 -I - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          selected = set(os.environ.get("PKGS", "").split())
+          selected.update(os.environ.get("TOOLCHAIN_PKGS", "").split())
+          relation_packages = []
+          for path in sorted(Path("recipes").glob("*/*/recipe.toml")):
+              doc = tomllib.loads(path.read_text(encoding="utf-8"))
+              package = doc.get("package", {})
+              name = package.get("name")
+              if name in selected and "relations" in doc:
+                  relation_packages.append(name)
+
+          print(" ".join(sorted(relation_packages)))
+          PY
+          )"
+          if [[ -n "$relation_packages" ]]; then
+            echo "schema_v5_only=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping stable-v3 publication for relation-bearing packages: $relation_packages"
+          else
+            echo "schema_v5_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verify built Nawa transition archive is schema-v3 indexable
-        if: ${{ always() && steps.build.conclusion == 'success' && steps.published.conclusion == 'success' }}
+        if: ${{ always() && steps.build.conclusion == 'success' && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -998,23 +1104,86 @@ jobs:
           print(f"schema-v3 transition index accepted {identity}")
           PY
 
-      - name: Save reusable package builds for this pull request
+      - name: Save reusable package builds to draft PR releases
         if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_PACKAGES_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           cache_dir="$RUNNER_TEMP/pr-package-cache"
           mkdir -p "$cache_dir"
+          # Stage 3 output can be complete even when a later ordinary
+          # package fails. Preserve each successfully imported Toolchain
+          # archive in the resumable cache before evaluating the final report.
+          if [[ -s "$RUNNER_TEMP/toolchain-built.txt" ]]; then
+            touch "$T/build/report.txt"
+            while IFS= read -r stem; do
+              [[ -n "$stem" ]] || continue
+              printf 'BUILT    %s  (Bootstrap Stage 3)\n' "$stem" >> "$T/build/report.txt"
+            done < "$RUNNER_TEMP/toolchain-built.txt"
+          fi
           python3 -I scripts/pr-build-cache.py save \
             --recipes recipes --cache-dir "$cache_dir" --out-dir "$T/build/out" \
             --since "$T/build/.run-start" --report "$T/build/report.txt"
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && github.event_name == 'pull_request' && steps.published.conclusion == 'success' }}
-        with:
-          name: pr-package-cache
-          path: ${{ runner.temp }}/pr-package-cache
-          if-no-files-found: ignore
-          retention-days: 14
+          # GitHub Free's Actions artifact quota is intentionally not used for
+          # multi-gigabyte package caches. Draft Releases use the same asset
+          # backend as package storage but remain outside all stable indexes.
+          gh api --paginate --slurp "repos/$PKG_REPO/releases?per_page=100" \
+            > "$RUNNER_TEMP/pr-cache-releases.json"
+          python3 -I scripts/pr-build-release-cache.py plan \
+            --recipes recipes --cache-dir "$cache_dir" \
+            --releases-json "$RUNNER_TEMP/pr-cache-releases.json" \
+            --repository "$PKG_REPO" --pr-number "$PR_NUMBER" \
+            --run-id "$GITHUB_RUN_ID" --head-sha "$PR_PACKAGES_HEAD_SHA" \
+            --output "$RUNNER_TEMP/pr-cache-plan.json"
+
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            if ! gh release view "$tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$PKG_REPO" --draft \
+                --title "$tag" \
+                --notes "Internal draft cache for PR #$PR_NUMBER. Not a published package repository."
+            fi
+          done < <(python3 -I scripts/pr-build-release-cache.py create \
+            --plan "$RUNNER_TEMP/pr-cache-plan.json")
+
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            while IFS= read -r path; do
+              [[ -n "$path" ]] || continue
+              gh release upload "$tag" "$path" --repo "$PKG_REPO" --clobber
+            done < <(python3 -I scripts/pr-build-release-cache.py uploads \
+              --plan "$RUNNER_TEMP/pr-cache-plan.json" --tag "$tag")
+          done < <(python3 -I - "$RUNNER_TEMP/pr-cache-plan.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          plan = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          for tag in sorted(plan["uploads"]):
+              if tag != plan["manifest_tag"]:
+                  print(tag)
+          PY
+          )
+
+          while IFS=$'\t' read -r tag asset; do
+            [[ -n "$tag" && -n "$asset" ]] || continue
+            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
+              echo "::warning::could not remove stale PR cache asset $tag/$asset"
+            }
+          done < <(python3 -I scripts/pr-build-release-cache.py cleanup \
+            --plan "$RUNNER_TEMP/pr-cache-plan.json")
+
+          manifest_tag="$(python3 -I scripts/pr-build-release-cache.py manifest-tag \
+            --plan "$RUNNER_TEMP/pr-cache-plan.json")"
+          gh release upload "$manifest_tag" "$cache_dir/manifest.json" \
+            --repo "$PKG_REPO" --clobber
+          # candidate.json binds the manifest digest to this exact run and PR
+          # head. Upload it last, after every shard and the manifest are present.
+          gh release upload "$manifest_tag" "$cache_dir/candidate.json" \
+            --repo "$PKG_REPO" --clobber
 
       - name: Fail PR verification when the build time budget is exhausted
         if: ${{ github.event_name == 'pull_request' && steps.build.outcome == 'success' }}
@@ -1041,7 +1210,7 @@ jobs:
       # The shard limit is deliberately below GitHub's 1,000-asset release cap.
       - name: Publish to the distributed package repository
         id: publish
-        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}

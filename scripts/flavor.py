@@ -42,6 +42,28 @@ def load_recipes(recipes: Path):
     return out
 
 
+def requirement_name(raw):
+    """Return a dependency's package name after validating Nawa's requirement syntax."""
+    if not isinstance(raw, str):
+        raise ValueError(f"dependency must be a string, got {type(raw).__name__}")
+    raw = raw.strip()
+    split = next((i for i, char in enumerate(raw) if char in "<>=!"), None)
+    if split is None:
+        name = raw
+    else:
+        rest = raw[split:]
+        operator = next((op for op in (">=", "<=", "!=", "=", ">", "<") if rest.startswith(op)), None)
+        if operator is None:
+            raise ValueError(f"invalid comparison operator in {raw!r}")
+        version_rel = rest[len(operator):].strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.~:-]*-[1-9][0-9]*", version_rel):
+            raise ValueError(f"version requirement must end in version-rel, got {raw!r}")
+        name = raw[:split].strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.-]{0,127}", name):
+        raise ValueError(f"invalid package name in dependency {raw!r}")
+    return name
+
+
 def load_flavors(path: Path):
     flavors = tomllib.loads(path.read_text(encoding="utf-8")).get("flavor", {})
     if not flavors:
@@ -147,8 +169,15 @@ def resolve(flavors, recipes, name):
             raise FlavorError(f"flavor {name}: '{parent}' depends on '{pkg}', which has no recipe")
         state[pkg] = 1
         for kind in kinds:
-            for dep in recipes[pkg][1].get(kind, []):
-                visit(dep, pkg)
+            for raw in recipes[pkg][1].get(kind, []):
+                try:
+                    dependency = requirement_name(raw)
+                except ValueError as error:
+                    raise FlavorError(
+                        f"flavor {name}: '{pkg}' has invalid {kind} dependency "
+                        f"{raw!r}: {error}"
+                    ) from error
+                visit(dependency, pkg)
         state[pkg] = 2
         order.append(pkg)
 

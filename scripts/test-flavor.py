@@ -27,6 +27,8 @@ class Flavors(unittest.TestCase):
         d = Path(self.tmp.name)
         self.recipes = flavor.load_recipes(tree(d, {
             "libc": ("base", {}),
+            "base-files": ("base", {}),
+            "systemd": ("system", {"run": ["base-files >= 0.4-12"]}),
             "cc": ("base", {"run": ["libc"]}),
             "rust": ("extra", {"run": ["cc"]}),
             "nawa": ("base", {"build": ["rust"], "run": []}),
@@ -34,6 +36,8 @@ class Flavors(unittest.TestCase):
             "sway": ("gui", {"run": ["libc"]}),
         }))
         (d / "f.toml").write_text(textwrap.dedent("""
+            [flavor.systemd-test]
+            include = ["systemd"]
             [flavor.boot]
             include = ["nawa"]
             closure = "build"
@@ -58,6 +62,9 @@ class Flavors(unittest.TestCase):
 
     def test_run_closure_skips_build_deps(self):
         self.assertEqual(self.r("min"), ["nawa", "libc", "vim"])
+
+    def test_versioned_runtime_dependency_uses_package_name(self):
+        self.assertEqual(self.r("systemd-test"), ["base-files", "systemd"])
 
     def test_build_closure_adds_build_deps_first(self):
         self.assertEqual(self.r("boot"), ["libc", "cc", "rust", "nawa"])
@@ -164,11 +171,17 @@ class RealTree(unittest.TestCase):
             got = flavor.resolve(flavors, recipes, n)
             pos = {p: i for i, p in enumerate(got)}
             for p in got:
-                for dep in recipes[p][1].get("run", []):
+                for raw_dep in recipes[p][1].get("run", []):
+                    dep = flavor.requirement_name(raw_dep)
                     if dep in pos:
                         self.assertLess(pos[dep], pos[p], f"{n}: {dep} must precede {p}")
                     else:
-                        self.assertIn(dep, flavors[n].get("exclude", []) + [x for f in flavors.values() for x in f.get("exclude", [])], f"{n}: {p} needs {dep}, which is not in the flavor")
+                        self.assertIn(
+                            dep,
+                            flavors[n].get("exclude", [])
+                            + [x for f in flavors.values() for x in f.get("exclude", [])],
+                            f"{n}: {p} needs {dep}, which is not in the flavor",
+                        )
 
 
 if __name__ == "__main__":

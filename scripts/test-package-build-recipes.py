@@ -92,13 +92,13 @@ nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # The commit, release and hash are bumped by scripts/pin-nawa-source.py (and by
 # the automation that runs it), so check their shape rather than one pin.
 assert nawa["package"]["rel"] >= 21
-assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert nawa["package"]["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert nawa["depends"]["build"] == []
 assert nawa["depends"]["run"] == ["gcc", "glibc"]
 assert nawa["capabilities"]["provides"] == []
-assert "relations" not in nawa
-# The transition archive is published through stable-v3. Relations are only
-# added when a separately rebuilt package can be published in schema-v5.
+assert nawa["relations"] == {"schema": 1, "conflicts": [], "replaces": []}
+# The previously published stable-v3 archive and standalone transition
+# release remain the bootstrap path; this recipe revision is schema-v5-only.
 assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
 assert re.fullmatch(
     r"https://github\.com/mrdevmohamed/nawa/archive/[0-9a-f]{40}\.tar\.gz",

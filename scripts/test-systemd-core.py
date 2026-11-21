@@ -24,12 +24,129 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
-require(systemd_pkg["rel"] >= 2, "Bump systemd rel when fixing initrd/hibernate build options")
+require(systemd_pkg["rel"] >= 6, "Bump systemd rel when changing its authenticated package metadata")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
-    re.fullmatch(r"[0-9a-f]{64}", systemd_pkg["sha256"]) is not None,
-    "systemd must carry a SHA-256 field",
+    systemd_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
+    "systemd relations must use Nawa's fail-closed relations marker",
 )
+systemd_sources = systemd_pkg.get("sources", [])
+require(
+    len(systemd_sources) == 1
+    and systemd_sources[0]["name"] == "systemd"
+    and systemd_sources[0]["url"].startswith("https://sourceforge.net/projects/systemd.mirror/")
+    and re.fullmatch(r"[0-9a-f]{64}", systemd_sources[0]["sha256"]) is not None,
+    "systemd must keep its verified source pin in the new-schema source table",
+)
+require(
+    not systemd_pkg.get("sha256")
+    and not systemd_pkg.get("mirrors")
+    and not systemd_pkg.get("source_dir"),
+    "systemd must not mix legacy source fields with [[package.sources]]",
+)
+expected_replacements = {"eudev", "elogind"}
+relations = systemd.get("relations", {})
+require(
+    relations.get("schema") == 1
+    and set(relations.get("conflicts", [])) == expected_replacements
+    and set(relations.get("replaces", [])) == expected_replacements,
+    "systemd must explicitly conflict with and replace the two legacy udev/logind file owners",
+)
+require(
+    systemd.get("capabilities", {}).get("provides") == ["init-system=systemd"],
+    "systemd must declare its init-system capability",
+)
+
+# These existing recipe comments already describe real supersession behavior.
+# Make it solver-visible rather than leaving it as prose only.
+for category, name, old_package, expected_workdir in (
+    ("system", "iw", "wireless-tools", "iw-6.9"),
+    ("gui", "network-manager", "dhcpcd", "NetworkManager-1.58.1"),
+):
+    package_doc = recipe(category, name)
+    package_meta = package_doc["package"]
+    require(
+        package_meta["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
+        f"{name} relations must use the fail-closed relations marker",
+    )
+    require(
+        package_meta.get("workdir") == expected_workdir
+        and "%{" not in package_meta.get("workdir", ""),
+        f"{name} new-schema workdir must be a literal directory in the staged workspace",
+    )
+    sources = package_meta.get("sources", [])
+    require(
+        len(sources) == 1
+        and sources[0]["name"] == name
+        and re.fullmatch(r"[0-9a-f]{64}", sources[0]["sha256"]) is not None
+        and not package_meta.get("sha256")
+        and not package_meta.get("source_dir"),
+        f"{name} must pin its source in the new-schema source table",
+    )
+    if name == "network-manager":
+        require(
+            "gettext" in package_doc.get("depends", {}).get("build", []),
+            "network-manager must declare gettext because Meson requires msgfmt",
+        )
+    package_relations = package_doc.get("relations", {})
+    require(
+        package_relations.get("schema") == 1
+        and set(package_relations.get("conflicts", [])) == {old_package}
+        and set(package_relations.get("replaces", [])) == {old_package},
+        f"{name} must declare its documented replacement of {old_package}",
+    )
+    require(
+        "glibc" in package_doc.get("depends", {}).get("run", []),
+        f"{name} must declare glibc for its libc-linked ELF files",
+    )
+    require(
+        package_doc.get("capabilities", {}).get("provides") == [],
+        f"{name} must declare an explicit empty capabilities list",
+    )
+
+# The network-manager build closure rebuilds these from source in a closure
+# build root, which contains base-devel only. Their configure/make steps run
+# flex and bison, so both must be declared or the PR package build fails with
+# "flex not found" at libnl's configure.
+for category, name in (("system", "libnl"), ("system", "iproute2")):
+    build_deps = recipe(category, name).get("depends", {}).get("build", [])
+    for tool in ("flex", "bison"):
+        require(
+            tool in build_deps,
+            f"{name} must declare {tool} as a build dependency (not part of base-devel)",
+        )
+
+# Rebuilt USB tooling must stop retaining eudev as a reverse dependency before
+# systemd can safely replace eudev. Keep the source generator in sync with the
+# checked-in recipes so regenerating extra3 cannot reintroduce the old provider.
+libusb = recipe("extra", "libusb")
+usbutils = recipe("extra", "usbutils")
+for pkg in (libusb, usbutils):
+    deps = set(pkg.get("depends", {}).get("build", [])) | set(pkg.get("depends", {}).get("run", []))
+    require("systemd" in deps and "eudev" not in deps,
+            f"{pkg['package']['name']} must use systemd's libudev provider, not eudev")
+
+# The extra3 generator is the source of truth for these generated recipes.
+# Guard both layers so a future regeneration cannot restore the reverse edge.
+extra_data_spec = importlib.util.spec_from_file_location(
+    "recipe_data_extra", ROOT / "scripts" / "recipe_data_extra.py"
+)
+require(
+    extra_data_spec is not None and extra_data_spec.loader is not None,
+    "could not load the extra recipe source data",
+)
+extra_data = importlib.util.module_from_spec(extra_data_spec)
+extra_data_spec.loader.exec_module(extra_data)
+generated = {item["name"]: item for item in extra_data.EXTRA}
+for name in ("libusb", "usbutils"):
+    item = generated[name]
+    deps = set(item.get("bdeps", [])) | set(item.get("rdeps", []))
+    require("systemd" in deps and "eudev" not in deps,
+            f"extra3 generator data for {name} must not reintroduce eudev")
+
+
+require("glibc" in set(systemd.get("depends", {}).get("run", [])), "systemd must declare glibc for its libc-linked ELF files")
+require("base-files >= 0.4-12" in systemd.get("depends", {}).get("run", []), "systemd must require the base-files release that ships /etc/environment")
 
 obsolete = {
     "runit", "runit-services", "eudev", "elogind",
@@ -43,17 +160,20 @@ for kind in ("build", "run"):
     )
 
 require(
-    systemd_pkg.get("source_dir") == ".",
-    "systemd must start at the extracted archive root and discover its real Meson project directory",
+    systemd_pkg.get("workdir") == ".",
+    "systemd must preserve the legacy source_dir='.' extraction root as workdir='.'",
 )
 
 configure = systemd["build"]["configure"]
 for marker in (
+    "expected exactly one libcore install stanza to add its private RUNPATH",
     'Path(".").rglob("meson_options.txt")',
     '(path.parent / "meson.build").is_file()',
     'required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]',
     'Path(".faseela-meson-args")',
     '"hibernate": "off", "initrd": "off",',
+    '"shared-lib-tag": "lit:261",',
+    "install_rpath : '$ORIGIN'",
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',
@@ -94,9 +214,22 @@ try:
 except SyntaxError as error:
     raise AssertionError(f"systemd Meson option filter has invalid Python syntax: {error}") from error
 
+rpath_patch = re.search(
+    r"python3 - \"\$SOURCE_ROOT/src/core/meson\.build\" <<'PATCH'\n(.*?)\nPATCH",
+    configure,
+    re.DOTALL,
+)
+require(rpath_patch is not None, "systemd configure phase must patch libcore RUNPATH")
+try:
+    compile(rpath_patch.group(1), "systemd-private-rpath-patch", "exec")
+except SyntaxError as error:
+    raise AssertionError(f"systemd private RUNPATH patch has invalid Python syntax: {error}") from error
+
 systemd_install = systemd["build"]["install"]
 for path in (
     "usr/lib/systemd/systemd",
+    "usr/lib/systemd/libsystemd-core-261.so",
+    "usr/lib/systemd/libsystemd-shared-261.so",
     "usr/lib/systemd/systemd-udevd",
     "usr/lib/systemd/systemd-journald",
     "usr/lib/systemd/systemd-logind",
@@ -107,16 +240,41 @@ for path in (
     "usr/bin/journalctl",
     "usr/bin/loginctl",
     "usr/bin/udevadm",
+    "usr/bin/busctl",
+    "usr/bin/userdbctl",
+    "usr/bin/varlinkctl",
 ):
     require(path in systemd_install, f"systemd install phase does not verify {path}")
+# Init and power-control entry points are not a generic package replacement:
+# they remain owned by runit-services until the separately approved migration.
 require(
-    "ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init" in systemd_install,
-    "systemd must provide the merged-/usr PID 1 entry point",
+    "ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init" not in systemd_install
+    and "ln -s systemctl %{pkgdir}/usr/bin/$c" not in systemd_install
+    and "for c in poweroff reboot halt shutdown" not in systemd_install,
+    "systemd must not stage init or power-control aliases during an ordinary package install",
 )
+require(
+    "Nawa's explicitly approved runit -> systemd migration" in systemd_install,
+    "systemd recipe must document the migration-only init handoff",
+)
+for path in (
+    "etc/udev/udev.conf",
+    "usr/include/libudev.h",
+    "usr/lib/libudev.so",
+    "usr/lib/libudev.so.1",
+    "usr/lib/pkgconfig/libudev.pc",
+    "usr/lib/udev/ata_id",
+    "usr/lib/udev/rules.d/50-udev-default.rules",
+):
+    require(
+        f'test -e "%{{pkgdir}}/$f"' in systemd_install and path in systemd_install,
+        f"systemd install phase must verify the eudev replacement file {path}",
+    )
 
 base_files = recipe("base", "base-files")
 base_install = base_files["build"]["install"]
-require(base_files["package"]["rel"] >= 11, "base-files rel must include the Nawa system profile")
+require(base_files["package"]["rel"] >= 12, "base-files rel must include the system profile and /etc/environment")
+require("etc/environment" in base_files["build"]["install"], "base-files must create the target of systemd’s environment.d compatibility symlink")
 for marker in (
     "usr/share/nawa/system-profile.toml",
     'distribution = "faseela"',

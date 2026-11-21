@@ -29,9 +29,9 @@ SPEC.loader.exec_module(CACHE)
 MANIFEST = CACHE.MANIFEST_NAME
 CANDIDATE = "candidate.json"
 TAG_PREFIX = "schema-v5-build-pr-"
-TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-([A-Za-z0-9][A-Za-z0-9._-]*)-([0-9]{4})\\Z")
-MANIFEST_TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-manifest\\Z")
-ASSET_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\\.nawa\\.tar\\.zst\\Z")
+TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-([A-Za-z0-9][A-Za-z0-9._-]*)-([0-9]{4})\Z")
+MANIFEST_TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-manifest\Z")
+ASSET_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\\.tar\\.zst\Z")
 
 
 class CacheReleaseError(RuntimeError):
@@ -188,7 +188,7 @@ def build_plan(
     }
     candidate_path = cache_dir / CANDIDATE
     candidate_path.write_text(
-        json.dumps(candidate, indent=2, sort_keys=True) + "\\n",
+        json.dumps(candidate, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -221,7 +221,7 @@ def build_plan(
         "archive_count": sum(len(item["files"]) for item in entries),
     }
     out_dir.parent.mkdir(parents=True, exist_ok=True)
-    out_dir.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    out_dir.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return plan
 
 
@@ -332,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             elif args.command == "cleanup":
                 for item in value["cleanup"]:
                     if args.tag is None or item["tag"] == args.tag:
-                        print(f"{item['tag']}\\t{item['name']}")
+                        print(f"{item['tag']}\t{item['name']}")
         return 0
     except (CacheReleaseError, CACHE.CacheError, OSError, ValueError, KeyError) as exc:
         print(f"::error::pr-build-release-cache: {exc}", file=sys.stderr)

@@ -1089,7 +1089,7 @@ jobs:
             touch "$T/build/report.txt"
             while IFS= read -r stem; do
               [[ -n "$stem" ]] || continue
-              printf 'BUILT    %s  (Bootstrap Stage 3)\\n' "$stem" >> "$T/build/report.txt"
+              printf 'BUILT    %s  (Bootstrap Stage 3)\n' "$stem" >> "$T/build/report.txt"
             done < "$RUNNER_TEMP/toolchain-built.txt"
           fi
           python3 -I scripts/pr-build-cache.py save \

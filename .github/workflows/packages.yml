@@ -219,14 +219,6 @@ jobs:
           ]
           summary.open("a", encoding="utf-8").write("\n".join(lines) + "\n")
           PY
-      - name: Upload schema-v5 metadata audit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: schema-v5-metadata-audit
-          path: ${{ runner.temp }}/schema-v5-metadata.json
-          if-no-files-found: warn
-          retention-days: 14
       - id: s
         env:
           INPUT_ALL: ${{ inputs.all }}

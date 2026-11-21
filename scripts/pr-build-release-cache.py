@@ -31,7 +31,7 @@ CANDIDATE = "candidate.json"
 TAG_PREFIX = "schema-v5-build-pr-"
 TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-([A-Za-z0-9][A-Za-z0-9._-]*)-([0-9]{4})\Z")
 MANIFEST_TAG_RE = re.compile(r"schema-v5-build-pr-([1-9][0-9]*)-manifest\Z")
-ASSET_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\\.tar\\.zst\Z")
+ASSET_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\.tar\.zst\Z")
 
 
 class CacheReleaseError(RuntimeError):
@@ -155,6 +155,8 @@ def build_plan(
         release = releases.get(tag)
         if release is None:
             create_releases.append(tag)
+        elif release.get("draft") is not True:
+            raise CacheReleaseError(f"refusing to use non-draft cache release: {tag}")
         existing = assets(release)
         wanted = {path.name for path in paths}
         for path in paths:
@@ -195,6 +197,8 @@ def build_plan(
     manifest_release = releases.get(manifest_tag)
     if manifest_release is None:
         create_releases.append(manifest_tag)
+    elif manifest_release.get("draft") is not True:
+        raise CacheReleaseError(f"refusing to use non-draft cache manifest release: {manifest_tag}")
     current_manifest_assets = assets(manifest_release)
     if digest_from_asset(current_manifest_assets.get(MANIFEST, {})) != manifest_digest:
         plan_uploads.setdefault(manifest_tag, []).append(str(manifest_path))

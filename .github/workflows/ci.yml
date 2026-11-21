@@ -58,6 +58,7 @@ jobs:
               f"- Missing by field: `{report['missing_by_field']}`",
               f"- Invalid declarations/references: **{report['error_count']}**",
               f"- Relation entries: `{report['relation_entries']}`",
+              f"- Recipe source formats: `{report['source_formats']}`",
               "",
               "Report-only: missing metadata is never inferred as an empty declaration.",
           ]

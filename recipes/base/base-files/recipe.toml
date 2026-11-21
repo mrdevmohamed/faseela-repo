@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 11
+rel = 12
 arch = ["x86_64"]
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
@@ -112,6 +112,13 @@ cat > %{pkgdir}/etc/fstab <<'EOF'
 EOF
 
 printf 'faseela\n' > %{pkgdir}/etc/hostname
+
+# systemd ships a compatibility link from /usr/lib/environment.d/99-environment.conf
+# to /etc/environment. Keep its target present even when no variables are configured.
+cat > %{pkgdir}/etc/environment <<'ENVIRONMENT'
+# System-wide environment variables.
+# Add one NAME=value pair per line.
+ENVIRONMENT
 
 cat > %{pkgdir}/etc/hosts <<'EOF'
 127.0.0.1  localhost faseela

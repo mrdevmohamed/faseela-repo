@@ -3,7 +3,7 @@
 [package]
 name = "iw"
 version = "6.9"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "iw: nl80211 wireless configuration tool (scan, link, regdom)"
 license = ["ISC"]

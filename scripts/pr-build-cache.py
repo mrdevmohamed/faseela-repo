@@ -21,7 +21,7 @@ from typing import Any
 
 ARCHIVE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*\.nawa\.tar\.zst$")
 MANIFEST_NAME = "manifest.json"
-MANIFEST_SCHEMA = 1
+MANIFEST_SCHEMA = 2
 
 
 class CacheError(Exception):
@@ -51,6 +51,14 @@ def file_tree_hash(directory: Path) -> str:
             payload = path.read_bytes()
         digest.update(len(payload).to_bytes(8, "big"))
         digest.update(payload)
+    return digest.hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
     return digest.hexdigest()
 
 
@@ -138,11 +146,20 @@ def valid_entry(
     recipes: dict[str, Recipe],
     keys: dict[str, str],
     cache_dir: Path,
+    *,
+    verify_digest: bool = True,
 ) -> tuple[Recipe, Path] | None:
     name = entry.get("name")
     archive = entry.get("archive")
     key = entry.get("build_key")
-    if not isinstance(name, str) or not isinstance(archive, str) or not isinstance(key, str):
+    archive_sha256 = entry.get("archive_sha256")
+    if (
+        not isinstance(name, str)
+        or not isinstance(archive, str)
+        or not isinstance(key, str)
+        or not isinstance(archive_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", archive_sha256) is None
+    ):
         return None
     if Path(archive).name != archive or not ARCHIVE_RE.fullmatch(archive):
         return None
@@ -151,6 +168,8 @@ def valid_entry(
         return None
     cached = cache_dir / archive
     if not cached.is_file() or cached.stat().st_size == 0:
+        return None
+    if verify_digest and sha256_file(cached) != archive_sha256:
         return None
     return recipe, cached
 
@@ -196,7 +215,10 @@ def save_cache(
 
     entries: dict[str, dict[str, str]] = {}
     for entry in read_manifest(cache_dir):
-        checked = valid_entry(entry, recipes, keys, cache_dir)
+        # Existing artifact digests are checked before restore/use. During a
+        # continuation save we preserve their metadata without re-hashing every
+        # potentially multi-gigabyte archive; the next restore is authoritative.
+        checked = valid_entry(entry, recipes, keys, cache_dir, verify_digest=False)
         if checked is None:
             continue
         recipe, _ = checked
@@ -204,6 +226,7 @@ def save_cache(
             "name": recipe.name,
             "archive": recipe.archive,
             "build_key": keys[recipe.name],
+            "archive_sha256": entry["archive_sha256"],
         }
 
     try:
@@ -232,6 +255,7 @@ def save_cache(
             "name": recipe.name,
             "archive": recipe.archive,
             "build_key": keys[recipe.name],
+            "archive_sha256": sha256_file(target),
         }
         added += 1
 

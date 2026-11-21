@@ -236,7 +236,8 @@ for path in (
 
 base_files = recipe("base", "base-files")
 base_install = base_files["build"]["install"]
-require(base_files["package"]["rel"] >= 11, "base-files rel must include the Nawa system profile")
+require(base_files["package"]["rel"] >= 12, "base-files rel must include the system profile and /etc/environment")
+require("etc/environment" in base_files["build"]["install"], "base-files must create the target of systemd’s environment.d compatibility symlink")
 for marker in (
     "usr/share/nawa/system-profile.toml",
     'distribution = "faseela"',

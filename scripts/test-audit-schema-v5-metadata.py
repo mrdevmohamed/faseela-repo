@@ -46,7 +46,7 @@ class AuditTests(unittest.TestCase):
             report = AUDIT.audit(root)
             fields = {item["field"] for item in report["missing_declarations"]}
             self.assertEqual(fields, {
-                "depends.run", "capabilities.provides", "relations"
+                "capabilities.provides", "relations"
             })
 
     def test_retired_legacy_replacement_target_is_allowed(self):

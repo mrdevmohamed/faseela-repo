@@ -5,7 +5,7 @@
 [package]
 name = "grub"
 version = "2.14"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "GRand Unified Bootloader"
 license = ["GPL-3.0"]
@@ -13,7 +13,7 @@ source = "https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz"
 sha256 = "bc8d3c73535b8838d8c8e2654d73edc4e6ae8c8acdb45d5df5dc9a1547446d43"
 
 [depends]
-build = ["autoconf", "automake", "bison", "flex", "gettext", "libtool"]
+build = ["autoconf", "automake", "bison", "flex", "gettext", "libtool", "python"]
 run = ["efibootmgr"]
 
 [build]
@@ -24,7 +24,7 @@ run = ["efibootmgr"]
 prepare = '''
 set -eu
 # Revert GRUB 2.14's linker --image-base probe. This is the distro workaround
-# carried by Yocto/OpenEmbedded and Buildroot for the 0x9074 BIOS entry issue.
+# carried by Yocto/OpenEmbedded and Buildroot for the original 0x9074 issue.
 patch -p1 <<'PATCH'
 From 3a9d2dd2f5fb07b75a74c307d61b9b9fc5d20a62 Mon Sep 17 00:00:00 2001
 From: Yi Zhao <yi.zhao@windriver.com>
@@ -45,9 +45,9 @@ index 70c1912f8..fa7840f09 100644
  AC_CACHE_VAL(grub_cv_prog_objcopy_absolute,
  [cat > conftest.c <<\EOF
 -asm (
--    ".globl start, _start, __start\n"
--    ".ifdef cmain; .set start = _start = __start = cmain\n.endif\n"
--    ".ifdef _cmain; .set start = _start = __start = _cmain\n.endif\n"
+-    ".globl start, _start, __start\\n"
+-    ".ifdef cmain; .set start = _start = __start = cmain\\n.endif\\n"
+-    ".ifdef _cmain; .set start = _start = __start = _cmain\\n.endif\\n"
 -);
  void cmain (void);
  void
@@ -68,14 +68,14 @@ index d8ca1b7c1..041cfbab4 100644
    TARGET_IMG_LDSCRIPT=
    TARGET_IMG_LDFLAGS='-Wl,-N'
    TARGET_IMG_LDFLAGS_AC='-Wl,-N'
-+  TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
+   TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
    TARGET_IMG_CFLAGS=
  fi
 
 @@ -1798,18 +1800,6 @@ grub_PROG_TARGET_CC
- m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
- must install it to generate the configure script.])])
-
+-m4_ifndef([AX_CHECK_LINK_FLAG], [m4_fatal([autoconf-archive is missing. You
+-must install it to generate the configure script.])])
+-
  if test "x$TARGET_APPLE_LINKER" != x1 ; then
 -AX_CHECK_LINK_FLAG([-Wl,--image-base,0x400000],
 -    [TARGET_IMG_BASE_LDOPT="-Wl,--image-base"],
@@ -93,18 +93,165 @@ index d8ca1b7c1..041cfbab4 100644
  fi
  grub_PROG_LD_BUILD_ID_NONE
 PATCH
-# The companion Yocto revert removes the archive-only fatal check. The
-# source tarball's surrounding comments differ, so remove the two-line macro
-# block by its exact macro name rather than depending on line-number context.
+# The companion Yocto revert removes the archive-only fatal check.
 sed -i '/^[[:space:]]*m4_ifndef.*AX_CHECK_LINK_FLAG/,+1d' configure.ac
 if grep -q 'm4_ifndef.*AX_CHECK_LINK_FLAG' configure.ac; then
     echo "grub: autoconf-archive fatal check remains after the configure revert" >&2
     exit 1
 fi
-autoreconf -fi
-'''
 
-configure = """
+# GRUB 2.14's default linker layout can put compiler-generated text before
+# the i386-pc startup.S code. BIOS enters the kernel at the start of .text,
+# so link this target with the upstream custom script that orders input
+# sections explicitly and makes _start the first byte at 0x9000.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+def replace_once(path: str, old: str, new: str) -> None:
+    p = Path(path)
+    data = p.read_text()
+    count = data.count(old)
+    if count != 1:
+        raise SystemExit(f"{path}: expected one match, found {count}: {old!r}")
+    p.write_text(data.replace(old, new, 1))
+
+Path("conf/i386-pc-kernel.lds").write_text("""\
+ENTRY(_start)
+
+/* Keep the i386-pc startup entry at the first byte of the loaded image. */
+SECTION_ALIGN = 0x10;
+
+PHDRS {
+    text PT_LOAD FLAGS(7);
+}
+
+SECTIONS
+{
+    . = _grub_text_base;
+    .text ALIGN(0x1) : {
+        _start = .;
+        *(.text .text.*)
+        . = ALIGN(SECTION_ALIGN);
+    } :text
+    .rodata ALIGN(0x1) : {
+        *(.rodata .rodata.*)
+        . = ALIGN(SECTION_ALIGN);
+    } :text
+    .module_license ALIGN(0x1) : {
+        *(.module_license)
+        . = ALIGN(SECTION_ALIGN);
+    } :text
+    .data ALIGN(0x1) : {
+        *(.data .data.*)
+        . = ALIGN(SECTION_ALIGN);
+        _edata = .;
+    } :text
+    .bss ALIGN(0x1) : {
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        . = ALIGN(SECTION_ALIGN);
+        _end = .;
+    } :text
+    /DISCARD/ : {
+        *(.interp)
+        *(.note*)
+        *(.comment)
+        *(.build-id)
+    }
+}
+""")
+
+replace_once(
+    "conf/Makefile.extra-dist",
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\\n",
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\\nEXTRA_DIST += conf/i386-pc-kernel.lds\\n",
+)
+
+replace_once(
+    "configure.ac",
+    '''else
+  TARGET_APPLE_LINKER=0
+  TARGET_IMG_LDSCRIPT=
+  TARGET_IMG_LDFLAGS='-Wl,-N'
+  TARGET_IMG_LDFLAGS_AC='-Wl,-N'
+  TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
+  TARGET_IMG_CFLAGS=
+fi
+''',
+    '''else
+  TARGET_APPLE_LINKER=0
+  TARGET_IMG_LDSCRIPT=
+  TARGET_IMG_LDFLAGS='-Wl,-N'
+  TARGET_IMG_LDFLAGS_AC='-Wl,-N'
+  if test "x$target_cpu-$platform" != "xi386-pc"; then
+    TARGET_IMG_BASE_LDOPT="-Wl,-Ttext"
+    TARGET_IMG_BASE_LDOPT_ARG_SEP=","
+  else
+    TARGET_IMG_BASE_LDOPT="-Wl,--defsym,_grub_text_base"
+    TARGET_IMG_BASE_LDOPT_ARG_SEP="="
+    TARGET_IMG_LDSCRIPT='$(top_srcdir)'"/conf/i386-pc-kernel.lds"
+    TARGET_IMG_LDFLAGS="${TARGET_IMG_LDFLAGS} -Wl,-T${TARGET_IMG_LDSCRIPT}"
+    TARGET_IMG_LDFLAGS_AC="-Wl,-T${srcdir}/conf/i386-pc-kernel.lds"
+  fi
+  TARGET_IMG_CFLAGS=
+fi
+''',
+)
+replace_once(
+    "configure.ac",
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\\n",
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\\nAC_SUBST(TARGET_IMG_BASE_LDOPT_ARG_SEP)\\n",
+)
+
+replace_once(
+    "acinclude.m4",
+    '''  if AC_TRY_COMMAND([${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${TARGET_IMG_BASE_LDOPT},$link_addr conftest.o -o conftest.exec]); then :
+''',
+    '''  target_img_base_ld="${TARGET_IMG_BASE_LDOPT}"
+  case "$target_img_base_ld" in
+    *_grub_text_base)
+      target_img_base_ld="${TARGET_IMG_BASE_LDOPT}=$link_addr"
+    ;;
+    *)
+      target_img_base_ld="${TARGET_IMG_BASE_LDOPT},$link_addr"
+    ;;
+  esac
+  if AC_TRY_COMMAND([${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${target_img_base_ld} conftest.o -o conftest.exec]); then :
+''',
+)
+
+p = Path("grub-core/Makefile.core.def")
+data = p.read_text()
+data, count = re.subn(
+    r"(?m)^([ \\t]*i386_[A-Za-z0-9_]*_ldflags[ \\t]*=[ \\t]*'\\$\\(TARGET_IMG_BASE_LDOPT\\)),",
+    r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
+    data,
+)
+if count < 6:
+    raise SystemExit(f"grub-core/Makefile.core.def: expected >=6 i386 linker flag updates, got {count}")
+data, nodist_count = re.subn(
+    r"(?m)^([ \\t]*ldflags[ \\t]*=[ \\t]*'[^'\\n]*\\$\\(TARGET_IMG_BASE_LDOPT\\)),",
+    r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
+    data,
+)
+if nodist_count < 1:
+    raise SystemExit("grub-core/Makefile.core.def: i386-pc no-dist linker flags were not updated")
+
+needle = "  common = genmod.sh.in;\\n"
+if data.count(needle) != 1:
+    raise SystemExit("grub-core/Makefile.core.def: genmod.sh transform block changed")
+data = data.replace(
+    needle,
+    needle + "  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';\\n",
+    1,
+)
+p.write_text(data)
+PY
+
+autoreconf -fi
+''' """
 set -eu
 mkdir build-pc build-efi
 # Preserve Nawa's native compiler/toolchain environment for configure's
@@ -124,8 +271,21 @@ compile = """
 set -eu
 make -C build-pc -j%{jobs}
 make -C build-efi -j%{jobs}
-# Exercise GRUB's own BIOS image validation path; it checks the generated
-# i386-pc kernel image rather than inspecting an unrelated ELF entry field.
+# The BIOS entry must be the first byte of the kernel image. Check the ELF
+# entry in kernel.exec (kernel.img is a stripped ELF too, but kernel.exec is
+# the linker output whose layout this recipe controls).
+entry=$(readelf -h build-pc/grub-core/kernel.exec | awk '/Entry point address:/ { print $4 }')
+test "$entry" = "0x9000" || {
+    echo "grub: i386-pc kernel entry is $entry, expected 0x9000" >&2
+    exit 1
+}
+text_start=$(objdump -h build-pc/grub-core/kernel.exec | awk '$2 == ".text" { print $4 }')
+test "$text_start" = "00009000" || {
+    echo "grub: i386-pc .text starts at $text_start, expected 00009000" >&2
+    exit 1
+}
+# Exercise GRUB's BIOS image generation too, so the exact platform tools
+# used by grub-install validate the corrected kernel.
 build-pc/grub-mkimage -d build-pc/grub-core -O i386-pc -o build-pc/grub-core/test-core.img -p /boot/grub biosdisk part_msdos ext2 normal
 test -s build-pc/grub-core/test-core.img
 """
@@ -140,6 +300,11 @@ make -C build-efi DESTDIR=$efi_stage install
 cp -a $efi_stage/usr/lib/grub/x86_64-efi %{pkgdir}/usr/lib/grub/
 rm -rf $efi_stage
 test -f %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh
+bios_entry=$(readelf -h %{pkgdir}/usr/lib/grub/i386-pc/kernel.exec | awk '/Entry point address:/ { print $4 }')
+test "$bios_entry" = "0x9000" || {
+    echo "grub: packaged i386-pc kernel entry is $bios_entry, expected 0x9000" >&2
+    exit 1
+}
 test -f %{pkgdir}/usr/lib/grub/x86_64-efi/modinfo.sh
 test -f %{pkgdir}/usr/lib/grub/x86_64-efi/kernel.img
 """

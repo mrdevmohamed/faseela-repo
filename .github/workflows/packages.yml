@@ -492,6 +492,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'feat/cosmic-desktop-support' || github.event.pull_request.head.ref == 'fix/cosmic-shortcuts-layout-switch') }}
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           python3 -I scripts/update-cosmic-epoch.py
@@ -503,7 +504,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add recipes/cosmic recipes/greeter/cosmic-greeter recipes/gui/pop-launcher
             git commit -m "Update COSMIC and pop-launcher source pins"
-            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            git push origin "HEAD:$PR_HEAD_REF"
           else
             echo "All COSMIC source archives already match Epoch 1.11.0."
           fi
@@ -528,6 +529,7 @@ jobs:
           cp -a groups.toml distro/groups.toml
           # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
           # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.
+          # shellcheck disable=SC2016
           grep -Fq 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' distro/bootstrap/fetch-nawa.sh || {
             echo "::error::DISTRO_REF must use recipe-driven Nawa fetching (update Faseela to the revision containing bootstrap/fetch-nawa.sh's recipe pin support)"
             exit 1
@@ -864,6 +866,7 @@ jobs:
               failed="$RUNNER_TEMP/package-downloads.failed"
               : > "$failed"
               export failed
+              # shellcheck disable=SC2016
               xargs -0 -r -n 2 -P "$jobs" bash -c '
                 bash scripts/fetch-published-package.sh "$1" "$2" \
                   || printf "%s\0%s\0" "$1" "$2" >> "$failed"

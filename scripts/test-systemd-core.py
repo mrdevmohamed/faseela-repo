@@ -24,7 +24,7 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
-require(systemd_pkg["rel"] >= 3, "Bump systemd rel when changing its authenticated package metadata")
+require(systemd_pkg["rel"] >= 4, "Bump systemd rel when changing its authenticated package metadata")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
     systemd_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
@@ -147,6 +147,7 @@ for marker in (
     'required = ["pam", "kmod", "seccomp", "logind", "networkd", "resolve", "timesyncd"]',
     'Path(".faseela-meson-args")',
     '"hibernate": "off", "initrd": "off",',
+    '"shared-lib-tag": "lit:261",',
     'Path(".faseela-source-root")',
     'meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT"',
     '$(cat .faseela-meson-args)',
@@ -190,6 +191,8 @@ except SyntaxError as error:
 systemd_install = systemd["build"]["install"]
 for path in (
     "usr/lib/systemd/systemd",
+    "usr/lib/systemd/libsystemd-core-261.so",
+    "usr/lib/systemd/libsystemd-shared-261.so",
     "usr/lib/systemd/systemd-udevd",
     "usr/lib/systemd/systemd-journald",
     "usr/lib/systemd/systemd-logind",

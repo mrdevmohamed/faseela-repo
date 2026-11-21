@@ -57,6 +57,39 @@ require(
     "systemd must declare its init-system capability",
 )
 
+# These existing recipe comments already describe real supersession behavior.
+# Make it solver-visible rather than leaving it as prose only.
+for category, name, old_package in (
+    ("system", "iw", "wireless-tools"),
+    ("gui", "network-manager", "dhcpcd"),
+):
+    package_doc = recipe(category, name)
+    package_meta = package_doc["package"]
+    require(
+        package_meta["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
+        f"{name} relations must use the fail-closed relations marker",
+    )
+    sources = package_meta.get("sources", [])
+    require(
+        len(sources) == 1
+        and sources[0]["name"] == name
+        and re.fullmatch(r"[0-9a-f]{64}", sources[0]["sha256"]) is not None
+        and not package_meta.get("sha256")
+        and not package_meta.get("source_dir"),
+        f"{name} must pin its source in the new-schema source table",
+    )
+    package_relations = package_doc.get("relations", {})
+    require(
+        package_relations.get("schema") == 1
+        and set(package_relations.get("conflicts", [])) == {old_package}
+        and set(package_relations.get("replaces", [])) == {old_package},
+        f"{name} must declare its documented replacement of {old_package}",
+    )
+    require(
+        package_doc.get("capabilities", {}).get("provides") == [],
+        f"{name} must declare an explicit empty capabilities list",
+    )
+
 # Rebuilt USB tooling must stop retaining eudev as a reverse dependency before
 # systemd can safely replace eudev. Keep the source generator in sync with the
 # checked-in recipes so regenerating extra3 cannot reintroduce the old provider.

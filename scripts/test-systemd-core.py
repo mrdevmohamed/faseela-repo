@@ -24,7 +24,7 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
-require(systemd_pkg["rel"] >= 4, "Bump systemd rel when changing its authenticated package metadata")
+require(systemd_pkg["rel"] >= 5, "Bump systemd rel when changing its authenticated package metadata")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
     systemd_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
@@ -91,6 +91,10 @@ for category, name, old_package, expected_workdir in (
         f"{name} must declare its documented replacement of {old_package}",
     )
     require(
+        "glibc" in package_doc.get("depends", {}).get("run", []),
+        f"{name} must declare glibc for its libc-linked ELF files",
+    )
+    require(
         package_doc.get("capabilities", {}).get("provides") == [],
         f"{name} must declare an explicit empty capabilities list",
     )
@@ -123,6 +127,8 @@ for name in ("libusb", "usbutils"):
     require("systemd" in deps and "eudev" not in deps,
             f"extra3 generator data for {name} must not reintroduce eudev")
 
+
+require("glibc" in set(systemd.get("depends", {}).get("run", [])), "systemd must declare glibc for its libc-linked ELF files")
 
 obsolete = {
     "runit", "runit-services", "eudev", "elogind",

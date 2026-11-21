@@ -24,11 +24,37 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
-require(systemd_pkg["rel"] >= 2, "Bump systemd rel when fixing initrd/hibernate build options")
+require(systemd_pkg["rel"] >= 3, "Bump systemd rel when changing its authenticated package metadata")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
-    re.fullmatch(r"[0-9a-f]{64}", systemd_pkg["sha256"]) is not None,
-    "systemd must carry a SHA-256 field",
+    systemd_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
+    "systemd relations must use Nawa's fail-closed relations marker",
+)
+systemd_sources = systemd_pkg.get("sources", [])
+require(
+    len(systemd_sources) == 1
+    and systemd_sources[0]["name"] == "systemd"
+    and systemd_sources[0]["url"].startswith("https://sourceforge.net/projects/systemd.mirror/")
+    and re.fullmatch(r"[0-9a-f]{64}", systemd_sources[0]["sha256"]) is not None,
+    "systemd must keep its verified source pin in the new-schema source table",
+)
+require(
+    not systemd_pkg.get("sha256")
+    and not systemd_pkg.get("mirrors")
+    and not systemd_pkg.get("source_dir"),
+    "systemd must not mix legacy source fields with [[package.sources]]",
+)
+expected_replacements = {"eudev", "elogind", "runit-services"}
+relations = systemd.get("relations", {})
+require(
+    relations.get("schema") == 1
+    and set(relations.get("conflicts", [])) == expected_replacements
+    and set(relations.get("replaces", [])) == expected_replacements,
+    "systemd must explicitly conflict with and replace the three legacy file owners",
+)
+require(
+    systemd.get("capabilities", {}).get("provides") == ["init-system=systemd"],
+    "systemd must declare its init-system capability",
 )
 
 obsolete = {
@@ -43,8 +69,8 @@ for kind in ("build", "run"):
     )
 
 require(
-    systemd_pkg.get("source_dir") == ".",
-    "systemd must start at the extracted archive root and discover its real Meson project directory",
+    not systemd_pkg.get("workdir"),
+    "systemd source workspace must remain rooted at the source archive extraction workspace",
 )
 
 configure = systemd["build"]["configure"]

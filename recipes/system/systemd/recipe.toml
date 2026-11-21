@@ -22,17 +22,31 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
-source = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
+# Relations are authenticated in schema v5. Keep the actual source in the
+# new source table; the marker prevents older clients from silently ignoring
+# the replacement declarations.
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "systemd"
+url = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
 sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
-source_dir = "."
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
 run = ["libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
+
+[capabilities]
+provides = ["init-system=systemd"]
+
+[relations]
+schema = 1
+conflicts = ["eudev", "elogind", "runit-services"]
+replaces = ["eudev", "elogind", "runit-services"]
 
 [build]
 configure = '''set -eu

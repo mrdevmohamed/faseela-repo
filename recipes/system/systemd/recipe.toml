@@ -30,6 +30,8 @@ license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
 # new source table; the marker prevents older clients from silently ignoring
 # the replacement declarations.
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+# Preserve legacy source_dir="." semantics: configure/build/install run at
+# the extracted archive root, not a default name/version subdirectory.
 workdir = "."
 
 [[package.sources]]

@@ -193,9 +193,8 @@ for f in etc/udev/udev.conf usr/include/libudev.h \
     test -e "%{pkgdir}/$f" || { echo "systemd: missing udev compatibility file $f" >&2; exit 1; }
 done
 
-# Do not ship /usr/bin/init or the power-control aliases here. They are
-# owned by runit-services on a runit host and may only be handed over by
-# Nawa's explicitly approved runit -> systemd migration, never by install.
+# Do not stage PID 1 or power-control compatibility links here. Those paths
+# remain owned by runit-services until Nawa's explicitly approved migration.
 '''
 
 [hooks]

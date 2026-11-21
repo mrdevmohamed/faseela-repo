@@ -156,6 +156,13 @@ test -s build-pc/grub-core/test-core.img
 install = """
 set -eu
 make -C build-pc DESTDIR=%{pkgdir} install
+# modinfo.sh records the target compiler; with the configure wrapper that is a sandbox path,
+# which Nawa's lint rejects. Nothing at run time uses it, so record the plain compiler name.
+sed -i "s|^grub_target_cc='[^']*target-cc'|grub_target_cc='gcc'|" %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh
+if grep -q /build/src %{pkgdir}/usr/lib/grub/i386-pc/modinfo.sh; then
+    echo "grub: modinfo.sh still records a sandbox path" >&2
+    exit 1
+fi
 efi_stage=$PWD/efi-stage
 make -C build-efi DESTDIR=$efi_stage install
 cp -a $efi_stage/usr/lib/grub/x86_64-efi %{pkgdir}/usr/lib/grub/

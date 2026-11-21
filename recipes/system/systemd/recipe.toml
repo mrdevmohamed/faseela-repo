@@ -41,7 +41,7 @@ sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
-run = ["libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
+run = ["glibc", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
 
 [capabilities]
 provides = ["init-system=systemd"]
@@ -169,6 +169,28 @@ print("systemd: skipped (not in this release):", " ".join(skipped) or "none", fi
 PY
 
 SOURCE_ROOT="$(cat .faseela-source-root)"
+# systemd's core DSO consumes libsystemd-shared from the private pkglibdir.
+# Give that DSO the same install-time search path as systemd's executables so
+# the loader and Nawa's per-ELF reverse-dependency checker can resolve it.
+python3 - "$SOURCE_ROOT/src/core/meson.build" <<'PATCH'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+old = """        link_with : libshared,
+        install : true,
+        install_dir : pkglibdir)"""
+new = """        link_with : libshared,
+        install : true,
+        install_dir : pkglibdir,
+        install_rpath : pkglibdir)"""
+if text.count(old) != 1:
+    raise SystemExit(
+        "systemd: expected exactly one libcore install stanza to add its private RUNPATH"
+    )
+path.write_text(text.replace(old, new), encoding="utf-8")
+PATCH
 meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT" \
   --prefix=/usr \
   --libdir=lib \

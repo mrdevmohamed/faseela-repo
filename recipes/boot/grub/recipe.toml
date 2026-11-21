@@ -108,6 +108,8 @@ python3 - <<'PY'
 from pathlib import Path
 import re
 
+nl = chr(10)
+
 def replace_once(path: str, old: str, new: str) -> None:
     p = Path(path)
     data = p.read_text()
@@ -165,8 +167,9 @@ SECTIONS
 
 replace_once(
     "conf/Makefile.extra-dist",
-    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\n",
-    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc\nEXTRA_DIST += conf/i386-pc-kernel.lds\n
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc" + nl,
+    "EXTRA_DIST += conf/i386-cygwin-img-ld.sc" + nl
+    + "EXTRA_DIST += conf/i386-pc-kernel.lds" + nl,
 )
 
 replace_once(
@@ -201,8 +204,9 @@ fi
 )
 replace_once(
     "configure.ac",
-    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\n",
-    "AC_SUBST(TARGET_IMG_BASE_LDOPT)\nAC_SUBST(TARGET_IMG_BASE_LDOPT_ARG_SEP)\n
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)" + nl,
+    "AC_SUBST(TARGET_IMG_BASE_LDOPT)" + nl
+    + "AC_SUBST(TARGET_IMG_BASE_LDOPT_ARG_SEP)" + nl,
 )
 
 replace_once(
@@ -225,31 +229,30 @@ replace_once(
 p = Path("grub-core/Makefile.core.def")
 data = p.read_text()
 data, count = re.subn(
-    r"(?m)^([ \t]*i386_[A-Za-z0-9_]*_ldflags[ \t]*=[ \t]*'\$\(TARGET_IMG_BASE_LDOPT\)),",
-    r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
+    r"(?m)^([ ]*i386_[A-Za-z0-9_]*_ldflags[ ]*=[ ]*'\$\(TARGET_IMG_BASE_LDOPT\)),",
+    r"\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
     data,
 )
 if count < 6:
     raise SystemExit(f"grub-core/Makefile.core.def: expected >=6 i386 linker flag updates, got {count}")
 data, nodist_count = re.subn(
-    r"(?m)^([ \t]*ldflags[ \t]*=[ \t]*'[^'\n]*\$\(TARGET_IMG_BASE_LDOPT\)),",
-    r"\\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
+    r"(?m)^([ ]*ldflags[ ]*=[ ]*'[^']*\$\(TARGET_IMG_BASE_LDOPT\)),",
+    r"\1$(TARGET_IMG_BASE_LDOPT_ARG_SEP)",
     data,
 )
 if nodist_count < 1:
     raise SystemExit("grub-core/Makefile.core.def: i386-pc no-dist linker flags were not updated")
 
-needle = "  common = genmod.sh.in;\n"
+needle = "  common = genmod.sh.in;" + nl
 if data.count(needle) != 1:
     raise SystemExit("grub-core/Makefile.core.def: genmod.sh transform block changed")
 data = data.replace(
     needle,
-    needle + "  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';\\n",
+    needle + "  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';" + nl,
     1,
 )
 p.write_text(data)
 PY
-
 autoreconf -fi
 ''' """
 set -eu

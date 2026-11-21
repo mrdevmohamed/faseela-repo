@@ -92,7 +92,7 @@ nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # The commit, release and hash are bumped by scripts/pin-nawa-source.py (and by
 # the automation that runs it), so check their shape rather than one pin.
 assert nawa["package"]["rel"] >= 21
-assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert nawa["package"]["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert nawa["depends"]["build"] == []
 assert nawa["depends"]["run"] == ["gcc", "glibc"]
 assert nawa["capabilities"]["provides"] == []

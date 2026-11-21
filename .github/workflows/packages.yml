@@ -958,8 +958,40 @@ jobs:
               printf 'BUILT    %s  (Bootstrap Stage 3)\n' "$stem" >> "$report"
             done < "$toolchain_built"
           fi
+      - name: Detect schema-v5-only package selections
+        id: schema_v5_policy
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        env:
+          PKGS: ${{ needs.select.outputs.pkgs }}
+          TOOLCHAIN_PKGS: ${{ needs.select.outputs.toolchain_pkgs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          import tomllib
+          from pathlib import Path
+
+          selected = set(os.environ.get("PKGS", "").split())
+          selected.update(os.environ.get("TOOLCHAIN_PKGS", "").split())
+          relation_packages = []
+          for path in sorted(Path("recipes").glob("*/*/recipe.toml")):
+              doc = tomllib.loads(path.read_text(encoding="utf-8"))
+              package = doc.get("package", {})
+              name = package.get("name")
+              if name in selected and "relations" in doc:
+                  relation_packages.append(name)
+
+          print("schema_v5_only=" + ("true" if relation_packages else "false"))
+          if relation_packages:
+              print(
+                  "::notice::Skipping stable-v3 publication for relation-bearing packages: "
+                  + ", ".join(sorted(relation_packages))
+              )
+          PY
+
       - name: Verify built Nawa transition archive is schema-v3 indexable
-        if: ${{ always() && steps.build.conclusion == 'success' && steps.published.conclusion == 'success' }}
+        if: ${{ always() && steps.build.conclusion == 'success' && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1064,7 +1096,7 @@ jobs:
       # The shard limit is deliberately below GitHub's 1,000-asset release cap.
       - name: Publish to the distributed package repository
         id: publish
-        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}

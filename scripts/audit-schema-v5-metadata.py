@@ -92,7 +92,7 @@ def main() -> int:
     report = audit(args.recipes)
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
-        args.json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+        args.json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"Schema-v5 metadata audit: {report['recipe_count']} recipes")
     print(f"  missing declarations: {report['missing_count']}")
     print(f"  invalid metadata/references: {report['error_count']}")

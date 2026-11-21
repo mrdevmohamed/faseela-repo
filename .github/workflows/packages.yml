@@ -196,6 +196,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Audit schema-v5 metadata across every recipe
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/schema-v5-metadata.json"
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --json "$report"
+          python3 -I - "$report" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          summary = Path(sys.argv[2])
+          lines = [
+              "## Schema-v5 metadata audit",
+              "",
+              f"- Recipes audited: **{report['recipe_count']}**",
+              f"- Missing declarations: **{report['missing_count']}**",
+              f"- Invalid declarations/references: **{report['error_count']}**",
+              f"- Relation entries: `{report['relation_entries']}`",
+              "",
+              "This is report-only until every recipe has been reviewed; missing metadata is never inferred as an empty list.",
+          ]
+          summary.open("a", encoding="utf-8").write("\\n".join(lines) + "\\n")
+          PY
       - id: s
         env:
           INPUT_ALL: ${{ inputs.all }}

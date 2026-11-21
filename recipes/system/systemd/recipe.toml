@@ -22,7 +22,7 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
@@ -117,6 +117,9 @@ want = {
     "quotacheck": "off", "ldconfig": "off", "create-log-dirs": "off",
     # --- literal values -----------------------------------------------------
     "mode": "lit:release",
+    # Downstream packages expect the private shared library ABI tag to match
+    # the upstream major version (261), not the full package version (261.5).
+    "shared-lib-tag": "lit:261",
     "split-bin": "lit:false",
     "rootprefix": "lit:/usr",
     "rootlibdir": "lit:/usr/lib",
@@ -182,7 +185,9 @@ install = '''set -eu
 SOURCE_ROOT="$(cat .faseela-source-root)"
 DESTDIR=%{pkgdir} meson install -C "$SOURCE_ROOT/build" --no-rebuild
 
-for f in usr/lib/systemd/systemd usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
+for f in usr/lib/systemd/systemd usr/lib/systemd/libsystemd-core-261.so \
+         usr/lib/systemd/libsystemd-shared-261.so \
+         usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
          usr/lib/systemd/systemd-logind usr/lib/systemd/systemd-networkd \
          usr/lib/systemd/systemd-resolved usr/lib/systemd/systemd-timesyncd \
          usr/bin/systemctl usr/bin/journalctl usr/bin/loginctl usr/bin/udevadm \

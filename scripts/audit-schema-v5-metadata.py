@@ -40,7 +40,18 @@ def audit(root: Path) -> dict:
 
     missing = []
     relation_counts = Counter()
+    source_formats = Counter()
     for name, (path, data) in records.items():
+        package = data["package"]
+        sources = package.get("sources")
+        if isinstance(sources, list) and sources:
+            source_formats["multi-source"] += 1
+        elif package.get("source") in (None, ""):
+            source_formats["no-source"] += 1
+        elif isinstance(package.get("source"), str) and package["source"].startswith("local:"):
+            source_formats["local-source-marker"] += 1
+        else:
+            source_formats["legacy-single-source"] += 1
         # depends.run is a defaulted recipe field in Nawa's model. An omitted
         # list is the explicit semantic empty list at build time: Nawa emits
         # rundeps = "" in .PKGINFO. Do not flag it as missing here. The v5
@@ -82,6 +93,7 @@ def audit(root: Path) -> dict:
         "errors": errors,
         "error_count": len(errors),
         "relation_entries": dict(relation_counts),
+        "source_formats": dict(source_formats),
         "complete": not missing and not errors,
     }
 

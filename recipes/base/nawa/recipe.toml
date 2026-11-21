@@ -11,7 +11,7 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 34
+rel = 35
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
@@ -32,8 +32,8 @@ provides = []
 # release. This bootstrap client must remain publishable through stable-v3.
 [[package.sources]]
 name = "nawa"
-url = "https://github.com/mrdevmohamed/nawa/archive/28cbfed1b5bb8c6705fdd287cac2b11af9f43457.tar.gz"
-sha256 = "20e903a78a0ee3ef90794daaae16bd6f8a1493f27c3b650ef646b849b6367094"
+url = "https://github.com/mrdevmohamed/nawa/archive/1a8d457421fef48ae6953ca081c2479340700cdb.tar.gz"
+sha256 = "9222c5b903f04b455188600ef5f6f0e82d9cc4cbd8bf414d971ee362af9fe4fa"
 strip_components = 1
 
 [fetch.cargo]

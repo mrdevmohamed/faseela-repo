@@ -15,14 +15,16 @@ class AuditTests(unittest.TestCase):
     def write_recipe(self, root, name, extra=""):
         directory = root / name
         directory.mkdir(parents=True)
-        (directory / "recipe.toml").write_text(
-            f'[package]\nname = "{name}"\nversion = "1"\n'
-            '[depends]\nrun = []\n'
-            '[capabilities]\nprovides = []\n'
-            '[relations]\nschema = 1\nconflicts = []\nreplaces = []\n'
-            .replace('replaces = []\\n', extra or 'replaces = []\\n'),
-            encoding="utf-8",
+        content = (
+            f'[package]\\nname = "{name}"\\nversion = "1"\\n'
+            '[depends]\\nrun = []\\n'
+            '[capabilities]\\nprovides = []\\n'
+            '[relations]\\nschema = 1\\nconflicts = []\\n'
+            'replaces = []\\n'
         )
+        if extra:
+            content = content.replace('replaces = []\\n', extra)
+        (directory / "recipe.toml").write_text(content, encoding="utf-8")
 
     def test_complete_explicit_empty_metadata_is_valid(self):
         with tempfile.TemporaryDirectory() as tmp:

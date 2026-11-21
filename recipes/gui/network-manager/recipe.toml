@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]

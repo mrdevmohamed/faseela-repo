@@ -133,7 +133,8 @@ jobs:
           run = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
           repository = sys.argv[2]
           failures = []
-          if run.get("path") != ".github/workflows/packages.yml":
+          workflow_path = str(run.get("path", "")).split("@", 1)[0]
+          if workflow_path != ".github/workflows/packages.yml":
               failures.append("run is not from .github/workflows/packages.yml")
           if run.get("event") != "pull_request":
               failures.append("run must be a pull_request build, not a publishing/manual run")

@@ -64,7 +64,11 @@ on:
     paths: ["recipes/**", "groups.toml"]
   pull_request:
     types: [opened, synchronize, reopened]
-    paths: ["recipes/**"]
+    paths:
+      - "recipes/**"
+      - ".github/workflows/packages.yml"
+      - "flavors.toml"
+      - "scripts/flavor.py"
   workflow_dispatch:
     inputs:
       all:
@@ -526,6 +530,13 @@ jobs:
           rm -rf distro/recipes
           cp -a recipes distro/recipes
           cp -a flavors.toml distro/flavors.toml
+          # stage-set.sh resolves the bootstrap flavor through this script.
+          # Copy it too: otherwise Stage 2 silently falls back to the full
+          # recipe graph and then drops GUI dependencies such as glib.
+          install -D -m 0644 scripts/flavor.py distro/scripts/flavor.py
+          python3 -I distro/scripts/flavor.py --flavors distro/flavors.toml resolve bootstrap --recipes distro/recipes > "$RUNNER_TEMP/bootstrap-packages.txt"
+          test -s "$RUNNER_TEMP/bootstrap-packages.txt"
+          echo "Bootstrap flavor: $(wc -l < "$RUNNER_TEMP/bootstrap-packages.txt") packages" >> "$GITHUB_STEP_SUMMARY"
           cp -a groups.toml distro/groups.toml
           # Nawa's package recipe is the sole source pin for Bootstrap and package builds.
           # Reject an older DISTRO_REF that still keeps a separate Bootstrap Nawa pin.

@@ -24,7 +24,7 @@ systemd = recipe("system", "systemd")
 systemd_pkg = systemd["package"]
 require(systemd_pkg["name"] == "systemd", "system/systemd package name changed")
 require(systemd_pkg["version"] == "261.5", "Review the pinned systemd version and update this test")
-require(systemd_pkg["rel"] >= 5, "Bump systemd rel when changing its authenticated package metadata")
+require(systemd_pkg["rel"] >= 6, "Bump systemd rel when changing its authenticated package metadata")
 require(systemd_pkg["arch"] == ["x86_64"], "systemd must be restricted to the supported architecture")
 require(
     systemd_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa",
@@ -129,6 +129,7 @@ for name in ("libusb", "usbutils"):
 
 
 require("glibc" in set(systemd.get("depends", {}).get("run", [])), "systemd must declare glibc for its libc-linked ELF files")
+require("base-files >= 0.4-12" in systemd.get("depends", {}).get("run", []), "systemd must require the base-files release that ships /etc/environment")
 
 obsolete = {
     "runit", "runit-services", "eudev", "elogind",

@@ -6,7 +6,7 @@ Every package in the distribution is described by a declarative
 ```
 recipes/
 ├── toolchain/   compiler + libc + headers (built first, stage 2)
-├── base/        core userland: libs, shells, compressors, interpreters
+├── base/        core userland: shared libraries, shells, compressors, interpreters
 ├── system/      networking, systemd (init, udev, logind), kmod, shadow, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
 ├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-systemd, ... (opt-in)
@@ -25,8 +25,8 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 53 system + 8 boot + 97 extra =
-**207 core packages**. Optional categories contain 141 GUI, 23 COSMIC, 2 greeter,
+Current set: 10 toolchain + 40 base + 53 system + 8 boot + 97 extra =
+**208 core packages**. Optional categories contain 140 GUI, 23 COSMIC, 2 greeter,
 29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
 12 security, 1 peripheral, 12 dev and 4 development packages. The recipe tree
 contains **542 recipes** in total (counts generated from the current recipe tree).
@@ -34,6 +34,9 @@ contains **542 recipes** in total (counts generated from the current recipe tree
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
 security, peripheral, developer, Xfce and Xorg packages remain opt-in.
+
+The low-level `glib` library belongs to `base/`, not the optional GUI category:
+non-desktop packages such as `gdk-pixbuf` need it even when `WITH_GUI` is off.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
@@ -120,7 +123,8 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `kbd` (extra) pulls `meson`, `ninja` (extra);
 `iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
 (extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
-and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
+and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system);
+`gdk-pixbuf` (browser) pulls `glib` (base), `libpng` and `libjpeg-turbo`.
 
 **gui, desktop services** — dbus-system → systemd (logind) → polkit; bluez and
 network-manager; pipewire → wireplumber. systemd-logind provides login1 and

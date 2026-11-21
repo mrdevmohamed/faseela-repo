@@ -59,11 +59,15 @@ VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json zed
 
 ## Opt-in
 
-`recipes/gui` is **not** built by `stage2`/`stage3` unless you ask:
+`recipes/gui` contains the optional Wayland desktop stack and is **not** built by
+`stage2`/`stage3` unless you ask:
 
 ```
 sudo WITH_GUI=1 ./stage2.sh /mnt/faseela       # also builds the GUI stack
 ```
+
+The low-level `glib` library is in `recipes/base`, not here: browser packages
+such as `gdk-pixbuf` require it even when the optional desktop stack is skipped.
 
 Or build it later on a running system:
 
@@ -98,7 +102,7 @@ is maintained.
 
 | group | packages |
 |---|---|
-| text/fonts | libpng freetype fontconfig harfbuzz fribidi glib pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic, noto-naskh-arabic noto-cjk noto-color-emoji |
+| text/fonts | libpng freetype fontconfig harfbuzz fribidi pixman cairo pango dejavu-fonts noto-fonts noto-serif noto-mono noto-fonts-arabic, noto-naskh-arabic noto-cjk noto-color-emoji |
 | D-Bus compatibility | dbus-glib (legacy GLib binding used by XFCE screensaver) |
 | X11 client libraries and utilities | xorg-util-macros xorgproto xtrans xcb-proto libXau libxcb libX11 libXext libXrender libXtst libXScrnSaver libXpresent libxshmfence xorg-xprop (GTK3 and Chrome client-side libraries; no X server) |
 | Xwayland server | xkbcomp xkeyboard-config libfontenc font-util libxkbfile libXfont2 libxshmfence libxcvt xcb-util-wm xwayland (wlroots starts it on demand for X11 applications) |

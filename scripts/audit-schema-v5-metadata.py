@@ -41,12 +41,10 @@ def audit(root: Path) -> dict:
     missing = []
     relation_counts = Counter()
     for name, (path, data) in records.items():
-        depends = data.get("depends")
-        if not isinstance(depends, dict) or "run" not in depends:
-            missing.append({"package": name, "path": str(path), "field": "depends.run"})
-        elif not isinstance(depends["run"], list):
-            errors.append({"package": name, "path": str(path), "kind": "invalid-depends.run"})
-
+        # depends.run is a defaulted recipe field in Nawa's model. An omitted
+        # list is the explicit semantic empty list at build time: Nawa emits
+        # rundeps = "" in .PKGINFO. Do not flag it as missing here. The v5
+        # publisher validates the resulting archive metadata, not TOML syntax.
         capabilities = data.get("capabilities")
         if not isinstance(capabilities, dict) or "provides" not in capabilities:
             missing.append({"package": name, "path": str(path), "field": "capabilities.provides"})

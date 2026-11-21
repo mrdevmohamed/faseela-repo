@@ -2,17 +2,29 @@
 [package]
 name = "spirv-headers"
 version = "1.5.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Khronos SPIR-V headers"
 license = ["MIT"]
-source = "https://github.com/KhronosGroup/SPIRV-Headers/archive/2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "spirv-headers"
+url = "https://github.com/KhronosGroup/SPIRV-Headers/archive/2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801.tar.gz"
 sha256 = "1698e1373bd6e59a263acef821c4d955c561b991feb6db8199833ef19ffe8a37"
-source_dir = "SPIRV-Headers-2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801"
+strip_components = 1
 
 [depends]
 build = ["cmake", "ninja"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSPIRV_HEADERS_ENABLE_INSTALL=ON -DSPIRV_HEADERS_ENABLE_TESTS=OFF"

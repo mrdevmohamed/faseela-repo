@@ -3,16 +3,29 @@
 [package]
 name = "swayidle"
 version = "1.8.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Idle management daemon for Wayland (lock/suspend on timeout)"
 license = ["MIT"]
-source = "https://github.com/swaywm/swayidle/releases/download/%{version}/swayidle-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "swayidle"
+url = "https://github.com/swaywm/swayidle/releases/download/%{version}/swayidle-%{version}.tar.gz"
 sha256 = "16b3e76a117f2f0ff2ee5fbebf38849595cdd705db1cd5f6aceaed00d71b3aa1"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols"]
 run = ["wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

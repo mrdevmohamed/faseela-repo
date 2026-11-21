@@ -3,16 +3,29 @@
 [package]
 name = "dmidecode"
 version = "3.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "dmidecode: read BIOS/DMI hardware tables"
 license = ["GPL-2.0-or-later"]
-source = "https://download.savannah.gnu.org/releases/dmidecode/dmidecode-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "dmidecode"
+url = "https://download.savannah.gnu.org/releases/dmidecode/dmidecode-%{version}.tar.xz"
 sha256 = "e40c65f3ec3dafe31ad8349a4ef1a97122d38f65004ed66575e1a8d575dd8bae"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} prefix=/usr"

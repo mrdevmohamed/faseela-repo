@@ -2,16 +2,29 @@
 [package]
 name = "libSM"
 version = "1.2.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 Session Management library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libSM-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libsm"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libSM-%{version}.tar.xz"
 sha256 = "be7c0abdb15cbfd29ac62573c1c82e877f9d4047ad15321e7ea97d1e43d835be"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "xtrans", "libICE"]
 run = ["libICE"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

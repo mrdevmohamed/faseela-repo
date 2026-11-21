@@ -3,17 +3,29 @@
 [package]
 name = "nspr"
 version = "4.40"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Mozilla Netscape Portable Runtime"
 license = ["MPL-2.0"]
-source = "https://archive.mozilla.org/pub/nspr/releases/v%{version}/src/nspr-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nspr"
+url = "https://archive.mozilla.org/pub/nspr/releases/v%{version}/src/nspr-%{version}.tar.gz"
 sha256 = "c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc"
-source_dir = "nspr-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cd nspr && ./configure --prefix=/usr --disable-debug --enable-optimize --enable-64bit --with-pthreads --enable-ipv6"

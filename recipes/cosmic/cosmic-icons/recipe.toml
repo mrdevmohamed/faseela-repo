@@ -5,11 +5,11 @@
 [package]
 name = "cosmic-icons"
 version = "1.11.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "COSMIC default icon theme"
 license = ["CC-BY-SA-4.0"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-icons"
@@ -20,6 +20,14 @@ strip_components = 1
 [depends]
 build = []
 run = ["hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

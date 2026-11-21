@@ -2,16 +2,30 @@
 [package]
 name = "subfinder"
 version = "2.17.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Passive subdomain discovery tool"
 license = ["MIT"]
-source = "https://github.com/projectdiscovery/subfinder/releases/download/v2.17.0/subfinder_2.17.0_linux_amd64.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "subfinder"
+url = "https://github.com/projectdiscovery/subfinder/releases/download/v2.17.0/subfinder_2.17.0_linux_amd64.zip"
 sha256 = "a39c3e5c7a26ef3c430915c4d6cbf7716a00f26769a75e9405aba796142eba37"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

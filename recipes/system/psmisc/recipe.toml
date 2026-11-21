@@ -2,16 +2,29 @@
 [package]
 name = "psmisc"
 version = "23.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Process utilities (pstree, fuser, killall)"
 license = ["GPL-2.0"]
-source = "https://deb.debian.org/debian/pool/main/p/psmisc/psmisc_23.7.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "psmisc"
+url = "https://deb.debian.org/debian/pool/main/p/psmisc/psmisc_23.7.orig.tar.xz"
 sha256 = "58c55d9c1402474065adae669511c191de374b0871eec781239ab400b907c327"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

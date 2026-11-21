@@ -2,16 +2,29 @@
 [package]
 name = "grep"
 version = "3.12"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU pattern matcher (grep)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/grep/grep-3.12.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "grep"
+url = "https://mirrors.kernel.org/gnu/grep/grep-3.12.tar.xz"
 sha256 = "2649b27c0e90e632eadcd757be06c6e9a4f48d941de51e7c0f83ff76408a07b9"
+strip_components = 1
 
 [depends]
 build = ["pcre2"]
 run = ["pcre2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

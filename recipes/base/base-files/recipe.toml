@@ -5,14 +5,24 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 12
+rel = 13
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

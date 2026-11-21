@@ -4,16 +4,29 @@
 [package]
 name = "gcr"
 version = "3.41.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GNOME crypto and PKCS#11 base libraries"
 license = ["LGPL-2.1-or-later"]
-source = "https://download.gnome.org/sources/gcr/3.41/gcr-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gcr"
+url = "https://download.gnome.org/sources/gcr/3.41/gcr-%{version}.tar.xz"
 sha256 = "bad10f3c553a0e1854649ab59c5b2434da22ca1a54ae6138f1f53961567e1ab7"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit"]
 run = ["glib", "libgcrypt", "p11-kit"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

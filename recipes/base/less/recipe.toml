@@ -2,16 +2,29 @@
 [package]
 name = "less"
 version = "668"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Terminal pager similar to more"
 license = ["GPL-3.0", "BSD-2-Clause"]
-source = "https://www.greenwoodsoftware.com/less/less-668.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "less"
+url = "https://www.greenwoodsoftware.com/less/less-668.tar.gz"
 sha256 = "2819f55564d86d542abbecafd82ff61e819a3eec967faa36cd3e68f1596a44b8"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

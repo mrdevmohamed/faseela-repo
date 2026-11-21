@@ -2,16 +2,29 @@
 [package]
 name = "libtasn1"
 version = "4.21.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ASN.1 library for certificate and protocol handling"
 license = ["LGPL-2.1-or-later"]
-source = "https://ftp.gnu.org/gnu/libtasn1/libtasn1-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libtasn1"
+url = "https://ftp.gnu.org/gnu/libtasn1/libtasn1-%{version}.tar.gz"
 sha256 = "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-doc --disable-gtk-doc"

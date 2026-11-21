@@ -2,16 +2,29 @@
 [package]
 name = "readline"
 version = "8.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU line-editing library"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/readline/readline-8.3.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "readline"
+url = "https://mirrors.kernel.org/gnu/readline/readline-8.3.tar.gz"
 sha256 = "fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # --with-shared-termcap-library: upstream links the *shared* readline without

@@ -3,17 +3,29 @@
 [package]
 name = "nnn"
 version = "5.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "nnn — tiny, fast terminal file manager"
 license = ["BSD-2-Clause"]
-source = "https://github.com/jarun/nnn/releases/download/v%{version}/nnn-v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nnn"
+url = "https://github.com/jarun/nnn/releases/download/v%{version}/nnn-v%{version}.tar.gz"
 sha256 = "ba82d6c685bb3687521de2f576244f82558a4af9afeeedda434d5ecb1c029520"
-source_dir = "nnn-%{version}"
+strip_components = 1
 
 [depends]
 build = ["ncurses", "readline", "pkgconf"]
 run = ["ncurses", "readline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} PREFIX=/usr"

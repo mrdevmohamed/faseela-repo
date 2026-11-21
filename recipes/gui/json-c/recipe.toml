@@ -2,16 +2,29 @@
 [package]
 name = "json-c"
 version = "0.18"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "JSON implementation in C"
 license = ["MIT"]
-source = "https://s3.amazonaws.com/json-c_releases/releases/json-c-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "json-c"
+url = "https://s3.amazonaws.com/json-c_releases/releases/json-c-%{version}.tar.gz"
 sha256 = "876ab046479166b869afc6896d288183bbc0e5843f141200c677b3e8dfb11724"
+strip_components = 1
 
 [depends]
 build = ["cmake", "pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=OFF -DBUILD_TESTING=OFF"

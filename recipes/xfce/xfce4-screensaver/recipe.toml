@@ -2,17 +2,29 @@
 [package]
 name = "xfce4-screensaver"
 version = "4.20.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce screen saver and secure session locker"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/apps/xfce4-screensaver/4.20/xfce4-screensaver-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-screensaver"
+url = "https://archive.xfce.org/src/apps/xfce4-screensaver/4.20/xfce4-screensaver-%{version}.tar.xz"
 sha256 = "5032f60a31df5e50a80512e301b595be5ea6a6bd762cdd95cacc24cbd29a01d7"
-source_dir = "xfce4-screensaver-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gettext", "dbus", "dbus-glib", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "systemd"]
 run = ["dbus", "dbus-glib", "procps-ng", "python", "garcon", "gtk3", "glib", "libX11", "libXext", "libXScrnSaver", "libwnck3", "libxklavier", "libxfce4ui", "libxfce4util", "linux-pam", "xfconf", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D x11=enabled -D wayland=disabled -D docs=disabled -D authentication-scheme=pam -D pam-auth-type=system -D session-manager=systemd -D kbd-layout-indicator=false -D xscreensaverhackdir=no"

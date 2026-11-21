@@ -3,16 +3,29 @@
 [package]
 name = "libarchive"
 version = "3.7.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libarchive — multi-format archive and compression library"
 license = ["BSD-2-Clause"]
-source = "https://github.com/libarchive/libarchive/releases/download/v%{version}/libarchive-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libarchive"
+url = "https://github.com/libarchive/libarchive/releases/download/v%{version}/libarchive-%{version}.tar.gz"
 sha256 = "4cc540a3e9a1eebdefa1045d2e4184831100667e6d7d5b315bb1cbc951f8ddff"
+strip_components = 1
 
 [depends]
 build = ["zlib", "bzip2", "xz", "zstd", "lz4"]
 run = ["zlib", "bzip2", "xz", "zstd", "lz4"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --without-openssl --without-xml2 --without-expat"

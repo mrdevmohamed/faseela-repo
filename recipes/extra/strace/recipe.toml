@@ -3,16 +3,29 @@
 [package]
 name = "strace"
 version = "6.12"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "strace — trace system calls and signals"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/strace/strace/releases/download/v%{version}/strace-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "strace"
+url = "https://github.com/strace/strace/releases/download/v%{version}/strace-%{version}.tar.xz"
 sha256 = "c47da93be45b6055f4dc741d7f20efaf50ca10160a5b100c109b294fd9c0bdfe"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --enable-mpers=no"

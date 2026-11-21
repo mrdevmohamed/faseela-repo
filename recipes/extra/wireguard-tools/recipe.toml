@@ -3,16 +3,29 @@
 [package]
 name = "wireguard-tools"
 version = "1.0.20210914"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "WireGuard userspace tools: wg and wg-quick"
 license = ["GPL-2.0-only"]
-source = "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "wireguard-tools"
+url = "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-%{version}.tar.xz"
 sha256 = "942ed32d1d6631932c82ff86c91ae8428d4c90bfec231a14ebdf6c29f068e60b"
+strip_components = 1
 
 [depends]
 build = []
 run = ["bash", "iproute2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -C src -j%{jobs} PREFIX=/usr WITH_WGQUICK=yes WITH_BASHCOMPLETION=yes WITH_SYSTEMDUNITS=no"

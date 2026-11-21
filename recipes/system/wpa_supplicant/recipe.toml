@@ -5,16 +5,29 @@
 [package]
 name = "wpa_supplicant"
 version = "2.12"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, D-Bus control interface)"
 license = ["BSD-3-Clause"]
-source = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "wpa_supplicant"
+url = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
 sha256 = "08e23937e16d0155e55cab2b51f51fbe10d80a1aa91c4e15442645059b737ef6"
+strip_components = 1
 
 [depends]
 build = ["libnl", "openssl", "readline", "pkgconf", "dbus"]
 run = ["libnl", "openssl", "readline", "dbus-system"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = '''

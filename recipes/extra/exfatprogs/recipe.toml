@@ -3,16 +3,29 @@
 [package]
 name = "exfatprogs"
 version = "1.2.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "exfatprogs — mkfs/fsck/label tools for exFAT (USB sticks, SD cards)"
 license = ["GPL-2.0-only"]
-source = "https://github.com/exfatprogs/exfatprogs/releases/download/%{version}/exfatprogs-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "exfatprogs"
+url = "https://github.com/exfatprogs/exfatprogs/releases/download/%{version}/exfatprogs-%{version}.tar.xz"
 sha256 = "89d05b7a9537f2413079b724ec8d02d7a2e291c29c52e7256303e9456200fb0f"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sbindir=/usr/bin"

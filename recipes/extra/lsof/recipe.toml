@@ -3,16 +3,29 @@
 [package]
 name = "lsof"
 version = "4.99.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "lsof — list open files and the processes using them"
 license = ["lsof"]
-source = "https://github.com/lsof-org/lsof/releases/download/%{version}/lsof-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lsof"
+url = "https://github.com/lsof-org/lsof/releases/download/%{version}/lsof-%{version}.tar.gz"
 sha256 = "0c444e2dabec14ad146cbb7f5b52b5ab4976728402ff348d9feced9ad9740c66"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

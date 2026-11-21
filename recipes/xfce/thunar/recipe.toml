@@ -5,16 +5,29 @@
 [package]
 name = "thunar"
 version = "4.20.10"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "Xfce file manager with GVfs removable-volume integration"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://archive.xfce.org/src/xfce/thunar/4.20/thunar-4.20.10.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "thunar"
+url = "https://archive.xfce.org/src/xfce/thunar/4.20/thunar-4.20.10.tar.bz2"
 sha256 = "a5a32b51028dc821155e44cdec025fe70398bae193c619ae6ba8b1babf6f49f1"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbuf", "pango"]
 run = ["exo", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "gdk-pixbuf", "pango", "at-spi2-core", "cairo", "harfbuzz", "pcre2", "libX11", "glibc", "gvfs", "tumbler", "shared-mime-info", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

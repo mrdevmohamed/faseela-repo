@@ -3,17 +3,29 @@
 [package]
 name = "nss"
 version = "3.133"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Mozilla Network Security Services libraries"
 license = ["MPL-2.0"]
-source = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_133_RTM/src/nss-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nss"
+url = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_133_RTM/src/nss-%{version}.tar.gz"
 sha256 = "4d752526b9846a1d962588cfbd09b7cc2a4f6a4effbd9157d58a30e8a2573065"
-source_dir = "nss-%{version}"
+strip_components = 1
 
 [depends]
 build = ["nspr", "sqlite", "zlib", "perl"]
 run = ["nspr", "sqlite", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = """

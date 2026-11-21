@@ -2,16 +2,29 @@
 [package]
 name = "sed"
 version = "4.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU stream editor (sed)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/sed/sed-4.10.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "sed"
+url = "https://mirrors.kernel.org/gnu/sed/sed-4.10.tar.xz"
 sha256 = "b8e72182b2ec96a3574e2998c47b7aaa64cc20ce000d8e9ac313cc07cecf28c7"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

@@ -3,17 +3,29 @@
 [package]
 name = "libXScrnSaver"
 version = "1.2.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 Screen Saver extension client library"
 license = ["MIT"]
-source = "https://www.x.org/archive/individual/lib/libXScrnSaver-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxscrnsaver"
+url = "https://www.x.org/archive/individual/lib/libXScrnSaver-%{version}.tar.xz"
 sha256 = "75cd2859f38e207a090cac980d76bc71e9da99d48d09703584e00585abc920fe"
-source_dir = "libXScrnSaver-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXext"]
 run = ["libX11", "libXext"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

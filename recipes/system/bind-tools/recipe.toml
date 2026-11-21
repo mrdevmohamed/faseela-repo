@@ -4,17 +4,29 @@
 [package]
 name = "bind-tools"
 version = "9.20.30"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "DNS client utilities: dig, host and nslookup (no DNS server)"
 license = ["MPL-2.0", "BSD-3-Clause"]
-source = "https://ftp.isc.org/isc/bind9/%{version}/bind-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "bind-tools"
+url = "https://ftp.isc.org/isc/bind9/%{version}/bind-%{version}.tar.xz"
 sha256 = "9e1443a40a72a30272cbc3196d020a6b2e26937111c83e59e101e82e1e3b4fef"
-source_dir = "bind-%{version}"
+strip_components = 1
 
 [depends]
 build = ["libcap", "libuv", "liburcu", "openssl", "perl", "pkgconf"]
 run = ["libcap", "libuv", "liburcu", "openssl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-doh --disable-developer --without-gssapi --without-libidn2 --with-libxml2=no --with-json-c=no --with-lmdb=no --with-zlib=no --with-readline=no --with-cmocka=no --with-jemalloc=no --disable-geoip --disable-dnstap"

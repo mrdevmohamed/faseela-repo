@@ -3,17 +3,29 @@
 [package]
 name = "spirv-llvm-translator"
 version = "18.1.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Khronos SPIR-V to LLVM IR translator tool and library"
 license = ["NCSA"]
-source = "https://codeload.github.com/KhronosGroup/SPIRV-LLVM-Translator/tar.gz/refs/tags/v%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "spirv-llvm-translator"
+url = "https://codeload.github.com/KhronosGroup/SPIRV-LLVM-Translator/tar.gz/refs/tags/v%{version}"
 sha256 = "d896f35102c3ba9e16ead7b4db53b75e6131982cdb36a3324f17c68a43598759"
-source_dir = "SPIRV-LLVM-Translator-%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake", "ninja", "llvm", "spirv-headers", "spirv-tools"]
 run = ["llvm", "spirv-tools"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

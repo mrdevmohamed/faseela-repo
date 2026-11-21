@@ -8,17 +8,29 @@
 [package]
 name = "noto-color-emoji"
 version = "2.051"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Noto Color Emoji — color emoji font (CBDT/CBLC)"
 license = ["OFL-1.1"]
-source = "https://github.com/googlefonts/noto-emoji/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-color-emoji"
+url = "https://github.com/googlefonts/noto-emoji/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "04f3d1e5605edebebac00a7a0becb390a4a3ead015066905b27935b30c18e745"
-source_dir = "noto-emoji-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

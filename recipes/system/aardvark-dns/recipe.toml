@@ -2,11 +2,11 @@
 [package]
 name = "aardvark-dns"
 version = "2.1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "DNS server for container networks"
 license = ["Apache-2.0"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 workdir = "."
 
 [[package.sources]]
@@ -19,6 +19,14 @@ strip_components = 1
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."

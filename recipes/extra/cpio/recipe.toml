@@ -2,16 +2,29 @@
 [package]
 name = "cpio"
 version = "2.15"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU cpio — copy file archives in and out"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/cpio/cpio-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cpio"
+url = "https://mirrors.kernel.org/gnu/cpio/cpio-%{version}.tar.gz"
 sha256 = "efa50ef983137eefc0a02fdb51509d624b5e3295c980aa127ceee4183455499e"
+strip_components = 1
 
 [depends]
 build = []
 run = ["tar"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # GNU tar and GNU cpio both ship the same remote-tape helper, /usr/libexec/rmt

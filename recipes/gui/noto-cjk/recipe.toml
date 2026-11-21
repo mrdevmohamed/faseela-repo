@@ -6,16 +6,30 @@
 [package]
 name = "noto-cjk"
 version = "20240730"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Noto Sans and Serif CJK fonts with automatic Fontconfig fallback"
 license = ["OFL-1.1"]
-source = "https://deb.debian.org/debian/pool/main/f/fonts-noto-cjk/fonts-noto-cjk_20240730+repack1-1_all.deb"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-cjk"
+url = "https://deb.debian.org/debian/pool/main/f/fonts-noto-cjk/fonts-noto-cjk_20240730+repack1-1_all.deb"
 sha256 = "f5dc28a754e17327d99f0a612134d92c8dd6187314ae967cb77f25df60860139"
+unpack = false
 
 [depends]
 build = ["binutils"]
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

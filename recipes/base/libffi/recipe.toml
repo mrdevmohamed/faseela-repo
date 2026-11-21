@@ -2,16 +2,29 @@
 [package]
 name = "libffi"
 version = "3.5.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Portable foreign-function-interface library"
 license = ["MIT"]
-source = "https://github.com/libffi/libffi/releases/download/v3.5.2/libffi-3.5.2.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libffi"
+url = "https://github.com/libffi/libffi/releases/download/v3.5.2/libffi-3.5.2.tar.gz"
 sha256 = "f3a3082a23b37c293a4fcd1053147b371f2ff91fa7ea1b2a52e335676bac82dc"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # libffi appends `gcc -print-multi-os-directory` to libdir (/usr/lib/../lib64 with

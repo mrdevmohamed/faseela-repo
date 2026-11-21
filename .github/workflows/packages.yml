@@ -665,7 +665,8 @@ jobs:
           import tomllib
           from pathlib import Path
           p = tomllib.loads(Path("recipes/base/rust/recipe.toml").read_text(encoding="utf-8"))["package"]
-          print(p["version"], p["sha256"], p["source"].replace("%{version}", p["version"]))
+          s = p["sources"][0]
+          print(p["version"], s["sha256"], s["url"].replace("%{version}", p["version"]))
           PY
               )
               echo "The seed rootfs has no cargo: installing the pinned Rust $rust_version under /opt/cargo."

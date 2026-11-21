@@ -19,6 +19,9 @@ import sys
 import tomllib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import recipe_source  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent / "recipes"
 ZERO = "0" * 64
 
@@ -187,11 +190,11 @@ def main():
                     f"{r['_path']}: `{n}` depends on unknown recipe `{dependency}`"
                 )
         pkg = r["package"]
-        sha = pkg.get("sha256", "")
-        src = pkg.get("source", "")
-        if src and not src.startswith("local:"):
+        for declared in recipe_source.sources(pkg):
+            sha = declared.get("sha256", "")
             if sha == ZERO:
-                placeholders.append(n)
+                if n not in placeholders:
+                    placeholders.append(n)
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)

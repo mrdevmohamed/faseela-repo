@@ -4,13 +4,17 @@
 [package]
 name = "nectarlink"
 version = "0.1.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Connect an Android phone and Linux PC with end-to-end encryption"
 license = ["GPL-3.0-or-later", "MPL-2.0", "OFL-1.1"]
-source = "https://github.com/thtbee/nectarlink/releases/download/v%{version}/Nectarlink-%{version}-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nectarlink"
+url = "https://github.com/thtbee/nectarlink/releases/download/v%{version}/Nectarlink-%{version}-linux-x86_64.tar.gz"
 sha256 = "2df6432710de457f7dfad293f2e45c4698b19b0952e9af5cd426625e12ddc8a1"
-source_dir = "Nectarlink-%{version}-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
@@ -48,6 +52,14 @@ run = [
     "xcb-util-wm",
     "hicolor-icon-theme",
 ]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 # The upstream executable and private Qt/QML runtime are shipped prebuilt.

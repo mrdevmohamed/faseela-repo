@@ -5,16 +5,30 @@
 [package]
 name = "noto-mono"
 version = "2.014"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Noto Sans Mono hinted TrueType fonts (Latin, Greek, Cyrillic)"
 license = ["OFL-1.1"]
-source = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSansMono-v%{version}/NotoSansMono-v%{version}.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-mono"
+url = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSansMono-v%{version}/NotoSansMono-v%{version}.zip"
 sha256 = "090cf6c5e03f337a755630ca888b1fef463e64ae7b33ee134e9309c05f978732"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

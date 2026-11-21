@@ -6,17 +6,29 @@
 [package]
 name = "inih"
 version = "63"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "inih — small C library for parsing INI files (xdg-desktop-portal-wlr configuration)"
 license = ["BSD-3-Clause"]
-source = "https://github.com/benhoyt/inih/archive/refs/tags/r%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "inih"
+url = "https://github.com/benhoyt/inih/archive/refs/tags/r%{version}.tar.gz"
 sha256 = "5d7967de62c5bfdc4f9f5ab06ce44c9e498bae021c7dac5792c0696e76aa9963"
-source_dir = "inih-r%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D distro_install=true -D with_INIReader=false -D tests=false"

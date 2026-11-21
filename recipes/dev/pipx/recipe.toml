@@ -3,16 +3,30 @@
 [package]
 name = "pipx"
 version = "1.18.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Install and run Python applications in isolated environments"
 license = ["MIT"]
-source = "https://files.pythonhosted.org/packages/5a/8a/f125b753800f4d5f5640d9a61a28493993a48130aedcd88a96042fc54025/pipx-1.18.7-py3-none-any.whl"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pipx"
+url = "https://files.pythonhosted.org/packages/5a/8a/f125b753800f4d5f5640d9a61a28493993a48130aedcd88a96042fc54025/pipx-1.18.7-py3-none-any.whl"
 sha256 = "59254349bb1de6a437027008bd15e7e697c950616ba9128f0cf63a69cfcea6d6"
+unpack = false
 
 [depends]
 build = ["python"]
 run = ["python", "pip", "argcomplete", "filelock", "python-packaging", "platformdirs", "userpath"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

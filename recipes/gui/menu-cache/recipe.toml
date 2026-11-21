@@ -5,17 +5,29 @@
 [package]
 name = "menu-cache"
 version = "1.1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "menu-cache — freedesktop menu cache library for libfm"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://deb.debian.org/debian/pool/main/m/menu-cache/menu-cache_%{version}.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "menu-cache"
+url = "https://deb.debian.org/debian/pool/main/m/menu-cache/menu-cache_%{version}.orig.tar.xz"
 sha256 = "ed02eb459dcb398f69b9fa5bf4dd813020405afc84331115469cdf7be9273ec7"
-source_dir = "menu-cache-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "glib", "libfm-extra"]
 run = ["glib", "libfm-extra"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "CFLAGS=\"${CFLAGS:--O2} -fcommon\" ./configure --prefix=/usr --disable-static --disable-gtk-doc"

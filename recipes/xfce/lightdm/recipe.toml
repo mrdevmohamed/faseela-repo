@@ -4,17 +4,29 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 9
+rel = 10
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
-source = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
-source_dir = "lightdm-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lightdm"
+url = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
 sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto", "linux-pam", "libgcrypt"]
 run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "systemd", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''set -eu

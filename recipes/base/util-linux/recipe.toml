@@ -2,16 +2,29 @@
 [package]
 name = "util-linux"
 version = "2.41.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Miscellaneous system utilities for Linux"
 license = ["GPL-2.0", "LGPL-2.1", "BSD-3-Clause"]
-source = "https://cdn.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.6.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "util-linux"
+url = "https://cdn.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.6.tar.xz"
 sha256 = "e596083744e746be7d2823b62b43f4418dd7bf56303b4dc09e6fe8112fe3d7ed"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # `make install` runs `chgrp tty .../wall` (and write). Inside the build

@@ -139,13 +139,19 @@ key.
 ### Current readiness
 
 The v5 draft-release build handoff and per-archive cache integrity checks are
-implemented in this branch, but the full release is **not ready**. The current
-main branch still has 542 recipes, with no recipe-level `[relations]`
-declarations; only the specifically documented replacement cases are being
-added to this focused PR. The remaining recipe declarations, matching new
-archive set, full-build PR run, and end-to-end install/replacement test remain
-outstanding. Do not merge the metadata PR into the active v3 publisher or
-dispatch **Publish schema-v5** until those gates pass.
+implemented in this branch, and all 542 recipes now carry the schema-v5 recipe
+form: one `[[package.sources]]` table per upstream file (with the layout
+equivalent to the previous `source_dir` behaviour), `[capabilities]`,
+`[relations]` with `schema = 1`, and a bumped `rel`. The CI audit runs with
+`--strict`, so a recipe without that metadata fails the check.
+
+Relations were derived from real file overlap between the published archives
+(none found beyond the four documented replacement cases); every other recipe
+declares reviewed-empty `conflicts` and `replaces`. The release is still
+**not ready**: the complete package set must be built through the **Build
+packages** pull-request workflow, followed by the end-to-end install and
+replacement test. Do not merge the metadata PR into the active v3 publisher
+or dispatch **Publish schema-v5** until those gates pass.
 
 Nawa's migration security rules remain separate: `runit-services` and its
 `/usr/bin/init` ownership are not a generic package replacement. Only the

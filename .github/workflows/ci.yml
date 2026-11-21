@@ -50,13 +50,15 @@ jobs:
             --output "$archive"
           tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" .github/workflows/packages.yml
+      - name: Check recipes are in the schema-v5 form
+        run: python3 -I scripts/test-schema-v5-recipes.py
       - name: Test schema-v5 metadata audit
         run: python3 -I scripts/test-audit-schema-v5-metadata.py
-      - name: Report schema-v5 metadata coverage
+      - name: Enforce schema-v5 metadata coverage
         run: |
           set -euo pipefail
           report="$RUNNER_TEMP/schema-v5-metadata.json"
-          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --json "$report"
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict --json "$report"
           python3 -I - "$report" "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           from pathlib import Path
@@ -71,7 +73,7 @@ jobs:
               f"- Relation entries: `{report['relation_entries']}`",
               f"- Recipe source formats: `{report['source_formats']}`",
               "",
-              "Report-only: missing metadata is never inferred as an empty declaration.",
+              "Strict gate: every recipe must declare its metadata; missing is never inferred as empty.",
           ]
           Path(sys.argv[2]).open("a", encoding="utf-8").write("\n".join(lines) + "\n")
           PY

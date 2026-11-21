@@ -2,16 +2,30 @@
 [package]
 name = "alterx"
 version = "0.1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Domain permutation generation utility"
 license = ["MIT"]
-source = "https://github.com/projectdiscovery/alterx/releases/download/v0.1.0/alterx_0.1.0_linux_amd64.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "alterx"
+url = "https://github.com/projectdiscovery/alterx/releases/download/v0.1.0/alterx_0.1.0_linux_amd64.zip"
 sha256 = "ffae5b25138cb27b58900b9b5849e02d0390385fce404252d32e469f2a0e97ac"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

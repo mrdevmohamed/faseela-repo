@@ -5,11 +5,11 @@
 [package]
 name = "greetd"
 version = "0.10.3"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Minimal and flexible login manager (greeter daemon for cosmic-greeter)"
 license = ["GPL-3.0-only"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "greetd"
@@ -20,6 +20,14 @@ strip_components = 1
 [depends]
 build = ["rust", "linux-pam", "pkgconf"]
 run = ["linux-pam"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."

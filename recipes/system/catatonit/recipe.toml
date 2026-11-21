@@ -2,16 +2,29 @@
 [package]
 name = "catatonit"
 version = "0.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Minimal init process for OCI containers"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/openSUSE/catatonit/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "catatonit"
+url = "https://github.com/openSUSE/catatonit/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "771385049516fdd561fbb9164eddf376075c4c7de3900a8b18654660172748f1"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "automake", "libtool", "make", "gcc"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = "./autogen.sh"

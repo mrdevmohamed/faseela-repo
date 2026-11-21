@@ -2,16 +2,30 @@
 [package]
 name = "libXpresent"
 version = "1.0.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libXpresent — X Present extension client library"
 license = ["MIT", "HPND-sell-variant"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXpresent-1.0.2.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxpresent"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXpresent-1.0.2.tar.xz"
 sha256 = "4e5b21b4812206a4b223013606ae31170502c1043038777a1ef8f70c09d37602"
-source_dir = "libXpresent-1.0.2"
+strip_components = 1
+
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXext", "libXfixes", "libXrandr"]
 run = ["libX11", "libXext", "libXfixes", "libXrandr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --disable-static --disable-nls"
 compile = "make -j%{jobs}"

@@ -5,17 +5,29 @@
 [package]
 name = "neovim"
 version = "0.11.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "neovim — Vim-based text editor focused on extensibility and usability"
 license = ["Apache-2.0", "Vim"]
-source = "https://github.com/neovim/neovim/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "neovim"
+url = "https://github.com/neovim/neovim/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "83cf9543bedab8bec8c11cd50ccd9a4bf1570420a914b9a28f83ad100ca6d524"
-source_dir = "neovim-%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake", "lpeg", "gettext", "libuv", "luv", "luajit", "unibilium", "libvterm", "utf8proc", "msgpack-c", "tree-sitter"]
 run = ["libuv", "luv", "luajit", "unibilium", "libvterm", "utf8proc", "msgpack-c", "tree-sitter"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DUSE_BUNDLED=OFF -DENABLE_TRANSLATIONS=ON"

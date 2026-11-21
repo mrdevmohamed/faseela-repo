@@ -28,18 +28,30 @@
 [package]
 name = "firefox"
 version = "153.6.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Mozilla Firefox web browser (ESR, official binary)"
 license = ["MPL-2.0"]
-source = "https://ftp.mozilla.org/pub/firefox/releases/%{version}esr/linux-x86_64/en-US/firefox-%{version}esr.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "firefox"
+url = "https://ftp.mozilla.org/pub/firefox/releases/%{version}esr/linux-x86_64/en-US/firefox-%{version}esr.tar.xz"
 sha256 = "31321cd9e2cef73df678417e810cdd1b5760aa5cc8063c8465669e5869cb8498"
-source_dir = "firefox"
+strip_components = 1
 
 [depends]
 # the libraries are build dependencies too: the ldd guard resolves them
 build = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "libpulse", "mesa", "dbus", "dejavu-fonts"]
 run = ["gtk3", "glib", "cairo", "pango", "gdk-pixbuf", "fontconfig", "freetype", "libxcb", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXrender", "alsa-lib", "libpulse", "mesa", "dbus", "dejavu-fonts", "gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 # Never strip: libxul.so is PGO/BOLT-laid-out, like rust's librustc_driver (see the

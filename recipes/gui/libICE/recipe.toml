@@ -2,16 +2,29 @@
 [package]
 name = "libICE"
 version = "1.1.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X11 Inter-Client Exchange protocol library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libICE-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libice"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libICE-%{version}.tar.xz"
 sha256 = "974e4ed414225eb3c716985df9709f4da8d22a67a2890066bc6dfc89ad298625"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "xtrans"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

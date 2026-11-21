@@ -2,16 +2,29 @@
 [package]
 name = "libgpg-error"
 version = "1.61"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Common error codes and helpers for GnuPG libraries"
 license = ["LGPL-2.1-or-later"]
-source = "https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgpg-error"
+url = "https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-%{version}.tar.bz2"
 sha256 = "7a85413f2bc354f4f8aa832b718af122e48965e9e0eb9012ee659c13c6385c93"
+strip_components = 1
 
 [depends]
 build = ["gettext"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --enable-install-gpg-error-config"

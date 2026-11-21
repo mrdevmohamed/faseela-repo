@@ -3,16 +3,29 @@
 [package]
 name = "elfutils"
 version = "0.191"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ELF object file access library (libelf, libdw) and tools"
 license = ["GPL-3.0-or-later", "LGPL-3.0-or-later", "GPL-2.0-or-later"]
-source = "https://sourceware.org/elfutils/ftp/%{version}/elfutils-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "elfutils"
+url = "https://sourceware.org/elfutils/ftp/%{version}/elfutils-%{version}.tar.bz2"
 sha256 = "df76db71366d1d708365fc7a6c60ca48398f14367eb2b8954efc8897147ad871"
+strip_components = 1
 
 [depends]
 build = ["zlib", "zstd", "bzip2", "xz", "m4"]
 run = ["zlib", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

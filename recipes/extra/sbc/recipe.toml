@@ -2,16 +2,29 @@
 [package]
 name = "sbc"
 version = "2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Bluetooth low-complexity subband audio codec library"
 license = ["LGPL-2.1-or-later"]
-source = "https://www.kernel.org/pub/linux/bluetooth/sbc-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "sbc"
+url = "https://www.kernel.org/pub/linux/bluetooth/sbc-%{version}.tar.xz"
 sha256 = "426633cabd7c798236443516dfa8335b47e004b0ef37ff107e0c7ead3299fcc2"
+strip_components = 1
 
 [depends]
 build = ["pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-tools --disable-tester"

@@ -3,16 +3,29 @@
 [package]
 name = "libxkbcommon"
 version = "1.7.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Keyboard handling library (xkb)"
 license = ["MIT"]
-source = "https://xkbcommon.org/download/libxkbcommon-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxkbcommon"
+url = "https://xkbcommon.org/download/libxkbcommon-%{version}.tar.xz"
 sha256 = "65782f0a10a4b455af9c6baab7040e2f537520caa2ec2092805cdfd36863b247"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "xkeyboard-config", "bison", "libxcb"]
 run = ["xkeyboard-config", "libxcb"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D enable-x11=true -D enable-wayland=true -D enable-docs=false -D enable-xkbregistry=true -D enable-tools=false"

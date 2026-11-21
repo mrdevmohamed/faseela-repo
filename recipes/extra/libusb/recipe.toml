@@ -2,16 +2,29 @@
 [package]
 name = "libusb"
 version = "1.0.30"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "libusb — userspace USB library"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/libusb/libusb/releases/download/v%{version}/libusb-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libusb"
+url = "https://github.com/libusb/libusb/releases/download/v%{version}/libusb-%{version}.tar.bz2"
 sha256 = "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
+strip_components = 1
 
 [depends]
 build = ["systemd"]
 run = ["systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

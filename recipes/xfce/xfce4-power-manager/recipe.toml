@@ -2,16 +2,29 @@
 [package]
 name = "xfce4-power-manager"
 version = "4.20.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Xfce power manager (brightness, suspend, battery status service)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/xfce/xfce4-power-manager/4.20/xfce4-power-manager-4.20.1.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-power-manager"
+url = "https://archive.xfce.org/src/xfce/xfce4-power-manager/4.20/xfce4-power-manager-4.20.1.tar.bz2"
 sha256 = "4fe18ef5f89c5ca9b96dde84dbd88ca7e36af1caf70ddd6429dc72128007edf7"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libnotify", "upower", "polkit", "libX11", "xorgproto"]
 run = ["libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libnotify", "upower", "polkit", "dbus-system"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --enable-polkit"

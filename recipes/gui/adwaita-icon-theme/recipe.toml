@@ -7,17 +7,29 @@
 [package]
 name = "adwaita-icon-theme"
 version = "3.38.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "adwaita-icon-theme — default GTK icon theme (PNG set)"
 license = ["LGPL-3.0-or-later", "CC-BY-SA-3.0"]
-source = "https://download.gnome.org/sources/adwaita-icon-theme/3.38/adwaita-icon-theme-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "adwaita-icon-theme"
+url = "https://download.gnome.org/sources/adwaita-icon-theme/3.38/adwaita-icon-theme-%{version}.tar.xz"
 sha256 = "6683a1aaf2430ccd9ea638dd4bfe1002bc92b412050c3dba20e480f979faaf97"
-source_dir = "adwaita-icon-theme-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "hicolor-icon-theme", "gtk3"]
 run = ["hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "GTK_ENCODE_SYMBOLIC_SVG=true ./configure --prefix=/usr"

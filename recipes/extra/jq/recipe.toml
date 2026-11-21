@@ -2,16 +2,29 @@
 [package]
 name = "jq"
 version = "1.7.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "jq — lightweight and flexible command-line JSON processor"
 license = ["MIT"]
-source = "https://github.com/jqlang/jq/releases/download/jq-%{version}/jq-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "jq"
+url = "https://github.com/jqlang/jq/releases/download/jq-%{version}/jq-%{version}.tar.gz"
 sha256 = "478c9ca129fd2e3443fe27314b455e211e0d8c60bc8ff7df703873deeee580c2"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # `--with-oniguruma=builtin` builds oniguruma inside the jq tree. As a shared

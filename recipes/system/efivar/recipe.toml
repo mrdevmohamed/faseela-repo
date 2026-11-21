@@ -2,16 +2,29 @@
 [package]
 name = "efivar"
 version = "39"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Libraries and tools to manage UEFI variables"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/rhboot/efivar/archive/%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "efivar"
+url = "https://github.com/rhboot/efivar/archive/%{version}.tar.gz"
 sha256 = "c9edd15f2eeeea63232f3e669a48e992c7be9aff57ee22672ac31f5eca1609a6"
+strip_components = 1
 
 [depends]
 build = ["pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # The upstream default is lib64; Faseela uses /usr/lib.

@@ -7,17 +7,29 @@
 [package]
 name = "btop"
 version = "1.4.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "btop — resource monitor showing CPU, memory, disks, network and processes"
 license = ["Apache-2.0"]
-source = "https://github.com/aristocratos/btop/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "btop"
+url = "https://github.com/aristocratos/btop/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "67e07c21b770a6d884c5e50ba1d2cfc90732ea57459367d8732ec7ecbeb3be5f"
-source_dir = "btop-%{version}"
+strip_components = 1
 
 [depends]
 build = ["gcc", "coreutils"]
 run = ["gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = ""

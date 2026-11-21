@@ -6,18 +6,29 @@
 [package]
 name = "lua52"
 version = "5.2.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Lua 5.2 — static liblua5.2 + headers (for mpv), parallel to lua 5.4"
 license = ["MIT"]
-source = "https://www.lua.org/ftp/lua-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lua52"
+url = "https://www.lua.org/ftp/lua-%{version}.tar.gz"
 sha256 = "b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b"
-# the tarball unpacks to lua-5.2.4, not lua52-5.2.4 (the default): without this make ran in the wrong dir
-source_dir = "lua-%{version}"
+strip_components = 1
 
 [depends]
 build = ["readline", "ncurses"]
 run = ["readline", "ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} linux MYCFLAGS=-fPIC"

@@ -2,16 +2,29 @@
 [package]
 name = "libxfce4ui"
 version = "4.20.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce GUI widgets and dialog library (libxfce4ui-2, libxfce4kbd-private-3)"
 license = ["LGPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/xfce/libxfce4ui/4.20/libxfce4ui-4.20.2.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxfce4ui"
+url = "https://archive.xfce.org/src/xfce/libxfce4ui/4.20/libxfce4ui-4.20.2.tar.bz2"
 sha256 = "5d3d67b1244a10cee0e89b045766c05fe1035f7938f0410ac6a3d8222b5df907"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4util", "xfconf", "gtk3", "glib"]
 run = ["libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

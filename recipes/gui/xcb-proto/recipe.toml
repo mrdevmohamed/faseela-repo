@@ -4,16 +4,29 @@
 [package]
 name = "xcb-proto"
 version = "1.17.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "XML-XCB protocol descriptions and the python generator"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xcb-proto"
+url = "https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-%{version}.tar.xz"
 sha256 = "2c1bacd2110f4799f74de6ebb714b94cf6f80fb112316b1219480fd22562148c"
+strip_components = 1
 
 [depends]
 build = ["pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

@@ -3,16 +3,29 @@
 [package]
 name = "libXcursor"
 version = "1.2.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X cursor management library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXcursor-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxcursor"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXcursor-%{version}.tar.xz"
 sha256 = "53d071bd2cc56e517a30998d5e685c8a74556ddada43c6985d14da9a023a88ee"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXrender", "libXfixes"]
 run = ["libX11", "libXrender", "libXfixes"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

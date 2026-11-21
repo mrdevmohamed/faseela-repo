@@ -2,16 +2,29 @@
 [package]
 name = "lz4"
 version = "1.10.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "LZ4 — extremely fast compression algorithm"
 license = ["BSD-2-Clause", "GPL-2.0-or-later"]
-source = "https://github.com/lz4/lz4/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lz4"
+url = "https://github.com/lz4/lz4/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "make -j%{jobs} PREFIX=/usr"

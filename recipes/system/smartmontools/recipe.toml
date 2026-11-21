@@ -3,16 +3,29 @@
 [package]
 name = "smartmontools"
 version = "7.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "smartctl/smartd: S.M.A.R.T. disk health monitoring"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/smartmontools/smartmontools/releases/download/RELEASE_7_4/smartmontools-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "smartmontools"
+url = "https://github.com/smartmontools/smartmontools/releases/download/RELEASE_7_4/smartmontools-%{version}.tar.gz"
 sha256 = "e9a61f641ff96ca95319edfb17948cd297d0cd3342736b2c49c99d4716fb993d"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sbindir=/usr/bin --sysconfdir=/etc --with-libcap-ng=no --with-selinux=no"

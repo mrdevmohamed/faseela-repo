@@ -5,17 +5,29 @@
 [package]
 name = "libfm-extra"
 version = "1.3.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libfm-extra — menu/XML helper library of the LXDE file-manager stack"
 license = ["GPL-2.0-or-later"]
-source = "https://deb.debian.org/debian/pool/main/libf/libfm/libfm_%{version}.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libfm-extra"
+url = "https://deb.debian.org/debian/pool/main/libf/libfm/libfm_%{version}.orig.tar.xz"
 sha256 = "a5042630304cf8e5d8cff9d565c6bd546f228b48c960153ed366a34e87cad1e5"
-source_dir = "libfm-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "glib"]
 run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

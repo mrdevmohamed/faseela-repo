@@ -2,16 +2,30 @@
 [package]
 name = "platformdirs"
 version = "4.13.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "platformdirs Python runtime dependency"
 license = ["MIT"]
-source = "https://files.pythonhosted.org/packages/f2/7f/e0090311031e1c101a151c303e06988e217469fef857d0a36b43ac760c1e/platformdirs-4.13.2-py3-none-any.whl"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "platformdirs"
+url = "https://files.pythonhosted.org/packages/f2/7f/e0090311031e1c101a151c303e06988e217469fef857d0a36b43ac760c1e/platformdirs-4.13.2-py3-none-any.whl"
 sha256 = "0b220b7e6e71041a02b4aa07b69e575436f8268a669477e3b7fd1e4062587f1b"
+unpack = false
 
 [depends]
 build = ["python"]
 run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

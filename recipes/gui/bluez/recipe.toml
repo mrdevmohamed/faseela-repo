@@ -2,16 +2,29 @@
 [package]
 name = "bluez"
 version = "5.87"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "BlueZ Bluetooth stack, bluetoothd, bluetoothctl and audio profiles"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://www.kernel.org/pub/linux/bluetooth/bluez-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "bluez"
+url = "https://www.kernel.org/pub/linux/bluetooth/bluez-%{version}.tar.xz"
 sha256 = "26bdcf2cebd7310c6f598850606b037ef0c515fe6608ebc54d22c50c4c32b35f"
+strip_components = 1
 
 [depends]
 build = ["dbus", "glib", "systemd", "readline", "pkgconf"]
 run = ["dbus-system", "glib", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # BlueZ 5.87 declares bt_ad_has_data() as returning a pointer, but returns
@@ -47,4 +60,3 @@ chmod 644 %{pkgdir}/usr/lib/systemd/system/bluetooth.service
 install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
 printf '%s\n' 'enable bluetooth.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-bluetooth.preset
 '''
-

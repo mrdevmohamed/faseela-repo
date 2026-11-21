@@ -4,12 +4,18 @@
 [package]
 name = "nekoray"
 version = "4.0.1"
-rel = 5
+rel = 6
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Nekoray desktop proxy client powered by sing-box"
 license = ["GPL-3.0-only"]
-source = "https://github.com/MatsuriDayo/nekoray/releases/download/4.0.1/nekoray-4.0.1-2024-12-12-linux-x64.AppImage"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nekoray"
+url = "https://github.com/MatsuriDayo/nekoray/releases/download/4.0.1/nekoray-4.0.1-2024-12-12-linux-x64.AppImage"
 sha256 = "bec95e7fafe7f7f10923977c9f7511c878aa25a7eecc51c53ae85d8f35e24b35"
+unpack = false
 
 [depends]
 build = []
@@ -22,6 +28,14 @@ run = [
   "wayland", "libxkbcommon", "hicolor-icon-theme",
   "iptables", "iproute2"
 ]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 strip = false

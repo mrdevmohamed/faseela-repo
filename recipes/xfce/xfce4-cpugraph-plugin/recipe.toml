@@ -2,16 +2,29 @@
 [package]
 name = "xfce4-cpugraph-plugin"
 version = "1.2.11"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "CPU load graph panel plugin"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/panel-plugins/xfce4-cpugraph-plugin/1.2/xfce4-cpugraph-plugin-1.2.11.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-cpugraph-plugin"
+url = "https://archive.xfce.org/src/panel-plugins/xfce4-cpugraph-plugin/1.2/xfce4-cpugraph-plugin-1.2.11.tar.bz2"
 sha256 = "58aa31df1934afc2a352744754a730a3d796b1246e12c7a5e86f7b6a403ca20d"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib"]
 run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

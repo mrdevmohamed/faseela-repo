@@ -6,17 +6,29 @@
 [package]
 name = "python-glad2"
 version = "2.0.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "glad2 — GL/GLES/EGL loader generator (pure python)"
 license = ["MIT"]
-source = "https://github.com/Dav1dde/glad/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "python-glad2"
+url = "https://github.com/Dav1dde/glad/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "44f06f9195427c7017f5028d0894f57eb216b0a8f7c4eda7ce883732aeb2d0fc"
-source_dir = "glad-%{version}"
+strip_components = 1
 
 [depends]
 build = ["python"]
 run = ["python", "python-jinja2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

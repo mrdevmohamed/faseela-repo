@@ -2,17 +2,29 @@
 [package]
 name = "gmp"
 version = "6.3.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU multiple-precision arithmetic library"
 license = ["LGPL-3.0", "GPL-2.0"]
-source = "https://mirrors.kernel.org/gnu/gmp/gmp-%{version}.tar.xz"
-# canonical: https://ftp.gnu.org/gnu/gmp/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gmp"
+url = "https://mirrors.kernel.org/gnu/gmp/gmp-%{version}.tar.xz"
 sha256 = "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+strip_components = 1
 
 [depends]
 build = ["m4"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # Build a fat x86 binary so GMP selects optimized routines at runtime.

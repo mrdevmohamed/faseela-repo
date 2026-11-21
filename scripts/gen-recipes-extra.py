@@ -7,9 +7,12 @@ Usage:
     python3 gen-recipes-extra.py extra2   # networking + editors only
     python3 gen-recipes-extra.py extra3   # misc + libs + hw only
 
-WARNING: this OVERWRITES recipes/extra/*/recipe.toml. Several of them have been
-edited by hand since they were generated (pins, fixes), so run it only for a
-new package and review `git diff` before committing.
+RETIRED with the schema-v5 migration: this generator renders the legacy
+`source` / `sha256` / `source_dir` recipe form and would silently undo the
+`[[package.sources]]`, `[capabilities]` and `[relations]` tables (and the rel
+bump) of every recipe it touches. The recipes are the source of truth now; copy
+a similar one when adding a package. scripts/recipe_data_extra.py stays only as
+the data guarded by scripts/test-systemd-core.py.
 """
 import os
 import sys
@@ -81,4 +84,8 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.exit(
+        "gen-recipes-extra.py is retired: it renders the pre-schema-v5 recipe form and would "
+        "overwrite the migrated recipes. Edit recipes/extra/<name>/recipe.toml directly."
+    )
     main()

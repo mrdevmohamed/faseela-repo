@@ -4,17 +4,29 @@
 [package]
 name = "effectcraft"
 version = "0.20.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native motion-graphics and visual-effects compositor"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/effectcraft/releases/download/v0.20.0/effectcraft-0.20.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "effectcraft"
+url = "https://github.com/storytold/effectcraft/releases/download/v0.20.0/effectcraft-0.20.0-linux-x86_64.tar.gz"
 sha256 = "2573100a0a2ce07a69257bda7fa6a7d5252d3b4d32dfef3a1f6d2c95bcb8da23"
-source_dir = "effectcraft-0.20.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

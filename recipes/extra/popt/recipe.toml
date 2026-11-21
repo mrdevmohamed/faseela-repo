@@ -3,16 +3,29 @@
 [package]
 name = "popt"
 version = "1.19"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "popt — command-line option parsing library"
 license = ["MIT"]
-source = "https://deb.debian.org/debian/pool/main/p/popt/popt_1.19+dfsg.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "popt"
+url = "https://deb.debian.org/debian/pool/main/p/popt/popt_1.19+dfsg.orig.tar.xz"
 sha256 = "4cd0cd2963d0c4078f65949599d97135c15ee6c09cf3a36a9a1b2753025bb06b"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

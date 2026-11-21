@@ -11,16 +11,29 @@
 [package]
 name = "mpv"
 version = "0.40.0"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "mpv — media player (X11 / Wayland / DRM, ALSA)"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/mpv-player/mpv/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mpv"
+url = "https://github.com/mpv-player/mpv/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "10a0f4654f62140a6dd4d380dcf0bbdbdcf6e697556863dc499c296182f081a3"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
 run = ["ffmpeg", "libass", "libplacebo", "wayland", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "fontconfig", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D auto_features=disabled -D cplayer=true -D libmpv=false -D tests=false -D build-date=false -D manpage-build=disabled -D html-build=disabled -D pdf-build=disabled -D lua=lua52 -D javascript=disabled -D zlib=enabled -D iconv=enabled -D libarchive=enabled -D jpeg=enabled -D alsa=enabled -D wayland=enabled -D gl=enabled -D egl=enabled -D egl-wayland=enabled -D x11=enabled -D egl-x11=enabled -D drm=enabled -D gbm=enabled -D egl-drm=enabled -D vulkan=disabled -D vaapi=enabled -D vaapi-drm=enabled -D vaapi-wayland=enabled -D vdpau=disabled -D pulse=disabled -D pipewire=disabled"

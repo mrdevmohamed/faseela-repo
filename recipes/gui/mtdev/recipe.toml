@@ -2,16 +2,29 @@
 [package]
 name = "mtdev"
 version = "1.1.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Multitouch protocol translation library"
 license = ["MIT"]
-source = "https://bitmath.org/code/mtdev/mtdev-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mtdev"
+url = "https://bitmath.org/code/mtdev/mtdev-%{version}.tar.bz2"
 sha256 = "15d7b28da8ac71d8bc8c9287c2045fd174267bc740bec10cfda332dc1204e0e0"
+strip_components = 1
 
 [depends]
 build = ["pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

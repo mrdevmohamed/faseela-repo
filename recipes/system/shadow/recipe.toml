@@ -5,16 +5,29 @@
 [package]
 name = "shadow"
 version = "4.18.0"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "Shadow password suite (useradd, passwd, ...)"
 license = ["BSD-3-Clause"]
-source = "https://github.com/shadow-maint/shadow/releases/download/4.18.0/shadow-4.18.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "shadow"
+url = "https://github.com/shadow-maint/shadow/releases/download/4.18.0/shadow-4.18.0.tar.xz"
 sha256 = "add4604d3bc410344433122a819ee4154b79dd8316a56298c60417e637c07608"
+strip_components = 1
 
 [depends]
 build = ["libxcrypt", "linux-pam"]
 run = ["libxcrypt", "linux-pam", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --sysconfdir=/etc --disable-static --without-libbsd --with-group-name-max-length=32 --enable-subids --with-libpam"

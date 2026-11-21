@@ -4,17 +4,29 @@
 [package]
 name = "figcraft"
 version = "0.14.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native interface-design and interactive-prototyping application"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/figcraft/releases/download/v0.14.0/figcraft-0.14.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "figcraft"
+url = "https://github.com/storytold/figcraft/releases/download/v0.14.0/figcraft-0.14.0-linux-x86_64.tar.gz"
 sha256 = "0ea489ce299238af96106940cddb42091c3eba109c05fdf843b4e7f8eb970829"
-source_dir = "figcraft-0.14.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

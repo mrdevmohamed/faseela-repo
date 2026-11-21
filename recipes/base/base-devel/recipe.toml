@@ -10,9 +10,11 @@
 [package]
 name = "base-devel"
 version = "1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Meta package: the base toolchain every build may use"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 # installing base-devel pulls the whole base toolchain
@@ -26,6 +28,14 @@ run = [
     "diffutils", "tar", "gzip", "xz", "zstd",
     "patch", "pkgconf", "file", "openssl", "perl", "python",
 ]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # meta package: no sources, ships the manifest so the set is introspectable

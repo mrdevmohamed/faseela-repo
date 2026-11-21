@@ -6,17 +6,29 @@
 [package]
 name = "libdbusmenu"
 version = "18.10.20180917"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "D-Bus menu transport library (GLib and GTK 3)"
 license = ["LGPL-2.1-or-later", "LGPL-3.0-or-later"]
-source = "https://deb.debian.org/debian/pool/main/libd/libdbusmenu/libdbusmenu_%{version}~bzr492+repack1.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libdbusmenu"
+url = "https://deb.debian.org/debian/pool/main/libd/libdbusmenu/libdbusmenu_%{version}~bzr492+repack1.orig.tar.xz"
 sha256 = "41298b926573419f21864205317461750b833c596af6ab0bd206e13336f8cee3"
-source_dir = "libdbusmenu-%{version}~bzr492"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "glib", "gtk3", "autoconf", "automake", "libtool", "gettext", "python"]
 run = ["glib", "gtk3"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = '''

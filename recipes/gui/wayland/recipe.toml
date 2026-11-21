@@ -2,16 +2,29 @@
 [package]
 name = "wayland"
 version = "1.23.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Wayland protocol library and scanner"
 license = ["MIT"]
-source = "https://gitlab.freedesktop.org/wayland/wayland/-/archive/%{version}/wayland-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "wayland"
+url = "https://gitlab.freedesktop.org/wayland/wayland/-/archive/%{version}/wayland-%{version}.tar.gz"
 sha256 = "158ec49af498f2558c7fbf7e8b070d010d4e270cc6076003a18a6c813f87e244"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "libffi", "expat", "libxml2"]
 run = ["libffi", "expat", "libxml2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D documentation=false -D tests=false -D dtd_validation=false"

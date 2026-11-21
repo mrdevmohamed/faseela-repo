@@ -3,16 +3,29 @@
 [package]
 name = "valgrind"
 version = "3.24.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "valgrind — memory error detector and profiler"
 license = ["GPL-2.0-or-later"]
-source = "https://sourceware.org/pub/valgrind/valgrind-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "valgrind"
+url = "https://sourceware.org/pub/valgrind/valgrind-%{version}.tar.bz2"
 sha256 = "71aee202bdef1ae73898ccf7e9c315134fa7db6c246063afc503aef702ec03bd"
+strip_components = 1
 
 [depends]
 build = []
 run = ["perl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --enable-only64bit"

@@ -1,9 +1,13 @@
+import sys
 #!/usr/bin/env python3
 """Regression checks for package recipes that failed in CI."""
 
 from pathlib import Path
 import re
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,8 +32,8 @@ assert "require_config CONFIG_KMOD y" not in linux_configure
 
 net_tools = recipe("recipes/system/net-tools/recipe.toml")
 assert net_tools["package"]["version"] == "2.10"
-assert net_tools["package"]["rel"] == 1
-assert net_tools["package"]["sha256"] == (
+assert net_tools["package"]["rel"] == 2
+assert rs.sha256(net_tools["package"]) == (
     "b262435a5241e89bfa51c3cabd5133753952f7a7b7b93f32e08cb9d96f580d69"
 )
 assert net_tools["package"]["license"] == ["GPL-2.0-or-later"]
@@ -61,7 +65,7 @@ assert "xmlto" not in xdg_compile
 volk = recipe("recipes/media/volk/recipe.toml")
 vulkan_tools = recipe("recipes/media/vulkan-tools/recipe.toml")
 assert volk["package"]["version"] == vulkan_tools["package"]["version"] == "1.3.296"
-assert volk["package"]["sha256"] == (
+assert rs.sha256(volk["package"]) == (
     "8ffd0e81e29688f4abaa39e598937160b098228f37503903b10d481d4862ab85"
 )
 assert {"cmake", "ninja", "vulkan-headers"} <= set(volk["depends"]["build"])
@@ -69,7 +73,7 @@ assert "volk" in set(vulkan_tools["depends"]["build"])
 
 cjk = recipe("recipes/gui/noto-cjk/recipe.toml")
 cjk_install = cjk["build"]["install"]
-assert cjk["package"]["sha256"] == (
+assert rs.sha256(cjk["package"]) == (
     "f5dc28a754e17327d99f0a612134d92c8dd6187314ae967cb77f25df60860139"
 )
 assert "binutils" in cjk["depends"]["build"]

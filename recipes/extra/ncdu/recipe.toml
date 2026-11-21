@@ -3,16 +3,29 @@
 [package]
 name = "ncdu"
 version = "1.21"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ncdu — NCurses disk usage analyzer"
 license = ["MIT"]
-source = "https://dev.yorhel.nl/download/ncdu-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ncdu"
+url = "https://dev.yorhel.nl/download/ncdu-%{version}.tar.gz"
 sha256 = "a894d3a9b46bce578a6039bef48f54533ec402fb589b0769bfbb1d1edf9601a6"
+strip_components = 1
 
 [depends]
 build = ["ncurses", "pkgconf"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

@@ -2,16 +2,30 @@
 [package]
 name = "asnmap"
 version = "1.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "ASN and network range mapping utility"
 license = ["MIT"]
-source = "https://github.com/projectdiscovery/asnmap/releases/download/v1.2.0/asnmap_1.2.0_linux_amd64.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "asnmap"
+url = "https://github.com/projectdiscovery/asnmap/releases/download/v1.2.0/asnmap_1.2.0_linux_amd64.zip"
 sha256 = "38c732ceb6832c00475111a7972e67ba8e5012b9ea4f776108fe38198289d667"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

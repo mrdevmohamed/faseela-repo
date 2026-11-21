@@ -2,16 +2,29 @@
 [package]
 name = "libunistring"
 version = "1.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU Unicode string library"
 license = ["LGPL-3.0", "GPL-2.0"]
-source = "https://mirrors.kernel.org/gnu/libunistring/libunistring-1.5.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libunistring"
+url = "https://mirrors.kernel.org/gnu/libunistring/libunistring-1.5.tar.xz"
 sha256 = "fe89007a8a414ae4790b816b86859e877d3ab135db3c37f06541ff7e85ac344b"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

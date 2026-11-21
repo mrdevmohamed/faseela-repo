@@ -2,17 +2,29 @@
 [package]
 name = "libvterm"
 version = "0.3.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libvterm — terminal emulator state machine (Neovim :terminal)"
 license = ["MIT"]
-source = "https://www.leonerd.org.uk/code/libvterm/libvterm-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libvterm"
+url = "https://www.leonerd.org.uk/code/libvterm/libvterm-%{version}.tar.gz"
 sha256 = "09156f43dd2128bd347cbeebe50d9a571d32c64e0cf18d211197946aff7226e0"
-source_dir = "libvterm-%{version}"
+strip_components = 1
 
 [depends]
 build = ["libtool", "perl"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} PREFIX=/usr"

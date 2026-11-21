@@ -2,16 +2,29 @@
 [package]
 name = "usbutils"
 version = "017"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "usbutils — USB utilities (lsusb)"
 license = ["GPL-2.0-or-later"]
-source = "https://kernel.org/pub/linux/utils/usb/usbutils/usbutils-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "usbutils"
+url = "https://kernel.org/pub/linux/utils/usb/usbutils/usbutils-%{version}.tar.xz"
 sha256 = "a6a25ffdcf9103e38d7a44732aca17073f4e602b92e4ae55625231a82702e05b"
+strip_components = 1
 
 [depends]
 build = ["libusb", "systemd"]
 run = ["libusb", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

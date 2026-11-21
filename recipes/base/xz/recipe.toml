@@ -2,16 +2,29 @@
 [package]
 name = "xz"
 version = "5.8.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "XZ-format compression library and tools"
 license = ["GPL-2.0", "LGPL-2.1", "0BSD"]
-source = "https://github.com/tukaani-project/xz/releases/download/v5.8.1/xz-5.8.1.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xz"
+url = "https://github.com/tukaani-project/xz/releases/download/v5.8.1/xz-5.8.1.tar.xz"
 sha256 = "0b54f79df85912504de0b14aec7971e3f964491af1812d83447005807513cd9e"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/xz-%{version}"

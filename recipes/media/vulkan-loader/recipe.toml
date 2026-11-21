@@ -3,17 +3,29 @@
 [package]
 name = "vulkan-loader"
 version = "1.3.296"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Khronos Vulkan ICD loader (Wayland WSI)"
 license = ["Apache-2.0"]
-source = "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/vulkan-sdk-1.3.296.0.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "vulkan-loader"
+url = "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/vulkan-sdk-1.3.296.0.tar.gz"
 sha256 = "924b439421c30513f59dfd360cb1309639c1522de28608eb64c9d79581e44c72"
-source_dir = "Vulkan-Loader-vulkan-sdk-1.3.296.0"
+strip_components = 1
 
 [depends]
 build = ["cmake", "ninja", "pkgconf", "vulkan-headers", "wayland"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

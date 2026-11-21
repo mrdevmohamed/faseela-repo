@@ -2,16 +2,29 @@
 [package]
 name = "git"
 version = "2.56.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Distributed version-control system"
 license = ["GPL-2.0"]
-source = "https://cdn.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "git"
+url = "https://cdn.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz"
 sha256 = "26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3"
+strip_components = 1
 
 [depends]
 build = ["curl", "expat", "gettext", "openssl", "pcre2", "perl", "rust", "zlib"]
 run = ["curl", "expat", "gettext", "openssl", "pcre2", "perl", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --with-gitconfig=/etc/gitconfig"

@@ -2,16 +2,29 @@
 [package]
 name = "libpng"
 version = "1.6.44"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "PNG reference library"
 license = ["libpng-2.0"]
-source = "https://download.sourceforge.net/libpng/libpng-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpng"
+url = "https://download.sourceforge.net/libpng/libpng-%{version}.tar.xz"
 sha256 = "60c4da1d5b7f0aa8d158da48e8f8afa9773c1c8baa5d21974df61f1886b8ce8e"
+strip_components = 1
 
 [depends]
 build = ["zlib"]
 run = ["zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

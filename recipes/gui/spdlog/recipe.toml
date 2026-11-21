@@ -5,17 +5,29 @@
 [package]
 name = "spdlog"
 version = "1.17.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "spdlog — fast C++ logging library (shared, external fmt), used by waybar"
 license = ["MIT"]
-source = "https://github.com/gabime/spdlog/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "spdlog"
+url = "https://github.com/gabime/spdlog/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "d8862955c6d74e5846b3f580b1605d2428b11d97a410d86e2fb13e857cd3a744"
-source_dir = "spdlog-%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake", "ninja", "fmt"]
 run = ["fmt", "gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DSPDLOG_BUILD_SHARED=ON -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_BENCH=OFF -DSPDLOG_BUILD_WARNINGS=OFF"

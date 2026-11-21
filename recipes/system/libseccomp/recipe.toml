@@ -2,16 +2,29 @@
 [package]
 name = "libseccomp"
 version = "2.6.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Enhanced seccomp syscall filtering library"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/seccomp/libseccomp/releases/download/v%{version}/libseccomp-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libseccomp"
+url = "https://github.com/seccomp/libseccomp/releases/download/v%{version}/libseccomp-%{version}.tar.gz"
 sha256 = "501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be"
+strip_components = 1
 
 [depends]
 build = ["gperf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"

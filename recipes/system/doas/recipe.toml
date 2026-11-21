@@ -3,17 +3,29 @@
 [package]
 name = "doas"
 version = "6.8.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "OpenDoas: portable version of OpenBSD's doas (minimal sudo replacement)"
 license = ["ISC"]
-source = "https://github.com/Duncaen/OpenDoas/releases/download/v%{version}/opendoas-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "doas"
+url = "https://github.com/Duncaen/OpenDoas/releases/download/v%{version}/opendoas-%{version}.tar.gz"
 sha256 = "28dca29adec5f4336465812d9e2243f599e62a78903de71c24f0cd6fe667edac"
-source_dir = "opendoas-%{version}"
+strip_components = 1
 
 [depends]
 build = ["bison", "libxcrypt", "shadow"]   # glibc >= 2.38 has no libcrypt: doas links -lcrypt
 run = ["shadow", "libxcrypt", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # no PAM in this distro: authenticate against /etc/shadow

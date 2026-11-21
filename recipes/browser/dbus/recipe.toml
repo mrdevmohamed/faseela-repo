@@ -10,16 +10,29 @@
 [package]
 name = "dbus"
 version = "1.16.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "D-Bus message bus library, daemon, tools and system-bus policy"
 license = ["AFL-2.1", "GPL-2.0-or-later"]
-source = "https://dbus.freedesktop.org/releases/dbus/dbus-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "dbus"
+url = "https://dbus.freedesktop.org/releases/dbus/dbus-%{version}.tar.xz"
 sha256 = "9f8ca5eb51cbe09951aec8624b86c292990ae2428b41b856e2bed17ec65c8849"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "expat", "systemd"]
 run = ["expat", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -D runtime_dir=/run -D systemd=enabled -D systemd_system_unitdir=/usr/lib/systemd/system -D systemd_user_unitdir=/usr/lib/systemd/user -D x11_autolaunch=disabled -D libaudit=disabled -D selinux=disabled -D apparmor=disabled -D xml_docs=disabled -D doxygen_docs=disabled -D ducktype_docs=disabled -D qt_help=disabled -D modular_tests=disabled -D installed_tests=false"

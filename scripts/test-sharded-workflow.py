@@ -33,6 +33,12 @@ class ShardedWorkflowTests(unittest.TestCase):
             self.assertLessEqual(passed, set(declared), (name, passed - set(declared)))
             self.assertLessEqual(required, passed, name)
 
+    def test_every_job_learns_whether_nawa_is_selected(self):
+        # Without it only the shard that builds nawa would bootstrap the pinned
+        # client and every other job would fail on the old rootfs nawa.
+        for name in [*waves, "publish"]:
+            self.assertIn("nawa_selected", jobs[name]["with"], name)
+
     def test_every_wave_is_a_non_failfast_matrix_over_its_own_output(self):
         for number, name in enumerate(waves):
             job = jobs[name]

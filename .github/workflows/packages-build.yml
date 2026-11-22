@@ -68,6 +68,10 @@ on:
         description: "Draft-release prefix of the build cache shared by all jobs of this run"
         type: string
         required: true
+      nawa_selected:
+        description: "true when nawa is part of the selection: every job then bootstraps the pinned nawa from source"
+        type: string
+        default: "false"
       build_ok:
         description: "true when no wave job failed (final job)"
         type: string
@@ -95,6 +99,7 @@ jobs:
       TOOLCHAIN_ALL: ${{ inputs.toolchain_all }}
       TC_BUILD: ${{ inputs.mode == 'shard' && inputs.shard_id == 'tc' }}
       CACHE_PREFIX: ${{ inputs.cache_prefix }}
+      NAWA_SELECTED: ${{ inputs.nawa_selected }}
       BT: /mnt/faseela-bootstrap
       ISOLATION: ${{ inputs.isolation }}
       ROOTFS_KIND: ${{ inputs.rootfs_kind }}
@@ -278,7 +283,9 @@ jobs:
           # Build the pinned Nawa client from the seed source before asking
           # any Nawa binary to parse its own multi-source / Cargo-fetch recipe.
           # Schema-v3 repo support alone does not imply recipe-schema support.
-          if [[ " $PKGS " == *" nawa "* ]]; then
+          # Every job of a run needs the same pinned Nawa (the rootfs client may be
+          # too old for the recipe schema), not only the shard that builds it.
+          if [[ "$NAWA_SELECTED" == true ]]; then
             [[ "$ROOTFS_KIND" == seed ]] || {
               echo "::error::building nawa requires the seed rootfs (Rust/Cargo)"
               exit 1

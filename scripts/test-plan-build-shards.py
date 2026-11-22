@@ -116,6 +116,22 @@ class PlanTests(unittest.TestCase):
                 self.assertTrue(wave[dep] < wave[name] or owner[dep] == owner[name], (dep, name))
 
 
+class LoadTests(unittest.TestCase):
+    def test_version_constraints_do_not_leak_into_dependency_names(self):
+        root = Path(tempfile.mkdtemp())
+        for name, run in (("base-files", []), ("app", ["base-files >= 0.4-12", "libx>=2"])):
+            d = root / "extra" / name
+            d.mkdir(parents=True)
+            deps = ", ".join(f'"{x}"' for x in run)
+            (d / "recipe.toml").write_text(
+                f'[package]\nname = "{name}"\nversion = "1"\nrel = 1\n[depends]\nrun = [{deps}]\n')
+        recipes = planner.load_recipes(root)
+        self.assertEqual(recipes["app"]["deps"], {"base-files", "libx"})
+        result = planner.plan(recipes, ["app", "base-files"], [], set(), set(), {})
+        self.assertEqual(sorted(planner.closure(recipes, {"app"})), ["base-files", "libx"])
+        self.assertNotIn(">=", " ".join(s["needs"] for w in result["waves"] for s in w))
+
+
 class EmitAndRunnableTests(unittest.TestCase):
     def test_emit_builds_one_matrix_per_wave_and_toolchain(self):
         recipes = make(recipe("a"), recipe("b", build=["a"]))

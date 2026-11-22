@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 import tomllib
 from collections import defaultdict
@@ -62,7 +63,11 @@ def load_recipes(root: Path) -> dict[str, dict]:
         deps: set[str] = set()
         for key in ("build", "run"):
             value = depends.get(key, [])
-            deps.update([value] if isinstance(value, str) else (str(v) for v in value))
+            for item in [value] if isinstance(value, str) else value:
+                # "base-files >= 0.4-12": only the package name identifies a recipe
+                match = re.match(r"[A-Za-z0-9][A-Za-z0-9._+-]*", str(item).strip())
+                if match:
+                    deps.add(match.group(0))
         deps.discard(name)
         recipes[name] = {
             "name": name,

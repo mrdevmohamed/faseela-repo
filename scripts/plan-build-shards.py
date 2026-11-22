@@ -239,9 +239,15 @@ def plan(
             })
         out_waves.append(shards)
 
+    # Bootstrap takes about an hour: when the pull request cache already holds a
+    # valid archive of every requested Toolchain package, wave 0 is not repeated
+    # (later waves still install those archives from the cache).
+    toolchain_done = bool(toolchain) and all(recipes[n]["stem"] in done_stems for n in set(toolchain))
+
     return {
         "schema": 1,
         "toolchain": " ".join(sorted(set(toolchain))),
+        "toolchain_done": toolchain_done,
         "todo": sorted(todo),
         "done": done,
         "waves": out_waves,
@@ -286,7 +292,7 @@ def cmd_emit(args) -> int:
     value = json.loads(args.plan.read_text(encoding="utf-8"))
     lines = []
     toolchain = []
-    if value["toolchain"]:
+    if value["toolchain"] and not value.get("toolchain_done"):
         toolchain = [{"id": "tc", "wave": 0, "pkgs": "", "count": 0, "est_min": 0,
                       "needs": "", "waits": "", "toolchain": value["toolchain"]}]
     lines.append(f"wave0={matrix(toolchain)}")
@@ -311,7 +317,8 @@ def cmd_summary(args) -> int:
     print("### Build plan")
     print(f"- To build: **{len(value['todo'])}**; already up to date: **{len(value['done'])}**")
     if value["toolchain"]:
-        print(f"- Bootstrap Toolchain (wave 0): `{value['toolchain']}`")
+        state = "already in the build cache, not repeated" if value.get("toolchain_done") else "built first"
+        print(f"- Bootstrap Toolchain (wave 0, {state}): `{value['toolchain']}`")
     for number, shards in enumerate(value["waves"], start=1):
         print(f"- Wave {number}: {sum(s['count'] for s in shards)} package(s) in {len(shards)} parallel shard(s)")
         for shard in shards:

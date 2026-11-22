@@ -116,6 +116,26 @@ class PlanTests(unittest.TestCase):
                 self.assertTrue(wave[dep] < wave[name] or owner[dep] == owner[name], (dep, name))
 
 
+class ToolchainTests(unittest.TestCase):
+    def test_wave_zero_is_skipped_only_when_every_toolchain_archive_is_cached(self):
+        recipes = make(recipe("gcc", category="toolchain"), recipe("glibc", category="toolchain"), recipe("a"))
+        todo = planner.plan(recipes, ["a"], ["gcc", "glibc"], {"gcc-1.0-1"}, set(), {})
+        self.assertFalse(todo["toolchain_done"])
+        done = planner.plan(recipes, ["a"], ["gcc", "glibc"], {"gcc-1.0-1", "glibc-1.0-1"}, set(), {})
+        self.assertTrue(done["toolchain_done"])
+        for value, expected in ((todo, "1"), (done, "0")):
+            with tempfile.TemporaryDirectory() as tmp:
+                plan_file, out = Path(tmp) / "p.json", Path(tmp) / "o"
+                plan_file.write_text(json.dumps(value), encoding="utf-8")
+                planner.main(["emit", "--plan", str(plan_file), "--github-output", str(out)])
+                self.assertIn(f"wave0_count={expected}", out.read_text().splitlines())
+
+    def test_published_toolchain_archive_does_not_count_as_cached(self):
+        recipes = make(recipe("gcc", category="toolchain"))
+        value = planner.plan(recipes, [], ["gcc"], set(), {"gcc-1.0-1"}, {})
+        self.assertFalse(value["toolchain_done"])
+
+
 class LoadTests(unittest.TestCase):
     def test_version_constraints_do_not_leak_into_dependency_names(self):
         root = Path(tempfile.mkdtemp())

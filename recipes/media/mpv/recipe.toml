@@ -24,7 +24,7 @@ sha256 = "10a0f4654f62140a6dd4d380dcf0bbdbdcf6e697556863dc499c296182f081a3"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
+build = ["meson", "ninja", "pkgconf", "ffmpeg", "libass", "libplacebo", "wayland", "wayland-protocols", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "lua52", "libva", "libdisplay-info", "xorgproto", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
 run = ["ffmpeg", "libass", "libplacebo", "wayland", "libxkbcommon", "mesa", "libdrm", "alsa-lib", "libarchive", "libjpeg-turbo", "zlib", "fontconfig", "libva", "libdisplay-info", "libX11", "libXext", "libXScrnSaver", "libXpresent", "libXrandr"]
 
 [capabilities]

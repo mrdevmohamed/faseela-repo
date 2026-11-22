@@ -1,0 +1,23 @@
+{
+  "_comment": "Measured minutes of the slow packages (everything else is assumed to take well under a minute). Only used to balance shards; a wrong value costs speed, never correctness.",
+  "llvm": 86,
+  "cosmic-files": 10,
+  "cmake": 8,
+  "cosmic-applets": 8,
+  "cosmic-settings": 8,
+  "cosmic-edit": 7,
+  "mesa": 6,
+  "cosmic-comp": 6,
+  "xdg-desktop-portal-cosmic": 6,
+  "cosmic-locker": 6,
+  "cosmic-store": 6,
+  "cosmic-term": 6,
+  "cosmic-launcher": 5,
+  "cosmic-workspaces": 5,
+  "spirv-tools": 4,
+  "cosmic-osk": 4,
+  "webkit2gtk": 120,
+  "firefox": 90,
+  "rust": 20,
+  "gcc": 60
+}

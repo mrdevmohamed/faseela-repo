@@ -103,6 +103,12 @@ jobs:
         run: python3 -I scripts/test-toolchain-cache-key.py
       - name: Draft-release package cache provenance regression checks
         run: python3 -I scripts/test-pr-build-release-cache.py
+      - name: Shard planner (dependency waves) regression checks
+        run: python3 -I scripts/test-plan-build-shards.py
+      - name: Shard build cache regression checks
+        run: python3 -I scripts/test-pr-shard-cache.py
+      - name: Sharded package workflow structure checks
+        run: python3 -I scripts/test-sharded-workflow.py
       - name: creative recipes install bin/share and usr payload layouts
         run: python3 -I scripts/test-creative-recipes.py
       - name: flavors.toml resolves (every flavor, every dependency)

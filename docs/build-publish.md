@@ -27,6 +27,18 @@ The package selector accepts more than one package or flavor name. Selectors can
 
 The workflow UI does not provide a dynamic checkbox for every recipe. Use the text inputs to select exact package names or flavors.
 
+## How a build is split (shards and waves)
+
+A full build is longer than one runner may run (6 hours), and the packages used to queue behind one another in a single job. The workflow therefore plans the build first:
+
+1. **plan** removes every package whose archive already exists (published, or saved by an earlier run of the same pull request) and splits the remaining packages into up to eight **waves** along their dependency levels (`scripts/plan-build-shards.py`). A package is always in a later wave than every selected package it needs, at build **or** run time.
+2. The packages of one wave form parallel **shards**, one runner each. Packages of a wave that depend on each other share a shard, very slow packages (LLVM, browsers) get a shard of their own, and `scripts/build-times.json` lists the measured minutes used for balancing. A wrong value only costs speed.
+3. A shard downloads just the archives of its dependency closure: published ones from the package repository and those that earlier waves built from the **draft build cache** (`scripts/pr-shard-cache.py`). Everything it builds is saved to that cache, even when another package of the shard failed or time ran out.
+4. A package whose dependency failed in an earlier wave is skipped, not compiled again. A failing package never stops the other shards.
+5. **publish** gathers all archives, runs the checks and, outside pull requests, publishes the signed index.
+
+**Re-run failed jobs** repeats only the failed shards: the other shards' archives are in the cache and the re-run plans only what is missing. Pull requests keep their cache (`schema-v5-build-pr-<N>-*` draft releases) across runs; other runs use `faseela-build-run-<run id>-*`, deleted when the run ends. The job that does the work is defined in **.github/workflows/packages-build.yml** (`mode: shard` or `mode: finalize`).
+
 ## Build environment
 
 The workflow downloads a root filesystem from the latest Faseela release:

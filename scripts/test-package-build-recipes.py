@@ -119,7 +119,11 @@ assert "cargo fetch" not in nawa["build"]["compile"]
 
 # A selected Nawa target must be bootstrapped from the pinned source with the
 # seed Rust toolchain before the ordinary package loop can parse its recipe.
-workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+# The selection lives in packages.yml, the build steps in packages-build.yml.
+workflow = "\n".join(
+    (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
+    for name in ("packages-build.yml", "packages.yml")
+)
 assert "write-nawa-lock" not in workflow
 assert "nawa-source.toml" not in workflow
 assert 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' in workflow

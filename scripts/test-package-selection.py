@@ -264,22 +264,21 @@ class RealRecipeTreeTests(unittest.TestCase):
         workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
         self.assertIn("  pull_request:", workflow)
         self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
-        self.assertIn("Restore previous package builds from the PR draft-release cache", workflow)
-        self.assertIn("pr-build-cache.py invalidate-relations", workflow)
-        self.assertIn("pr-build-release-cache.py verify-candidate", workflow)
-        self.assertIn("gh release download", workflow)
-        self.assertIn("pr-build-cache.py restore", workflow)
-        self.assertIn("Save reusable package builds to draft PR releases", workflow)
-        self.assertIn("pr-build-cache.py save", workflow)
-        self.assertIn("pr-build-release-cache.py plan", workflow)
-        self.assertIn("gh release create \"$tag\" --repo \"$PKG_REPO\" --draft", workflow)
-        self.assertNotIn("gh run download", workflow)
-        self.assertNotIn("name: pr-package-cache", workflow)
+        build = (root / ".github/workflows/packages-build.yml").read_text(encoding="utf-8")
+        self.assertIn("Restore the archives of earlier waves from the draft build cache", build)
+        self.assertIn("pr-build-cache.py invalidate-relations", build)
+        self.assertIn("pr-shard-cache.py restore", build)
+        self.assertIn("pr-shard-cache.py save", build)
+        self.assertIn("pr-shard-cache.py merge", build)
+        self.assertNotIn("gh run download", workflow + build)
+        self.assertNotIn("name: pr-package-cache", workflow + build)
         self.assertIn("schema_v5_only != 'true'", workflow)
         self.assertIn(
-            "if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}",
-            workflow,
+            "if: ${{ inputs.mode == 'finalize' && github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}",
+            build,
         )
+        # only the final job may publish; shards never see the signing key
+        self.assertEqual(build.count("secrets.NAWA_SIGN_KEY_B64"), 2)
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)
 
 

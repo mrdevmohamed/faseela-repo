@@ -74,13 +74,13 @@ class ToolchainCacheKeyTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
-    wf = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+    wf = (ROOT / ".github/workflows/packages-build.yml").read_text(encoding="utf-8")
 
     def test_cache_steps_exist_in_order(self):
         order = [
             "name: Compute the Bootstrap Toolchain cache key",
             "uses: actions/cache/restore@v4",
-            "name: Build ordinary packages and Bootstrap Toolchain targets",
+            "name: Build this shard (Bootstrap Toolchain targets in wave 0, packages otherwise)",
             "uses: actions/cache/save@v4",
         ]
         positions = [self.wf.index(item) for item in order]

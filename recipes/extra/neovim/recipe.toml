@@ -30,6 +30,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DUSE_BUNDLED=OFF -DENABLE_TRANSLATIONS=ON"
+configure = "cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DUSE_BUNDLED=OFF -DENABLE_TRANSLATIONS=ON"
 compile = "cmake --build build -j%{jobs}"
 install = "DESTDIR=%{pkgdir} cmake --install build"

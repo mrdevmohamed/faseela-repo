@@ -30,7 +30,7 @@ replaces = []
 
 [build]
 configure = '''
-cmake -S . -B build -G Ninja \
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=lib \

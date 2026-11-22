@@ -28,6 +28,6 @@ replaces = []
 
 [build]
 # AccountsService is an optional upstream integration and is not part of Faseela.
-configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_SKIP_RPATH=ON -DENABLE_ACCOUNTS_SERVICE=OFF"
+configure = "cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_SKIP_RPATH=ON -DENABLE_ACCOUNTS_SERVICE=OFF"
 compile = "make -C build -j%{jobs}"
 install = '''make -C build DESTDIR=%{pkgdir} install'''

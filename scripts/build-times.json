@@ -16,7 +16,7 @@
   "cosmic-workspaces": 5,
   "spirv-tools": 4,
   "cosmic-osk": 4,
-  "webkit2gtk": 120,
+  "webkit2gtk-4.1": 120,
   "firefox": 90,
   "rust": 20,
   "gcc": 60

@@ -116,6 +116,20 @@ class PlanTests(unittest.TestCase):
                 self.assertTrue(wave[dep] < wave[name] or owner[dep] == owner[name], (dep, name))
 
 
+class ShallowWaveTests(unittest.TestCase):
+    def test_few_levels_get_one_wave_each_so_independent_packages_run_in_parallel(self):
+        # The real case that built serially: x265/lsof/ruby, then ffmpeg (x265),
+        # then mpv (ffmpeg) and webkit (ruby) side by side.
+        recipes = make(recipe("x265"), recipe("lsof"), recipe("ruby"), recipe("ffmpeg", build=["x265"]),
+                       recipe("mpv", build=["ffmpeg"]), recipe("webkit", build=["ruby"]))
+        result = planner.plan(recipes, list(recipes), [], set(), set(), {"webkit": 120}, shard_minutes=25)
+        waves = [{n for s in w for n in s["pkgs"].split()} for w in result["waves"]]
+        self.assertEqual(waves, [{"x265", "lsof", "ruby"}, {"ffmpeg", "webkit"}, {"mpv"}])
+        # the 2-hour package does not hold the quick one back inside its wave
+        owner = {n: s["id"] for s in shards(result) for n in s["pkgs"].split()}
+        self.assertNotEqual(owner["ffmpeg"], owner["webkit"])
+
+
 class ToolchainTests(unittest.TestCase):
     def test_wave_zero_is_skipped_only_when_every_toolchain_archive_is_cached(self):
         recipes = make(recipe("gcc", category="toolchain"), recipe("glibc", category="toolchain"), recipe("a"))
@@ -198,6 +212,12 @@ class EmitAndRunnableTests(unittest.TestCase):
 
 
 class RealRecipesTests(unittest.TestCase):
+    def test_timing_file_names_real_recipes(self):
+        root = Path(__file__).resolve().parent.parent / "recipes"
+        names = set(planner.load_recipes(root))
+        times = json.loads((Path(__file__).resolve().parent / "build-times.json").read_text())
+        self.assertEqual([k for k in times if not k.startswith("_") and k not in names], [])
+
     def test_every_non_toolchain_recipe_is_planned_consistently(self):
         root = Path(__file__).resolve().parent.parent / "recipes"
         recipes = planner.load_recipes(root)

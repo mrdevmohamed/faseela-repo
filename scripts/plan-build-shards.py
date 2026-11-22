@@ -41,7 +41,6 @@ from collections import defaultdict
 from pathlib import Path
 
 MAX_WAVES = 8
-MAX_LEVELS_PER_WAVE = 3  # deeper waves tie too many packages into one shard
 DEFAULT_MINUTES = 0.4
 SETUP_MINUTES = 8.0  # rootfs download + build root preparation of every shard
 
@@ -118,14 +117,18 @@ def levels(todo: set[str], tdeps: dict[str, set[str]]) -> dict[str, int]:
 
 
 def split_waves(by_level: dict[int, list[str]], cost: dict[str, float], max_waves: int,
-                max_levels: int = MAX_LEVELS_PER_WAVE) -> list[list[str]]:
+                max_levels: int | None = None) -> list[list[str]]:
     """Cut the level sequence into at most `max_waves` waves.
 
     A wave is closed after `max_levels` dependency levels (packages of one wave
     that depend on each other must share a shard, so shallow waves parallelize
-    better) or when it holds its share of the total cost. The last wave takes
+    better; by default as few levels per wave as the wave limit allows) or when it holds its share of the total cost. The last wave takes
     whatever is left, so deep graphs still fit the fixed number of wave jobs."""
     ordered = sorted(by_level)
+    if max_levels is None:
+        # As shallow as the wave limit allows: with few levels every level is
+        # its own wave (a chain A -> B -> C must not collapse into one serial shard).
+        max_levels = max(1, math.ceil(len(ordered) / max_waves))
     total = sum(cost[n] for lv in ordered for n in by_level[lv])
     waves: list[list[str]] = []
     current: list[str] = []

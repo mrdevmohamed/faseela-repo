@@ -22,17 +22,36 @@
 [package]
 name = "systemd"
 version = "261.5"
-rel = 2
+rel = 6
 arch = ["x86_64"]
 summary = "systemd init system with udev, journald, logind, networkd, resolved and timesyncd"
 license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
-source = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
+# Relations are authenticated in schema v5. Keep the actual source in the
+# new source table; the marker prevents older clients from silently ignoring
+# the replacement declarations.
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+# Preserve legacy source_dir="." semantics: configure/build/install run at
+# the extracted archive root, not a default name/version subdirectory.
+workdir = "."
+
+[[package.sources]]
+name = "systemd"
+url = "https://sourceforge.net/projects/systemd.mirror/files/v%{version}/systemd-stable%20v%{version}%20source%20code.tar.gz/download"
 sha256 = "a2a3db62d45ec026e900b0af68f97ba4adba269fb26937a7b14ca1aca92bc5f8"
-source_dir = "."
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "python-jinja2", "python-markupsafe"]
-run = ["libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files", "coreutils"]
+run = ["glibc", "libcap", "util-linux", "kmod", "libseccomp", "acl", "linux-pam", "libxcrypt", "pcre2", "zstd", "xz", "lz4", "base-files >= 0.4-12", "coreutils"]
+
+[capabilities]
+provides = ["init-system=systemd"]
+
+# These two packages own the legacy udev and logind payloads that systemd
+# now supplies. PID 1 and power-control links remain a separate migration.
+[relations]
+schema = 1
+conflicts = ["eudev", "elogind"]
+replaces = ["eudev", "elogind"]
 
 [build]
 configure = '''set -eu
@@ -98,6 +117,9 @@ want = {
     "quotacheck": "off", "ldconfig": "off", "create-log-dirs": "off",
     # --- literal values -----------------------------------------------------
     "mode": "lit:release",
+    # Downstream packages expect the private shared library ABI tag to match
+    # the upstream major version (261), not the full package version (261.5).
+    "shared-lib-tag": "lit:261",
     "split-bin": "lit:false",
     "rootprefix": "lit:/usr",
     "rootlibdir": "lit:/usr/lib",
@@ -147,6 +169,28 @@ print("systemd: skipped (not in this release):", " ".join(skipped) or "none", fi
 PY
 
 SOURCE_ROOT="$(cat .faseela-source-root)"
+# systemd's core DSO consumes libsystemd-shared from the private pkglibdir.
+# Give that DSO the same install-time search path as systemd's executables so
+# the loader and Nawa's per-ELF reverse-dependency checker can resolve it.
+python3 - "$SOURCE_ROOT/src/core/meson.build" <<'PATCH'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+old = """        link_with : libshared,
+        install : true,
+        install_dir : pkglibdir)"""
+new = """        link_with : libshared,
+        install : true,
+        install_dir : pkglibdir,
+        install_rpath : '$ORIGIN')"""
+if text.count(old) != 1:
+    raise SystemExit(
+        "systemd: expected exactly one libcore install stanza to add its private RUNPATH"
+    )
+path.write_text(text.replace(old, new), encoding="utf-8")
+PATCH
 meson setup "$SOURCE_ROOT/build" "$SOURCE_ROOT" \
   --prefix=/usr \
   --libdir=lib \
@@ -163,22 +207,26 @@ install = '''set -eu
 SOURCE_ROOT="$(cat .faseela-source-root)"
 DESTDIR=%{pkgdir} meson install -C "$SOURCE_ROOT/build" --no-rebuild
 
-for f in usr/lib/systemd/systemd usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
+for f in usr/lib/systemd/systemd usr/lib/systemd/libsystemd-core-261.so \
+         usr/lib/systemd/libsystemd-shared-261.so \
+         usr/lib/systemd/systemd-udevd usr/lib/systemd/systemd-journald \
          usr/lib/systemd/systemd-logind usr/lib/systemd/systemd-networkd \
          usr/lib/systemd/systemd-resolved usr/lib/systemd/systemd-timesyncd \
          usr/bin/systemctl usr/bin/journalctl usr/bin/loginctl usr/bin/udevadm \
+         usr/bin/busctl usr/bin/userdbctl usr/bin/varlinkctl \
          usr/bin/systemd-tmpfiles usr/bin/systemd-sysusers usr/bin/networkctl; do
     test -x "%{pkgdir}/$f" || { echo "systemd: $f was not installed" >&2; exit 1; }
 done
 
-# PID 1 for direct disk boots: with merged /usr the kernel's /sbin/init lookup
-# resolves to /usr/bin/init through /sbin -> usr/bin (created by base-files).
-ln -sf ../lib/systemd/systemd %{pkgdir}/usr/bin/init
-
-# systemd answers poweroff/reboot/halt/shutdown through systemctl.
-for c in poweroff reboot halt shutdown; do
-    [ -e %{pkgdir}/usr/bin/$c ] || ln -s systemctl %{pkgdir}/usr/bin/$c
+# Verify the udev compatibility files that replace eudev's libudev and rules.
+for f in etc/udev/udev.conf usr/include/libudev.h \
+         usr/lib/libudev.so usr/lib/libudev.so.1 usr/lib/pkgconfig/libudev.pc \
+         usr/lib/udev/ata_id usr/lib/udev/rules.d/50-udev-default.rules; do
+    test -e "%{pkgdir}/$f" || { echo "systemd: missing udev compatibility file $f" >&2; exit 1; }
 done
+
+# Do not stage PID 1 or power-control compatibility links here. Those paths
+# remain owned by runit-services until Nawa's explicitly approved runit -> systemd migration.
 '''
 
 [hooks]

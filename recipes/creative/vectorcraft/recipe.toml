@@ -4,17 +4,29 @@
 [package]
 name = "vectorcraft"
 version = "0.20.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native vector illustration and SVG editing application"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/vectorcraft/releases/download/v0.20.0/vectorcraft-0.20.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "vectorcraft"
+url = "https://github.com/storytold/vectorcraft/releases/download/v0.20.0/vectorcraft-0.20.0-linux-x86_64.tar.gz"
 sha256 = "d38d83d9e59fdcf7a100414e22b3094094fe4fe2dd43a105f042978012610e86"
-source_dir = "vectorcraft-0.20.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

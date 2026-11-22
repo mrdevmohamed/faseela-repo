@@ -2,16 +2,29 @@
 [package]
 name = "libnotify"
 version = "0.8.9"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Desktop notification library (client side of org.freedesktop.Notifications)"
 license = ["LGPL-2.1-or-later"]
-source = "https://download.gnome.org/sources/libnotify/0.8/libnotify-0.8.9.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libnotify"
+url = "https://download.gnome.org/sources/libnotify/0.8/libnotify-0.8.9.tar.xz"
 sha256 = "c906bb084027ea512f94a60fbfc0cc8d4f17e4b4d525bed370d07a6d8714c923"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "glib", "gdk-pixbuf"]
 run = ["glib", "gdk-pixbuf"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=disabled -D man=false -D gtk_doc=false -D docbook_docs=disabled"

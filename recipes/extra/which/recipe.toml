@@ -2,16 +2,29 @@
 [package]
 name = "which"
 version = "2.25"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU which — shows the full path of shell commands"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/which/which-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "which"
+url = "https://mirrors.kernel.org/gnu/which/which-%{version}.tar.gz"
 sha256 = "1cb83e4f702e60b8211ab5ec4c2afbab1b1dec80209456a7d2faf7584ed225ea"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

@@ -9,17 +9,29 @@
 [package]
 name = "linux-firmware-lite"
 version = "20260910"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Curated subset of the Linux kernel firmware (GPU, wifi, bluetooth, NICs, audio DSP)"
 license = ["Redistributable-firmware"]
-source = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "linux-firmware-lite"
+url = "https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-%{version}.tar.xz"
 sha256 = "f3937ca282ba256242e2b6dbe523df8a80007d29ffd61f56d270190865492ea8"
-source_dir = "linux-firmware-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # Install everything into a scratch tree with upstream's own installer (it

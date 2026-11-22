@@ -2,17 +2,29 @@
 [package]
 name = "xorg-xprop"
 version = "1.2.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X.Org utility for displaying window and font properties"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/app/xprop-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-xprop"
+url = "https://xorg.freedesktop.org/archive/individual/app/xprop-%{version}.tar.xz"
 sha256 = "d689e2adb7ef7b439f6469b51cda8a7daefc83243854c2a3b8f84d0f029d67ee"
-source_dir = "xprop-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorg-util-macros", "libX11"]
 run = ["libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

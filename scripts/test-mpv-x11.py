@@ -1,8 +1,12 @@
+import sys
 #!/usr/bin/env python3
 """Guard mpv's X11/EGL, Wayland/EGL, and DRM/KMS output backends."""
 
 from pathlib import Path
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,7 +36,7 @@ for section in ("build", "run"):
 
 present = recipe("recipes/xorg/libXpresent/recipe.toml")
 assert present["package"]["version"] == "1.0.2"
-assert present["package"]["sha256"] == (
+assert rs.sha256(present["package"]) == (
     "4e5b21b4812206a4b223013606ae31170502c1043038777a1ef8f70c09d37602"
 )
 assert "libXpresent" in x11_runtime

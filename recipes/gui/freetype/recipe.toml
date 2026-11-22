@@ -2,16 +2,29 @@
 [package]
 name = "freetype"
 version = "2.13.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "TrueType/OpenType font rendering library"
 license = ["FTL"]
-source = "https://download.savannah.gnu.org/releases/freetype/freetype-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "freetype"
+url = "https://download.savannah.gnu.org/releases/freetype/freetype-%{version}.tar.xz"
 sha256 = "0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289"
+strip_components = 1
 
 [depends]
 build = ["libpng", "zlib", "bzip2", "pkgconf"]
 run = ["libpng", "zlib", "bzip2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --with-harfbuzz=no --with-brotli=no --with-png=yes --with-zlib=yes --with-bzip2=yes"

@@ -2,16 +2,29 @@
 [package]
 name = "libxslt"
 version = "1.1.42"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "libxslt — XSLT processing library and xsltproc utility"
 license = ["MIT"]
-source = "https://download.gnome.org/sources/libxslt/1.1/libxslt-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxslt"
+url = "https://download.gnome.org/sources/libxslt/1.1/libxslt-%{version}.tar.xz"
 sha256 = "85ca62cac0d41fc77d3f6033da9df6fd73d20ea2fc18b0a3609ffb4110e1baeb"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxml2"]
 run = ["libxml2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --without-python"

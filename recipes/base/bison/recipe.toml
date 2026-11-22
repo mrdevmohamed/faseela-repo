@@ -2,16 +2,29 @@
 [package]
 name = "bison"
 version = "3.8.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU parser generator (yacc-compatible)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "bison"
+url = "https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz"
 sha256 = "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
+strip_components = 1
 
 [depends]
 build = ["m4"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

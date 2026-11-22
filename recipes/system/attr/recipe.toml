@@ -2,16 +2,29 @@
 [package]
 name = "attr"
 version = "2.6.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Extended filesystem attributes library and utilities"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://download.savannah.nongnu.org/releases/attr/attr-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "attr"
+url = "https://download.savannah.nongnu.org/releases/attr/attr-%{version}.tar.xz"
 sha256 = "6c8a2148a7b85043b68492bce43316b0e2e214fc4e628c7ede078e76e216330b"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --docdir=/usr/share/doc/attr-%{version} --disable-static --disable-nls"

@@ -9,6 +9,9 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 RECIPE_PATH = ROOT / "recipes/peripherals/huiontablet/recipe.toml"
 EXPECTED_SHA256 = "cc563c2358dd0ba13c245f97341d20fecfa8509bfa5c75c8258c895f48b6fa02"
@@ -61,12 +64,12 @@ def run():
     check("peripherals:" in packages_workflow and "INPUT_PERIPHERALS" in packages_workflow
           and "categories+=(peripherals)" in packages_workflow,
           "the package workflow must expose the peripherals category selector")
-    check(package["sha256"] == EXPECTED_SHA256, "recipe checksum does not match inspected vendor archive")
+    check(rs.sha256(package) == EXPECTED_SHA256, "recipe checksum does not match inspected vendor archive")
     check(sha256(deb) == EXPECTED_SHA256, "downloaded Huion DEB checksum mismatch")
     check("256c" in install_script and "006f" in install_script,
           "package integration must be scoped to the observed HS64 USB ID")
 
-    url = package["source"].replace("%{version}", package["version"])
+    url = rs.url(package).replace("%{version}", package["version"])
     filename = url.rsplit("/", 1)[-1]
 
     with tempfile.TemporaryDirectory(prefix="faseela-huion-package-") as tmp:

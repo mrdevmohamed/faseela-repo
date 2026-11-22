@@ -3,16 +3,29 @@
 [package]
 name = "keyutils"
 version = "1.6.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Linux kernel key retention utilities and library"
 license = ["LGPL-2.1-or-later"]
-source = "https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/snapshot/keyutils-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "keyutils"
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/snapshot/keyutils-%{version}.tar.gz"
 sha256 = "a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs}"

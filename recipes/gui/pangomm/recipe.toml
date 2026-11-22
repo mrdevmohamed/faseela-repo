@@ -4,17 +4,29 @@
 [package]
 name = "pangomm"
 version = "2.46.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "pangomm — C++ bindings for pango (gtkmm dependency)"
 license = ["LGPL-2.1-or-later"]
-source = "https://download.gnome.org/sources/pangomm/2.46/pangomm-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pangomm"
+url = "https://download.gnome.org/sources/pangomm/2.46/pangomm-%{version}.tar.xz"
 sha256 = "38ca0b050b065de4e3da0c182df657437757063bbf0c4b6c9567ddba019b1d68"
-source_dir = "pangomm-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "pango", "cairo", "glibmm", "cairomm"]
 run = ["pango", "cairo", "glibmm", "cairomm", "gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D maintainer-mode=false -D build-documentation=false"

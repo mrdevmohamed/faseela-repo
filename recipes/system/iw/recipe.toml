@@ -3,16 +3,29 @@
 [package]
 name = "iw"
 version = "6.9"
-rel = 1
+rel = 3
 arch = ["x86_64"]
 summary = "iw: nl80211 wireless configuration tool (scan, link, regdom)"
 license = ["ISC"]
-source = "https://www.kernel.org/pub/software/network/iw/iw-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "iw-6.9"
+
+[[package.sources]]
+name = "iw"
+url = "https://www.kernel.org/pub/software/network/iw/iw-%{version}.tar.xz"
 sha256 = "3f2db22ad41c675242b98ae3942dbf3112548c60a42ff739210f2de4e98e4894"
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = ["wireless-tools"]
+replaces = ["wireless-tools"]
 
 [depends]
 build = ["libnl", "pkgconf"]
-run = ["libnl"]
+run = ["glibc", "libnl"]
 
 [build]
 compile = "make -j%{jobs} PREFIX=/usr"

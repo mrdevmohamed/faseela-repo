@@ -2,17 +2,29 @@
 [package]
 name = "xorg-xhost"
 version = "1.0.10"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "X11 server access control utility"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/app/xhost-1.0.10.tar.xz"
-source_dir = "xhost-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-xhost"
+url = "https://xorg.freedesktop.org/archive/individual/app/xhost-1.0.10.tar.xz"
 sha256 = "a8afd70059479c712948b895e41c35a4a8bfcede3ba2d5a4b855c88bbb725be1"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libXmu", "libXau", "libX11", "xorgproto"]
 run = ["libXmu", "libXau", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static "

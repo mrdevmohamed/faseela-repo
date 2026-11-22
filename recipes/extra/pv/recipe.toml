@@ -3,16 +3,29 @@
 [package]
 name = "pv"
 version = "1.9.31"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "pv — pipe viewer: progress bar for data through a pipe"
 license = ["Artistic-2.0"]
-source = "https://www.ivarch.com/programs/sources/pv-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pv"
+url = "https://www.ivarch.com/programs/sources/pv-%{version}.tar.gz"
 sha256 = "a35e92ec4ac0e8f380e8e840088167ae01014bfa008a3a9d6506b848079daedf"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

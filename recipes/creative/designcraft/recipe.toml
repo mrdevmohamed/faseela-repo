@@ -4,17 +4,29 @@
 [package]
 name = "designcraft"
 version = "0.17.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native page-layout and desktop-publishing application"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/designcraft/releases/download/v0.17.0/designcraft-0.17.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "designcraft"
+url = "https://github.com/storytold/designcraft/releases/download/v0.17.0/designcraft-0.17.0-linux-x86_64.tar.gz"
 sha256 = "bb6f9cec404655350266e98ee10d9b5a154507ed998ad7af47b25335afad1872"
-source_dir = "designcraft-0.17.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

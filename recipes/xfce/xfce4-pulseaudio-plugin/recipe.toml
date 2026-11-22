@@ -2,16 +2,29 @@
 [package]
 name = "xfce4-pulseaudio-plugin"
 version = "0.4.9"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "PulseAudio volume control panel plugin (launches pavucontrol as mixer)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/panel-plugins/xfce4-pulseaudio-plugin/0.4/xfce4-pulseaudio-plugin-0.4.9.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-pulseaudio-plugin"
+url = "https://archive.xfce.org/src/panel-plugins/xfce4-pulseaudio-plugin/0.4/xfce4-pulseaudio-plugin-0.4.9.tar.bz2"
 sha256 = "a0807615fb2848d0361b7e4568a44f26d189fda48011c7ba074986c8bfddc99a"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "libpulse", "exo", "keybinder-3.0"]
 run = ["xfce4-panel", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "hicolor-icon-theme", "libpulse", "exo", "pavucontrol", "keybinder-3.0"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

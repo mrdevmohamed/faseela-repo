@@ -7,17 +7,29 @@
 [package]
 name = "ripgrep"
 version = "15.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ripgrep (rg) — fast recursive regex search tool, like grep with sane defaults"
 license = ["MIT", "Unlicense"]
-source = "https://github.com/BurntSushi/ripgrep/releases/download/%{version}/ripgrep-%{version}-x86_64-unknown-linux-musl.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ripgrep"
+url = "https://github.com/BurntSushi/ripgrep/releases/download/%{version}/ripgrep-%{version}-x86_64-unknown-linux-musl.tar.gz"
 sha256 = "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c"
-source_dir = "ripgrep-%{version}-x86_64-unknown-linux-musl"
+strip_components = 1
 
 [depends]
 build = []
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

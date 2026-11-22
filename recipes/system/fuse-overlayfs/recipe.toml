@@ -2,11 +2,11 @@
 [package]
 name = "fuse-overlayfs"
 version = "2.0.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "FUSE overlay filesystem for rootless container storage"
 license = ["GPL-2.0-or-later"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 workdir = "."
 
 [[package.sources]]
@@ -19,6 +19,14 @@ strip_components = 1
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."

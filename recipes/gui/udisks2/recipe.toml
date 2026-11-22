@@ -4,17 +4,29 @@
 [package]
 name = "udisks2"
 version = "2.11.2"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "D-Bus storage management service for disks and removable media"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://github.com/storaged-project/udisks/releases/download/udisks-%{version}/udisks-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "udisks2"
+url = "https://github.com/storaged-project/udisks/releases/download/udisks-%{version}/udisks-%{version}.tar.bz2"
 sha256 = "18630a8aad806bea0bc626ce97e71e50ec82c742956ac1c834a4275f8f22207b"
-source_dir = "udisks-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "gettext", "glib", "libgudev", "polkit", "libblockdev", "systemd", "util-linux", "e2fsprogs"]
 run = ["dbus-system", "polkit", "glib", "libgudev", "libblockdev", "systemd", "util-linux", "e2fsprogs"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # SMART is optional in UDisks2; disable it because libblockdev deliberately

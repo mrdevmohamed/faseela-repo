@@ -2,18 +2,36 @@
 [package]
 name = "ruby"
 version = "4.0.9"
-rel = 1
+rel = 3
 arch = ["x86_64"]
 summary = "Ruby interpreter and standard library"
 license = ["BSD-2-Clause"]
-source = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ruby"
+url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.xz"
 sha256 = "a8057adb39f51ad6dc3106237504c93dd792bb515837b4fe7817ae21ed7e51f4"
+strip_components = 1
 
 [depends]
-build = ["gdbm", "libffi", "openssl", "readline", "libyaml", "zlib"]
-run = ["gdbm", "libffi", "openssl", "readline", "libyaml", "zlib", "gcc", "glibc"]
+build = ["gdbm", "gmp", "libffi", "libxcrypt", "openssl", "readline", "libyaml", "zlib"]
+run = ["gdbm", "gmp", "libffi", "libxcrypt", "openssl", "readline", "libyaml", "zlib", "gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --enable-shared --disable-install-doc"
 compile = "make -j%{jobs}"
-install = "make DESTDIR=%{pkgdir} install"
+install = '''
+make DESTDIR=%{pkgdir} install
+# Remove the temporary sandbox source path embedded in the generated RbConfig.
+sed -i 's|/build/src|/usr/lib/ruby/4.0.0|g' \
+  "%{pkgdir}/usr/lib/ruby/4.0.0/x86_64-linux/rbconfig.rb"
+'''

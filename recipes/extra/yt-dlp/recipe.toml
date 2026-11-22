@@ -5,16 +5,30 @@
 [package]
 name = "yt-dlp"
 version = "2026.10.26"
-rel = 2
+rel = 3
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "yt-dlp — fork of youtube-dl with additional features and fixes"
 license = ["Unlicense"]
-source = "https://github.com/yt-dlp/yt-dlp/releases/download/%{version}/yt-dlp"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "yt-dlp"
+url = "https://github.com/yt-dlp/yt-dlp/releases/download/%{version}/yt-dlp"
 sha256 = "e51e69e89489f199530f13d32a4342da3ddb2cf34842f364603a066db05afbf3"
+unpack = false
 
 [depends]
 build = []
 run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = "install -Dm755 yt-dlp %{pkgdir}/usr/bin/yt-dlp"

@@ -3,16 +3,29 @@
 [package]
 name = "libXrandr"
 version = "1.5.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X Resize, Rotate and Reflect extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXrandr-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxrandr"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXrandr-%{version}.tar.xz"
 sha256 = "1ad5b065375f4a85915aa60611cc6407c060492a214d7f9daf214be752c3b4d3"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXext", "libXrender"]
 run = ["libX11", "libXext", "libXrender"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

@@ -1,9 +1,13 @@
+import sys
 #!/usr/bin/env python3
 """Guard Mesa Vulkan/OpenGL runtime support and keep Zed optional."""
 
 from pathlib import Path
 import re
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -123,7 +127,7 @@ assert "export QT_QPA_PLATFORM=xcb" in nekoray["build"]["install"], (
 
 ply = recipe("recipes/media/python-ply/recipe.toml")
 assert ply["package"]["version"] == "3.11"
-assert len(ply["package"]["sha256"]) == 64
+assert len(rs.sha256(ply["package"])) == 64
 assert "python" in ply["depends"]["run"]
 
 zed = recipe("recipes/gui/zed/recipe.toml")

@@ -5,17 +5,29 @@
 [package]
 name = "xarchiver"
 version = "0.5.4.27"
-rel = 6
+rel = 7
 arch = ["x86_64"]
 summary = "GTK archive manager for common tar, zip, xz and 7z formats"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/ib/xarchiver/archive/0.5.4.27/xarchiver-0.5.4.27.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xarchiver"
+url = "https://github.com/ib/xarchiver/archive/0.5.4.27/xarchiver-0.5.4.27.tar.gz"
 sha256 = "a52db2697f433621346dc4af59952728192878471e29f46b4b4221b7d5623a86"
-source_dir = "xarchiver-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "gtk3", "glib", "gdk-pixbuf", "perl"]
 run = ["gtk3", "glib", "gdk-pixbuf", "pango", "harfbuzz", "at-spi2-core", "cairo", "glibc", "hicolor-icon-theme", "xdg-utils", "tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

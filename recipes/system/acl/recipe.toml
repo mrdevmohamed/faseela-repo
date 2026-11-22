@@ -2,16 +2,29 @@
 [package]
 name = "acl"
 version = "2.4.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "POSIX Access Control List library and utilities"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://download.savannah.nongnu.org/releases/acl/acl-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "acl"
+url = "https://download.savannah.nongnu.org/releases/acl/acl-%{version}.tar.xz"
 sha256 = "e661131456d2708a01c614a0f400e11d7d1bfaeb6f3e74b75bb980b72f0161a3"
+strip_components = 1
 
 [depends]
 build = ["attr"]
 run = ["attr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --docdir=/usr/share/doc/acl-%{version} --disable-static --disable-nls"

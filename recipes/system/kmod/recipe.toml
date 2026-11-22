@@ -2,16 +2,29 @@
 [package]
 name = "kmod"
 version = "34.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Kernel module management tools (modprobe, depmod)"
 license = ["GPL-2.0", "LGPL-2.1"]
-source = "https://cdn.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "kmod"
+url = "https://cdn.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz"
 sha256 = "5a5d5073070cc7e0c7a7a3c6ec2a0e1780850c8b47b3e3892226b93ffcb9cb54"
+strip_components = 1
 
 [depends]
 build = ["xz", "zstd"]
 run = ["xz", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --with-xz --with-zstd --disable-manpages"

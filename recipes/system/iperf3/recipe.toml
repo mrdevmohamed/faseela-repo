@@ -3,17 +3,29 @@
 [package]
 name = "iperf3"
 version = "3.17.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "iperf3: TCP/UDP/SCTP network throughput measurement"
 license = ["BSD-3-Clause"]
-source = "https://downloads.es.net/pub/iperf/iperf-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "iperf3"
+url = "https://downloads.es.net/pub/iperf/iperf-%{version}.tar.gz"
 sha256 = "84404ca8431b595e86c473d8f23d8bb102810001f15feaf610effd3b318788aa"
-source_dir = "iperf-%{version}"
+strip_components = 1
 
 [depends]
 build = ["openssl"]
 run = ["openssl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

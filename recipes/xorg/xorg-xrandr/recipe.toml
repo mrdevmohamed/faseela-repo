@@ -2,17 +2,29 @@
 [package]
 name = "xorg-xrandr"
 version = "1.5.4"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "X11 RandR display configuration utility"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/app/xrandr-1.5.4.tar.xz"
-source_dir = "xrandr-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-xrandr"
+url = "https://xorg.freedesktop.org/archive/individual/app/xrandr-1.5.4.tar.xz"
 sha256 = "2cafccb2aaf2491a4068676117a0d4f90ab307724b96fffc54cd1da953779400"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libXrandr", "libXrender", "libX11", "xorgproto"]
 run = ["libXrandr", "libXrender", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"

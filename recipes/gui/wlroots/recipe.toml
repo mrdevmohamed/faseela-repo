@@ -8,17 +8,29 @@
 [package]
 name = "wlroots"
 version = "0.18.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Modular Wayland compositor library (with Xwayland support)"
 license = ["MIT"]
-source = "https://deb.debian.org/debian/pool/main/w/wlroots/wlroots_0.18.2.orig.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "wlroots"
+url = "https://deb.debian.org/debian/pool/main/w/wlroots/wlroots_0.18.2.orig.tar.bz2"
 sha256 = "a28061f7778f28f7be377fd4d6f0ebd58cb2a63b52460e9fde28e2ab43e80cab"
-source_dir = "wlroots-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "systemd", "libxcb", "xcb-util-wm", "xwayland"]
 run = ["wayland", "libdrm", "libxkbcommon", "libinput", "pixman", "seatd", "libdisplay-info", "mesa", "systemd", "libxcb", "xwayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D xwayland=enabled -D examples=false -D backends=drm,libinput -D renderers=gles2 -D allocators=gbm -D session=enabled -D xcb-errors=disabled"

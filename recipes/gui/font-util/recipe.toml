@@ -6,17 +6,29 @@
 [package]
 name = "font-util"
 version = "1.4.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "font-util — X11 bitmap font utilities and fontutil.pc (Xwayland font path)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/font/font-util-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "font-util"
+url = "https://xorg.freedesktop.org/archive/individual/font/font-util-%{version}.tar.xz"
 sha256 = "02e4f8afdcf03cc8372ca9c37aa104b1e36b47722dbc79531be08f0a4c622999"
-source_dir = "font-util-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

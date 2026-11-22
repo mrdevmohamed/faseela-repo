@@ -5,16 +5,30 @@
 [package]
 name = "noto-serif"
 version = "2.015"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Noto Serif hinted TrueType fonts (Latin, Greek, Cyrillic)"
 license = ["OFL-1.1"]
-source = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSerif-v%{version}/NotoSerif-v%{version}.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-serif"
+url = "https://github.com/notofonts/latin-greek-cyrillic/releases/download/NotoSerif-v%{version}/NotoSerif-v%{version}.zip"
 sha256 = "0e9a43c8a4b94ac76f55069ed1d7385bbcaf6b99527a94deb5619e032b7e76c1"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

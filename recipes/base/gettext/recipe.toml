@@ -2,12 +2,17 @@
 [package]
 name = "gettext"
 version = "0.26"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "GNU internationalization library and tools"
 license = ["GPL-3.0", "LGPL-2.1"]
-source = "https://mirrors.kernel.org/gnu/gettext/gettext-0.26.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gettext"
+url = "https://mirrors.kernel.org/gnu/gettext/gettext-0.26.tar.xz"
 sha256 = "d1fb86e260cfe7da6031f94d2e44c0da55903dbae0a2fa0fae78c91ae1b56f00"
+strip_components = 1
 
 [depends]
 build = ["libxml2"]
@@ -15,6 +20,15 @@ run = ["libxml2"]
 
 # --disable-openmp: otherwise it links libgomp from the bootstrap seed's gcc,
 # an undeclared dependency (libgomp belongs to the gcc package).
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-openmp"
 compile = "make -j%{jobs}"

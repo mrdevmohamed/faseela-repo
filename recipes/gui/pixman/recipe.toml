@@ -2,16 +2,29 @@
 [package]
 name = "pixman"
 version = "0.43.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Low-level pixel manipulation library"
 license = ["MIT"]
-source = "https://cairographics.org/releases/pixman-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pixman"
+url = "https://cairographics.org/releases/pixman-%{version}.tar.gz"
 sha256 = "a0624db90180c7ddb79fc7a9151093dc37c646d8c38d3f232f767cf64b85a226"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=disabled -D demos=disabled -D gtk=disabled -D libpng=disabled"

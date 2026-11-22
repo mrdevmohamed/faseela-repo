@@ -2,16 +2,30 @@
 [package]
 name = "filelock"
 version = "4.2.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "filelock Python runtime dependency"
 license = ["MIT"]
-source = "https://files.pythonhosted.org/packages/1d/1a/1fcf0d3886bad15b92459a0e529dd86a1ec4d9ef30e789df48044fd3698c/filelock-4.2.7-py3-none-any.whl"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "filelock"
+url = "https://files.pythonhosted.org/packages/1d/1a/1fcf0d3886bad15b92459a0e529dd86a1ec4d9ef30e789df48044fd3698c/filelock-4.2.7-py3-none-any.whl"
 sha256 = "d08972bbca2b8767ee552aff877b091dd111ffb1d22de7de885766ea7d719d5e"
+unpack = false
 
 [depends]
 build = ["python"]
 run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

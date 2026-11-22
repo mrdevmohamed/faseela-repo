@@ -4,15 +4,24 @@
 [package]
 name = "xfce-session"
 version = "0.1"
-rel = 15
+rel = 16
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Xfce 4.20 X11 session integration and core desktop components"
 license = ["MIT"]
-source = ""
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["appimage-support", "xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "xfce4-session", "xfwm4", "xfdesktop", "xfce4-panel", "xfce4-notifyd", "xfce4-power-manager", "xfce4-screenshooter", "xfce4-screensaver", "xfce4-clipman-plugin", "xfce4-settings", "xfce4-appfinder", "xfconf", "libxfce4ui", "libxfce4windowing", "exo", "garcon", "thunar", "thunar-volman", "gvfs", "tumbler", "thunar-archive-plugin", "xarchiver", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "network-manager-applet", "bluez", "polkit", "systemd", "xfce-polkit", "dbus-system", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

@@ -2,16 +2,29 @@
 [package]
 name = "diffutils"
 version = "3.12"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU diff/patch utilities (diff, cmp, ...)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/diffutils/diffutils-3.12.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "diffutils"
+url = "https://mirrors.kernel.org/gnu/diffutils/diffutils-3.12.tar.xz"
 sha256 = "7c8b7f9fc8609141fdea9cece85249d308624391ff61dedaf528fcb337727dfd"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

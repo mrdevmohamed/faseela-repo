@@ -2,16 +2,29 @@
 [package]
 name = "tar"
 version = "1.35"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GNU archiver (tar)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "tar"
+url = "https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz"
 sha256 = "4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16"
+strip_components = 1
 
 [depends]
 build = ["acl", "attr"]
 run = ["acl", "attr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # libacl 2.4.0 exports *at helpers with an additional at_flags argument.

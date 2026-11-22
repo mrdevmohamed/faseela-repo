@@ -11,14 +11,24 @@
 [package]
 name = "systemd-units"
 version = "0.5"
-rel = 3
+rel = 4
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Faseela systemd presets, network/time/journal defaults and PAM service"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["systemd", "linux-pam", "util-linux", "shadow", "dbus-system", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''
@@ -153,4 +163,3 @@ for t in agetty sulogin; do
     ln -s ../sbin/$t %{pkgdir}/usr/bin/$t
 done
 '''
-

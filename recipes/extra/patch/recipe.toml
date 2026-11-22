@@ -2,16 +2,29 @@
 [package]
 name = "patch"
 version = "2.7.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU patch — apply diffs to files"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/patch/patch-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "patch"
+url = "https://mirrors.kernel.org/gnu/patch/patch-%{version}.tar.xz"
 sha256 = "ac610bda97abe0d9f6b7c963255a11dcb196c25e337c61f94e4778d632f1d8fd"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

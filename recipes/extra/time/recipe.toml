@@ -2,16 +2,29 @@
 [package]
 name = "time"
 version = "1.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU time — run programs and summarize system resource usage"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/time/time-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "time"
+url = "https://mirrors.kernel.org/gnu/time/time-%{version}.tar.gz"
 sha256 = "fbacf0c81e62429df3e33bda4cee38756604f18e01d977338e23306a3e3b521e"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

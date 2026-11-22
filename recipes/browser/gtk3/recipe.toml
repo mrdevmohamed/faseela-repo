@@ -14,17 +14,29 @@
 [package]
 name = "gtk3"
 version = "3.24.52"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GTK 3 toolkit (Wayland + X11 backends)"
 license = ["LGPL-2.0-or-later"]
-source = "https://download.gnome.org/sources/gtk/3.24/gtk-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gtk3"
+url = "https://download.gnome.org/sources/gtk/3.24/gtk-%{version}.tar.xz"
 sha256 = "80931fa472a77b9a164f6740e3c0b444fac6770054632d35a7ff9d679e5e7b9f"
-source_dir = "gtk-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
 run = ["glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D x11_backend=true -D wayland_backend=true -D broadway_backend=false -D introspection=false -D demos=false -D examples=false -D tests=false -D installed_tests=false -D gtk_doc=false -D man=false -D colord=no -D print_backends=file -D cloudproviders=false -D tracker3=false -D profiler=false -D xinerama=no"

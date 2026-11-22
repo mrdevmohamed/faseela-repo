@@ -2,16 +2,29 @@
 [package]
 name = "parted"
 version = "3.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU parted — disk partition table manipulator"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/parted/parted-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "parted"
+url = "https://mirrors.kernel.org/gnu/parted/parted-%{version}.tar.xz"
 sha256 = "3b43dbe33cca0f9a18601ebab56b7852b128ec1a3df3a9b30ccde5e73359e612"
+strip_components = 1
 
 [depends]
 build = ["util-linux", "readline"]
 run = ["util-linux", "readline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-device-mapper"

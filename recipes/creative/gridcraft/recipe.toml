@@ -4,17 +4,29 @@
 [package]
 name = "gridcraft"
 version = "0.15.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native spreadsheet application with XLSX and CSV support"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/gridcraft/releases/download/v0.15.0/gridcraft-0.15.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gridcraft"
+url = "https://github.com/storytold/gridcraft/releases/download/v0.15.0/gridcraft-0.15.0-linux-x86_64.tar.gz"
 sha256 = "6810f8ce7394b5a7cdfaf39838257b6384dceb9f8325024d475db895ee59daaa"
-source_dir = "gridcraft-0.15.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

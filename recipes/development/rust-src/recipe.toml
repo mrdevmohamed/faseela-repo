@@ -6,17 +6,29 @@
 [package]
 name = "rust-src"
 version = "1.96.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Rust standard library source code for IDE tooling"
 license = ["MIT", "Apache-2.0"]
-source = "https://static.rust-lang.org/dist/2026-06-30/rust-src-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "rust-src"
+url = "https://static.rust-lang.org/dist/2026-06-30/rust-src-%{version}.tar.xz"
 sha256 = "b343b6553bc772225f6a2b5be5055017f29794dcf4e08020366b27a0a40fc1c2"
-source_dir = "rust-src-1.96.1"
+strip_components = 1
 
 [depends]
 build = []
 run = ["rust"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 strip = false

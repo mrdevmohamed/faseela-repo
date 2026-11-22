@@ -4,15 +4,24 @@
 [package]
 name = "audio-session"
 version = "0.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Shared per-user PipeWire, WirePlumber and PulseAudio-compatible session startup"
 license = ["MIT"]
-source = ""
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["pipewire", "wireplumber", "procps-ng", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

@@ -6,14 +6,24 @@
 [package]
 name = "dbus-system"
 version = "1.0"
-rel = 6
+rel = 7
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "System D-Bus messagebus account and launch-helper setup for systemd"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["dbus", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

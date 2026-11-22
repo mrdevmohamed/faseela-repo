@@ -4,16 +4,29 @@
 [package]
 name = "gdb"
 version = "16.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GDB — the GNU debugger"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/gdb/gdb-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gdb"
+url = "https://mirrors.kernel.org/gnu/gdb/gdb-%{version}.tar.xz"
 sha256 = "c2cc5ccca029b7a7c3879ce8a96528fdfd056b4d884f2b0511e8f7bc723355c6"
+strip_components = 1
 
 [depends]
 build = ["gmp", "mpfr", "ncurses", "readline", "zlib", "expat", "texinfo"]
 run = ["gmp", "mpfr", "ncurses", "readline", "zlib", "expat"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = "mkdir -p build"

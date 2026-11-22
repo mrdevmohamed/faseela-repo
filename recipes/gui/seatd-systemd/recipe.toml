@@ -4,15 +4,24 @@
 [package]
 name = "seatd-systemd"
 version = "0.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Shared systemd unit and DRM permissions for seatd-based Wayland desktops"
 license = ["MIT"]
-source = ""
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["seatd", "systemd", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

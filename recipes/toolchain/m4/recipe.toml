@@ -2,17 +2,29 @@
 [package]
 name = "m4"
 version = "1.4.19"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU macro processor"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/m4/m4-%{version}.tar.xz"
-# canonical: https://ftp.gnu.org/gnu/m4/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "m4"
+url = "https://mirrors.kernel.org/gnu/m4/m4-%{version}.tar.xz"
 sha256 = "63aede5c6d33b6d9b13511cd0be2cac046f2e70fd0a07aa9573a04a82783af96"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

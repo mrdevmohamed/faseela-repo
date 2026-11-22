@@ -2,16 +2,29 @@
 [package]
 name = "ristretto"
 version = "0.13.3"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce image viewer (fast browsing, rotate, slideshow)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/apps/ristretto/0.13/ristretto-0.13.3.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ristretto"
+url = "https://archive.xfce.org/src/apps/ristretto/0.13/ristretto-0.13.3.tar.bz2"
 sha256 = "5b9172ef704ae192a5338df6bee4e91a59edc65618c375bb4433ffb38e2126cb"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "cairo", "libexif"]
 run = ["libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "cairo", "libexif", "shared-mime-info", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

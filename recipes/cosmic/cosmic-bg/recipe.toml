@@ -2,11 +2,11 @@
 [package]
 name = "cosmic-bg"
 version = "1.11.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "COSMIC wallpaper/background daemon"
 license = ["MPL-2.0"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-bg"
@@ -17,6 +17,14 @@ strip_components = 1
 [depends]
 build = ["rust", "pkgconf", "wayland", "libxkbcommon", "dav1d"]
 run = ["wayland", "mesa", "dbus", "dav1d"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."

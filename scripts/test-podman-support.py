@@ -1,3 +1,4 @@
+import sys
 #!/usr/bin/env python3
 """Guard the initial Podman prerequisite and keep it out of default images."""
 
@@ -5,6 +6,9 @@ from pathlib import Path
 import re
 import json
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,7 +18,7 @@ def recipe(path: str) -> dict:
 
 
 shadow = recipe("recipes/system/shadow/recipe.toml")
-assert shadow["package"]["rel"] == 5
+assert shadow["package"]["rel"] == 6
 assert "--enable-subids" in shadow["build"]["configure"]
 shadow_install = shadow["build"]["install"]
 for helper in ("newuidmap", "newgidmap"):
@@ -22,7 +26,7 @@ for helper in ("newuidmap", "newgidmap"):
 assert "chmod 4755" in shadow_install
 
 linux = recipe("recipes/boot/linux/recipe.toml")
-assert linux["package"]["rel"] == 25
+assert linux["package"]["rel"] == 26
 kernel_config = linux["build"]["configure"]
 for option in (
     "PID_NS", "NET_NS", "IPC_NS", "UTS_NS", "CGROUPS", "CGROUP_PIDS",
@@ -43,7 +47,7 @@ crun = recipe("recipes/system/crun/recipe.toml")
 crun_pkg = crun["package"]
 assert crun_pkg["name"] == "crun"
 assert crun_pkg["version"] == "1.30.1"
-assert crun_pkg["sha256"] == (
+assert rs.sha256(crun_pkg) == (
     "99d036d95113552b6df66c7c879432835504bf0e525fc0372745071df129527b"
 )
 assert "libseccomp" in crun["depends"]["build"]
@@ -55,8 +59,8 @@ assert "systemd" not in crun["depends"].get("run", [])
 passt = recipe("recipes/system/passt/recipe.toml")
 passt_pkg = passt["package"]
 assert passt_pkg["version"] == "2026_07_16.090d739"
-assert passt_pkg["sha256"] == "503e1f91cb52a8c0d04e6671a66063475b8a2d5d0b7fd428aad48ad6ef0443ee"
-assert passt_pkg["source"].startswith("https://passt.top/passt/snapshot/")
+assert rs.sha256(passt_pkg) == "503e1f91cb52a8c0d04e6671a66063475b8a2d5d0b7fd428aad48ad6ef0443ee"
+assert rs.url(passt_pkg).startswith("https://passt.top/passt/snapshot/")
 assert {"make", "gcc"} <= set(passt["depends"]["build"])
 assert "PAGE_SIZE=4096" in passt["build"]["compile"]
 assert "PAGE_SIZE=4096" in passt["build"]["install"]
@@ -66,7 +70,7 @@ assert "%{pkgdir}/usr/bin/passt" in passt["build"]["install"]
 fuse_overlayfs = recipe("recipes/system/fuse-overlayfs/recipe.toml")
 fuse_pkg = fuse_overlayfs["package"]
 assert fuse_pkg["version"] == "2.0.0"
-assert fuse_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert fuse_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert fuse_pkg["license"] == ["GPL-2.0-or-later"]
 assert fuse_pkg["sources"][0]["sha256"] == "89a46041b603f8ed3393d69be608777fc1f5cba7744afd7542a72e777b91fa36"
 assert fuse_overlayfs["fetch"]["cargo"]["dir"] == "."
@@ -76,7 +80,7 @@ assert "/usr/bin/fuse-overlayfs" in fuse_overlayfs["build"]["install"]
 netavark = recipe("recipes/system/netavark/recipe.toml")
 netavark_pkg = netavark["package"]
 assert netavark_pkg["version"] == "2.1.0"
-assert netavark_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert netavark_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert netavark_pkg["sources"][0]["sha256"] == "a7a69b66f7d6700d0202467820c343e35edade9e115bb2ac6f28f2630f4bb060"
 assert netavark_pkg["sources"][0]["strip_components"] == 1
 assert netavark["fetch"]["cargo"]["dir"] == "."
@@ -89,7 +93,7 @@ assert "systemd" not in str(netavark["depends"]).lower()
 aardvark = recipe("recipes/system/aardvark-dns/recipe.toml")
 aardvark_pkg = aardvark["package"]
 assert aardvark_pkg["version"] == "2.1.0"
-assert aardvark_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert aardvark_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert aardvark_pkg["sources"][0]["sha256"] == "9f766fcc7f3d8e35da54bca2afc3339c3ff60c24d380d706fa18187055e5c818"
 assert aardvark["fetch"]["cargo"]["dir"] == "."
 assert "--locked --offline --bin aardvark-dns" in aardvark["build"]["compile"]
@@ -98,7 +102,7 @@ assert "/usr/libexec/podman/aardvark-dns" in aardvark["build"]["install"]
 podman = recipe("recipes/system/podman/recipe.toml")
 podman_pkg = podman["package"]
 assert podman_pkg["version"] == "6.1.4"
-assert podman_pkg["sha256"] == "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8"
+assert rs.sha256(podman_pkg) == "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8"
 assert "golang" in podman["depends"]["build"]
 assert {"libseccomp", "sqlite"} <= set(podman["depends"]["build"])
 assert {"ca-certificates", "conmon", "catatonit", "containers-common", "crun", "netavark", "aardvark-dns", "passt", "fuse-overlayfs", "shadow", "nftables"} <= set(podman["depends"]["run"])
@@ -113,7 +117,7 @@ assert "%{pkgdir}/usr/bin/podman" in podman["build"]["install"]
 conmon = recipe("recipes/system/conmon/recipe.toml")
 conmon_pkg = conmon["package"]
 assert conmon_pkg["version"] == "2.2.1"
-assert conmon_pkg["sha256"] == "814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3"
+assert rs.sha256(conmon_pkg) == "814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3"
 assert {"gcc", "make", "pkgconf", "glib", "libseccomp"} <= set(conmon["depends"]["build"])
 assert {"glib", "libseccomp"} <= set(conmon["depends"]["run"])
 assert "DISABLE_SYSTEMD=1" in conmon["build"]["compile"]
@@ -124,7 +128,7 @@ assert "install.podman" in conmon["build"]["install"]
 catatonit = recipe("recipes/system/catatonit/recipe.toml")
 catatonit_pkg = catatonit["package"]
 assert catatonit_pkg["version"] == "0.2.1"
-assert catatonit_pkg["sha256"] == "771385049516fdd561fbb9164eddf376075c4c7de3900a8b18654660172748f1"
+assert rs.sha256(catatonit_pkg) == "771385049516fdd561fbb9164eddf376075c4c7de3900a8b18654660172748f1"
 assert {"autoconf", "automake", "libtool", "make", "gcc"} <= set(catatonit["depends"]["build"])
 assert catatonit["build"]["prepare"] == "./autogen.sh"
 assert "./configure --prefix=/usr" in catatonit["build"]["configure"]
@@ -136,8 +140,8 @@ protoc_pkg = protoc["package"]
 assert protoc_pkg["name"] == "protobuf-compiler"
 assert protoc_pkg["version"] == "36.2"
 assert protoc_pkg["source_date_epoch"] == 1789666294
-assert protoc_pkg["sha256"] == "121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278"
-assert protoc_pkg["source"].endswith("protoc-%{version}-linux-x86_64.zip")
+assert rs.sha256(protoc_pkg) == "121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278"
+assert rs.url(protoc_pkg).endswith("protoc-%{version}-linux-x86_64.zip")
 assert "unzip" in protoc["depends"]["build"]
 assert "extracted/bin/protoc" in protoc["build"]["install"]
 assert "%{pkgdir}/usr/bin/protoc" in protoc["build"]["install"]
@@ -146,8 +150,8 @@ common = recipe("recipes/system/containers-common/recipe.toml")
 common_pkg = common["package"]
 assert common_pkg["name"] == "containers-common"
 assert common_pkg["source_date_epoch"] == 1767225600
-assert common_pkg["rel"] == 4
-assert common_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert common_pkg["rel"] == 5
+assert common_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assets = common["assets"]["include"]
 assert set(assets) == {"containers.conf", "storage.conf", "registries.conf", "policy.json"}
 install = common["build"]["install"]
@@ -178,14 +182,14 @@ seccomp = recipe("recipes/system/libseccomp/recipe.toml")
 pkg = seccomp["package"]
 assert pkg["name"] == "libseccomp"
 assert pkg["version"] == "2.6.1", "use the security-fixed upstream release"
-assert pkg["source"] == (
+assert rs.url(pkg) == (
     "https://github.com/seccomp/libseccomp/releases/download/"
     "v%{version}/libseccomp-%{version}.tar.gz"
 )
-assert pkg["sha256"] == (
+assert rs.sha256(pkg) == (
     "501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be"
 )
-assert re.fullmatch(r"[0-9a-f]{64}", pkg["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(pkg))
 assert "gperf" in seccomp["depends"]["build"]
 assert seccomp["build"]["configure"].endswith("--disable-static")
 assert "--prefix=/usr" in seccomp["build"]["configure"]

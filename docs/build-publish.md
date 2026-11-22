@@ -27,6 +27,18 @@ The package selector accepts more than one package or flavor name. Selectors can
 
 The workflow UI does not provide a dynamic checkbox for every recipe. Use the text inputs to select exact package names or flavors.
 
+## How a build is split (shards and waves)
+
+A full build is longer than one runner may run (6 hours), and the packages used to queue behind one another in a single job. The workflow therefore plans the build first:
+
+1. **plan** removes every package whose archive already exists (published, or saved by an earlier run of the same pull request) and splits the remaining packages into up to eight **waves** along their dependency levels (`scripts/plan-build-shards.py`). A package is always in a later wave than every selected package it needs, at build **or** run time.
+2. The packages of one wave form parallel **shards**, one runner each. Packages of a wave that depend on each other share a shard, very slow packages (LLVM, browsers) get a shard of their own, and `scripts/build-times.json` lists the measured minutes used for balancing. A wrong value only costs speed.
+3. A shard downloads just the archives of its dependency closure: published ones from the package repository and those that earlier waves built from the **draft build cache** (`scripts/pr-shard-cache.py`). Everything it builds is saved to that cache, even when another package of the shard failed or time ran out.
+4. A package whose dependency failed in an earlier wave is skipped, not compiled again. A failing package never stops the other shards.
+5. **publish** gathers all archives, runs the checks and, outside pull requests, publishes the signed index.
+
+**Re-run failed jobs** repeats only the failed shards: the other shards' archives are in the cache and the re-run plans only what is missing. Pull requests keep their cache (`schema-v5-build-pr-<N>-*` draft releases) across runs; other runs use `faseela-build-run-<run id>-*`, deleted when the run ends. The job that does the work is defined in **.github/workflows/packages-build.yml** (`mode: shard` or `mode: finalize`).
+
 ## Build environment
 
 The workflow downloads a root filesystem from the latest Faseela release:
@@ -46,6 +58,26 @@ A build run has a configurable time budget. When the budget is reached, the work
 With **keep_going** enabled, a failed package does not prevent unrelated packages from being built. Packages that depend on a failed package are skipped. The final workflow run reports failures even when other successfully built packages were published.
 
 The workflow can prune superseded package archive versions after publishing. Review the manual inputs before changing pruning behavior.
+
+## Bootstrap Toolchain cache
+
+When a run has to rebuild Toolchain recipes, the Stage 1/2/3 bootstrap takes the
+better part of an hour. Its final Stage 3 archives are therefore cached with
+`actions/cache`, under a key computed by `scripts/toolchain-cache-key.py` from
+the tooling revision, every recipe tree (and recursive build dependencies) in the
+bootstrap flavor and in `recipes/toolchain`, `flavors.toml`, the isolation mode,
+the Stage 3 package selection and the ISO week. On a hit the workflow verifies the
+sentinel file and per-archive SHA-256 sums, skips the bootstrap and imports the
+archives exactly as a fresh build would; on any verification failure it rebuilds.
+
+- A full Toolchain run (`toolchain = true`) never uses the cache, because its
+  self-hosting proofs are the purpose of that run.
+- The entry is saved as soon as the Stage 3 archives exist, even if a later
+  package fails, so retries do not repeat the bootstrap.
+- The key changes weekly, because the seed toolchain is assembled from unpinned
+  upstream packages. Caches are scoped per branch/PR by GitHub and expire after
+  7 days without use.
+- Set the repository variable `TOOLCHAIN_CACHE=off` to disable it.
 
 ## Publishing sequence
 
@@ -69,95 +101,95 @@ The index is published after the archive uploads so it does not point at assets 
 ## Isolated schema-v5 publishing
 
 Schema-v5 publishing is a separate, manually confirmed workflow in
-**.github/workflows/publish-schema-v5.yml**. It accepts runs only from `main`
-with the explicit `PUBLISH_SCHEMA_V5` confirmation. It authenticates the
-schema-v3 source index, fetches only the current recipe archives it names,
-checks the recipe declarations and complete archive coverage, signs and
-validates the candidate, uploads immutable assets to **packages-v5-NNNN**, and
-publishes **index.toml.sig** before **index.toml** to **stable-v5**. It does
-not change **stable**, **stable-v3**, or **packages-NNNN**. The workflow uses
-the existing **NAWA_SIGN_KEY_B64** secret; clients must already trust the
-corresponding public key. It intentionally fails closed until every recipe has
-explicit runtime dependencies, capabilities, and package relations and a
-complete matching archive set is available.
-The publisher repository's **dist/nawa.pub** is a checked-in mirror of the
-Faseela distribution trust key; the workflow compares it with the distribution
-repository before using it.
-The declaration audit remains incomplete (542 of 1086 recipes); adding this
-tooling is not publication or release-readiness acceptance. No schema-v5
-publication, signing acceptance, or migration approval is claimed.
+**.github/workflows/publish-schema-v5.yml**. It runs only from **main** with
+the explicit **PUBLISH_SCHEMA_V5** confirmation and a **build_run_id** pointing
+to a successful, same-repository **Build packages** pull-request run.
+
+The pull-request workflow keeps resumable package caches in draft GitHub
+Releases, not Actions artifacts. This avoids relying on the GitHub Free Actions
+artifact-storage quota for a complete package set. Each PR has its own draft
+manifest release and category shards, with no more than 900 archive assets per
+shard (below GitHub's 1,000-asset Release limit). These draft releases are not
+referenced by **stable-v3**, **stable-v5**, or any package index.
+
+Each cache entry is bound to the exact current recipe and recursive build
+dependency fingerprints and carries SHA-256 digests for the base archive and
+any `-doc` / `-lang` split archives. A candidate manifest records the PR
+number, build run ID, PR head SHA, manifest digest, and shard list. The
+candidate manifest is uploaded last, after all archive shards are present.
+On the next PR build run, the workflow validates the candidate and restores
+only entries whose recipe fingerprint and archive digest still match. Before
+building a relation-bearing package, it invalidates any old schema-v3 archive
+with the same package identity so the old payload cannot suppress a required
+v5 rebuild.
+
+The v5 publisher independently verifies the selected build run, requires its
+PR to have been merged into the current **main**, verifies that the candidate
+manifest matches that exact run and final PR head, downloads the draft shards,
+and rechecks every archive digest and recipe/build-dependency fingerprint.
+It then stages only exact current recipe archive identities. The staging audit
+fails unless every current recipe has a matching archive and rejects stale or
+extra archives. Nawa creates, signs, and verifies the schema-v5 index before
+immutable **packages-v5-NNNN** assets and the **stable-v5** index are uploaded.
+
+This is a build-to-publisher handoff, not a way to reuse old schema-v3 package
+archives: the cache must contain newly built archives whose embedded
+`.PKGINFO` records carry the current runtime dependencies, capabilities, and
+relations. The build run must finish successfully; a run that reports deferred
+or failed packages is not an accepted publishing input.
+
+The workflow does not change **stable**, **stable-v3**, or **packages-NNNN**.
+It uses the existing **NAWA_SIGN_KEY_B64** secret and the checked-in
+**dist/nawa.pub** trust key, which is compared with Faseela's distribution
+key before publication. Clients must already trust the corresponding public
+key.
 
 ### Required release order
 
-The schema-v5 workflow is an **index publisher**, not a package builder. It
-imports the exact archive identities named by the current recipes from the
-authenticated `stable-v3` index. It must not manufacture a missing archive,
-substitute an older version, or silently rebuild from a different recipe.
-
-Use this order:
-
-1. Merge/review Nawa PR #58, whose tested head is
-   `28cbfed1b5bb8c6705fdd287cac2b11af9f43457`. The Nawa recipe is now pinned
-   to that exact source archive: `nawa-1.0.0-34`, SHA-256
-   `20e903a78a0ee3ef90794daaae16bd6f8a1493f27c3b650ef646b849b6367094`.
-   The digest was calculated by `scripts/pin-nawa-source.py` from the actual
-   GitHub archive, not inferred from the commit ID.
-2. Merge this repository PR after its CI and Nawa package build pass. The
-   main-branch **Build packages** workflow detects the updated recipe, builds
-   Nawa rel=34, publishes the signed pair into `nawa-transition`, and then
-   publishes the new signed `stable-v3` index. The installed legacy client
-   can use the standalone transition package before relying on the refreshed
-   v3 index. Verify that both the archive/signature pair and its v3 index entry
-   are present before proceeding.
-3. Complete the schema-v5 declaration and matching-archive audit for every
-   current recipe/package archive. Every recipe must explicitly declare
-   `[depends].run`, `[capabilities].provides`, and `[relations]`; empty
-   arrays are valid only when that package genuinely has no entries. The
-   publisher intentionally refuses incomplete coverage.
-4. Rebuild and publish every package archive whose embedded metadata needs to
-   change. A recipe edit alone does not update already-published `.PKGINFO`.
-5. Run the publisher's fixture/CI tests, then verify that the signed v3 source
-   index has a matching archive for every current recipe. Only after these
-   checks pass should an operator dispatch **Publish schema-v5** on `main`
-   with the exact `PUBLISH_SCHEMA_V5` confirmation.
-6. Keep installed Nawa configurations on `stable-v3` until the signed
-   `stable-v5` index is published, the new client is installed, and the v5
+1. Complete the recipe metadata audit. Every current recipe must explicitly
+   declare `[depends].run`, `[capabilities].provides`, and
+   `[relations]` with `schema = 1`. Empty arrays are valid only after the
+   package has been reviewed and found to have no entries; missing metadata is
+   not an empty declaration.
+2. Convert legacy source declarations to the Nawa recipe schema required by
+   `[relations]`, preserving source URLs, pinned digests, source working
+   directories, and reproducible build inputs. Bump package release identities
+   when archive metadata changes.
+3. Build the complete current recipe set through the **Build packages**
+   pull-request workflow. It may take multiple runs: the draft-release cache
+   carries successful outputs forward. Keep the same PR open and use the final
+   successful run ID only after the package set is complete.
+4. Dispatch **Publish schema-v5** on **main**, enter that successful run ID,
+   and provide the exact **PUBLISH_SCHEMA_V5** confirmation. The workflow
+   independently verifies every cache entry, complete package coverage,
+   signatures, archive digests, and the serialized index before uploading.
+5. Keep installed Nawa configurations on **stable-v3** until the signed
+   **stable-v5** index is published, the new client is installed, and the v5
    repository has passed end-to-end verification. Switching the default
    endpoint is a separate, reviewed package-recipe release.
 
-### Current schema-v5 build limitation
+### Current readiness
 
-The current **Publish schema-v5** workflow is an index publisher: it fetches
-exact archive identities from the signed `stable-v3` index and then asks Nawa
-to create a schema-v5 index. It does **not** build packages.
+The v5 draft-release build handoff and per-archive cache integrity checks are
+implemented in this branch, and all 542 recipes now carry the schema-v5 recipe
+form: one `[[package.sources]]` table per upstream file (with the layout
+equivalent to the previous `source_dir` behaviour), `[capabilities]`,
+`[relations]` with `schema = 1`, and a bumped `rel`. The CI audit runs with
+`--strict`, so a recipe without that metadata fails the check.
 
-That is not yet a complete path for relation-bearing packages:
+Relations were derived from real file overlap between the published archives
+(none found beyond the four documented replacement cases); every other recipe
+declares reviewed-empty `conflicts` and `replaces`. The release is still
+**not ready**: the complete package set must be built through the **Build
+packages** pull-request workflow, followed by the end-to-end install and
+replacement test. Do not merge the metadata PR into the active v3 publisher
+or dispatch **Publish schema-v5** until those gates pass.
 
-- The normal **Build packages** workflow creates a schema-v3 index.
-- Nawa deliberately refuses to put an archive containing `[relations]`
-  metadata into schema-v1 through schema-v4 indexes.
-- The current v5 publisher requires the exact current recipe archive to exist
-  in the signed v3 index, and the v5 index builder requires the archive's own
-  `.PKGINFO` to carry explicit runtime dependencies, capabilities, and
-  relations.
-
-Therefore, do not add `[relations]` to release recipes and then run the
-ordinary schema-v3 publisher. That would fail closed by design. The v5
-rollout still needs a separate, complete package-build path that builds the
-v5-declared archive set without publishing those relation-bearing archives
-through `stable-v3`, then supplies that authenticated build output to the
-isolated v5 index publisher. This pipeline must also use new package release
-identities where the archive metadata changes. Keep the v5 workflow unused
-until that build-to-publisher handoff exists and has passed end-to-end tests.
-
-The Nawa rel=34 transition package is intentionally different: it carries
-explicit runtime dependencies and capabilities but no `[relations]`, so it
-remains publishable through `stable-v3`. The Nawa recipe must gain relations
-only in the later v5 package build.
-
-The publisher intentionally fails closed when any step is incomplete. Do not
-bypass the archive, declaration, signature, or trust checks to make a run
-green.
+Nawa's migration security rules remain separate: `runit-services` and its
+`/usr/bin/init` ownership are not a generic package replacement. Only the
+explicitly approved runit-to-systemd migration may hand off PID 1 and
+power-control entry points. The schema-v5 package relations do not bypass
+that boundary.
 
 ## Required settings
 

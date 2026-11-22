@@ -5,17 +5,29 @@
 [package]
 name = "fd"
 version = "10.5.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "fd — simple, fast and user-friendly alternative to find"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/sharkdp/fd/releases/download/v%{version}/fd-v%{version}-x86_64-unknown-linux-musl.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "fd"
+url = "https://github.com/sharkdp/fd/releases/download/v%{version}/fd-v%{version}-x86_64-unknown-linux-musl.tar.gz"
 sha256 = "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7"
-source_dir = "fd-v%{version}-x86_64-unknown-linux-musl"
+strip_components = 1
 
 [depends]
 build = []
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

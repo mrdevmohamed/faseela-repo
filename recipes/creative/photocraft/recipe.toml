@@ -4,17 +4,29 @@
 [package]
 name = "photocraft"
 version = "0.19.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native image editor for layered images and PSD documents"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/photocraft/releases/download/v0.19.0/photocraft-0.19.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "photocraft"
+url = "https://github.com/storytold/photocraft/releases/download/v0.19.0/photocraft-0.19.0-linux-x86_64.tar.gz"
 sha256 = "123385b1730ace18f12bc0f494606e6a4cd3f4ab891f93036cd4e71b8aea70f7"
-source_dir = "photocraft-0.19.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

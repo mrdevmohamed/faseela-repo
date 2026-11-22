@@ -3,16 +3,30 @@
 [package]
 name = "v2raya"
 version = "2.5.13"
-rel = 2
+rel = 3
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "v2rayA web-managed proxy client (local UI on 127.0.0.1:2017)"
 license = ["AGPL-3.0-only"]
-source = "https://github.com/v2rayA/v2rayA/releases/download/v%{version}/v2raya_linux_x64_%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "v2raya"
+url = "https://github.com/v2rayA/v2rayA/releases/download/v%{version}/v2raya_linux_x64_%{version}"
 sha256 = "8370f87eaf5ca177647eca16c8c44a94d5946324ca2d3ba636e1e0dd095b6355"
+unpack = false
 
 [depends]
 build = []
 run = ["glibc", "base-files", "coreutils", "ca-certificates", "iptables", "iproute2", "v2raya-core", "v2raya-geoip", "v2raya-geosite"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

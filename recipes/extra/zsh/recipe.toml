@@ -4,16 +4,29 @@
 [package]
 name = "zsh"
 version = "5.9.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "zsh — powerful interactive shell"
 license = ["MIT-Modern-Variant"]
-source = "https://www.zsh.org/pub/zsh-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "zsh"
+url = "https://www.zsh.org/pub/zsh-%{version}.tar.xz"
 sha256 = "36fa734374b44783582cec09bcd67822e2f992c779ec1624ab5596df078d2f81"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

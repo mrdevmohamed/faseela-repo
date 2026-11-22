@@ -4,16 +4,30 @@
 [package]
 name = "noto-naskh-arabic"
 version = "2.021"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Noto Naskh Arabic hinted TrueType fonts"
 license = ["OFL-1.1"]
-source = "https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v%{version}/NotoNaskhArabic-v%{version}.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-naskh-arabic"
+url = "https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v%{version}/NotoNaskhArabic-v%{version}.zip"
 sha256 = "6c050ab9bd087d69b733c505a7576e60c528c2f33cd7b91005a5bd7da4514032"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

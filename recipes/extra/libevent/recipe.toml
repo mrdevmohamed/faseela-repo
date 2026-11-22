@@ -2,16 +2,29 @@
 [package]
 name = "libevent"
 version = "2.1.12-stable"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libevent — event notification library"
 license = ["BSD-3-Clause"]
-source = "https://github.com/libevent/libevent/releases/download/release-%{version}/libevent-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libevent"
+url = "https://github.com/libevent/libevent/releases/download/release-%{version}/libevent-%{version}.tar.gz"
 sha256 = "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb"
+strip_components = 1
 
 [depends]
 build = ["openssl"]
 run = ["openssl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

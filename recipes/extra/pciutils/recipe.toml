@@ -2,16 +2,29 @@
 [package]
 name = "pciutils"
 version = "3.13.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "pciutils — PCI bus utilities (lspci, setpci)"
 license = ["GPL-2.0-or-later"]
-source = "https://kernel.org/pub/software/utils/pciutils/pciutils-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pciutils"
+url = "https://kernel.org/pub/software/utils/pciutils/pciutils-%{version}.tar.xz"
 sha256 = "77f11f78298502634d1af50308f15a5788629f6cf45cba376f5009aea4cb4926"
+strip_components = 1
 
 [depends]
 build = ["zlib", "kmod"]
 run = ["zlib", "kmod"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} SHARED=yes PREFIX=/usr"

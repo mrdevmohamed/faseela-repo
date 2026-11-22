@@ -4,14 +4,24 @@
 [package]
 name = "appimage-support"
 version = "0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Runtime support for legacy and modern Linux AppImage bundles"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["fuse2", "fuse3"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

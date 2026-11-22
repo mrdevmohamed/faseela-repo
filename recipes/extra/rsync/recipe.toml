@@ -2,20 +2,33 @@
 [package]
 name = "rsync"
 version = "3.4.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "rsync — fast incremental file transfer"
 license = ["GPL-3.0-or-later"]
-source = "https://download.samba.org/pub/rsync/src/rsync-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "rsync"
+url = "https://download.samba.org/pub/rsync/src/rsync-%{version}.tar.gz"
 sha256 = "2924bcb3a1ed8b551fc101f740b9f0fe0a202b115027647cf69850d65fd88c52"
 mirrors = [
   "https://rsync.samba.org/ftp/rsync/src/rsync-%{version}.tar.gz",
   "https://mirrors.mit.edu/macports/distfiles/rsync/rsync-%{version}.tar.gz",
 ]
+strip_components = 1
 
 [depends]
 build = ["zstd", "lz4", "openssl", "zlib"]
 run = ["zstd", "lz4", "openssl", "popt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --without-included-zlib --disable-xxhash"

@@ -2,12 +2,12 @@
 [package]
 name = "emptty"
 version = "0.16.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "TUI display manager for Wayland and X11 sessions (no PAM)"
 license = ["MIT"]
 # Require Nawa's recipe-local asset support.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "emptty"
@@ -21,6 +21,14 @@ include = ["conf", "emptty.1", "LICENSE"]
 [depends]
 build = ["golang", "gcc", "libxcrypt"]
 run = ["gui-session", "libxcrypt", "shadow", "coreutils", "util-linux"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "go test -tags nopam ./..."

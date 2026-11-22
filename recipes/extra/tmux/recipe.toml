@@ -2,16 +2,29 @@
 [package]
 name = "tmux"
 version = "3.5a"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "tmux — terminal multiplexer"
 license = ["ISC"]
-source = "https://github.com/tmux/tmux/releases/download/%{version}/tmux-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "tmux"
+url = "https://github.com/tmux/tmux/releases/download/%{version}/tmux-%{version}.tar.gz"
 sha256 = "16216bd0877170dfcc64157085ba9013610b12b082548c7c9542cc0103198951"
+strip_components = 1
 
 [depends]
 build = ["libevent", "ncurses"]
 run = ["libevent", "ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

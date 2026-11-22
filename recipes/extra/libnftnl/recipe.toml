@@ -2,16 +2,29 @@
 [package]
 name = "libnftnl"
 version = "1.2.8"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libnftnl — netlink library for nftables"
 license = ["GPL-2.0-or-later"]
-source = "https://netfilter.org/projects/libnftnl/files/libnftnl-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libnftnl"
+url = "https://netfilter.org/projects/libnftnl/files/libnftnl-%{version}.tar.xz"
 sha256 = "37fea5d6b5c9b08de7920d298de3cdc942e7ae64b1a3e8b880b2d390ae67ad95"
+strip_components = 1
 
 [depends]
 build = ["libmnl"]
 run = ["libmnl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

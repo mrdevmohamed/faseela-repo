@@ -3,16 +3,29 @@
 [package]
 name = "socat"
 version = "1.8.0.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "socat — multipurpose relay (SOcket CAT)"
 license = ["GPL-2.0-only"]
-source = "http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "socat"
+url = "http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz"
 sha256 = "a9f9eb6cfb9aa6b1b4b8fe260edbac3f2c743f294db1e362b932eb3feca37ba4"
+strip_components = 1
 
 [depends]
 build = ["openssl", "readline", "ncurses"]
 run = ["openssl", "readline", "ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

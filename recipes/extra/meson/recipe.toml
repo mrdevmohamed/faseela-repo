@@ -3,16 +3,29 @@
 [package]
 name = "meson"
 version = "1.6.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Meson — fast and user friendly build system"
 license = ["Apache-2.0"]
-source = "https://github.com/mesonbuild/meson/releases/download/%{version}/meson-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "meson"
+url = "https://github.com/mesonbuild/meson/releases/download/%{version}/meson-%{version}.tar.gz"
 sha256 = "1eca49eb6c26d58bbee67fd3337d8ef557c0804e30a6d16bfdf269db997464de"
+strip_components = 1
 
 [depends]
 build = ["python"]
 run = ["python", "ninja"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

@@ -2,14 +2,24 @@
 [package]
 name = "gui-session"
 version = "0.1"
-rel = 29
+rel = 30
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Wayland desktop session: seatd service, start-sway, default fonts/terminal/wallpaper/file manager"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = ["shadow"]
 run = ["appimage-support", "sway", "swaybg", "foot", "wmenu", "swaylock", "swayidle", "grim", "slurp", "wl-clipboard", "brightnessctl", "alsa-utils", "pipewire", "wireplumber", "audio-session", "network-manager", "bluez", "polkit", "dbus-system", "seatd-systemd", "mesa", "dejavu-fonts", "nerd-fonts-symbols", "systemd", "shadow", "base-files", "faseela-branding", "coreutils", "xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk", "xdg-desktop-portal-wlr", "mako", "waybar", "xdg-user-dirs", "pavucontrol", "pcmanfm", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

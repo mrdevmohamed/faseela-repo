@@ -11,16 +11,29 @@
 [package]
 name = "xfce4-panel"
 version = "4.20.8"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce desktop panel (taskbar, plugins, application menu)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/xfce/xfce4-panel/4.20/xfce4-panel-4.20.8.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-panel"
+url = "https://archive.xfce.org/src/xfce/xfce4-panel/4.20/xfce4-panel-4.20.8.tar.bz2"
 sha256 = "d69cb1f377953aeb1fb9bdbcef12c246bea66586e3f2868f3b758e0e8ce3d3fe"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "xfce4-dev-tools", "garcon", "libxfce4ui", "libxfce4windowing", "exo", "xfconf", "gtk3", "glib", "cairo", "libwnck3", "libX11", "libXext", "xorgproto"]
 run = ["garcon", "libxfce4ui", "libxfce4windowing", "exo", "xfconf", "gtk3", "glib", "cairo", "libwnck3", "libX11", "libXext", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D x11=enabled -D introspection=false -D vala=disabled -D dbusmenu=disabled"

@@ -11,29 +11,41 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 35
+rel = 39
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
 # Fail closed on Nawa versions that predate the multi-source recipe schema.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
-# Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that
-# bootstrap separate from the package dependency graph. Its ELF runtime links
-# against glibc and libgcc.
-build = []
+# Cargo must be on the PATH of both Nawa's fetch phase (`cargo --version` is
+# queried before any source is downloaded) and the sandboxed compile step. The
+# seed's /opt/cargo is on neither: the sandbox hides it and stage 3 deletes it,
+# which made stage 2 fail on this recipe with "query cargo version using the
+# fetch PATH: No such file or directory". Like every other Rust recipe, Nawa
+# therefore takes the db-owned `rust` package (installed under /usr) as a build
+# dependency. This is not a cycle: `rust` is a prebuilt, sha256-pinned binary
+# release with no build dependencies, so it never needs the Nawa package.
+# packages.yml still bootstraps the Nawa *tool* with the seed toolchain before
+# it can parse this recipe. Its ELF runtime links against glibc and libgcc.
+build = ["rust"]
 run = ["gcc", "glibc"]
 
 [capabilities]
 provides = []
 
-# Package relations are intentionally deferred to the schema-v5 package
-# release. This bootstrap client must remain publishable through stable-v3.
+# This recipe is schema-v5-only. The previously published stable-v3 Nawa
+# archive and the standalone signed nawa-transition release remain the
+# bootstrap path; this relation-aware build is published only in stable-v5.
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 [[package.sources]]
 name = "nawa"
-url = "https://github.com/mrdevmohamed/nawa/archive/1a8d457421fef48ae6953ca081c2479340700cdb.tar.gz"
-sha256 = "9222c5b903f04b455188600ef5f6f0e82d9cc4cbd8bf414d971ee362af9fe4fa"
+url = "https://github.com/mrdevmohamed/nawa/archive/32cd1bb172ece0fb530659e4d4090c9ee60ce3bb.tar.gz"
+sha256 = "895c2e28889db40e1915e584f49dc8db1ec2d212cf2faeed5ae074a02d0a91b3"
 strip_components = 1
 
 [fetch.cargo]

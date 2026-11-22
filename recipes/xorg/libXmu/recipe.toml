@@ -2,16 +2,29 @@
 [package]
 name = "libXmu"
 version = "1.2.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X11 miscellaneous utility library (libXmu and libXmuu)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXmu-1.2.1.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxmu"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXmu-1.2.1.tar.xz"
 sha256 = "fcb27793248a39e5fcc5b9c4aec40cc0734b3ca76aac3d7d1c264e7f7e14e8b2"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libXt", "libXext", "libX11", "xorgproto"]
 run = ["libXt", "libXext", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-debug"

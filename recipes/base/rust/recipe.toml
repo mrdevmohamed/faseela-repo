@@ -13,18 +13,30 @@
 [package]
 name = "rust"
 version = "1.96.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Rust compiler, cargo and standard library (official binary release)"
 license = ["MIT", "Apache-2.0"]
-source = "https://static.rust-lang.org/dist/rust-%{version}-x86_64-unknown-linux-gnu.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "rust-1.96.1-x86_64-unknown-linux-gnu"
+
+[[package.sources]]
+name = "rust"
+url = "https://static.rust-lang.org/dist/rust-%{version}-x86_64-unknown-linux-gnu.tar.xz"
 sha256 = "d29ccb1559a177c4e72291f6e5f629de7fe8885e7521ca47802627544b121e95"
-source_dir = "rust-%{version}-x86_64-unknown-linux-gnu"
 
 [depends]
 build = []
 # rustc links through `cc` and needs libc at run time
 run = ["gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 # Never strip this package. `strip --strip-unneeded` (binutils 2.43) rewrites

@@ -4,16 +4,30 @@
 [package]
 name = "noto-fonts-arabic"
 version = "2.013"
-rel = 2
+rel = 3
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Noto Sans Arabic hinted TrueType fonts"
 license = ["OFL-1.1"]
-source = "https://github.com/notofonts/arabic/releases/download/NotoSansArabic-v%{version}/NotoSansArabic-v%{version}.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "noto-fonts-arabic"
+url = "https://github.com/notofonts/arabic/releases/download/NotoSansArabic-v%{version}/NotoSansArabic-v%{version}.zip"
 sha256 = "1301aceaea84c501cf2e6dcfb3182e2328c8eae5725817fcb239672bda7154f1"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["fontconfig", "noto-fonts"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

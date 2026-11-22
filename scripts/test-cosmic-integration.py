@@ -1,8 +1,12 @@
+import sys
 #!/usr/bin/env python3
 """Regression tests for the COSMIC desktop package set and Faseela integration."""
 from pathlib import Path
 import re
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 COSMIC = ROOT / "recipes" / "cosmic"
@@ -39,9 +43,9 @@ for name in sorted(EXPECTED):
             f"{name}: package version must match COSMIC Epoch 1.11.0"
         )
     if name == "cosmic-desktop":
-        assert not pkg.get("source"), "cosmic-desktop is a source-less integration package"
+        assert not pkg.get("sources"), "cosmic-desktop is a source-less integration package"
         continue
-    assert pkg.get("source") == "local:/nawa-schema-2-requires-a-newer-nawa", (
+    assert pkg.get("source") == "local:/nawa-package-relations-1-requires-a-newer-nawa", (
         f"{name}: multi-source recipe must fail closed on old Nawa clients"
     )
     sources = pkg.get("sources", [])
@@ -63,7 +67,7 @@ for name in ("cosmic-greeter", "greetd"):
     item = recipe("greeter", name)
     pkg = item["package"]
     assert pkg["name"] == name
-    assert pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+    assert pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
     assert re.fullmatch(r"[0-9a-f]{64}", pkg["sources"][0]["sha256"])
     if name == "cosmic-greeter":
         assert pkg["version"] == "1.11.0"
@@ -257,7 +261,7 @@ assert "--cfg tokio_unstable" in launcher["build"]["compile"]
 pop = recipe("gui", "pop-launcher")
 pop_pkg = pop["package"]
 assert pop_pkg["version"] == "1.11.0"
-assert pop_pkg["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert pop_pkg["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
 assert pop_pkg["sources"][0]["url"].endswith("/refs/tags/epoch-1.11.0")
 assert re.fullmatch(r"[0-9a-f]{64}", pop_pkg["sources"][0]["sha256"])
 assert "pop-launcher-bin" in pop["build"]["compile"]

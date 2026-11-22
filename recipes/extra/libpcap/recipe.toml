@@ -2,16 +2,29 @@
 [package]
 name = "libpcap"
 version = "1.10.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libpcap — packet capture library"
 license = ["BSD-3-Clause"]
-source = "https://www.tcpdump.org/release/libpcap-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpcap"
+url = "https://www.tcpdump.org/release/libpcap-%{version}.tar.gz"
 sha256 = "37ced90a19a302a7f32e458224a00c365c117905c2cd35ac544b6880a81488f0"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

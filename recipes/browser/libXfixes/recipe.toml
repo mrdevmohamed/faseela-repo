@@ -3,16 +3,29 @@
 [package]
 name = "libXfixes"
 version = "6.0.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X Fixes extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXfixes-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxfixes"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXfixes-%{version}.tar.xz"
 sha256 = "b695f93cd2499421ab02d22744458e650ccc88c1d4c8130d60200213abc02d58"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11"]
 run = ["libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

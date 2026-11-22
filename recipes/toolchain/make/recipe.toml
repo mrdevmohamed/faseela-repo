@@ -2,17 +2,29 @@
 [package]
 name = "make"
 version = "4.4.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU Make utility to maintain groups of programs"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/make/make-%{version}.tar.gz"
-# canonical: https://ftp.gnu.org/gnu/make/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "make"
+url = "https://mirrors.kernel.org/gnu/make/make-%{version}.tar.gz"
 sha256 = "dd16fb1d67bfab79a72f5e8390735c49e3e8e70b4945a15ab1f81ddb78658fb3"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --without-guile"

@@ -61,9 +61,10 @@ def recipes(root: Path) -> dict[str, dict]:
                     f"{path}: split archive identity {split_archive} collides with another recipe"
                 )
 
-        depends = doc.get("depends")
-        if not isinstance(depends, dict) or not isinstance(depends.get("run"), list):
-            problems.append(f"{path}: [depends].run must be explicit (use [] when empty)")
+        # Nawa's Depends model defaults run to [], and package builds
+        # always serialize that resolved list as .PKGINFO rundeps. The v5
+        # publisher validates authenticated archive metadata, so an omitted
+        # recipe [depends].run is a valid empty runtime-dependency declaration.
         capabilities = doc.get("capabilities")
         if not isinstance(capabilities, dict) or not isinstance(capabilities.get("provides"), list):
             problems.append(f"{path}: [capabilities].provides must be explicit (use [] when empty)")

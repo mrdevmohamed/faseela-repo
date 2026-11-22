@@ -6,6 +6,9 @@ import re
 import tomllib
 from pathlib import Path
 
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 RECIPES = ROOT / "recipes"
 
@@ -28,8 +31,8 @@ require_deps("messaging", "telegram-desktop", "run", {"webkit2gtk-4.1"})
 webkit = recipe("browser", "webkit2gtk-4.1")
 assert webkit["package"]["version"] == "2.54.2"
 assert webkit["package"]["rel"] >= 7, "Bump WebKitGTK rel when changing the WebKit build feature set"
-assert webkit["package"]["source"].endswith("webkitgtk-%{version}.tar.xz")
-assert re.fullmatch(r"[0-9a-f]{64}", webkit["package"]["sha256"])
+assert rs.url(webkit["package"]).endswith("webkitgtk-%{version}.tar.xz")
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(webkit["package"]))
 require_deps("browser", "webkit2gtk-4.1", "build", {
     "cmake", "ninja", "ruby", "which", "gstreamer", "gst-plugins-base", "gst-plugins-good", "gst-plugins-bad", "gtk3", "glib", "cairo", "icu",
     "harfbuzz", "harfbuzz-icu", "fontconfig", "freetype", "mesa", "libdrm", "libgudev",
@@ -50,8 +53,8 @@ for package_name, source_name in gstreamer_packages.items():
     package = recipe("media", package_name)["package"]
     assert package["version"] == "1.28.9", f"{package_name} must match the GStreamer release"
     assert package["rel"] >= 1
-    assert package["source"].endswith(f"{source_name}-%{{version}}.tar.xz")
-    assert re.fullmatch(r"[0-9a-f]{64}", package["sha256"]), (
+    assert rs.url(package).endswith(f"{source_name}-%{{version}}.tar.xz")
+    assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(package)), (
         f"{package_name} source checksum must be pinned"
     )
 
@@ -83,8 +86,8 @@ assert "-Dmpegtsdemux=enabled" in bad_configure, (
 nghttp2_recipe = recipe("browser", "nghttp2")
 nghttp2 = nghttp2_recipe["package"]
 assert nghttp2["version"] == "1.71.0"
-assert nghttp2["source"].endswith("nghttp2-%{version}.tar.xz")
-assert re.fullmatch(r"[0-9a-f]{64}", nghttp2["sha256"])
+assert rs.url(nghttp2).endswith("nghttp2-%{version}.tar.xz")
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(nghttp2))
 assert "--enable-lib-only" in nghttp2_recipe["build"]["configure"], (
     "Build only the nghttp2 library needed by libsoup3"
 )
@@ -153,10 +156,10 @@ harfbuzz = recipe("gui", "harfbuzz")
 harfbuzz_icu_recipe = recipe("browser", "harfbuzz-icu")
 assert harfbuzz_icu_recipe["package"]["version"] == harfbuzz["package"]["version"]
 assert harfbuzz_icu_recipe["package"]["rel"] >= 2, "Bump HarfBuzz ICU rel when correcting source staging"
-assert harfbuzz_icu_recipe["package"].get("source_dir") == "harfbuzz-%{version}", (
+assert rs.primary(harfbuzz_icu_recipe["package"]).get("strip_components") == 1, (
     "HarfBuzz ICU must build from the upstream harfbuzz-version source directory"
 )
-assert harfbuzz_icu_recipe["package"]["sha256"] == harfbuzz["package"]["sha256"]
+assert rs.sha256(harfbuzz_icu_recipe["package"]) == rs.sha256(harfbuzz["package"])
 require_deps("browser", "harfbuzz-icu", "build", {"icu"})
 require_deps("browser", "harfbuzz-icu", "run", {"harfbuzz", "icu"})
 hb_icu_configure = harfbuzz_icu_recipe["build"]["configure"]
@@ -203,7 +206,7 @@ for category, package_name, min_version in (
     package = recipe(category, package_name)["package"]
     version = tuple(int(part) for part in package["version"].split(".")[:3])
     assert version >= min_version, f"{package_name} is too old for WebKitGTK"
-    assert re.fullmatch(r"[0-9a-f]{64}", package["sha256"]), (
+    assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(package)), (
         f"{package_name} source checksum must be pinned"
     )
 

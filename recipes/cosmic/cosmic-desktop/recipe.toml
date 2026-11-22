@@ -13,14 +13,24 @@
 [package]
 name = "cosmic-desktop"
 version = "0.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "COSMIC Wayland desktop session integration for Faseela (systemd + dbus)"
 license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
 run = ["appimage-support", "cosmic-session", "cosmic-osk", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings", "cosmic-settings-daemon", "cosmic-screenshot", "cosmic-randr", "cosmic-icons", "xdg-desktop-portal-cosmic", "mesa", "dbus", "dbus-system", "systemd", "polkit", "pipewire", "wireplumber", "network-manager", "bluez", "upower", "seatd-systemd", "base-files", "faseela-branding", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "gnome-keyring", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

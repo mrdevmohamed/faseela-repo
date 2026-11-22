@@ -103,12 +103,25 @@ def main() -> None:
         recipes_root = root / "recipes"
         recipe(recipes_root)
         recipe_map = PUBLISHER.recipes(recipes_root)
+
+        # The recipe model defaults omitted depends.run to [], and Nawa writes
+        # that resolved empty list to archive .PKGINFO as rundeps = "".
+        default_run_root = root / "default-run"
+        default_run_path = recipe(default_run_root, "default-run")
+        default_run_text = default_run_path.read_text(encoding="utf-8")
+        default_run_path.write_text(
+            default_run_text.replace("\n[depends]\nrun = []\n", ""),
+            encoding="utf-8",
+        )
+        assert "default-run-1.0-1.nawa.tar.zst" in PUBLISHER.recipes(default_run_root)
+
         filename = "alpha-1.0-1.nawa.tar.zst"
         archive_dir = root / "archives"
         archive_dir.mkdir()
         (archive_dir / filename).write_bytes(b"signed package bytes")
 
-        # All recipes need explicit relation, capability, and runtime dependency declarations.
+        # Capabilities and relations must be explicit; runtime dependencies
+        # default to [] in Nawa and are always serialized into the archive.
         assert len(PUBLISHER.audit_archives(recipe_map, archive_dir)) == 1
         expect_error(lambda: PUBLISHER.audit_archives(recipe_map, root / "missing"), "does not exist")
         incomplete = root / "incomplete"

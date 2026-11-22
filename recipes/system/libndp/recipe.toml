@@ -2,17 +2,29 @@
 [package]
 name = "libndp"
 version = "1.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Library for IPv6 Neighbor Discovery Protocol"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/jpirko/libndp/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libndp"
+url = "https://github.com/jpirko/libndp/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "e564f5914a6b1b799c3afa64c258824a801c1b79a29e2fe6525b682249c65261"
-source_dir = "libndp-%{version}"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "automake", "libtool"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = "autoreconf -fi"

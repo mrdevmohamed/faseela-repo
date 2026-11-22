@@ -54,10 +54,12 @@ them). Versions and option names come from upstream knowledge, not a test build.
 * `[depends].build` lists **recipe-level** build dependencies only.
   Tools provided by the bootstrap seed (bash, coreutils, sed, gawk,
   python3, curl, ...) are implicit and must NOT be declared. Rust consumers
-  normally declare `build = ["rust"]`. Nawa is the deliberate exception:
-  `packages.yml` bootstraps its pinned source with a temporary pinned Rust
-  toolchain before the normal package build, so `nawa` keeps
-  `depends.build = []` and does not create a self-hosting dependency cycle.
+  declare `build = ["rust"]`, and so does `nawa`: its fetch phase and the
+  sandboxed compile need `cargo` on PATH, which the seed's `/opt/cargo` does
+  not provide (the sandbox hides it, stage 3 deletes it). `rust` is a
+  prebuilt binary release with no build dependencies, so there is no cycle;
+  `packages.yml` only uses a temporary pinned toolchain to bootstrap the Nawa
+  *tool* that parses the recipes.
 * `source` URLs point at proven-reachable mirrors: `mirrors.kernel.org`
   for GNU software, upstream hosts elsewhere. Substitutions used where an
   upstream host is unreachable from the build farm (documented per recipe):

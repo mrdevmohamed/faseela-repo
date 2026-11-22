@@ -97,7 +97,9 @@ nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # the automation that runs it), so check their shape rather than one pin.
 assert nawa["package"]["rel"] >= 21
 assert nawa["package"]["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
-assert nawa["depends"]["build"] == []
+# Cargo has to be reachable from Nawa's fetch phase and the sandbox, so the
+# recipe depends on the db-owned rust package (stage 2 failed without it).
+assert nawa["depends"]["build"] == ["rust"]
 assert nawa["depends"]["run"] == ["gcc", "glibc"]
 assert nawa["capabilities"]["provides"] == []
 assert nawa["relations"] == {"schema": 1, "conflicts": [], "replaces": []}
@@ -110,7 +112,7 @@ assert re.fullmatch(
 )
 assert re.fullmatch(r"[0-9a-f]{64}", nawa["package"]["sources"][0]["sha256"])
 assert nawa["fetch"]["cargo"]["dir"] == "."
-assert "rust" not in nawa.get("depends", {}).get("build", [])
+assert "rust" in nawa["depends"]["build"]
 assert nawa["build"]["compile"] == "cargo build --release --offline --locked"
 assert "vendor/" not in nawa_text
 assert "cargo fetch" not in nawa["build"]["compile"]

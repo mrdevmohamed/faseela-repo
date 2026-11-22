@@ -11,7 +11,7 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 38
+rel = 39
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
@@ -19,10 +19,17 @@ license = ["GPL-3.0"]
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
-# Nawa is bootstrapped with a pinned Rust toolchain by packages.yml; keep that
-# bootstrap separate from the package dependency graph. Its ELF runtime links
-# against glibc and libgcc.
-build = []
+# Cargo must be on the PATH of both Nawa's fetch phase (`cargo --version` is
+# queried before any source is downloaded) and the sandboxed compile step. The
+# seed's /opt/cargo is on neither: the sandbox hides it and stage 3 deletes it,
+# which made stage 2 fail on this recipe with "query cargo version using the
+# fetch PATH: No such file or directory". Like every other Rust recipe, Nawa
+# therefore takes the db-owned `rust` package (installed under /usr) as a build
+# dependency. This is not a cycle: `rust` is a prebuilt, sha256-pinned binary
+# release with no build dependencies, so it never needs the Nawa package.
+# packages.yml still bootstraps the Nawa *tool* with the seed toolchain before
+# it can parse this recipe. Its ELF runtime links against glibc and libgcc.
+build = ["rust"]
 run = ["gcc", "glibc"]
 
 [capabilities]

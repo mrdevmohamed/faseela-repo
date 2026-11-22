@@ -40,10 +40,7 @@ non-desktop packages such as `gdk-pixbuf` need it even when `WITH_GUI` is off.
 
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
-The first 47 `extra/` recipes are generated from a data table
-(`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator
-overwrites, so newer recipes (and everything in `system/`, `boot/`, `gui/`, `creative/`, `messaging/`) are
-written by hand and are not in that table.
+`scripts/recipe_data_extra.py` is a data table describing the first 47 `extra/` recipes. It is kept only as test reference data (`scripts/test-systemd-core.py`); the generator that rendered it is gone, so every recipe is edited by hand.
 
 Recipes added without network access carry an all-zero `sha256` until
 `python3 scripts/fill-sha256.py -r <name>` pins it (`check-recipes.py` lists

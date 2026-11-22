@@ -32,6 +32,7 @@ Commands (all talk to GitHub through the `gh` CLI, set GH_BIN to replace it):
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import importlib.util
 import json
 import os
@@ -222,28 +223,34 @@ def cmd_restore(args) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         fetch_state(args.repo, args.prefix, Path(tmp))
         good = usable(load_entry_files(Path(tmp)), recipes, keys, releases)
-    restored = 0
     selected = [n for n in sorted(good)
                 if args.all or n in wanted or (args.with_toolchain and good[n].get("toolchain"))]
+    wanted_files = []
     for name in selected:
         entry = good[name]
-        files = [(entry["archive"], entry["archive_sha256"])] + [
+        wanted_files += [(entry["archive"], entry["archive_sha256"])] + [
             (s["archive"], s["archive_sha256"]) for s in entry.get("split_archives", [])]
-        for asset, digest in files:
-            target = args.out_dir / asset
-            if target.is_file() and CACHE.sha256_file(target) == digest:
-                continue
 
-            def download(asset=asset, target=target):
+    def fetch(item) -> int:
+        asset, digest = item
+        target = args.out_dir / asset
+        if target.is_file() and CACHE.sha256_file(target) == digest:
+            return 0
+
+        def download():
+            target.unlink(missing_ok=True)
+            gh("release", "download", where[asset], "--repo", args.repo, "--pattern", asset,
+               "--dir", str(args.out_dir), "--clobber")
+            if not target.is_file() or CACHE.sha256_file(target) != digest:
                 target.unlink(missing_ok=True)
-                gh("release", "download", where[asset], "--repo", args.repo, "--pattern", asset,
-                   "--dir", str(args.out_dir), "--clobber")
-                if not target.is_file() or CACHE.sha256_file(target) != digest:
-                    target.unlink(missing_ok=True)
-                    raise ShardCacheError(f"{asset} does not match its recorded SHA-256")
+                raise ShardCacheError(f"{asset} does not match its recorded SHA-256")
 
-            retry(download, f"download {asset}")
-            restored += 1
+        retry(download, f"download {asset}")
+        return 1
+
+    # A complete restore is hundreds of archives: download several at once.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(args.jobs, 16))) as pool:
+        restored = sum(pool.map(fetch, wanted_files))
     if args.toolchain_list:
         args.toolchain_list.write_text(
             "".join(f"{recipes[n].archive}\n" for n in selected if args.with_toolchain and good[n].get("toolchain")),
@@ -421,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--names", default="", help="package names to restore")
     p.add_argument("--all", action="store_true", help="restore every usable package")
+    p.add_argument("--jobs", type=int, default=8, help="parallel downloads")
     p.add_argument("--with-toolchain", action="store_true",
                    help="also restore the archives Bootstrap built in this build (wave 0)")
     p.add_argument("--toolchain-list", type=Path, help="write the archive names of restored Toolchain entries here")

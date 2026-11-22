@@ -47,6 +47,26 @@ With **keep_going** enabled, a failed package does not prevent unrelated package
 
 The workflow can prune superseded package archive versions after publishing. Review the manual inputs before changing pruning behavior.
 
+## Bootstrap Toolchain cache
+
+When a run has to rebuild Toolchain recipes, the Stage 1/2/3 bootstrap takes the
+better part of an hour. Its final Stage 3 archives are therefore cached with
+`actions/cache`, under a key computed by `scripts/toolchain-cache-key.py` from
+the tooling revision, every recipe tree (and recursive build dependencies) in the
+bootstrap flavor and in `recipes/toolchain`, `flavors.toml`, the isolation mode,
+the Stage 3 package selection and the ISO week. On a hit the workflow verifies the
+sentinel file and per-archive SHA-256 sums, skips the bootstrap and imports the
+archives exactly as a fresh build would; on any verification failure it rebuilds.
+
+- A full Toolchain run (`toolchain = true`) never uses the cache, because its
+  self-hosting proofs are the purpose of that run.
+- The entry is saved as soon as the Stage 3 archives exist, even if a later
+  package fails, so retries do not repeat the bootstrap.
+- The key changes weekly, because the seed toolchain is assembled from unpinned
+  upstream packages. Caches are scoped per branch/PR by GitHub and expire after
+  7 days without use.
+- Set the repository variable `TOOLCHAIN_CACHE=off` to disable it.
+
 ## Publishing sequence
 
 At a high level, the publisher:

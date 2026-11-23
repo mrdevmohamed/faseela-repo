@@ -10,7 +10,7 @@ on:
         required: true
         type: choice
         options:
-          - NO
+          - "NO"
           - PUBLISH_SCHEMA_V5
       build_run_id:
         description: Successful same-repository Build packages PR run ID whose merged PR draft-release cache contains the complete package set

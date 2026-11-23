@@ -1,7 +1,11 @@
 # Incremental package publishing: design
 
-Status: proposal. Phase 0 tooling is implemented; nothing in the publish
-workflow uses it yet (see section 14).
+Status: implemented in `packages.yml` (phase 2, in a simplified form): the
+publish job updates the previous signed index with `nawa repo-update` and keeps
+the catalog; a separate upload job per wave uploads archives right after their
+wave and describes them (see `docs/build-publish.md`). The closure-based fetch
+(phase 3), the scheduled drift check and expiry refresh (6.8) are not
+implemented yet.
 Scope: `.github/workflows/packages.yml`, `scripts/check-file-conflicts.py`,
 `scripts/distributed-releases.py`, and the `nawa` repository tooling
 (`mrdevmohamed/nawa`, `repo-create`).

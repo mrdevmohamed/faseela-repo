@@ -8,7 +8,7 @@ A push to **main** that changes files under **recipes/** or **groups.toml** buil
 
 A pull request builds only the recipes it changes. It verifies them and never publishes.
 
-The workflow publishes only from **main**, and only when no job failed: the signed repository is replaced as a whole (complete, signed set) or not at all, so **stable-v5** is never partial. If a package fails, fix it and push; the next run builds only what is still missing.
+Archives are uploaded as soon as their wave has built them, but the signed **index** is replaced only from **main**, and only when no job failed and every recipe has an archive. **stable-v5** is therefore never partial. If a package fails, fix it and push: everything that was already built is kept (it is uploaded), so the next run builds only what is still missing.
 
 ## Manual builds
 
@@ -35,8 +35,9 @@ A full build is longer than one runner may run (6 hours). The workflow therefore
 
 1. **plan** removes every package whose archive **stable-v5** already publishes and splits the remaining packages into up to eight **waves** along their dependency levels (`scripts/plan-build-shards.py`). A package is always in a later wave than every selected package it needs, at build **or** run time.
 2. The packages of one wave form parallel **shards**, one runner each. Packages of a wave that depend on each other share a shard, very slow packages (LLVM, browsers) get a shard of their own, and `scripts/build-times.json` lists the measured minutes used for balancing. A wrong value only costs speed.
-3. A shard downloads just the archives of its dependency closure: published ones from **stable-v5** and those the earlier waves built (workflow artifacts `built-<shard>`). Everything it builds is uploaded as its own artifact, even when another package of the shard failed.
-4. **publish** starts when every wave is done and nothing failed. It builds the recipe-pinned Nawa, gathers the artifacts and the published archives into one complete set, signs and verifies it (`scripts/publish-schema-v5.py prepare`), uploads new archives to the immutable **packages-v5-NNNN** releases and uploads the signed **index.toml** to **stable-v5** last.
+3. A shard downloads just the archives of its dependency closure: published ones from the **packages-v5-NNNN** releases and those the earlier waves built in this run (workflow artifacts `built-<shard>`). Everything it builds is uploaded as its own artifact, even when another package of the shard failed.
+4. After each wave an **upload** job (`.github/workflows/packages-upload.yml`) signs the archives that wave built and uploads them to the immutable **packages-v5-NNNN** releases, **even when a shard of the wave failed**. It is the only job besides **signer** and **publish** that sees the signing key; the jobs that run recipe build scripts never do. It also writes a small `meta-<wave>` artifact: the index entries and catalog records of exactly the archives it uploaded.
+5. **publish** starts when every wave is done and nothing failed. It takes the **previous signed index** of **stable-v5**, adds the entries of the new archives with `nawa repo-update`, and uploads the new signed **index.toml** last (`scripts/publish-schema-v5.py update`). **No archive that is already published is downloaded or opened.**
 
 **Re-run failed jobs** repeats only the failed shards. The job that builds a shard is defined in **.github/workflows/packages-build.yml**.
 
@@ -54,7 +55,9 @@ Toolchain packages are never sent through the ordinary package build path. They 
 
 ## Failures and the time budget
 
-With **keep_going** enabled, a failed package does not prevent unrelated packages from being built. Packages that depend on a failed package are skipped. The run ends red and publishes nothing; archives of the successful packages are kept as run artifacts for one day, and a re-run of the failed jobs continues from them.
+With **keep_going** enabled, a failed package does not prevent unrelated packages from being built. Packages that depend on a failed package are skipped. The run ends red and does not touch the index, but the archives of every successful package are already uploaded to **packages-v5-NNNN**. The next run (a push, or **Re-run failed jobs**) treats them as published and builds only what is missing.
+
+An archive that was uploaded is final: if one turns out to be bad, delete its asset and its `.sig` from the **packages-v5-NNNN** release (or bump the recipe **rel**), otherwise later runs keep skipping it.
 
 Each shard stops starting new packages after **budget** minutes (default 270). Packages left over make the run incomplete, so it does not publish; run it again and only those are built.
 
@@ -80,7 +83,17 @@ archives exactly as a fresh build would; on any verification failure it rebuilds
 
 ## Publishing
 
-The **publish** job uses the existing **NAWA_SIGN_KEY_B64** secret and the checked-in **dist/nawa.pub** trust key, which is compared with Faseela's distribution key before publication. Before anything is uploaded it verifies: complete package coverage of every current recipe, explicit schema-v5 metadata, every signature, archive digests and sizes, and the serialized index. Archives already hosted in a **packages-v5-NNNN** release are compared byte for byte and never replaced. After publishing, the file-conflict check reports any file owned by two packages of one flavor.
+The **signer**, **upload-w0..w8** and **publish** jobs use the **NAWA_SIGN_KEY_B64** secret and the checked-in **dist/nawa.pub** trust key, which **signer** compares with Faseela's distribution key before anything is built or uploaded.
+
+**Index update.** The new index is the previous signed index plus the entries of the archives added since, minus the archives of recipes that left or changed (`nawa repo-update --base <previous index> --trust-key dist/nawa.pub`). The previous index must verify with the trusted key, and an index published by another key is refused. Entries are taken from the `meta-*` artifacts. A published archive that no artifact describes (an upload job that never finished, an older run) is the only thing downloaded: the publish job fetches it, verifies its signature, and derives its entry from the bytes. On the first publication the base is an empty signed index.
+
+**Before the index changes** the publish job verifies: every current recipe has a published archive, explicit schema-v5 metadata, every entry binds to its recipe identity, every `download_url` points at a signed asset of a **packages-v5-NNNN** release, the recipe snapshot matches its signed digest, and (where GitHub reports an asset digest) the entry describes the published bytes. Then it checks that no two packages of a flavor ship the same file, using the **catalog** (below). If anything fails nothing is published and the already uploaded archives are kept.
+
+**Order.** archives and signatures (signature first) → recipe snapshot → catalog → signed index, so clients keep seeing the previous consistent repository until the very last upload. The publish job then downloads the index it published and compares it with what it signed. A `concurrency` group allows one publisher at a time, because each index is built from the previous published one.
+
+**Catalog.** `catalog-<sha256>.json.zst` (file lists of every indexed archive) and its signed pointer `catalog.toml` live next to **index.toml** in **stable-v5**. They let the file-conflict check run without opening archives and are updated the same incremental way. A published index without a catalog is an error (rebuild it with the catalog backfill workflow).
+
+Indexes expire after 90 days. Every publish refreshes the window; if no recipe changes for a long time, run the workflow manually on **main** (nothing is built, the index is re-signed).
 
 The workflow does not change **stable**, **stable-v3**, or **packages-NNNN**. Installed Nawa configurations move to **stable-v5** with a separate, reviewed package-recipe release, after the end-to-end install and replacement test has passed.
 

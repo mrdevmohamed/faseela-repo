@@ -16,16 +16,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import recipe_keys as _cache  # noqa: E402
+
 VERSION = "v1"
-_SCRIPT = Path(__file__).resolve().with_name("pr-build-cache.py")
-_spec = importlib.util.spec_from_file_location("pr_build_cache", _SCRIPT)
-_cache = importlib.util.module_from_spec(_spec)
-sys.modules[_spec.name] = _cache
-_spec.loader.exec_module(_cache)
 
 
 def toolchain_key(

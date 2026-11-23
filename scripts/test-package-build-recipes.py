@@ -127,7 +127,7 @@ workflow = "\n".join(
 assert "write-nawa-lock" not in workflow
 assert "nawa-source.toml" not in workflow
 assert 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' in workflow
-assert "building nawa from its pinned source requires the seed rootfs" in workflow
+assert "the pinned Nawa is compiled in every shard" in workflow
 assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
 assert "cargo fetch --locked" in workflow
 # The stage-3-derived seed has no /opt/cargo: the pinned Rust (recipe sha256) is
@@ -138,14 +138,9 @@ assert "sha256sum --check --status" in workflow
 assert "--prefix=/opt/cargo" in workflow
 assert workflow.index("has_cargo()") < workflow.index("cargo fetch --locked")
 assert "deps nawa" in workflow
-assert "supports_schema_v3()" in workflow
-assert "supports_recipe_schema()" in workflow
-assert "supports_nawa_features()" in workflow
-assert "recipe check nawa" in workflow
-assert "1 recipe(s), 0 warning(s)" in workflow
-assert "if ! supports_nawa_features; then" in workflow
-assert "supports_nawa_features ||" in workflow
-assert workflow.index("supports_nawa_features()") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
+# no legacy transition package: the pinned source is always compiled
+assert "supports_schema_v3()" not in workflow
+assert "nawa-transition" not in workflow
 assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
 
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

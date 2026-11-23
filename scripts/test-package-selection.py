@@ -265,20 +265,18 @@ class RealRecipeTreeTests(unittest.TestCase):
         self.assertIn("  pull_request:", workflow)
         self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
         build = (root / ".github/workflows/packages-build.yml").read_text(encoding="utf-8")
-        self.assertIn("Restore the archives of earlier waves from the draft build cache", build)
-        self.assertIn("pr-build-cache.py invalidate-relations", build)
-        self.assertIn("pr-shard-cache.py restore", build)
-        self.assertIn("pr-shard-cache.py save", build)
-        self.assertIn("pr-shard-cache.py merge", build)
+        # archives pass between jobs as artifacts: no draft releases, no run-id hand-off
+        self.assertIn("actions/download-artifact", build)
+        self.assertIn("actions/upload-artifact", build)
         self.assertNotIn("gh run download", workflow + build)
-        self.assertNotIn("name: pr-package-cache", workflow + build)
-        self.assertIn("schema_v5_only != 'true'", workflow)
-        self.assertIn(
-            "if: ${{ inputs.mode == 'finalize' && github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}",
-            build,
-        )
-        # only the final job may publish; shards never see the signing key
-        self.assertEqual(build.count("secrets.NAWA_SIGN_KEY_B64"), 2)
+        self.assertNotIn("pr-shard-cache", workflow + build)
+        self.assertNotIn("draft", (workflow + build).lower().replace("# draft", ""))
+        # a pull request never publishes: only main does, and only when nothing failed
+        self.assertIn("github.event_name != 'pull_request' && github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("!contains(needs.*.result, 'failure')", workflow)
+        # shards never see the signing key; only the publish job does
+        self.assertNotIn("NAWA_SIGN_KEY_B64", build)
+        self.assertEqual(workflow.count("secrets.NAWA_SIGN_KEY_B64"), 1)
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)
 
 

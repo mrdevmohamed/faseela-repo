@@ -16,8 +16,8 @@ sha256 = "b50d4c25b97009a744706c1039c598f4d8e64910c9fde381994e1cae235d9242"
 strip_components = 1
 
 [depends]
-build = ["pkgconf", "xorg-util-macros", "xorgproto", "libX11", "libXi"]
-run = ["libX11", "libXi", "xorgproto"]
+build = ["pkgconf", "xorg-util-macros", "xorgproto", "libX11", "libXi", "libXext"]
+run = ["libX11", "libXi", "xorgproto", "libXext"]
 
 [capabilities]
 provides = []

@@ -50,9 +50,8 @@ name: Build packages
 # .github/workflows/packages-build.yml.
 #
 # Build environment: the rootfs of the newest release of DISTRO_REPO
-#   min   faseela-x86_64-rootfs-min.tar.zst     base-devel + nawa, small, NO rust
-#   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust
-#   auto  (default) seed when rust or nawa is in the list, else min
+#   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust (always used:
+#         every shard compiles the recipe-pinned nawa)
 
 on:
   push:
@@ -145,9 +144,9 @@ on:
         type: boolean
         default: false
       rootfs:
-        description: "Build environment"
+        description: "Build environment (always the seed rootfs)"
         type: choice
-        options: [auto, min, seed]
+        options: [auto, seed]
         default: auto
       isolation:
         description: "nawa build isolation"
@@ -323,24 +322,13 @@ jobs:
             echo "::error::invalid Toolchain selection mode"; exit 1;
           }
 
-          # Building the Nawa recipe now bootstraps the pinned source into the seed
-          # rootfs before parsing its multi-source/Cargo recipe. This always
-          # requires the Rust toolchain, even if a previous transition archive exists.
-          if [[ " $pkgs " == *" nawa "* && "$INPUT_ROOTFS" == min ]]; then
-            echo "::error::building nawa from its pinned source requires the seed rootfs (Rust/Cargo); choose rootfs=auto or seed"
+          # Every shard compiles the recipe-pinned Nawa, which needs the Rust toolchain:
+          # the build environment is always the seed rootfs.
+          [[ "$INPUT_ROOTFS" != min ]] || {
+            echo "::error::the pinned Nawa is compiled in every shard and needs the seed rootfs; choose rootfs=auto or seed"
             exit 1
-          fi
-
-          rootfs="$INPUT_ROOTFS"
-          if [[ "$rootfs" == auto ]]; then
-            rootfs=min
-            for p in $pkgs; do [[ "$p" == rust || "$p" == nawa ]] && rootfs=seed; done
-          fi
-          if [[ "$rootfs" == min ]]; then
-            for p in $pkgs; do
-              [[ "$p" == rust || "$p" == nawa ]] && echo "::warning::$p is in the list but the min rootfs has no rust: it would be compiled first (hours). Use rootfs=seed."
-            done
-          fi
+          }
+          rootfs=seed
           dry_run="${INPUT_DRY_RUN:-false}"
           {
             echo "pkgs=$pkgs"
@@ -453,7 +441,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w1:
     name: wave 1
@@ -480,7 +467,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w2:
     name: wave 2
@@ -507,7 +493,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w3:
     name: wave 3
@@ -534,7 +519,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w4:
     name: wave 4
@@ -561,7 +545,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w5:
     name: wave 5
@@ -588,7 +571,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w6:
     name: wave 6
@@ -615,7 +597,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w7:
     name: wave 7
@@ -642,7 +623,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w8:
     name: wave 8
@@ -669,7 +649,6 @@ jobs:
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   publish:
     name: publish stable-v5

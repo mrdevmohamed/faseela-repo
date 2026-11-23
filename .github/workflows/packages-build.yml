@@ -52,10 +52,6 @@ on:
         description: "true when wave 0 was skipped because the Toolchain archives are already published"
         type: string
         default: "false"
-      nawa_selected:
-        description: "true when nawa is part of the selection: every job then bootstraps the pinned nawa from source"
-        type: string
-        default: "false"
 
 jobs:
   build:
@@ -76,7 +72,6 @@ jobs:
       TOOLCHAIN_ALL: ${{ inputs.toolchain_all }}
       TC_BUILD: ${{ inputs.shard_id == 'tc' }}
       TOOLCHAIN_DONE: ${{ inputs.toolchain_done }}
-      NAWA_SELECTED: ${{ inputs.nawa_selected }}
       BT: /mnt/faseela-bootstrap
       ISOLATION: ${{ inputs.isolation }}
       ROOTFS_KIND: ${{ inputs.rootfs_kind }}
@@ -84,7 +79,6 @@ jobs:
       KEEP_GOING: ${{ inputs.keep_going }}
       PKG_REPO: ${{ github.repository }}
       STABLE_TAG: stable-v5
-      NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -232,11 +226,12 @@ jobs:
           # Build the pinned Nawa client from the seed source before asking
           # any Nawa binary to parse its own multi-source / Cargo-fetch recipe.
           # Schema-v3 repo support alone does not imply recipe-schema support.
-          # Every job of a run needs the same pinned Nawa (the rootfs client may be
-          # too old for the recipe schema), not only the shard that builds it.
-          if [[ "$NAWA_SELECTED" == true ]]; then
+          # Every shard compiles the same pinned Nawa: the rootfs client is the
+          # previous release's and may predate the recipe and repository schemas.
+          # (No transition package is involved.)
+          if true; then
             [[ "$ROOTFS_KIND" == seed ]] || {
-              echo "::error::building nawa requires the seed rootfs (Rust/Cargo)"
+              echo "::error::the pinned Nawa is compiled in every shard, which requires the seed rootfs (Rust/Cargo)"
               exit 1
             }
             # The seed rootfs is derived from stage 3, which deletes /opt/cargo:
@@ -302,73 +297,6 @@ jobs:
                 /usr/bin/nawa --version
               '
             echo "Pinned Nawa source compiled with seed Rust and installed before package builds." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          supports_schema_v3() {
-            local repo_help
-            repo_help="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create --help)" || return 1
-            for option in --index-version --locations --recipes-rev --groups; do
-              grep -q -- "$option" <<< "$repo_help" || return 1
-            done
-          }
-
-          # Index-v3 support and recipe-schema support are independent. Load
-          # the real Nawa recipe (multi-source + Cargo fetch) to verify that
-          # this binary understands and validates the current recipe schema.
-          supports_recipe_schema() {
-            local output
-            output="$(sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa \
-              --recipes /faseela/recipes recipe check nawa 2>&1)" || return 1
-            # recipe check exits zero for warnings on old implementations;
-            # require the current schema's known tables/keys with no warnings.
-            grep -Fq 'nawa: recipe check: 1 recipe(s), 0 warning(s)' <<< "$output"
-          }
-
-          supports_nawa_features() {
-            supports_schema_v3 && supports_recipe_schema
-          }
-
-          # Older rootfs releases can carry a Nawa client that predates the
-          # current recipe schema even when its repository-index support is
-          # already up to date. Upgrade locally before package builds.
-          if ! supports_nawa_features; then
-            nawa_archive="$(python3 -I - <<'PY'
-          import tomllib
-          from pathlib import Path
-          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
-          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
-          PY
-          )"
-            transition_dir="$RUNNER_TEMP/nawa-transition"
-            rm -rf "$transition_dir"
-            mkdir -p "$transition_dir"
-            if ! gh release download "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
-                 --pattern "$nawa_archive" --pattern "$nawa_archive.sig" \
-                 --dir "$transition_dir"; then
-              echo "::error::the rootfs has an old Nawa and $NAWA_TRANSITION_TAG does not provide the signed $nawa_archive transition package. Run the Nawa transition build first."
-              exit 1
-            fi
-            [[ -s "$transition_dir/$nawa_archive" && -s "$transition_dir/$nawa_archive.sig" ]] || {
-              echo "::error::the Nawa transition release is missing $nawa_archive or its detached signature"
-              exit 1
-            }
-
-            sudo install -d -m 0755 "$T/tmp/nawa-transition"
-            sudo install -m 0644 "$transition_dir/$nawa_archive" "$T/tmp/nawa-transition/$nawa_archive"
-            sudo install -m 0644 "$transition_dir/$nawa_archive.sig" "$T/tmp/nawa-transition/$nawa_archive.sig"
-
-            # nawa install verifies the detached signature with the
-            # Faseela key already trusted by the build root.
-            sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa install --yes \
-              "/tmp/nawa-transition/$nawa_archive"
-            sudo rm -rf "$T/tmp/nawa-transition"
-            rm -rf "$transition_dir"
-
-            supports_nawa_features || {
-              echo "::error::installed Nawa still lacks schema-v3 repository support or current recipe-schema support (nawa recipe check nawa)"
-              exit 1
-            }
-            echo "Nawa upgraded from the signed $NAWA_TRANSITION_TAG transition package before the build." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # Keep one small metadata request; archive bytes are fetched from the

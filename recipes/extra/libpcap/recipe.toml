@@ -15,7 +15,7 @@ sha256 = "37ced90a19a302a7f32e458224a00c365c117905c2cd35ac544b6880a81488f0"
 strip_components = 1
 
 [depends]
-build = []
+build = ["flex", "bison"]
 run = []
 
 [capabilities]

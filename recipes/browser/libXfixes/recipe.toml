@@ -17,7 +17,7 @@ strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11"]
-run = ["libX11"]
+run = ["libX11", "xorgproto"]
 
 [capabilities]
 provides = []

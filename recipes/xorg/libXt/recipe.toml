@@ -16,7 +16,7 @@ strip_components = 1
 
 [depends]
 build = ["pkgconf", "libSM", "libICE", "libX11", "xorgproto"]
-run = ["libSM", "libICE", "libX11"]
+run = ["libSM", "libICE", "libX11", "xorgproto"]
 
 [capabilities]
 provides = []

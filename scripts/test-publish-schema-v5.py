@@ -56,27 +56,6 @@ def setup_nawa(root: Path) -> Path:
     return nawa
 
 
-def make_index(archive_dir: Path, filename: str, *, package_name: str = "alpha") -> None:
-    archive = archive_dir / filename
-    recipe_snapshot = archive_dir / "recipes-test.recipes.tar.zst"
-    recipe_snapshot.write_bytes(b"snapshot")
-    index = archive_dir / "index.toml"
-    index.write_text(
-        "[repository]\nschema = 5\n\n"
-        f"[recipes]\nfile = \"{recipe_snapshot.name}\"\n"
-        f"sha256 = \"{digest(recipe_snapshot)}\"\nsize = {recipe_snapshot.stat().st_size}\n"
-        f"download_url = \"https://example.invalid/{recipe_snapshot.name}\"\n\n"
-        "[[package]]\n"
-        f"name = \"{package_name}\"\nversion = \"1.0\"\nrel = 1\n"
-        "arch = \"x86_64\"\n"
-        f"file = \"{filename}\"\nsha256 = \"{digest(archive)}\"\nsize = {archive.stat().st_size}\n"
-        "rundeps = []\nprovides = []\nrelations = { schema = 1, conflicts = [], replaces = [] }\n",
-        encoding="utf-8",
-    )
-    for path in (archive, recipe_snapshot, index):
-        (archive_dir / f"{path.name}.sig").write_text(digest(path), encoding="utf-8")
-
-
 def make_v3_index(path: Path, archive: bytes, *, url: str | None = None) -> str:
     filename = "alpha-1.0-1.nawa.tar.zst"
     download_url = url or (
@@ -135,50 +114,87 @@ def main() -> None:
         recipe(missing_declarations, complete=False)
         expect_error(lambda: PUBLISHER.recipes(missing_declarations), "schema-v5 recipe declaration problem")
 
-        # Stage the exact current package set from a build directory with old leftovers.
-        build_dir = root / "build"
-        build_dir.mkdir()
-        (build_dir / filename).write_bytes(b"current")
-        (build_dir / "alpha-0.9-1.nawa.tar.zst").write_bytes(b"stale")
-        staged = root / "staged"
-        assert [p.name for p in PUBLISHER.stage_archives(recipe_map, build_dir, staged)] == [filename]
-
         # Split archives bind to their recipe parent and exact current version.
         split_name = "alpha-doc-1.0-1.nawa.tar.zst"
         split_entry = {"file": split_name, "name": "alpha-doc", "version": "1.0", "rel": 1}
-        PUBLISHER.validate_index_identities(recipe_map, [archive_dir / split_name], {split_name: split_entry})
+        PUBLISHER.validate_index_identities(recipe_map, {split_name: split_entry})
         stale_split_name = "alpha-doc-0.9-1.nawa.tar.zst"
         split_entry["file"] = stale_split_name
         split_entry["version"] = "0.9"
         expect_error(
-            lambda: PUBLISHER.validate_index_identities(
-                recipe_map, [archive_dir / stale_split_name], {stale_split_name: split_entry}
-            ),
+            lambda: PUBLISHER.validate_index_identities(recipe_map, {stale_split_name: split_entry}),
+            "split archive has no matching current recipe identity",
+        )
+        stale_main = {"file": "alpha-0.9-1.nawa.tar.zst", "name": "alpha", "version": "0.9", "rel": 1}
+        expect_error(
+            lambda: PUBLISHER.validate_index_identities(recipe_map, {stale_main["file"]: stale_main}),
             "split archive has no matching current recipe identity",
         )
 
-        # Generated index coverage, identity, archive/index digest, and signatures are all checked.
         nawa = setup_nawa(root)
         key = root / "nawa.pub"
         key.write_text("test public key", encoding="utf-8")
-        valid_dir = root / "valid-index"
-        valid_dir.mkdir()
-        (valid_dir / filename).write_bytes(b"signed package bytes")
-        make_index(valid_dir, filename)
-        PUBLISHER.verify_index(valid_dir, nawa, key, recipe_map)
 
-        (valid_dir / f"{filename}.sig").write_text("incorrect", encoding="utf-8")
-        expect_error(lambda: PUBLISHER.verify_index(valid_dir, nawa, key, recipe_map), "command failed")
-        make_index(valid_dir, filename, package_name="beta")
+        # Planning the delta against the previous signed index.
+        two = root / "two-recipes"
+        recipe(two, "alpha")
+        recipe(two, "beta")
+        pair = PUBLISHER.recipes(two)
+        alpha, beta = "alpha-1.0-1.nawa.tar.zst", "beta-1.0-1.nawa.tar.zst"
+        alpha_doc = "alpha-doc-1.0-1.nawa.tar.zst"
         expect_error(
-            lambda: PUBLISHER.verify_index(valid_dir, nawa, key, recipe_map),
-            "archive/index identity differs",
+            lambda: PUBLISHER.plan_delta(pair, {}, {alpha: "packages-v5-0001"}, {}),
+            "not published: " + beta,
         )
-        make_index(valid_dir, filename)
-        index = valid_dir / "index.toml"
-        index.write_text("package = []\n\n" + index.read_text(encoding="utf-8").split("[[package]]\n")[0], encoding="utf-8")
-        (valid_dir / "index.toml.sig").write_text(digest(index), encoding="utf-8")
-        expect_error(lambda: PUBLISHER.verify_index(valid_dir, nawa, key, recipe_map), "index/archive membership differs")
+        published = {alpha: "packages-v5-0001", beta: "packages-v5-0001", alpha_doc: "packages-v5-0001"}
+        delta = PUBLISHER.plan_delta(pair, {}, published, {alpha: "x", beta: "y"})
+        assert delta.needed == [alpha, alpha_doc, beta] and delta.stragglers == [alpha_doc], vars(delta)
+        base = {
+            alpha: {"name": "alpha", "file": alpha},
+            beta: {"name": "beta", "file": beta},
+            "alpha-0.9-1.nawa.tar.zst": {"name": "alpha-old", "file": "alpha-0.9-1.nawa.tar.zst"},
+            "gone-1.0-1.nawa.tar.zst": {"name": "gone", "file": "gone-1.0-1.nawa.tar.zst"},
+        }
+        delta = PUBLISHER.plan_delta(pair, base, published, {})
+        assert delta.needed == [alpha_doc] and delta.stragglers == [alpha_doc]
+        assert delta.remove == ["alpha-0.9-1.nawa.tar.zst", "gone-1.0-1.nawa.tar.zst"]
+        assert delta.drop == ["alpha-old", "gone"], delta.drop
+        # a replaced package is removed but not dropped
+        replaced = {"alpha-0.9-1.nawa.tar.zst": {"name": "alpha", "file": "alpha-0.9-1.nawa.tar.zst"}}
+        delta = PUBLISHER.plan_delta(pair, replaced, published, {})
+        assert delta.remove == ["alpha-0.9-1.nawa.tar.zst"] and "alpha" not in delta.drop
+
+        # Index entries are split into blocks and lose their download URL.
+        text = (
+            '[repository]\nschema = 5\n\n[[package]]\nname = "a"\nfile = "a-1-1.nawa.tar.zst"\nsha256 = "00"\n'
+            'download_url = "https://x/a"\n[package.relations]\nschema = 1\n\n'
+            '[[package]]\nname = "b"\nfile = "b-1-1.nawa.tar.zst"\nsha256 = "11"\n'
+        )
+        blocks = PUBLISHER.entry_blocks(text)
+        assert len(blocks) == 2 and "[repository]" not in blocks[0]
+        assert "download_url" not in PUBLISHER.strip_download_url(blocks[0])
+        assert PUBLISHER.block_entry(blocks[0])["relations"] == {"schema": 1}
+
+        # Only complete, uploaded, signed assets count as published holders.
+        releases = [
+            {"tag_name": "packages-v5-0001", "assets": [
+                {"name": alpha, "state": "uploaded"}, {"name": alpha + ".sig", "state": "uploaded"},
+                {"name": beta, "state": "uploaded"}, {"name": beta + ".sig", "state": "starter"},
+            ]},
+            {"tag_name": "packages-0001", "assets": [{"name": "legacy-1-1.nawa.tar.zst"}]},
+        ]
+        assert PUBLISHER.shard_holders(releases) == {alpha: {"packages-v5-0001"}}
+
+        # Staging keeps only current, not yet published archives.
+        built = root / "wave-built"
+        built.mkdir()
+        (built / alpha).write_bytes(b"published already")
+        (built / beta).write_bytes(b"new")
+        (built / "stale-1.0-1.nawa.tar.zst").write_bytes(b"not a recipe")
+        stage = root / "wave-stage"
+        listing = [{"tag_name": "packages-v5-0001", "assets": [{"name": alpha}, {"name": alpha + ".sig"}]}]
+        assert PUBLISHER.stage_wave(pair, built, listing, stage, nawa, key) == [beta]
+        assert (stage / (beta + ".sig")).is_file() and not (stage / alpha).exists()
 
         # Reused immutable archives require matching bytes and valid signatures remotely and locally.
         local_dir = root / "reused-local"

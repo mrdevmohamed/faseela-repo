@@ -44,6 +44,8 @@ def asset_names(release: dict) -> list[str]:
         str(asset.get("name", ""))
         for asset in release.get("assets", [])
         if isinstance(asset, dict) and asset.get("name")
+        # An interrupted upload leaves a "starter" asset that has no content.
+        and asset.get("state", "uploaded") == "uploaded"
     ]
 
 

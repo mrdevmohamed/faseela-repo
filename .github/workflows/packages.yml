@@ -416,6 +416,78 @@ jobs:
           python3 -I scripts/plan-build-shards.py emit --plan "$RUNNER_TEMP/plan.json" --github-output "$GITHUB_OUTPUT"
           python3 -I scripts/plan-build-shards.py summary --plan "$RUNNER_TEMP/plan.json" >> "$GITHUB_STEP_SUMMARY"
 
+  # Signing tools for the upload and publish jobs: the recipe-pinned nawa, built once.
+  # Only main publishes. Failing here (no key, wrong key) stops the run before any
+  # hour of building is wasted on something that could not be published.
+  signer:
+    name: signing tools
+    needs: [select, plan]
+    if: ${{ !cancelled() && needs.plan.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      NAWA_SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the repository signing key
+        run: |
+          set -euo pipefail
+          [[ -n "$NAWA_SIGN_KEY_B64" ]] || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
+          # the key clients trust must be the one that signs
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            https://raw.githubusercontent.com/mrdevmohamed/faseela/master/dist/nawa.pub \
+            --output "$RUNNER_TEMP/nawa-distro.pub"
+          cmp dist/nawa.pub "$RUNNER_TEMP/nawa-distro.pub"
+
+      - name: Require complete schema-v5 metadata
+        run: python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build the recipe-pinned nawa
+        run: |
+          set -euo pipefail
+          pin_env="$RUNNER_TEMP/nawa-source.env"
+          python3 -I - <<'PY' > "$pin_env"
+          import re
+          import tomllib
+          from pathlib import Path
+
+          package = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text()).get("package", {})
+          matches = [i for i in package.get("sources", []) if isinstance(i, dict) and i.get("name") == "nawa"]
+          if package.get("name") != "nawa" or len(matches) != 1:
+              raise SystemExit("expected one recipe-pinned Nawa source")
+          url, digest = matches[0].get("url", ""), matches[0].get("sha256", "")
+          match = re.fullmatch(r"https://github\.com/mrdevmohamed/nawa/archive/([0-9a-f]{40})\.tar\.gz", url)
+          if not match or not re.fullmatch(r"[0-9a-f]{64}", digest) or digest == "0" * 64:
+              raise SystemExit("invalid Nawa source URL or SHA-256 in the recipe")
+          print(f"NAWA_SOURCE_COMMIT={match.group(1)}")
+          print(f"NAWA_SOURCE_SHA256={digest}")
+          print(f"NAWA_SOURCE_URL={url}")
+          PY
+          # shellcheck source=/dev/null
+          source "$pin_env"
+          archive="$RUNNER_TEMP/nawa-source.tar.gz"
+          curl --fail --location --retry 3 --connect-timeout 20 "$NAWA_SOURCE_URL" --output "$archive"
+          echo "$NAWA_SOURCE_SHA256  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/nawa-source"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/nawa-source"
+          source_dir="$RUNNER_TEMP/nawa-source/nawa-$NAWA_SOURCE_COMMIT"
+          cargo build --manifest-path "$source_dir/Cargo.toml" --release --locked
+          echo "NAWA_BIN=$source_dir/target/release/nawa" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nawa-pinned
+          path: ${{ env.NAWA_BIN }}
+          retention-days: 1
+          if-no-files-found: error
+
   build-w0:
     name: Bootstrap Toolchain
     needs: [select, plan]
@@ -650,17 +722,129 @@ jobs:
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
       toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
 
-  publish:
-    name: publish stable-v5
-    needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7, build-w8]
-    # Only main publishes, and only when nothing failed or was cancelled: the repository
-    # is replaced as a whole (complete, signed set) or not at all.
-    if: ${{ !cancelled() && needs.plan.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 180
+  upload-w0:
+    name: upload wave 0
+    needs: [plan, signer, build-w0]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave0_count != '0' }}
     permissions:
       contents: write
-      actions: read
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w0
+      artifact_pattern: built-tc
+
+  upload-w1:
+    name: upload wave 1
+    needs: [plan, signer, build-w1, upload-w0]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave1_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w1
+      artifact_pattern: built-w1s*
+
+  upload-w2:
+    name: upload wave 2
+    needs: [plan, signer, build-w2, upload-w1]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave2_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w2
+      artifact_pattern: built-w2s*
+
+  upload-w3:
+    name: upload wave 3
+    needs: [plan, signer, build-w3, upload-w2]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave3_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w3
+      artifact_pattern: built-w3s*
+
+  upload-w4:
+    name: upload wave 4
+    needs: [plan, signer, build-w4, upload-w3]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave4_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w4
+      artifact_pattern: built-w4s*
+
+  upload-w5:
+    name: upload wave 5
+    needs: [plan, signer, build-w5, upload-w4]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave5_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w5
+      artifact_pattern: built-w5s*
+
+  upload-w6:
+    name: upload wave 6
+    needs: [plan, signer, build-w6, upload-w5]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave6_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w6
+      artifact_pattern: built-w6s*
+
+  upload-w7:
+    name: upload wave 7
+    needs: [plan, signer, build-w7, upload-w6]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave7_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w7
+      artifact_pattern: built-w7s*
+
+  upload-w8:
+    name: upload wave 8
+    needs: [plan, signer, build-w8, upload-w7]
+    if: ${{ !cancelled() && needs.signer.result == 'success' && needs.plan.outputs.wave8_count != '0' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packages-upload.yml
+    secrets: inherit
+    with:
+      label: w8
+      artifact_pattern: built-w8s*
+
+  publish:
+    name: publish stable-v5
+    needs: [select, plan, signer, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7, build-w8, upload-w0, upload-w1, upload-w2, upload-w3, upload-w4, upload-w5, upload-w6, upload-w7, upload-w8]
+    # Only main publishes, and only when nothing failed or was cancelled: the signed index
+    # is replaced as a whole (every recipe covered) or not at all. Archives that were built
+    # before a failure are already uploaded, so the next run only builds what is missing.
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.signer.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    # One publisher at a time: the index is rebuilt from the previous published one.
+    concurrency:
+      group: publish-stable-v5
+      cancel-in-progress: false
+    permissions:
+      contents: write
     env:
       GH_TOKEN: ${{ github.token }}
       NAWA_SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
@@ -670,154 +854,153 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Require the repository signing key
-        run: |
-          set -euo pipefail
-          [[ -n "$NAWA_SIGN_KEY_B64" ]] || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
-          # the key clients trust must be the one that signs
-          curl --fail --location --retry 3 --connect-timeout 20 \
-            https://raw.githubusercontent.com/mrdevmohamed/faseela/master/dist/nawa.pub \
-            --output "$RUNNER_TEMP/nawa-distro.pub"
-          cmp dist/nawa.pub "$RUNNER_TEMP/nawa-distro.pub"
-
-      - name: Require complete schema-v5 metadata
-        run: python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      # Signing and indexing use the pinned nawa of the recipe, compiled here.
-      - name: Build the recipe-pinned nawa
-        run: |
-          set -euo pipefail
-          pin_env="$RUNNER_TEMP/nawa-source.env"
-          python3 -I - <<'PY' > "$pin_env"
-          import re
-          import tomllib
-          from pathlib import Path
-
-          package = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text()).get("package", {})
-          matches = [i for i in package.get("sources", []) if isinstance(i, dict) and i.get("name") == "nawa"]
-          if package.get("name") != "nawa" or len(matches) != 1:
-              raise SystemExit("expected one recipe-pinned Nawa source")
-          url, digest = matches[0].get("url", ""), matches[0].get("sha256", "")
-          match = re.fullmatch(r"https://github\.com/mrdevmohamed/nawa/archive/([0-9a-f]{40})\.tar\.gz", url)
-          if not match or not re.fullmatch(r"[0-9a-f]{64}", digest) or digest == "0" * 64:
-              raise SystemExit("invalid Nawa source URL or SHA-256 in the recipe")
-          print(f"NAWA_SOURCE_COMMIT={match.group(1)}")
-          print(f"NAWA_SOURCE_SHA256={digest}")
-          print(f"NAWA_SOURCE_URL={url}")
-          PY
-          # shellcheck source=/dev/null
-          source "$pin_env"
-          archive="$RUNNER_TEMP/nawa-source.tar.gz"
-          curl --fail --location --retry 3 --connect-timeout 20 "$NAWA_SOURCE_URL" --output "$archive"
-          echo "$NAWA_SOURCE_SHA256  $archive" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/nawa-source"
-          tar -xzf "$archive" -C "$RUNNER_TEMP/nawa-source"
-          source_dir="$RUNNER_TEMP/nawa-source/nawa-$NAWA_SOURCE_COMMIT"
-          cargo build --manifest-path "$source_dir/Cargo.toml" --release --locked
-          echo "NAWA_BIN=$source_dir/target/release/nawa" >> "$GITHUB_ENV"
-
-      # Everything the shards built in this run.
-      - name: Download the archives built in this run
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          pattern: built-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/schema-v5/built
+          name: nawa-pinned
+          path: ${{ runner.temp }}/nawa
 
-      # Everything else of the complete set is already published.
-      - name: Fetch the archives that are already published
+      # What the waves uploaded: one entry file and the catalog records per wave (small).
+      - name: Download what the upload jobs described
+        uses: actions/download-artifact@v4
+        continue-on-error: true # nothing to build means nothing was described
+        with:
+          pattern: meta-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/schema-v5/meta
+
+      # The previous signed index and catalog are the base: no published archive is downloaded.
+      - name: Fetch the published index and catalog
+        id: base
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/schema-v5"
-          built="$root/built"
-          mkdir -p "$built"
+          mkdir -p "$root/meta/records" "$root/base"
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$root/releases.json"
-          python3 -I scripts/distributed-releases.py list \
-            --releases-json "$root/releases.json" --stable-tag stable-v5 --index-version 5 > "$root/published.tsv"
-          # every archive (main, doc, lang) of every current recipe
-          names="$(python3 -I - <<'PY'
-          import tomllib
-          from pathlib import Path
-          print(" ".join(tomllib.loads(p.read_text(encoding="utf-8"))["package"]["name"]
-                         for p in sorted(Path("recipes").glob("*/*/recipe.toml"))))
-          PY
-          )"
-          python3 -I scripts/plan-build-shards.py assets --recipes recipes --names "$names" | sort -u > "$root/wanted.txt"
-          : > "$root/fetch.nul"
+          have_index=false have_catalog=false
+          if gh release view stable-v5 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download stable-v5 --repo "$GITHUB_REPOSITORY" --dir "$root/base" --clobber \
+              --pattern index.toml --pattern index.toml.sig --pattern catalog.toml --pattern catalog.toml.sig || true
+            if [[ -s "$root/base/index.toml" && -s "$root/base/index.toml.sig" ]]; then have_index=true; fi
+            if [[ -s "$root/base/catalog.toml" && -s "$root/base/catalog.toml.sig" ]]; then
+              file="$(python3 -I -c 'import sys,tomllib; print(tomllib.load(open(sys.argv[1],"rb"))["catalog_file"])' "$root/base/catalog.toml")"
+              [[ "$file" =~ ^catalog-[0-9a-f]{64}\.json\.zst$ ]] || { echo "::error::unexpected catalog file name"; exit 1; }
+              gh release download stable-v5 --repo "$GITHUB_REPOSITORY" --dir "$root/base" --clobber --pattern "$file"
+              have_catalog=true
+              echo "old_catalog=$file" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          {
+            echo "have_index=$have_index"
+            echo "have_catalog=$have_catalog"
+            echo "root=$root"
+          } >> "$GITHUB_OUTPUT"
+          echo "published index: $have_index, catalog: $have_catalog"
+
+      # Only archives that are published but described by no wave and not in the index
+      # (a run that failed before it could publish) are downloaded; usually none.
+      - name: Fetch the published archives the index does not describe yet
+        env:
+          ROOT: ${{ steps.base.outputs.root }}
+          HAVE_INDEX: ${{ steps.base.outputs.have_index }}
+        run: |
+          set -euo pipefail
+          nawa="$RUNNER_TEMP/nawa/nawa"; chmod +x "$nawa"
+          args=(--recipes recipes --releases-json "$ROOT/releases.json" --meta-dir "$ROOT/meta"
+                --nawa "$nawa" --public-key dist/nawa.pub --output "$ROOT/stragglers.tsv")
+          [[ "$HAVE_INDEX" == true ]] && args+=(--base-index "$ROOT/base/index.toml")
+          python3 -I scripts/publish-schema-v5.py stragglers "${args[@]}"
+          export T="$ROOT/fetch" PKG_REPO
+          mkdir -p "$T/build/out"
+          : > "$ROOT/fetch.nul"
           while IFS=$'\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
-            [[ "$tag" =~ ^packages-v5-[0-9]{4,}$ && "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || continue
-            grep -qxF "$asset" "$root/wanted.txt" || continue
-            [[ -s "$built/$asset" ]] && continue
-            printf '%s\0%s\0' "$tag" "$asset" >> "$root/fetch.nul"
-          done < "$root/published.tsv"
-          export T="$root/fetch" PKG_REPO
-          mkdir -p "$T/build/out"
-          pending="$root/fetch.nul"
+            [[ "$tag" =~ ^packages-v5-[0-9]{4,}$ && "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst([.]sig)?$ ]] || { echo "::error::unexpected asset $tag/$asset"; exit 1; }
+            printf '%s\0%s\0' "$tag" "$asset" >> "$ROOT/fetch.nul"
+          done < "$ROOT/stragglers.tsv"
+          pending="$ROOT/fetch.nul"
           for round in 0 1 2 3; do
             [[ -s "$pending" ]] || break
             (( round == 0 )) || { echo "retry round $round"; sleep $((round * 20)); }
             (( round < 3 )) || export FETCH_VIA_API=1
-            : > "$root/fetch.failed"; export failed="$root/fetch.failed"
+            : > "$ROOT/fetch.failed"; export failed="$ROOT/fetch.failed"
             # shellcheck disable=SC2016
             xargs -0 -r -n 2 -P 4 bash -c 'bash scripts/fetch-published-package.sh "$1" "$2" || printf "%s\0%s\0" "$1" "$2" >> "$failed"' _ < "$pending"
-            mv -f "$root/fetch.failed" "$pending"
+            mv -f "$ROOT/fetch.failed" "$pending"
           done
           if [[ -s "$pending" ]]; then
             echo "::error::could not download these published archives:"; tr '\0' '\n' < "$pending" | paste - - ; exit 1
           fi
-          find "$T/build/out" -maxdepth 1 -name '*.nawa.tar.zst' -exec mv -n -t "$built" {} +
-          echo "built here: $(find "$built" -name '*.nawa.tar.zst' | wc -l) archive(s) in total"
 
-      - name: Prepare and verify the complete schema-v5 repository
-        id: prepare
+      - name: Update the signed index from the previous one
+        id: update
+        env:
+          ROOT: ${{ steps.base.outputs.root }}
+          HAVE_INDEX: ${{ steps.base.outputs.have_index }}
+          HAVE_CATALOG: ${{ steps.base.outputs.have_catalog }}
         run: |
           set -euo pipefail
-          root="$RUNNER_TEMP/schema-v5"
-          printf '%s' "$NAWA_SIGN_KEY_B64" | base64 --decode > "$root/nawa.sec"
-          chmod 600 "$root/nawa.sec"
-          python3 -I scripts/publish-schema-v5.py prepare \
-            --recipes recipes \
-            --source-dir "$root/built" \
-            --archive-dir "$root/packages" \
-            --nawa "$NAWA_BIN" \
-            --signing-key "$root/nawa.sec" \
-            --public-key dist/nawa.pub \
-            --repository "$GITHUB_REPOSITORY" \
-            --stable-tag stable-v5 \
-            --revision "$GITHUB_SHA" \
-            --releases-json "$root/releases.json" \
-            --planner scripts/distributed-releases.py \
-            --plan "$root/plan.json" \
-            --locations "$root/locations.toml" \
-            --existing-dir "$root/existing"
-          echo "root=$root" >> "$GITHUB_OUTPUT"
+          nawa="$RUNNER_TEMP/nawa/nawa"
+          printf '%s' "$NAWA_SIGN_KEY_B64" | base64 --decode > "$ROOT/nawa.sec"
+          chmod 600 "$ROOT/nawa.sec"
+          common=(--nawa "$nawa" --public-key dist/nawa.pub)
+          update=(--recipes recipes --releases-json "$ROOT/releases.json" --meta-dir "$ROOT/meta"
+                  --signing-key "$ROOT/nawa.sec" --repository "$GITHUB_REPOSITORY" --stable-tag stable-v5
+                  --revision "$GITHUB_SHA" --records-dir "$ROOT/meta/records"
+                  --straggler-dir "$ROOT/fetch/build/out" --out-dir "$ROOT/out" --plan "$ROOT/plan.json"
+                  --existing-dir "$ROOT/existing")
+          [[ "$HAVE_INDEX" == true ]] && update+=(--base-index "$ROOT/base/index.toml")
+          python3 -I scripts/publish-schema-v5.py update "${common[@]}" "${update[@]}"
 
-      - name: Publish immutable package and recipe shards
+          catalog=(--index "$ROOT/out/index.toml" --records-dir "$ROOT/meta/records" --out-dir "$ROOT/catalog"
+                   --signing-key "$ROOT/nawa.sec")
+          [[ "$HAVE_INDEX" == true ]] && catalog+=(--have-base-index)
+          [[ "$HAVE_CATALOG" == true ]] && catalog+=(--base-catalog-dir "$ROOT/base")
+          python3 -I scripts/publish-schema-v5.py catalog "${common[@]}" "${catalog[@]}"
+          rm -f "$ROOT/nawa.sec"
+          catalog_file="$(cd "$ROOT/catalog" && printf '%s\n' catalog-*.json.zst)"
+          [[ "$catalog_file" =~ ^catalog-[0-9a-f]{64}\.json\.zst$ ]] || { echo "::error::expected exactly one catalog file"; exit 1; }
+          echo "catalog_file=$catalog_file" >> "$GITHUB_OUTPUT"
+
+      # nawa refuses to install a package that ships a file another one owns. The file
+      # lists come from the catalog, so no archive is opened. Nothing is published
+      # while this fails; the archives already uploaded are kept for the next run.
+      - name: No two packages of a flavor may ship the same file
         env:
-          PLAN_DIR: ${{ steps.prepare.outputs.root }}
+          CATALOG_FILE: ${{ steps.update.outputs.catalog_file }}
+        run: |
+          python3 -I scripts/test-file-conflicts.py
+          python3 -I scripts/check-file-conflicts.py --strict --catalog "$RUNNER_TEMP/schema-v5/catalog/$CATALOG_FILE"
+
+      - name: Publish the recipe snapshot
+        env:
+          ROOT: ${{ steps.base.outputs.root }}
         run: |
           set -euo pipefail
           while IFS= read -r tag; do
             [[ -n "$tag" ]] || continue
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
-              --title "$tag" --notes "Immutable schema-v5 package archive shard."
-          done < <(python3 -I scripts/distributed-releases.py create --plan "$PLAN_DIR/plan.json")
-          mapfile -t tags < <(python3 -I -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])).get("uploads", {}))))' "$PLAN_DIR/plan.json")
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$tag" \
+              --notes "Immutable schema-v5 package archive shard." \
+              || gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null
+          done < <(python3 -I scripts/distributed-releases.py create --plan "$ROOT/plan.json")
+          mapfile -t tags < <(python3 -I -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])).get("uploads", {}))))' "$ROOT/plan.json")
           for tag in "${tags[@]}"; do
             [[ -n "$tag" ]] || continue
             mapfile -t assets < <(python3 -I scripts/distributed-releases.py uploads \
-              --plan "$PLAN_DIR/plan.json" --repo-dir "$PLAN_DIR/packages" --tag "$tag")
-            ((${#assets[@]} > 0)) || continue
-            gh release upload "$tag" --repo "$GITHUB_REPOSITORY" "${assets[@]}"
+              --plan "$ROOT/plan.json" --repo-dir "$ROOT/out" --tag "$tag")
+            sigs=(); files=()
+            for asset in "${assets[@]}"; do
+              if [[ "$asset" == *.sig ]]; then sigs+=("$asset"); else files+=("$asset"); fi
+            done
+            if ((${#sigs[@]})); then gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber "${sigs[@]}"; fi
+            if ((${#files[@]})); then gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"; fi
           done
 
       # The index goes last: until then clients keep seeing the previous, consistent repository.
-      - name: Publish the signed stable-v5 index
+      - name: Publish the catalog and the signed stable-v5 index
         env:
-          PLAN_DIR: ${{ steps.prepare.outputs.root }}
+          ROOT: ${{ steps.base.outputs.root }}
+          CATALOG_FILE: ${{ steps.update.outputs.catalog_file }}
+          OLD_CATALOG: ${{ steps.base.outputs.old_catalog }}
         run: |
           set -euo pipefail
           if ! gh release view stable-v5 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -825,25 +1008,33 @@ jobs:
               --title "Nawa schema-v5 repository" \
               --notes "Signed schema-v5 repository index. Package archives are in immutable packages-v5-NNNN releases."
           fi
-          gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" "$PLAN_DIR/packages/index.toml.sig" --clobber
-          gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" "$PLAN_DIR/packages/index.toml" --clobber
+          up() { gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" --clobber "$@"; }
+          up "$ROOT/catalog/$CATALOG_FILE"
+          up "$ROOT/catalog/catalog.toml.sig"
+          up "$ROOT/catalog/catalog.toml"
+          up "$ROOT/out/index.toml.sig"
+          up "$ROOT/out/index.toml"
+
+          # What clients (and the next run) will read must be what was signed here.
+          mkdir -p "$ROOT/check"
+          gh release download stable-v5 --repo "$GITHUB_REPOSITORY" --dir "$ROOT/check" --clobber \
+            --pattern index.toml --pattern index.toml.sig
+          cmp "$ROOT/check/index.toml" "$ROOT/out/index.toml"
+          "$RUNNER_TEMP/nawa/nawa" verify "$ROOT/check/index.toml" --key dist/nawa.pub
+
+          # The previous catalog file is superseded by the pointer that now names the new one.
+          if [[ -n "$OLD_CATALOG" && "$OLD_CATALOG" != "$CATALOG_FILE" ]]; then
+            gh release delete-asset stable-v5 "$OLD_CATALOG" --repo "$GITHUB_REPOSITORY" --yes || true
+          fi
           {
             echo "### Published stable-v5"
-            echo "Revision \`$GITHUB_SHA\`; $(grep -c '^\[\[package\]\]' "$PLAN_DIR/packages/index.toml") package archive(s) in the signed index."
+            echo "Revision \`$GITHUB_SHA\`; $(grep -c '^\[\[package\]\]' "$ROOT/out/index.toml") package archive(s) in the signed index."
           } >> "$GITHUB_STEP_SUMMARY"
-
-      # nawa refuses to install a package that ships a file another one owns.
-      # Reported after publishing: the run turns red and names the files.
-      - name: No two packages of a flavor may ship the same file
-        if: ${{ always() && steps.prepare.conclusion == 'success' }}
-        run: |
-          python3 -I scripts/test-file-conflicts.py
-          python3 -I scripts/check-file-conflicts.py "$RUNNER_TEMP/schema-v5/packages"
 
   telegram-notify:
     name: Telegram notification
     if: ${{ always() }}
-    needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7, build-w8, publish]
+    needs: [select, plan, signer, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7, build-w8, upload-w0, upload-w1, upload-w2, upload-w3, upload-w4, upload-w5, upload-w6, upload-w7, upload-w8, publish]
     runs-on: ubuntu-24.04
     continue-on-error: true
     permissions:

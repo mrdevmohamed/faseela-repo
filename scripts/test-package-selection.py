@@ -274,9 +274,10 @@ class RealRecipeTreeTests(unittest.TestCase):
         # a pull request never publishes: only main does, and only when nothing failed
         self.assertIn("github.event_name != 'pull_request' && github.ref == 'refs/heads/main'", workflow)
         self.assertIn("!contains(needs.*.result, 'failure')", workflow)
-        # shards never see the signing key; only the publish job does
+        # build shards never see the signing key; only the signer check and the
+        # publish job read it here (the upload workflow gets it via `secrets: inherit`)
         self.assertNotIn("NAWA_SIGN_KEY_B64", build)
-        self.assertEqual(workflow.count("secrets.NAWA_SIGN_KEY_B64"), 1)
+        self.assertEqual(workflow.count("secrets.NAWA_SIGN_KEY_B64"), 2)
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)
 
 

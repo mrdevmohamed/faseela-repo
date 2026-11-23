@@ -102,6 +102,32 @@ def list_releases(repo: str, prefix: str) -> dict[str, dict[str, dict]]:
     return result
 
 
+def download_asset(repo: str, tag: str, asset: dict, directory: Path) -> Path:
+    """Download one release asset into directory and return its path.
+
+    Draft releases are not reachable through the tag endpoint, so `gh release
+    download TAG` has to search for the draft and reports "release not found"
+    when that search fails (seen on 200+ parallel downloads). The asset id from
+    the release listing is addressed directly instead; a listing without ids
+    (the offline test double) falls back to the tag lookup.
+    """
+    target = directory / asset["name"]
+    if isinstance(asset.get("id"), int):
+        cmd = [os.environ.get("GH_BIN", "gh"), "api", "-H", "Accept: application/octet-stream",
+               f"repos/{repo}/releases/assets/{asset['id']}"]
+        part = target.with_name(target.name + ".part")
+        with part.open("wb") as handle:
+            result = subprocess.run(cmd, check=False, stdout=handle)
+        if result.returncode != 0:
+            part.unlink(missing_ok=True)
+            raise ShardCacheError(f"gh api releases/assets/{asset['id']} failed with exit {result.returncode}")
+        part.replace(target)
+    else:
+        gh("release", "download", tag, "--repo", repo, "--pattern", asset["name"],
+           "--dir", str(directory), "--clobber")
+    return target
+
+
 def asset_digest(asset: dict) -> str | None:
     value = asset.get("digest")
     if isinstance(value, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", value):
@@ -109,14 +135,20 @@ def asset_digest(asset: dict) -> str | None:
     return None
 
 
-def ensure_release(repo: str, tag: str, notes: str) -> None:
-    if subprocess.run([os.environ.get("GH_BIN", "gh"), "release", "view", tag, "--repo", repo],
-                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+def ensure_release(repo: str, tag: str, notes: str, prefix: str | None = None) -> None:
+    """Make sure the draft release exists.
+
+    Existence is read from the release listing: `gh release view TAG` cannot
+    reliably find a draft and a false "not found" would create a second draft
+    with the same tag.
+    """
+    if prefix is not None and tag in list_releases(repo, prefix):
         return
     # Parallel shards race here: losing the race is fine as long as it exists afterwards.
     subprocess.run([os.environ.get("GH_BIN", "gh"), "release", "create", tag, "--repo", repo, "--draft",
                     "--title", tag, "--notes", notes], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    gh("release", "view", tag, "--repo", repo, capture=True)
+    if prefix is not None and tag not in list_releases(repo, prefix):
+        raise ShardCacheError(f"draft release {tag} does not exist after creating it")
 
 
 # ----------------------------------------------------------------- state ----
@@ -146,18 +178,19 @@ def load_entry_files(directory: Path) -> list[dict]:
     return entries
 
 
-def fetch_state(repo: str, prefix: str, directory: Path) -> None:
+def fetch_state(repo: str, prefix: str, directory: Path,
+                releases: dict[str, dict[str, dict]] | None = None) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     tag = state_tag(prefix)
-    probe = subprocess.run([os.environ.get("GH_BIN", "gh"), "release", "view", tag, "--repo", repo],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if probe.returncode != 0:
+    if releases is None:
+        releases = list_releases(repo, prefix)
+    assets = releases.get(tag)
+    if assets is None:
         return
-    for pattern in (CACHE.MANIFEST_NAME, "entries-*.json"):
-        # a missing pattern is normal (no shard has saved yet): do not fail on it
-        subprocess.run([os.environ.get("GH_BIN", "gh"), "release", "download", tag, "--repo", repo,
-                        "--pattern", pattern, "--dir", str(directory), "--clobber"],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for name, asset in sorted(assets.items()):
+        if name != CACHE.MANIFEST_NAME and not ENTRIES_RE.fullmatch(name):
+            continue
+        retry(lambda asset=asset: download_asset(repo, tag, asset, directory), f"download {name}")
 
 
 def usable(entries: list[dict], recipes: dict, keys: dict[str, str],
@@ -207,8 +240,9 @@ def context(args):
 def cmd_valid_stems(args) -> int:
     recipes, keys = context(args)
     with tempfile.TemporaryDirectory() as tmp:
-        fetch_state(args.repo, args.prefix, Path(tmp))
-        good = usable(load_entry_files(Path(tmp)), recipes, keys, list_releases(args.repo, args.prefix))
+        releases = list_releases(args.repo, args.prefix)
+        fetch_state(args.repo, args.prefix, Path(tmp), releases)
+        good = usable(load_entry_files(Path(tmp)), recipes, keys, releases)
     for name in sorted(good):
         print(recipes[name].archive.removesuffix(".nawa.tar.zst"))
     return 0
@@ -219,9 +253,9 @@ def cmd_restore(args) -> int:
     wanted = set(args.names.split())
     args.out_dir.mkdir(parents=True, exist_ok=True)
     releases = list_releases(args.repo, args.prefix)
-    where = {name: tag for tag, assets in releases.items() for name in assets}
+    where = {name: (tag, asset) for tag, assets in releases.items() for name, asset in assets.items()}
     with tempfile.TemporaryDirectory() as tmp:
-        fetch_state(args.repo, args.prefix, Path(tmp))
+        fetch_state(args.repo, args.prefix, Path(tmp), releases)
         good = usable(load_entry_files(Path(tmp)), recipes, keys, releases)
     selected = [n for n in sorted(good)
                 if args.all or n in wanted or (args.with_toolchain and good[n].get("toolchain"))]
@@ -239,8 +273,8 @@ def cmd_restore(args) -> int:
 
         def download():
             target.unlink(missing_ok=True)
-            gh("release", "download", where[asset], "--repo", args.repo, "--pattern", asset,
-               "--dir", str(args.out_dir), "--clobber")
+            tag, listed = where[asset]
+            download_asset(args.repo, tag, listed, args.out_dir)
             if not target.is_file() or CACHE.sha256_file(target) != digest:
                 target.unlink(missing_ok=True)
                 raise ShardCacheError(f"{asset} does not match its recorded SHA-256")
@@ -309,7 +343,7 @@ def cmd_save(args) -> int:
         entries.append(entry)
 
     for tag in sorted({t for t, _ in uploads}):
-        ensure_release(args.repo, tag, f"Internal draft build cache ({args.prefix}). Not a package repository.")
+        ensure_release(args.repo, tag, f"Internal draft build cache ({args.prefix}). Not a package repository.", args.prefix)
     for tag, file in uploads:
         retry(lambda tag=tag, file=file: gh("release", "upload", tag, str(file), "--repo", args.repo, "--clobber"),
               f"upload {file.name}")
@@ -328,7 +362,7 @@ def cmd_save(args) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / f"entries-{args.shard}.json"
         path.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-        ensure_release(args.repo, state_tag(args.prefix), f"Internal draft build cache state ({args.prefix}).")
+        ensure_release(args.repo, state_tag(args.prefix), f"Internal draft build cache state ({args.prefix}).", args.prefix)
         retry(lambda: gh("release", "upload", state_tag(args.prefix), str(path), "--repo", args.repo, "--clobber"),
               "upload shard entries")
     print(f"shard cache: shard {args.shard} saved {len(entries)} package(s), {len(uploads)} asset(s)")
@@ -380,7 +414,7 @@ def cmd_merge(args) -> int:
             candidate_path.write_text(json.dumps(candidate, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             uploads.append(candidate_path)
         tag = state_tag(args.prefix)
-        ensure_release(args.repo, tag, f"Internal draft build cache state ({args.prefix}).")
+        ensure_release(args.repo, tag, f"Internal draft build cache state ({args.prefix}).", args.prefix)
         for path in uploads:
             retry(lambda path=path: gh("release", "upload", tag, str(path), "--repo", args.repo, "--clobber"),
                   f"upload {path.name}")

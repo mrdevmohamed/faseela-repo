@@ -209,10 +209,7 @@ def plan(
     for name in sorted(set(selected)):
         recipe = recipes[name]
         stem = recipe["stem"]
-        # A published archive of a relation-bearing recipe is a legacy schema-v3
-        # payload that must be rebuilt (see pr-build-cache.py invalidate-relations).
-        published = stem in published_stems and not recipe["relations"]
-        if published or stem in done_stems:
+        if stem in published_stems or stem in done_stems:
             done.append(name)
         else:
             todo.add(name)
@@ -242,10 +239,11 @@ def plan(
             })
         out_waves.append(shards)
 
-    # Bootstrap takes about an hour: when the pull request cache already holds a
-    # valid archive of every requested Toolchain package, wave 0 is not repeated
-    # (later waves still install those archives from the cache).
-    toolchain_done = bool(toolchain) and all(recipes[n]["stem"] in done_stems for n in set(toolchain))
+    # Bootstrap takes about an hour: when the repository already publishes the
+    # archive of every requested Toolchain package, wave 0 is not repeated
+    # (later waves still install those archives).
+    toolchain_done = bool(toolchain) and all(
+        recipes[n]["stem"] in done_stems or recipes[n]["stem"] in published_stems for n in set(toolchain))
 
     return {
         "schema": 1,
@@ -306,6 +304,7 @@ def cmd_emit(args) -> int:
         lines.append(f"wave{number}_count={len(shards)}")
     lines.append(f"todo={' '.join(value['todo'])}")
     lines.append(f"todo_count={len(value['todo'])}")
+    lines.append(f"toolchain_done={'true' if value.get('toolchain_done') else 'false'}")
     text = "\n".join(lines) + "\n"
     if args.github_output:
         with open(args.github_output, "a", encoding="utf-8") as stream:
@@ -383,7 +382,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--pkgs", default="")
     p.add_argument("--toolchain-pkgs", default="")
     p.add_argument("--published", type=Path, help="published archive list (one `tag<TAB>asset` or asset per line)")
-    p.add_argument("--cache-valid", type=Path, help="stems whose draft-cache entry matches the current recipes")
+    p.add_argument("--cache-valid", type=Path, help="extra stems to treat as up to date (optional)")
     p.add_argument("--times", type=Path, help="JSON {package: minutes} for the slow packages")
     p.add_argument("--max-waves", type=int, default=MAX_WAVES)
     p.add_argument("--shard-minutes", type=float, default=25.0)

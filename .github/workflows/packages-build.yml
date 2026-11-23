@@ -1,26 +1,20 @@
-name: Build packages (shard or final job)
+name: Build packages (one shard)
 
 # Called by packages.yml; not meant to be started by hand.
 #
-# mode: shard     builds the packages of ONE shard (or, with shard_id "tc", the
-#                 Bootstrap Toolchain targets). It downloads only the archives of
-#                 its dependency closure: published ones from the package
-#                 repository, the ones earlier waves built from the draft build
-#                 cache. Everything it builds is saved to that cache (see
-#                 scripts/pr-shard-cache.py) even when a package failed.
-# mode: finalize  starts when every wave is done: it gathers the complete set of
-#                 archives, checks them and (outside pull requests) publishes the
-#                 signed index. Nothing here is built.
+# Builds the packages of ONE shard (or, with shard_id "tc", the Bootstrap
+# Toolchain targets). It downloads the archives of its dependency closure that
+# the stable-v5 repository already publishes, plus the archives the earlier waves
+# of this run built (workflow artifacts "built-<shard>"), and uploads what it
+# built as its own artifact, even when a package failed. packages.yml's publish
+# job gathers the artifacts and signs and publishes the complete repository.
 
 on:
   workflow_call:
     inputs:
-      mode:
-        type: string
-        required: true
       shard_id:
         type: string
-        default: ""
+        required: true
       shard_pkgs:
         description: "Packages built by this shard"
         type: string
@@ -31,10 +25,6 @@ on:
         default: ""
       shard_waits:
         description: "Selected packages built by EARLIER waves that this shard depends on"
-        type: string
-        default: ""
-      pkgs:
-        description: "The whole package selection (final job)"
         type: string
         default: ""
       toolchain_pkgs:
@@ -58,58 +48,42 @@ on:
       keep_going:
         type: string
         default: "1"
-      auto_continue:
+      toolchain_done:
+        description: "true when wave 0 was skipped because the Toolchain archives are already published"
         type: string
-        default: "1"
-      prune:
-        type: string
-        default: "1"
-      cache_prefix:
-        description: "Draft-release prefix of the build cache shared by all jobs of this run"
-        type: string
-        required: true
+        default: "false"
       nawa_selected:
         description: "true when nawa is part of the selection: every job then bootstraps the pinned nawa from source"
         type: string
         default: "false"
-      build_ok:
-        description: "true when no wave job failed (final job)"
-        type: string
-        default: "true"
 
 jobs:
   build:
-    name: ${{ inputs.mode == 'finalize' && 'publish' || format('shard {0}', inputs.shard_id) }}
+    name: ${{ format('shard {0}', inputs.shard_id) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 355
     permissions:
-      contents: write # draft build cache and (final job) the package releases
-      actions: write # lets the final job start its own continuation
+      contents: read
+      actions: read
     env:
       T: /mnt/pkgroot
-      MODE: ${{ inputs.mode }}
       SHARD_ID: ${{ inputs.shard_id }}
-      # The packages this job needs to know about: its shard, or the whole
-      # selection in the final job (nawa bootstrap, relation archives).
-      PKGS: ${{ inputs.mode == 'shard' && inputs.shard_pkgs || inputs.pkgs }}
-      BUILD_PKGS: ${{ inputs.mode == 'shard' && inputs.shard_pkgs || '' }}
+      PKGS: ${{ inputs.shard_pkgs }}
+      BUILD_PKGS: ${{ inputs.shard_pkgs }}
       SHARD_NEEDS: ${{ inputs.shard_needs }}
       SHARD_WAITS: ${{ inputs.shard_waits }}
       TOOLCHAIN_PKGS: ${{ inputs.toolchain_pkgs }}
       TOOLCHAIN_ALL: ${{ inputs.toolchain_all }}
-      TC_BUILD: ${{ inputs.mode == 'shard' && inputs.shard_id == 'tc' }}
-      CACHE_PREFIX: ${{ inputs.cache_prefix }}
+      TC_BUILD: ${{ inputs.shard_id == 'tc' }}
+      TOOLCHAIN_DONE: ${{ inputs.toolchain_done }}
       NAWA_SELECTED: ${{ inputs.nawa_selected }}
       BT: /mnt/faseela-bootstrap
       ISOLATION: ${{ inputs.isolation }}
       ROOTFS_KIND: ${{ inputs.rootfs_kind }}
       BUDGET_MIN: ${{ inputs.budget }}
       KEEP_GOING: ${{ inputs.keep_going }}
-      AUTO_CONTINUE: ${{ inputs.auto_continue }}
-      PRUNE: ${{ inputs.prune }}
       PKG_REPO: ${{ github.repository }}
-      PKG_TAG: ${{ vars.PKG_TAG || 'stable' }}
-      PKG_V3_TAG: ${{ vars.PKG_V3_TAG || 'stable-v3' }}
+      STABLE_TAG: stable-v5
       NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
     steps:
       - uses: actions/checkout@v4
@@ -122,8 +96,6 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.head.ref == 'feat/cosmic-desktop-support' || github.event.pull_request.head.ref == 'fix/cosmic-shortcuts-layout-switch') }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           python3 -I scripts/update-cosmic-epoch.py
@@ -135,10 +107,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add recipes/cosmic recipes/greeter/cosmic-greeter recipes/gui/pop-launcher
             git commit -m "Update COSMIC and pop-launcher source pins"
-            # Every job derives the same pins; only the final job pushes them.
-            if [[ "$MODE" == finalize ]]; then
-              git push origin "HEAD:$PR_HEAD_REF"
-            fi
+            echo "::warning::the COSMIC source pins are out of date; run scripts/update-cosmic-epoch.py and commit the result"
           else
             echo "All COSMIC source archives already match Epoch 1.11.0."
           fi
@@ -176,26 +145,6 @@ jobs:
             exit 1
           }
           echo "tooling: ${{ vars.DISTRO_REPO || 'mrdevmohamed/faseela' }}@$(git -C distro rev-parse --short HEAD)  recipes: ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Check the publishing setup
-        if: ${{ inputs.mode == 'finalize' && github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HAVE_KEY: ${{ secrets.NAWA_SIGN_KEY_B64 != '' }}
-        run: |
-          set -euo pipefail
-          [[ "$HAVE_KEY" == true ]]     || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
-          [[ "$BUDGET_MIN" =~ ^[0-9]+$ ]] || { echo "::error::budget must be a number of minutes"; exit 1; }
-          [[ "$PKG_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid PKG_TAG"; exit 1; }
-          [[ "$PKG_V3_TAG" =~ ^[A-Za-z0-9._-]+$ && "$PKG_V3_TAG" != "$PKG_TAG" ]] || {
-            echo "::error::PKG_V3_TAG must be a safe, distinct release tag"; exit 1;
-          }
-          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
-          if ! gh release view "$PKG_V3_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
-            gh release create "$PKG_V3_TAG" --repo "$PKG_REPO" \
-              --title "Nawa schema-v3 repository" \
-              --notes "Signed schema-v3 index only. Package and recipe archives are stored in packages-NNNN releases. Written by CI, do not edit."
-          fi
 
       - name: Download the build rootfs from the newest release
         env:
@@ -434,7 +383,7 @@ jobs:
           gh api --paginate --slurp "repos/$PKG_REPO/releases?per_page=100" > "$RUNNER_TEMP/package-releases.json"
           python3 -I scripts/distributed-releases.py list \
             --releases-json "$RUNNER_TEMP/package-releases.json" \
-            --stable-tag "$PKG_TAG" > "$RUNNER_TEMP/published.tsv"
+            --stable-tag "$STABLE_TAG" --index-version 5 > "$RUNNER_TEMP/published.tsv"
 
       - name: Fetch the packages already published
         id: published
@@ -446,26 +395,20 @@ jobs:
           sudo mkdir -p "$T/build/out"
           sudo chown "$(id -u):$(id -g)" "$T/build/out"
 
-          # Validate the release manifest before starting any download. The
-          # final job fetches the COMPLETE set: repo-create and the cross-flavor
-          # file-conflict check need it, and a partial set would silently
-          # publish an incomplete repository index.
+          # Validate the release manifest before starting any download.
           manifest="$RUNNER_TEMP/package-downloads.nul"
           : > "$manifest"
           n=0
           listing="$RUNNER_TEMP/published.tsv"
-          if [[ "$MODE" == shard ]]; then
-            # A shard needs the archives of its dependency closure, nothing else
-            # (the final job downloads the complete set for the index).
-            python3 -I scripts/plan-build-shards.py assets --recipes recipes --names "$SHARD_NEEDS" \
-              | sort -u > "$RUNNER_TEMP/shard-assets.txt"
-            awk -F '\t' 'NR == FNR { want[$0] = 1; next } ($2 in want)' \
-              "$RUNNER_TEMP/shard-assets.txt" "$RUNNER_TEMP/published.tsv" > "$RUNNER_TEMP/published.shard.tsv"
-            listing="$RUNNER_TEMP/published.shard.tsv"
-          fi
+          # A shard needs the archives of its dependency closure, nothing else.
+          python3 -I scripts/plan-build-shards.py assets --recipes recipes --names "$SHARD_NEEDS" \
+            | sort -u > "$RUNNER_TEMP/shard-assets.txt"
+          awk -F '\t' 'NR == FNR { want[$0] = 1; next } ($2 in want)' \
+            "$RUNNER_TEMP/shard-assets.txt" "$RUNNER_TEMP/published.tsv" > "$RUNNER_TEMP/published.shard.tsv"
+          listing="$RUNNER_TEMP/published.shard.tsv"
           while IFS=$'\t' read -r tag asset; do
             [[ -n "$asset" ]] || continue
-            [[ "$tag" == "$PKG_TAG" || "$tag" =~ ^packages-[0-9]{4,}$ ]] || {
+            [[ "$tag" == "$STABLE_TAG" || "$tag" =~ ^packages-v5-[0-9]{4,}$ ]] || {
               echo "::error::unexpected package storage release: $tag"; exit 1;
             }
             [[ "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || {
@@ -547,37 +490,47 @@ jobs:
           sleep 2
           sudo touch "$T/build/.run-start"
 
-      - name: Restore the archives of earlier waves from the draft build cache
+      # What the earlier waves of THIS run built. Waves are separate jobs, so a
+      # shard only sees artifacts that already exist; siblings of its own wave
+      # may be included, which is harmless (their archives are never selected here).
+      - name: Download the archives the earlier waves built
         if: ${{ steps.published.conclusion == 'success' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: built-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/earlier-waves
+
+      - name: Add the earlier waves' archives to the build directory
+        if: ${{ steps.published.conclusion == 'success' }}
         run: |
           set -euo pipefail
-
-          # Old stable-v3 archives may have the same filename as a relation-
-          # bearing v5 rebuild. Remove those first so build-packages-inner.sh
-          # cannot classify the legacy payload as already current. A shard also
-          # invalidates the selected packages it waits for: if an earlier wave
-          # failed to build one, its dependents are skipped, not built on a
-          # legacy archive.
-          if [[ "$MODE" == shard ]]; then
-            python3 -I scripts/pr-build-cache.py invalidate-relations \
-              --recipes recipes --out-dir "$T/build/out" \
-              --names "$BUILD_PKGS $SHARD_WAITS $TOOLCHAIN_PKGS"
-            args=(--names "$SHARD_NEEDS")
-            if [[ -n "$TOOLCHAIN_PKGS" && "$TC_BUILD" != true ]]; then
-              # Bootstrap (wave 0) built these; they replace the rootfs toolchain.
-              args+=(--with-toolchain --toolchain-list "$RUNNER_TEMP/toolchain-restored.txt")
-            fi
-          else
-            python3 -I scripts/pr-build-cache.py invalidate-relations \
-              --recipes recipes --out-dir "$T/build/out" \
-              --names "$PKGS $TOOLCHAIN_PKGS"
-            args=(--all)
+          earlier="$RUNNER_TEMP/earlier-waves"
+          if [[ -d "$earlier" ]]; then
+            # Only this shard's dependency closure and the archives it waits for.
+            python3 -I scripts/plan-build-shards.py assets --recipes recipes \
+              --names "$SHARD_NEEDS $SHARD_WAITS $TOOLCHAIN_PKGS" | sort -u > "$RUNNER_TEMP/needed-assets.txt"
+            n=0
+            while IFS= read -r asset; do
+              [[ -s "$earlier/$asset" ]] || continue
+              install -m 0644 "$earlier/$asset" "$T/build/out/$asset"
+              n=$((n + 1))
+            done < "$RUNNER_TEMP/needed-assets.txt"
+            echo "$n archive(s) from earlier waves"
           fi
-          python3 -I scripts/pr-shard-cache.py restore \
-            --repo "$PKG_REPO" --prefix "$CACHE_PREFIX" \
-            --recipes recipes --out-dir "$T/build/out" "${args[@]}"
+          # The Toolchain that wave 0 built (or that is already published) replaces
+          # the one in the rootfs: list its archives so the build step installs them.
+          : > "$RUNNER_TEMP/toolchain-restored.txt"
+          if [[ -n "$TOOLCHAIN_PKGS" && "$TC_BUILD" != true ]]; then
+            if [[ -s "$earlier/toolchain-archives.txt" ]]; then
+              cp "$earlier/toolchain-archives.txt" "$RUNNER_TEMP/toolchain-restored.txt"
+            else
+              python3 -I scripts/plan-build-shards.py assets --recipes recipes --names "$TOOLCHAIN_PKGS" \
+                | grep -v -- '-\(doc\|lang\)-[^-]*-[0-9]*[.]nawa' | sort -u \
+                | while IFS= read -r asset; do [[ -s "$T/build/out/$asset" ]] && echo "$asset"; done \
+                > "$RUNNER_TEMP/toolchain-restored.txt" || true
+            fi
+          fi
 
       # The Stage 1/2/3 bootstrap is a pure function of the tooling revision and
       # the bootstrap/toolchain recipe trees, so its final archives are cached
@@ -608,7 +561,6 @@ jobs:
 
       - name: Build this shard (Bootstrap Toolchain targets in wave 0, packages otherwise)
         id: build
-        if: ${{ inputs.mode == 'shard' }}
         timeout-minutes: 320 # leaves ~35 min of the 355 for saving and logs
         env:
           TC_CACHE_DIR: ${{ runner.temp }}/toolchain-cache
@@ -763,327 +715,35 @@ jobs:
           path: ${{ runner.temp }}/toolchain-cache
           key: ${{ steps.tc_key.outputs.key }}
 
-      - name: Detect schema-v5-only package selections
-        id: schema_v5_policy
-        if: ${{ inputs.mode == 'finalize' && always() && steps.published.conclusion == 'success' }}
-        shell: bash
+      # Every shard uploads what it built itself (archives newer than the start of
+      # the run, even when a later package failed) as its own artifact; the next
+      # waves and the publish job read it.
+      - name: Collect the archives this shard built
+        if: ${{ always() && steps.published.conclusion == 'success' }}
         run: |
           set -euo pipefail
-          relation_packages="$(python3 -I - <<'PY'
-          import os
-          import tomllib
-          from pathlib import Path
-
-          selected = set(os.environ.get("PKGS", "").split())
-          selected.update(os.environ.get("TOOLCHAIN_PKGS", "").split())
-          relation_packages = []
-          for path in sorted(Path("recipes").glob("*/*/recipe.toml")):
-              doc = tomllib.loads(path.read_text(encoding="utf-8"))
-              package = doc.get("package", {})
-              name = package.get("name")
-              if name in selected and "relations" in doc:
-                  relation_packages.append(name)
-
-          print(" ".join(sorted(relation_packages)))
-          PY
-          )"
-          if [[ -n "$relation_packages" ]]; then
-            echo "schema_v5_only=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping stable-v3 publication for relation-bearing packages: $relation_packages"
-          else
-            echo "schema_v5_only=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Verify built Nawa transition archive is schema-v3 indexable
-        if: ${{ inputs.mode == 'finalize' && always() && inputs.build_ok == 'true' && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ " $PKGS " != *" nawa "* ]]; then
-            echo "Nawa was not selected; schema-v3 transition smoke test is not applicable."
-            exit 0
-          fi
-
-          identity="$(python3 -I - <<'PY'
-          import tomllib
-          from pathlib import Path
-          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text())["package"]
-          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
-          PY
-          )"
-          archive="$T/build/out/$identity"
-          [[ -s "$archive" ]] || {
-            echo "::error::the selected Nawa recipe did not produce $identity"
-            exit 1
-          }
-
-          smoke="$T/tmp/nawa-v3-smoke"
-          sudo rm -rf "$smoke"
-          sudo install -d -m 0755 "$smoke"
-          sudo install -m 0644 "$archive" "$smoke/$identity"
-          sudo tee "$smoke/locations.toml" >/dev/null <<EOF
-          schema = 1
-
-          [package_urls]
-          "$identity" = "https://example.invalid/$identity"
-          EOF
-
-          # Schema-v2+ indexes must be signed. Generate an ephemeral test-only
-          # keypair inside the throwaway build root; never read the production
-          # NAWA_SIGN_KEY_B64 secret during a pull-request build.
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa keygen \
-            --out /tmp/nawa-v3-smoke/keys
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create \
-            /tmp/nawa-v3-smoke --out /tmp/nawa-v3-smoke/index.toml \
-            --index-version 3 --locations /tmp/nawa-v3-smoke/locations.toml \
-            --sign --key /tmp/nawa-v3-smoke/keys/nawa.sec
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa verify \
-            /tmp/nawa-v3-smoke/index.toml --key /tmp/nawa-v3-smoke/keys/nawa.pub
-
-          python3 -I - "$smoke/index.toml" "$identity" <<'PY'
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          index = tomllib.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-          identity = sys.argv[2]
-          if index.get("repository", {}).get("schema") != 3:
-              raise SystemExit("Nawa transition smoke test did not produce schema-v3 metadata")
-          matches = [entry for entry in index.get("package", []) if entry.get("file") == identity]
-          if len(matches) != 1:
-              raise SystemExit(f"schema-v3 index does not contain exactly one {identity}")
-          if matches[0].get("relations") is not None:
-              raise SystemExit("schema-v3 transition index unexpectedly contains package relations")
-          print(f"schema-v3 transition index accepted {identity}")
-          PY
-
-      # Every shard saves its own archives and a record (entries-<shard>.json) of
-      # what it built or failed. Nothing another shard writes is touched, so
-      # shards run in parallel; the next wave and a re-run read these files.
-      # Saved even when a package failed or time ran out: finished work is kept.
-      - name: Save this shard's archives to the draft build cache
-        if: ${{ inputs.mode == 'shard' && always() && steps.published.conclusion == 'success' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          # Stage 3 output can be complete even when a later ordinary package
-          # fails: record each imported Toolchain archive as built.
-          toolchain_stems=""
+          out="$RUNNER_TEMP/built-archives"
+          mkdir -p "$out"
+          while IFS= read -r -d '' file; do
+            install -m 0644 "$file" "$out/$(basename "$file")"
+          done < <(find "$T/build/out" -maxdepth 1 -type f -name '*.nawa.tar.zst' \
+                     -newer "$T/build/.run-start" -print0)
           if [[ -s "$RUNNER_TEMP/toolchain-built.txt" ]]; then
-            touch "$T/build/report.txt"
-            while IFS= read -r stem; do
-              [[ -n "$stem" ]] || continue
-              printf 'BUILT    %s  (Bootstrap Stage 3)\n' "$stem" >> "$T/build/report.txt"
-            done < "$RUNNER_TEMP/toolchain-built.txt"
-            toolchain_stems="$(tr '\n' ' ' < "$RUNNER_TEMP/toolchain-built.txt")"
+            sed 's/$/.nawa.tar.zst/' "$RUNNER_TEMP/toolchain-built.txt" > "$out/toolchain-archives.txt"
           fi
-          python3 -I scripts/pr-shard-cache.py save \
-            --repo "$PKG_REPO" --prefix "$CACHE_PREFIX" --recipes recipes \
-            --shard "$SHARD_ID" --run-id "$GITHUB_RUN_ID" \
-            --out-dir "$T/build/out" --since "$T/build/.run-start" \
-            --report "$T/build/report.txt" --status "$T/build/status" \
-            --toolchain-stems "$toolchain_stems"
+          echo "$(find "$out" -name '*.nawa.tar.zst' | wc -l) archive(s) built by shard $SHARD_ID"
 
-      # The shards' records are merged into the legacy manifest.json/candidate.json
-      # (what the PR verification and publish-schema-v5.py read) and the run learns
-      # whether any shard ran out of time.
-      - name: Merge the shard records
-        id: merge
-        if: ${{ inputs.mode == 'finalize' && always() && steps.published.conclusion == 'success' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_PACKAGES_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -euo pipefail
-          python3 -I scripts/pr-shard-cache.py merge \
-            --repo "$PKG_REPO" --prefix "$CACHE_PREFIX" --recipes recipes \
-            --run-id "$GITHUB_RUN_ID" --head-sha "$PR_PACKAGES_HEAD_SHA" | tee "$RUNNER_TEMP/merge.txt"
-          echo "incomplete=$(sed -n 's/^INCOMPLETE=//p' "$RUNNER_TEMP/merge.txt" | tail -n 1)" >> "$GITHUB_OUTPUT"
-
-      - name: Fail PR verification when the build time budget is exhausted
-        if: ${{ inputs.mode == 'finalize' && github.event_name == 'pull_request' && steps.merge.outputs.incomplete == '1' }}
-        run: |
-          echo "::error::PR package verification: a shard reached its time budget before every changed package was built (see the DEFERRED lines in that shard's report)."
-          exit 1
-
-      # nawa refuses to install a package that ships a file another one owns, and
-      # an image build only finds out one package at a time. Look at the archives
-      # (the ones just built AND the ones fetched from the release) for every
-      # flavor now. Publishing is not held back (the other packages are fine and
-      # the build took hours), but the run turns red and names the files.
-      - name: No two packages of a flavor may ship the same file
-        if: ${{ inputs.mode == 'finalize' && always() && steps.published.conclusion == 'success' }}
-        run: |
-          python3 -I scripts/test-file-conflicts.py
-          python3 -I scripts/check-file-conflicts.py "$T/build/out"
-
-      # Publish package and recipe archives to immutable storage shards, then
-      # Upload shard archives first; keep the old schema-v1 stable index untouched.
-      # The shard limit is deliberately below GitHub's 1,000-asset release cap.
-      - name: Publish to the distributed package repository
-        id: publish
-        if: ${{ inputs.mode == 'finalize' && github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' && steps.schema_v5_policy.outputs.schema_v5_only != 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
-          BUILD_OK: ${{ inputs.build_ok }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          out="$T/build/out"
-          new=()
-          while IFS= read -r -d '' f; do new+=("$f"); done \
-            < <(find "$out" -maxdepth 1 -name '*.nawa.tar.zst' -newer "$T/build/.run-start" -print0)
-          echo "new archives: ${#new[@]}"
-          echo "built=${#new[@]}" >> "$GITHUB_OUTPUT"
-
-          repo="$T/repo"
-          sudo rm -rf "$repo"; sudo mkdir -p "$repo"
-          sudo cp -al "$out"/*.nawa.tar.zst "$repo/"
-          sudo chown -R "$(id -u):$(id -g)" "$repo"
-          stale=()
-          # Never remove the last published archive for a package whose new
-          # recipe failed to build. Partial publication is allowed, but pruning
-          # is only safe after every selected build completed successfully.
-          if [[ "$PRUNE" == 1 && "$BUILD_OK" == "true" ]]; then
-            mapfile -t stale < <(python3 scripts/recipe-ids.py --stale "$repo" recipes)
-            for s in "${stale[@]}"; do rm -f "$repo/$s"; done
-            if (( ${#stale[@]} )); then printf 'superseded: %s\n' "${stale[@]}"; fi
-          elif [[ "$PRUNE" == 1 ]]; then
-            echo "::warning::Skipping stale-package pruning because at least one selected package failed to build; preserving last-known-good archives."
-          fi
-
-          rev="${GITHUB_SHA}"
-          rfile="recipes-${rev}.recipes.tar.zst"
-          plan="$RUNNER_TEMP/distributed-release-plan.json"
-          locations="$repo/locations.toml"
-          python3 -I scripts/distributed-releases.py plan \
-            --releases-json "$RUNNER_TEMP/package-releases.json" \
-            --repo-dir "$repo" --repository "$PKG_REPO" --stable-tag "$PKG_TAG" \
-            --recipe-file "$rfile" --max-assets 900 \
-            --output "$plan" --manifest "$locations"
-
-          # Create any shard tags before uploading assets to them.
-          while IFS= read -r tag; do
-            [[ -n "$tag" ]] || continue
-            if ! gh release view "$tag" --repo "$PKG_REPO" >/dev/null 2>&1; then
-              gh release create "$tag" --repo "$PKG_REPO" --title "Faseela package storage $tag" \
-                --notes "Storage shard for the signed Nawa schema-v3 package repository. Do not edit."
-            fi
-          done < <(python3 -I scripts/distributed-releases.py create --plan "$plan")
-
-          printf '%s' "$SIGN_KEY_B64" | base64 -d | sudo install -m 600 /dev/stdin "$T/root/nawa.sec"
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa repo-create /repo \
-            --out index.toml --index-version 3 --locations /repo/locations.toml \
-            --sign --key /root/nawa.sec \
-            --recipes /faseela/recipes --recipes-rev "$rev" \
-            --groups /faseela/groups.toml
-          sudo chown -R "$(id -u):$(id -g)" "$repo"
-          [[ -s "$repo/$rfile" && -s "$repo/groups.toml" && -s "$repo/index.toml" && -s "$repo/index.toml.sig" ]] \
-            || { echo "::error::repo-create did not produce the recipe snapshot and signed schema-v3 index"; exit 1; }
-
-          upload() {
-            local tag="$1"; shift
-            local n
-            for n in 1 2 3; do
-              gh release upload "$tag" --repo "$PKG_REPO" --clobber "$@" && return 0
-              echo "upload to $tag attempt $n failed" >&2; sleep $((n * 20))
-            done
-            return 1
-          }
-
-          # Upload every newly assigned archive before publishing its index URL.
-          while IFS= read -r tag; do
-            [[ -n "$tag" ]] || continue
-            mapfile -t files < <(python3 -I scripts/distributed-releases.py uploads \
-              --plan "$plan" --repo-dir "$repo" --tag "$tag")
-            (( ${#files[@]} )) || continue
-            for f in "${files[@]}"; do
-              [[ -s "$f" ]] || { echo "::error::missing planned archive $f"; exit 1; }
-            done
-            echo "Uploading ${#files[@]} asset(s) to $tag"
-            upload "$tag" "${files[@]}"
-          done < <(python3 -I - "$plan" <<'PY'
-          import json, sys
-          plan = json.load(open(sys.argv[1], encoding="utf-8"))
-          tags = set(plan["create_releases"]) | set(plan["uploads"])
-          for tag in sorted(tags):
-              print(tag)
-          PY
-          )
-
-          # Keep the Nawa client itself installable by old schema-v1 clients.
-          # This separate signed archive can be installed locally without
-          # asking the old client to parse either remote repository index.
-          nawa_archive="$(python3 -I - <<'PY'
-          import tomllib
-          from pathlib import Path
-          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
-          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
-          PY
-          )"
-          [[ -s "$repo/$nawa_archive" ]] || {
-            echo "::error::missing $nawa_archive; the first transition run must build the nawa recipe from the seed rootfs"
-            exit 1
-          }
-          sudo bash distro/bootstrap/enter-root.sh "$T" /usr/bin/nawa sign \
-            "/repo/$nawa_archive" --key /root/nawa.sec
-          sudo chown "$(id -u):$(id -g)" "$repo/$nawa_archive.sig"
-          if ! gh release view "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" >/dev/null 2>&1; then
-            gh release create "$NAWA_TRANSITION_TAG" --repo "$PKG_REPO" \
-              --title "Nawa client transition package" \
-              --notes "Standalone signed Nawa package for clients that still use the legacy schema-v1 stable index. Download both assets and install the archive locally with: sudo nawa install ./<archive>.nawa.tar.zst. The updated package defaults to stable-v3."
-          fi
-          upload "$NAWA_TRANSITION_TAG" "$repo/$nawa_archive" "$repo/$nawa_archive.sig"
-
-          # Keep only the current Nawa pair in this small transition release.
-          gh api "repos/$PKG_REPO/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' |
-            while IFS= read -r old; do
-              [[ "$old" == "$nawa_archive" || "$old" == "$nawa_archive.sig" ]] && continue
-              gh release delete-asset "$NAWA_TRANSITION_TAG" "$old" --repo "$PKG_REPO" --yes || {
-                echo "::warning::could not remove old transition asset $old"
-              }
-            done
-
-          # Publish group metadata before the index that authenticates its digest.
-          upload "$PKG_V3_TAG" "$repo/groups.toml"
-          # Publish the v3 index only after every referenced asset exists.
-          upload "$PKG_V3_TAG" "$repo/index.toml" "$repo/index.toml.sig"
-
-          # Remove stale shard assets only after the v3 index points elsewhere.
-          while IFS=$'\t' read -r tag asset; do
-            [[ -n "$tag" && -n "$asset" ]] || continue
-            gh release delete-asset "$tag" "$asset" --repo "$PKG_REPO" --yes || {
-              echo "::warning::could not delete stale asset $tag/$asset"
-            }
-          done < <(python3 -I scripts/distributed-releases.py cleanup --plan "$plan" --kind shards)
-          # The old $PKG_TAG release is frozen. Keep its archives, index and
-          # detached signatures intact for already-installed schema-v1 clients.
-
-          archive_count="$(python3 -I - "$plan" <<'PY'
-          import json, sys
-          print(json.load(open(sys.argv[1], encoding="utf-8"))["archive_count"])
-          PY
-          )"
-          shard_count="$(python3 -I - "$plan" <<'PY'
-          import json, sys
-          p = json.load(open(sys.argv[1], encoding="utf-8"))
-          print(len(set(p["assignments"].values())))
-          PY
-          )"
-          {
-            echo "### Published schema-v3 index to $PKG_REPO ($PKG_V3_TAG)"
-            echo "Legacy schema-v1 endpoint retained at $PKG_TAG; transition package: $NAWA_TRANSITION_TAG."
-            echo
-            echo "Package archives: $archive_count"
-            echo "New this run: ${#new[@]}"
-            echo "Storage shards used: $shard_count (maximum 900 assets per shard)"
-            echo "Each archive URL is authenticated by the signed index and its SHA-256."
-          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.published.conclusion == 'success' }}
+        with:
+          name: built-${{ inputs.shard_id }}
+          path: ${{ runner.temp }}/built-archives
+          compression-level: 0 # the archives are already zstd
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Report
-        if: ${{ inputs.mode == 'shard' && always() && steps.published.conclusion == 'success' }}
+        if: ${{ always() && steps.published.conclusion == 'success' }}
         run: |
           {
             echo "### Build report: shard $SHARD_ID"
@@ -1093,30 +753,8 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Time ran out with packages left: run the workflow again - what was
-      # published now counts as done, so it continues with the rest. Only when
-      # this run made progress, otherwise two runs would loop forever.
-      - name: Continue with the remaining packages
-        if: ${{ inputs.mode == 'finalize' && github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.publish.outputs.built != '' && steps.publish.outputs.built != '0' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          INCOMPLETE: ${{ steps.merge.outputs.incomplete }}
-        run: |
-          set -euo pipefail
-          [[ "$INCOMPLETE" == 1 ]] || { echo "nothing left over"; exit 0; }
-          if [[ "$AUTO_CONTINUE" != 1 ]]; then
-            echo "::notice::packages are left over - run the workflow again with the same list to continue"
-            exit 0
-          fi
-          gh workflow run packages.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
-            -f packages="$PKGS" -f toolchain=false -f toolchain_packages="" \
-            -f rootfs="$ROOTFS_KIND" -f isolation="$ISOLATION" \
-            -f budget="$BUDGET_MIN" -f keep_going="$([[ $KEEP_GOING == 1 ]] && echo true || echo false)" \
-            -f prune="$([[ $PRUNE == 1 ]] && echo true || echo false)" -f auto_continue=true
-          echo "### Time budget used up: started a continuation run for the rest" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Collect build logs
-        if: ${{ inputs.mode == 'shard' && always() }}
+        if: ${{ always() }}
         run: |
           set -euo pipefail
           mkdir -p ci-logs
@@ -1146,7 +784,7 @@ jobs:
 
           sudo chown -R "$(id -u):$(id -g)" ci-logs
       - uses: actions/upload-artifact@v4
-        if: ${{ inputs.mode == 'shard' && always() }}
+        if: ${{ always() }}
         with:
           name: package-build-logs-${{ inputs.shard_id }}
           path: ci-logs
@@ -1155,7 +793,7 @@ jobs:
 
       # Publishing already happened above; this just makes the run red.
       - name: Fail the shard if a package failed
-        if: ${{ inputs.mode == 'shard' && steps.build.outcome == 'failure' }}
+        if: ${{ steps.build.outcome == 'failure' }}
         run: |
           if [[ "$GITHUB_EVENT_NAME" == pull_request || "$GITHUB_REF" == "refs/heads/feat/cosmic-desktop-support" ]]; then
             echo "::error::some selected packages of shard $SHARD_ID failed - see its Build report and the package-build-logs-$SHARD_ID artifact. Nothing is published from this validation branch."
@@ -1163,9 +801,3 @@ jobs:
             echo "::error::some packages of shard $SHARD_ID failed - see its Build report. Everything that succeeded is kept in the build cache and published by the final job."
           fi
           exit 1
-
-      - name: Delete the run's temporary build cache
-        if: ${{ inputs.mode == 'finalize' && always() && github.event_name != 'pull_request' && steps.merge.conclusion == 'success' && steps.publish.outcome != 'failure' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 -I scripts/pr-shard-cache.py drop --repo "$PKG_REPO" --prefix "$CACHE_PREFIX"

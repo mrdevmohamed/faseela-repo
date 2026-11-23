@@ -62,14 +62,10 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(result["todo"], ["a"])
         self.assertEqual(sorted(result["done"]), ["b", "c"])
 
-    def test_published_archive_of_relation_recipe_is_rebuilt(self):
-        recipes = make(recipe("old"), recipe("new", relations=True))
-        result = planner.plan(recipes, ["old", "new"], [], set(), {"old-1.0-1", "new-1.0-1"}, {})
-        self.assertEqual(result["todo"], ["new"])
-
-    def test_cached_relation_recipe_counts_as_done(self):
+    def test_published_relation_recipe_is_up_to_date(self):
+        # the published repository is schema v5 only: a published archive is current
         recipes = make(recipe("new", relations=True))
-        result = planner.plan(recipes, ["new"], [], {"new-1.0-1"}, {"new-1.0-1"}, {})
+        result = planner.plan(recipes, ["new"], [], set(), {"new-1.0-1"}, {})
         self.assertEqual(result["todo"], [])
         self.assertEqual(result["waves"], [])
 
@@ -144,10 +140,10 @@ class ToolchainTests(unittest.TestCase):
                 planner.main(["emit", "--plan", str(plan_file), "--github-output", str(out)])
                 self.assertIn(f"wave0_count={expected}", out.read_text().splitlines())
 
-    def test_published_toolchain_archive_does_not_count_as_cached(self):
-        recipes = make(recipe("gcc", category="toolchain"))
-        value = planner.plan(recipes, [], ["gcc"], set(), {"gcc-1.0-1"}, {})
-        self.assertFalse(value["toolchain_done"])
+    def test_published_toolchain_archives_skip_wave_zero(self):
+        recipes = make(recipe("gcc", category="toolchain"), recipe("glibc", category="toolchain"))
+        self.assertTrue(planner.plan(recipes, [], ["gcc", "glibc"], set(), {"gcc-1.0-1", "glibc-1.0-1"}, {})["toolchain_done"])
+        self.assertFalse(planner.plan(recipes, [], ["gcc", "glibc"], set(), {"gcc-1.0-1"}, {})["toolchain_done"])
 
 
 class LoadTests(unittest.TestCase):

@@ -97,16 +97,10 @@ jobs:
         run: python3 -I scripts/test-podman-support.py
       - name: Package selection and multi-select regression checks
         run: python3 -I scripts/test-package-selection.py
-      - name: Incremental pull request package cache regression checks
-        run: python3 -I scripts/test-pr-build-cache.py
       - name: Bootstrap Toolchain cache key tests
         run: python3 -I scripts/test-toolchain-cache-key.py
-      - name: Draft-release package cache provenance regression checks
-        run: python3 -I scripts/test-pr-build-release-cache.py
       - name: Shard planner (dependency waves) regression checks
         run: python3 -I scripts/test-plan-build-shards.py
-      - name: Shard build cache regression checks
-        run: python3 -I scripts/test-pr-shard-cache.py
       - name: Sharded package workflow structure checks
         run: python3 -I scripts/test-sharded-workflow.py
       - name: creative recipes install bin/share and usr payload layouts

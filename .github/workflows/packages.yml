@@ -1,23 +1,16 @@
 name: Build packages
 
-# Builds packages from this repository's recipes. The old `stable` endpoint
-# remains a frozen schema-v1 compatibility endpoint for existing clients.
-# New clients use `stable-v3`: its signed schema-v3 index points to package
-# and recipe archives distributed across `packages-NNNN` Releases.
+# Builds the packages of this repository and publishes the signed schema-v5
+# repository `stable-v5`:
 #
-#   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable-v3
+#   nawa upgrade --repo https://github.com/<PKG_REPO>/releases/download/stable-v5
 #
-# Existing installations can upgrade Nawa from the standalone signed
-# `nawa-transition` release before switching to stable-v3.
-# This repository must be PUBLIC for the URLs to work without a token.
-#
-# Publishing uses this workflow's GITHUB_TOKEN (contents: write); no PAT needed.
+# Package archives live in the immutable `packages-v5-NNNN` releases; `stable-v5`
+# carries only the signed index. This repository must be PUBLIC for the URLs to work
+# without a token. Publishing uses this workflow's GITHUB_TOKEN (contents: write).
 #
 # One-time setup (Settings > Secrets and variables > Actions):
 #   secret   NAWA_SIGN_KEY_B64   base64 of nawa.sec
-#   variable PKG_TAG             old schema-v1 release tag (default stable)
-#   variable PKG_V3_TAG          schema-v3 index release tag (default stable-v3)
-#   variable NAWA_TRANSITION_TAG standalone signed Nawa upgrade (default nawa-transition)
 #   variable DISTRO_REPO         distribution repository (default mrdevmohamed/faseela)
 #   variable DISTRO_REF          distribution tooling ref (default master)
 #
@@ -37,38 +30,29 @@ name: Build packages
 # GitHub Actions has no dynamic multi-select input: checkboxes select categories,
 # while the packages/flavors text fields accept any number of names.
 
-# HOW A RUN IS ORGANISED (sharded build)
+# HOW A RUN WORKS
+#   push to main   selects EVERY recipe; whatever stable-v5 already publishes is skipped,
+#                  so only new or bumped recipes are built, then the result is published.
+#   pull request   builds only the recipes the PR changes (verification, never publishes).
+#   manual         the selection below; publishes too when run on main.
+#
 #   select      which packages
-#   plan        drops what is already up to date and splits the rest into waves of
+#   plan        drops what stable-v5 already publishes and splits the rest into waves of
 #               dependency levels (scripts/plan-build-shards.py); the shards of a wave
 #               run in parallel as a matrix, each with its own 6 h limit
-#   build-w0    Bootstrap Toolchain targets (only when selected)
-#   build-w1..8 package shards; they exchange archives through draft releases
-#               (scripts/pr-shard-cache.py) and a failing package never stops the others
-#   publish     gathers every archive, checks them and publishes (pull requests: no publish)
-# "Re-run failed jobs" repeats only the failed shards. The workflow that does the work of one
-# job is .github/workflows/packages-build.yml.
-
-# BUILDING EVERYTHING TAKES LONGER THAN ONE RUN. So the workflow is resumable:
-#   * a package whose archive (name-version-rel) is already in the distributed
-#     package repository is up to date and is skipped; a recipe bump rebuilds it;
-#   * published archives a build needs are installed, not compiled again;
-#   * after `budget` minutes no new package is started, everything built so
-#     far is published, and (auto_continue) the workflow starts itself again
-#     for the rest. A failing package never blocks the others: its dependents
-#     are skipped, all the rest is still built and published, and the run
-#     ends red with the list of what failed.
-#   * archives of an older version of a package are removed once the new one
-#     is published (prune).
+#   build-w0    Bootstrap Toolchain targets (only when they are not published yet)
+#   build-w1..8 package shards; archives pass between waves as workflow artifacts
+#               (built-<shard>); a failing package never stops the others
+#   publish     main only, and only when nothing failed: gathers the artifacts and the
+#               already published archives, signs and checks the COMPLETE set and
+#               publishes it. A failed run publishes nothing: stable-v5 never goes partial.
+# "Re-run failed jobs" repeats only the failed shards. One shard is built by
+# .github/workflows/packages-build.yml.
 #
 # Build environment: the rootfs of the newest release of DISTRO_REPO
 #   min   faseela-x86_64-rootfs-min.tar.zst     base-devel + nawa, small, NO rust
 #   seed  faseela-x86_64-rootfs.tar.zst         the full system incl. rust
 #   auto  (default) seed when rust or nawa is in the list, else min
-# Both come from the ISO workflow (release.yml) of DISTRO_REPO, which publishes them in
-# a release (a `v*` tag, or a manual run with `release` ticked; `outputs=core` makes a
-# release with the seed rootfs alone). `auto` falls back to the seed rootfs while no
-# release carries the small one yet. Run that once before the first package build.
 
 on:
   push:
@@ -174,16 +158,8 @@ on:
         description: "Minutes after which no NEW package is started (the hard limit of a run is 6 h)"
         type: string
         default: "270"
-      auto_continue:
-        description: "When time ran out, start this workflow again for the remaining packages"
-        type: boolean
-        default: true
       keep_going:
         description: "Keep building the other packages when one fails"
-        type: boolean
-        default: true
-      prune:
-        description: "Delete superseded versions from the package repository after publishing"
         type: boolean
         default: true
 
@@ -208,7 +184,6 @@ jobs:
       toolchain_all: ${{ steps.s.outputs.toolchain_all }}
       rootfs: ${{ steps.s.outputs.rootfs }}
       dry_run: ${{ steps.s.outputs.dry_run }}
-      schema_v5_only: ${{ steps.s.outputs.schema_v5_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -262,43 +237,18 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
-          NAWA_TRANSITION_TAG: ${{ vars.NAWA_TRANSITION_TAG || 'nawa-transition' }}
         run: |
           set -euo pipefail
           selection="$RUNNER_TEMP/package-selection.json"
-          base=""
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
-            # A pending concurrency run can be replaced by a newer push. Do not
-            # diff only github.event.before..github.sha: that would lose recipes
-            # from the replaced run. Start at the last successful push run.
-            last_successful_push="$(gh api \
-              "repos/$GITHUB_REPOSITORY/actions/workflows/packages.yml/runs?branch=$GITHUB_REF_NAME&event=push&status=success&per_page=100" \
-              --jq '.workflow_runs[0].head_sha // empty')"
-
-            if [[ -z "$last_successful_push" ]]; then
-              # First package publication on this branch: reconcile the full
-              # recipe tree rather than assuming earlier pushes were processed.
-              echo "::notice::no successful package push found; selecting the complete recipe tree"
-              python3 -I scripts/select-packages.py \
-                --recipes recipes --flavors-file flavors.toml \
-                --all --toolchain-all --output "$selection"
-            else
-              base="$last_successful_push"
-              [[ "$base" =~ ^[0-9a-f]{40}$ ]] || {
-                echo "::error::GitHub returned an invalid last successful package commit: $base"; exit 1;
-              }
-              git cat-file -e "$base^{commit}" 2>/dev/null || {
-                echo "::error::cannot resolve the last successfully published recipe commit $base"; exit 1;
-              }
-              git merge-base --is-ancestor "$base" "$GITHUB_SHA" || {
-                echo "::error::last successful package commit $base is not an ancestor of $GITHUB_SHA; refusing an unsafe partial selection"; exit 1;
-              }
-              echo "Selecting recipe changes from last successful push $base through $GITHUB_SHA."
-              python3 -I scripts/select-packages.py \
-                --recipes recipes --flavors-file flavors.toml \
-                --changed-from "$base" --changed-to "$GITHUB_SHA" \
-                --output "$selection"
-            fi
+            # Select every recipe: the planner skips what stable-v5 already
+            # publishes, so the run builds exactly what is missing. There is no
+            # "since the last successful run" bookkeeping to get wrong.
+            toolchain_names="$(find recipes/toolchain -mindepth 2 -maxdepth 2 -name recipe.toml -printf '%h\n' \
+              | xargs -r -n1 basename | sort | paste -sd ' ' -)"
+            python3 -I scripts/select-packages.py \
+              --recipes recipes --flavors-file flavors.toml \
+              --all --toolchain-packages "$toolchain_names" --output "$selection"
           elif [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             base="$PR_BASE_SHA"
             head="$PR_HEAD_SHA"
@@ -356,32 +306,6 @@ jobs:
           toolchain_pkgs="${selected[1]:-}"
           toolchain_all="${selected[2]:-false}"
 
-          # A groups.toml-only push still needs a signed-index publication.
-          # Selecting the already-published nawa archive runs the publisher;
-          # the incremental build stage skips it when its archive is current.
-          if [[ "$GITHUB_EVENT_NAME" == push && -n "$base" && -z "$pkgs" && -z "$toolchain_pkgs" ]] \
-              && git diff --quiet "$base" "$GITHUB_SHA" -- recipes/; then
-            pkgs="nawa"
-            echo "Only group metadata changed; running the publisher without rebuilding recipes."
-          fi
-
-          # Build the current Nawa recipe whenever its standalone transition
-          # release lacks the exact archive required by this recipe.
-          nawa_archive="$(python3 -I - <<'PY'
-          import tomllib
-          from pathlib import Path
-          p = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text(encoding="utf-8"))["package"]
-          print(f"{p['name']}-{p['version']}-{p['rel']}.nawa.tar.zst")
-          PY
-          )"
-          [[ "$NAWA_TRANSITION_TAG" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid NAWA_TRANSITION_TAG"; exit 1; }
-          transition_needed=0
-          if [[ "$GITHUB_EVENT_NAME" != pull_request && "$GITHUB_REF" != "refs/heads/feat/cosmic-desktop-support" ]] && ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$NAWA_TRANSITION_TAG" --jq '.assets[].name' 2>/dev/null | grep -qxF "$nawa_archive"; then
-            pkgs+=" nawa"
-            pkgs="$(tr ' ' '\n' <<< "$pkgs" | awk 'NF && !seen[$0]++' | paste -sd ' ' -)"
-            transition_needed=1
-            echo "Nawa added for the one-time schema-v1 to schema-v3 client transition."
-          fi
           for p in $pkgs; do
             [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]] || { echo "::error::bad package name '$p'"; exit 1; }
             compgen -G "recipes/*/$p/recipe.toml" >/dev/null || { echo "::error::no recipe named '$p'"; exit 1; }
@@ -407,12 +331,6 @@ jobs:
             exit 1
           fi
 
-          if (( transition_needed )); then
-            if [[ "$INPUT_ROOTFS" == min ]]; then
-              echo "::error::the Nawa transition requires the seed rootfs (Rust is installed there); choose rootfs=auto or seed"
-              exit 1
-            fi
-          fi
           rootfs="$INPUT_ROOTFS"
           if [[ "$rootfs" == auto ]]; then
             rootfs=min
@@ -423,33 +341,14 @@ jobs:
               [[ "$p" == rust || "$p" == nawa ]] && echo "::warning::$p is in the list but the min rootfs has no rust: it would be compiled first (hours). Use rootfs=seed."
             done
           fi
-          schema_v5_only="$(python3 -I - "$pkgs" "$toolchain_pkgs" <<'PY'
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          selected = set(sys.argv[1].split()) | set(sys.argv[2].split())
-          has_relations = False
-          for path in Path("recipes").glob("*/*/recipe.toml"):
-              doc = tomllib.loads(path.read_text(encoding="utf-8"))
-              if doc.get("package", {}).get("name") in selected and "relations" in doc:
-                  has_relations = True
-                  break
-          print("true" if has_relations else "false")
-          PY
-          )"
           dry_run="${INPUT_DRY_RUN:-false}"
           {
-            echo "schema_v5_only=$schema_v5_only"
             echo "pkgs=$pkgs"
             echo "toolchain_pkgs=$toolchain_pkgs"
             echo "toolchain_all=$toolchain_all"
             echo "rootfs=$rootfs"
             echo "dry_run=$dry_run"
           } >> "$GITHUB_OUTPUT"
-          if [[ "$schema_v5_only" == true && "$GITHUB_EVENT_NAME" != pull_request ]]; then
-            echo "::notice::The selected recipes carry schema-v5 relations. The ordinary workflow will not build/publish them through stable-v3; use the reviewed PR build cache and the separate schema-v5 publisher."
-          fi
           python3 - "$selection" "$pkgs" "$toolchain_pkgs" "$toolchain_all" "$rootfs" "$dry_run" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -474,24 +373,20 @@ jobs:
           PY
 
 
-  # A full build takes longer than one runner may run (6 h) and one failing
-  # package used to throw away hours. The build is therefore split by
-  # scripts/plan-build-shards.py into waves of dependency levels; the shards of a
-  # wave run in parallel (matrix, fail-fast off) on their own runners, share their
-  # archives through the draft build cache (scripts/pr-shard-cache.py) and a final
-  # job publishes. "Re-run failed jobs" repeats only the failed shards: what the
-  # others built is in the cache, and a re-run only plans what is still missing.
+  # A full build takes longer than one runner may run (6 h), so the build is split by
+  # scripts/plan-build-shards.py into waves of dependency levels; the shards of a wave
+  # run in parallel (matrix, fail-fast off) on their own runners and hand their archives
+  # to the next waves and to the publish job as workflow artifacts.
   plan:
     name: plan shards
     needs: select
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' && (github.event_name == 'pull_request' || needs.select.outputs.schema_v5_only != 'true') }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (needs.select.outputs.pkgs != '' || needs.select.outputs.toolchain_pkgs != '') && needs.select.outputs.dry_run != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
-      contents: write # reads the draft build cache releases
-      actions: read
+      contents: read
     outputs:
-      cache_prefix: ${{ steps.p.outputs.cache_prefix }}
+      toolchain_done: ${{ steps.p.outputs.toolchain_done }}
       todo_count: ${{ steps.p.outputs.todo_count }}
 
       wave0: ${{ steps.p.outputs.wave0 }}
@@ -516,30 +411,19 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PKGS: ${{ needs.select.outputs.pkgs }}
       TOOLCHAIN_PKGS: ${{ needs.select.outputs.toolchain_pkgs }}
-      PKG_TAG: ${{ vars.PKG_TAG || 'stable' }}
     steps:
       - uses: actions/checkout@v4
       - name: Plan the waves and shards
         id: p
         run: |
           set -euo pipefail
-          # Pull requests keep their cache across runs (it is the resume point);
-          # other runs use a cache of their own that the final job deletes.
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            prefix="schema-v5-build-pr-${{ github.event.pull_request.number }}"
-          else
-            prefix="faseela-build-run-$GITHUB_RUN_ID"
-          fi
-          echo "cache_prefix=$prefix" >> "$GITHUB_OUTPUT"
-
+          # What stable-v5 already publishes is up to date and is not built again.
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
           python3 -I scripts/distributed-releases.py list \
-            --releases-json "$RUNNER_TEMP/releases.json" --stable-tag "$PKG_TAG" > "$RUNNER_TEMP/published.tsv"
-          python3 -I scripts/pr-shard-cache.py valid-stems \
-            --repo "$GITHUB_REPOSITORY" --prefix "$prefix" --recipes recipes > "$RUNNER_TEMP/cache-valid.txt"
+            --releases-json "$RUNNER_TEMP/releases.json" --stable-tag stable-v5 --index-version 5 > "$RUNNER_TEMP/published.tsv"
           python3 -I scripts/plan-build-shards.py plan --recipes recipes \
             --pkgs "$PKGS" --toolchain-pkgs "$TOOLCHAIN_PKGS" \
-            --published "$RUNNER_TEMP/published.tsv" --cache-valid "$RUNNER_TEMP/cache-valid.txt" \
+            --published "$RUNNER_TEMP/published.tsv" \
             --times scripts/build-times.json --output "$RUNNER_TEMP/plan.json"
           python3 -I scripts/plan-build-shards.py emit --plan "$RUNNER_TEMP/plan.json" --github-output "$GITHUB_OUTPUT"
           python3 -I scripts/plan-build-shards.py summary --plan "$RUNNER_TEMP/plan.json" >> "$GITHUB_STEP_SUMMARY"
@@ -549,15 +433,14 @@ jobs:
     needs: [select, plan]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave0_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave0) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -569,9 +452,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w1:
@@ -579,15 +460,14 @@ jobs:
     needs: [select, plan, build-w0]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave1_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave1) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -599,9 +479,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w2:
@@ -609,15 +487,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave2_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave2) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -629,9 +506,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w3:
@@ -639,15 +514,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave3_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave3) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -659,9 +533,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w4:
@@ -669,15 +541,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave4_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave4) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -689,9 +560,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w5:
@@ -699,15 +568,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave5_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave5) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -719,9 +587,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w6:
@@ -729,15 +595,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave6_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave6) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -749,9 +614,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w7:
@@ -759,15 +622,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave7_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave7) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -779,9 +641,7 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   build-w8:
@@ -789,15 +649,14 @@ jobs:
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7]
     if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.wave8_count != '0' && (github.event_name != 'workflow_dispatch' || inputs.keep_going || !contains(needs.*.result, 'failure')) }}
     permissions:
-      contents: write
-      actions: write
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.wave8) }}
     uses: ./.github/workflows/packages-build.yml
     secrets: inherit
     with:
-      mode: shard
       shard_id: ${{ matrix.id }}
       shard_pkgs: ${{ matrix.pkgs }}
       shard_needs: ${{ matrix.needs }}
@@ -809,35 +668,198 @@ jobs:
       isolation: ${{ inputs.isolation || 'sandbox' }}
       budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
       keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
+      toolchain_done: ${{ needs.plan.outputs.toolchain_done }}
       nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
 
   publish:
-    name: publish
+    name: publish stable-v5
     needs: [select, plan, build-w0, build-w1, build-w2, build-w3, build-w4, build-w5, build-w6, build-w7, build-w8]
-    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    # Only main publishes, and only when nothing failed or was cancelled: the repository
+    # is replaced as a whole (complete, signed set) or not at all.
+    if: ${{ !cancelled() && needs.plan.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
     permissions:
       contents: write
-      actions: write
-    uses: ./.github/workflows/packages-build.yml
-    secrets: inherit
-    with:
-      mode: finalize
-      pkgs: ${{ needs.select.outputs.pkgs }}
-      toolchain_pkgs: ${{ needs.select.outputs.toolchain_pkgs }}
-      toolchain_all: ${{ needs.select.outputs.toolchain_all }}
-      rootfs_kind: ${{ needs.select.outputs.rootfs }}
-      rootfs_requested: ${{ inputs.rootfs || 'auto' }}
-      isolation: ${{ inputs.isolation || 'sandbox' }}
-      budget: ${{ github.event_name == 'pull_request' && '300' || inputs.budget || '270' }}
-      keep_going: ${{ github.event_name == 'workflow_dispatch' && !inputs.keep_going && '0' || '1' }}
-      auto_continue: ${{ github.event_name == 'workflow_dispatch' && !inputs.auto_continue && '0' || '1' }}
-      prune: ${{ github.event_name == 'workflow_dispatch' && !inputs.prune && '0' || '1' }}
-      cache_prefix: ${{ needs.plan.outputs.cache_prefix }}
-      nawa_selected: ${{ format('{0}', contains(format(' {0} ', needs.select.outputs.pkgs), ' nawa ')) }}
-      build_ok: ${{ format('{0}', !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')) }}
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NAWA_SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
+      PKG_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the repository signing key
+        run: |
+          set -euo pipefail
+          [[ -n "$NAWA_SIGN_KEY_B64" ]] || { echo "::error::secret NAWA_SIGN_KEY_B64 is not set"; exit 1; }
+          # the key clients trust must be the one that signs
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            https://raw.githubusercontent.com/mrdevmohamed/faseela/master/dist/nawa.pub \
+            --output "$RUNNER_TEMP/nawa-distro.pub"
+          cmp dist/nawa.pub "$RUNNER_TEMP/nawa-distro.pub"
+
+      - name: Require complete schema-v5 metadata
+        run: python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Signing and indexing use the pinned nawa of the recipe, compiled here.
+      - name: Build the recipe-pinned nawa
+        run: |
+          set -euo pipefail
+          pin_env="$RUNNER_TEMP/nawa-source.env"
+          python3 -I - <<'PY' > "$pin_env"
+          import re
+          import tomllib
+          from pathlib import Path
+
+          package = tomllib.loads(Path("recipes/base/nawa/recipe.toml").read_text()).get("package", {})
+          matches = [i for i in package.get("sources", []) if isinstance(i, dict) and i.get("name") == "nawa"]
+          if package.get("name") != "nawa" or len(matches) != 1:
+              raise SystemExit("expected one recipe-pinned Nawa source")
+          url, digest = matches[0].get("url", ""), matches[0].get("sha256", "")
+          match = re.fullmatch(r"https://github\.com/mrdevmohamed/nawa/archive/([0-9a-f]{40})\.tar\.gz", url)
+          if not match or not re.fullmatch(r"[0-9a-f]{64}", digest) or digest == "0" * 64:
+              raise SystemExit("invalid Nawa source URL or SHA-256 in the recipe")
+          print(f"NAWA_SOURCE_COMMIT={match.group(1)}")
+          print(f"NAWA_SOURCE_SHA256={digest}")
+          print(f"NAWA_SOURCE_URL={url}")
+          PY
+          # shellcheck source=/dev/null
+          source "$pin_env"
+          archive="$RUNNER_TEMP/nawa-source.tar.gz"
+          curl --fail --location --retry 3 --connect-timeout 20 "$NAWA_SOURCE_URL" --output "$archive"
+          echo "$NAWA_SOURCE_SHA256  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/nawa-source"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/nawa-source"
+          source_dir="$RUNNER_TEMP/nawa-source/nawa-$NAWA_SOURCE_COMMIT"
+          cargo build --manifest-path "$source_dir/Cargo.toml" --release --locked
+          echo "NAWA_BIN=$source_dir/target/release/nawa" >> "$GITHUB_ENV"
+
+      # Everything the shards built in this run.
+      - name: Download the archives built in this run
+        uses: actions/download-artifact@v4
+        with:
+          pattern: built-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/schema-v5/built
+
+      # Everything else of the complete set is already published.
+      - name: Fetch the archives that are already published
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/schema-v5"
+          built="$root/built"
+          mkdir -p "$built"
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$root/releases.json"
+          python3 -I scripts/distributed-releases.py list \
+            --releases-json "$root/releases.json" --stable-tag stable-v5 --index-version 5 > "$root/published.tsv"
+          # every archive (main, doc, lang) of every current recipe
+          names="$(python3 -I - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(" ".join(tomllib.loads(p.read_text(encoding="utf-8"))["package"]["name"]
+                         for p in sorted(Path("recipes").glob("*/*/recipe.toml"))))
+          PY
+          )"
+          python3 -I scripts/plan-build-shards.py assets --recipes recipes --names "$names" | sort -u > "$root/wanted.txt"
+          : > "$root/fetch.nul"
+          while IFS=$'\t' read -r tag asset; do
+            [[ -n "$asset" ]] || continue
+            [[ "$tag" =~ ^packages-v5-[0-9]{4,}$ && "$asset" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*[.]nawa[.]tar[.]zst$ ]] || continue
+            grep -qxF "$asset" "$root/wanted.txt" || continue
+            [[ -s "$built/$asset" ]] && continue
+            printf '%s\0%s\0' "$tag" "$asset" >> "$root/fetch.nul"
+          done < "$root/published.tsv"
+          export T="$root/fetch" PKG_REPO
+          mkdir -p "$T/build/out"
+          pending="$root/fetch.nul"
+          for round in 0 1 2 3; do
+            [[ -s "$pending" ]] || break
+            (( round == 0 )) || { echo "retry round $round"; sleep $((round * 20)); }
+            (( round < 3 )) || export FETCH_VIA_API=1
+            : > "$root/fetch.failed"; export failed="$root/fetch.failed"
+            # shellcheck disable=SC2016
+            xargs -0 -r -n 2 -P 4 bash -c 'bash scripts/fetch-published-package.sh "$1" "$2" || printf "%s\0%s\0" "$1" "$2" >> "$failed"' _ < "$pending"
+            mv -f "$root/fetch.failed" "$pending"
+          done
+          if [[ -s "$pending" ]]; then
+            echo "::error::could not download these published archives:"; tr '\0' '\n' < "$pending" | paste - - ; exit 1
+          fi
+          find "$T/build/out" -maxdepth 1 -name '*.nawa.tar.zst' -exec mv -n -t "$built" {} +
+          echo "built here: $(find "$built" -name '*.nawa.tar.zst' | wc -l) archive(s) in total"
+
+      - name: Prepare and verify the complete schema-v5 repository
+        id: prepare
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/schema-v5"
+          printf '%s' "$NAWA_SIGN_KEY_B64" | base64 --decode > "$root/nawa.sec"
+          chmod 600 "$root/nawa.sec"
+          python3 -I scripts/publish-schema-v5.py prepare \
+            --recipes recipes \
+            --source-dir "$root/built" \
+            --archive-dir "$root/packages" \
+            --nawa "$NAWA_BIN" \
+            --signing-key "$root/nawa.sec" \
+            --public-key dist/nawa.pub \
+            --repository "$GITHUB_REPOSITORY" \
+            --stable-tag stable-v5 \
+            --revision "$GITHUB_SHA" \
+            --releases-json "$root/releases.json" \
+            --planner scripts/distributed-releases.py \
+            --plan "$root/plan.json" \
+            --locations "$root/locations.toml" \
+            --existing-dir "$root/existing"
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable package and recipe shards
+        env:
+          PLAN_DIR: ${{ steps.prepare.outputs.root }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "$tag" --notes "Immutable schema-v5 package archive shard."
+          done < <(python3 -I scripts/distributed-releases.py create --plan "$PLAN_DIR/plan.json")
+          mapfile -t tags < <(python3 -I -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])).get("uploads", {}))))' "$PLAN_DIR/plan.json")
+          for tag in "${tags[@]}"; do
+            [[ -n "$tag" ]] || continue
+            mapfile -t assets < <(python3 -I scripts/distributed-releases.py uploads \
+              --plan "$PLAN_DIR/plan.json" --repo-dir "$PLAN_DIR/packages" --tag "$tag")
+            ((${#assets[@]} > 0)) || continue
+            gh release upload "$tag" --repo "$GITHUB_REPOSITORY" "${assets[@]}"
+          done
+
+      # The index goes last: until then clients keep seeing the previous, consistent repository.
+      - name: Publish the signed stable-v5 index
+        env:
+          PLAN_DIR: ${{ steps.prepare.outputs.root }}
+        run: |
+          set -euo pipefail
+          if ! gh release view stable-v5 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create stable-v5 --repo "$GITHUB_REPOSITORY" \
+              --title "Nawa schema-v5 repository" \
+              --notes "Signed schema-v5 repository index. Package archives are in immutable packages-v5-NNNN releases."
+          fi
+          gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" "$PLAN_DIR/packages/index.toml.sig" --clobber
+          gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" "$PLAN_DIR/packages/index.toml" --clobber
+          {
+            echo "### Published stable-v5"
+            echo "Revision \`$GITHUB_SHA\`; $(grep -c '^\[\[package\]\]' "$PLAN_DIR/packages/index.toml") package archive(s) in the signed index."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # nawa refuses to install a package that ships a file another one owns.
+      # Reported after publishing: the run turns red and names the files.
+      - name: No two packages of a flavor may ship the same file
+        if: ${{ always() && steps.prepare.conclusion == 'success' }}
+        run: |
+          python3 -I scripts/test-file-conflicts.py
+          python3 -I scripts/check-file-conflicts.py "$RUNNER_TEMP/schema-v5/packages"
 
   telegram-notify:
     name: Telegram notification

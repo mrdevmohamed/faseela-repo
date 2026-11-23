@@ -19,6 +19,7 @@ spec.loader.exec_module(planner)
 declared = called[True]["workflow_call"]["inputs"]
 jobs = caller["jobs"]
 waves = [f"build-w{n}" for n in range(planner.MAX_WAVES + 1)]
+steps = called["jobs"]["build"]["steps"]
 
 
 class ShardedWorkflowTests(unittest.TestCase):
@@ -28,7 +29,7 @@ class ShardedWorkflowTests(unittest.TestCase):
 
     def test_wave_jobs_pass_only_declared_inputs_and_all_required_ones(self):
         required = {k for k, v in declared.items() if v.get("required")}
-        for name in [*waves, "publish"]:
+        for name in waves:
             passed = set(jobs[name]["with"])
             self.assertLessEqual(passed, set(declared), (name, passed - set(declared)))
             self.assertLessEqual(required, passed, name)
@@ -36,7 +37,7 @@ class ShardedWorkflowTests(unittest.TestCase):
     def test_every_job_learns_whether_nawa_is_selected(self):
         # Without it only the shard that builds nawa would bootstrap the pinned
         # client and every other job would fail on the old rootfs nawa.
-        for name in [*waves, "publish"]:
+        for name in waves:
             self.assertIn("nawa_selected", jobs[name]["with"], name)
 
     def test_every_wave_is_a_non_failfast_matrix_over_its_own_output(self):
@@ -45,47 +46,64 @@ class ShardedWorkflowTests(unittest.TestCase):
             self.assertIs(job["strategy"]["fail-fast"], False)
             self.assertIn(f"needs.plan.outputs.wave{number}", job["strategy"]["matrix"])
             self.assertIn(f"wave{number}_count != '0'", job["if"])
-            self.assertEqual(job["with"]["mode"], "shard")
 
     def test_waves_run_in_order_and_publish_waits_for_all(self):
         for index, name in enumerate(waves):
             self.assertEqual(jobs[name]["needs"], ["select", "plan", *waves[:index]])
         self.assertEqual(jobs["publish"]["needs"], ["select", "plan", *waves])
-        self.assertEqual(jobs["publish"]["with"]["mode"], "finalize")
 
     def test_plan_exposes_every_matrix_the_emitter_writes(self):
         outputs = set(jobs["plan"]["outputs"])
         for number in range(planner.MAX_WAVES + 1):
             self.assertIn(f"wave{number}", outputs)
             self.assertIn(f"wave{number}_count", outputs)
-        self.assertIn("cache_prefix", outputs)
+        self.assertIn("toolchain_done", outputs)
 
     def test_matrix_fields_used_by_the_calls_exist_in_planned_shards(self):
-        shard = {"id", "pkgs", "needs", "waits"}
         used = {"id", "pkgs", "needs", "waits"}
         sample = planner.plan({"a": {"name": "a", "category": "x", "stem": "a-1-1", "deps": set(), "relations": False}},
                               ["a"], [], set(), set(), {})["waves"][0][0]
         self.assertLessEqual(used, set(sample))
-        self.assertLessEqual(shard, set(sample))
 
-    def test_signing_key_and_publication_belong_to_the_final_job(self):
-        for step in called["jobs"]["build"]["steps"]:
-            text = yaml.dump(step)
-            if "NAWA_SIGN_KEY_B64" in text or step.get("id") == "publish":
-                self.assertIn("inputs.mode == 'finalize'", step.get("if", ""), step.get("name"))
+    def test_publishing_is_main_only_and_needs_every_job_to_succeed(self):
+        condition = jobs["publish"]["if"]
+        self.assertIn("github.event_name != 'pull_request'", condition)
+        self.assertIn("github.ref == 'refs/heads/main'", condition)
+        self.assertIn("!contains(needs.*.result, 'failure')", condition)
+        self.assertIn("!contains(needs.*.result, 'cancelled')", condition)
 
-    def test_shard_only_steps_never_run_in_the_final_job_and_vice_versa(self):
-        for step in called["jobs"]["build"]["steps"]:
-            name = step.get("name", "")
-            if name.startswith(("Build this shard", "Save this shard", "Collect build logs")):
-                self.assertIn("inputs.mode == 'shard'", step["if"], name)
-            if name.startswith(("Merge the shard records", "No two packages", "Publish to the")):
-                self.assertIn("inputs.mode == 'finalize'", step["if"], name)
+    def test_signing_key_is_only_in_the_publish_job(self):
+        self.assertNotIn("NAWA_SIGN_KEY_B64", yaml.dump(called))
+        for name, job in jobs.items():
+            self.assertEqual("NAWA_SIGN_KEY_B64" in yaml.dump(job), name == "publish", name)
 
-    def test_shard_log_artifacts_do_not_collide(self):
-        uploads = [s for s in called["jobs"]["build"]["steps"] if str(s.get("uses", "")).startswith("actions/upload-artifact")]
+    def test_shard_jobs_cannot_write_releases(self):
+        self.assertEqual(called["jobs"]["build"]["permissions"]["contents"], "read")
+        for name in waves:
+            self.assertEqual(jobs[name]["permissions"]["contents"], "read", name)
+
+    def test_every_shard_uploads_its_own_archive_artifact(self):
+        uploads = [s for s in steps if str(s.get("uses", "")).startswith("actions/upload-artifact")
+                   and s["with"]["name"].startswith("built-")]
         self.assertEqual(len(uploads), 1)
         self.assertIn("inputs.shard_id", uploads[0]["with"]["name"])
+        self.assertIn("always()", uploads[0]["if"])  # finished work is kept when a package failed
+
+    def test_shard_log_artifacts_do_not_collide(self):
+        logs = [s for s in steps if str(s.get("uses", "")).startswith("actions/upload-artifact")
+                and s["with"]["name"].startswith("package-build-logs")]
+        self.assertEqual(len(logs), 1)
+        self.assertIn("inputs.shard_id", logs[0]["with"]["name"])
+
+    def test_publish_gathers_artifacts_and_published_archives_into_one_set(self):
+        text = yaml.dump(jobs["publish"])
+        self.assertIn("pattern: built-*", text)
+        self.assertIn("merge-multiple: true", text)
+        self.assertIn("publish-schema-v5.py prepare", text)
+        # the index is published after the immutable archives
+        names = [s.get("name", "") for s in jobs["publish"]["steps"]]
+        self.assertLess(names.index("Publish immutable package and recipe shards"),
+                        names.index("Publish the signed stable-v5 index"))
 
     def test_build_step_stays_inside_the_job_limit(self):
         build = called["jobs"]["build"]

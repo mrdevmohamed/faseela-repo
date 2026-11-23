@@ -25,15 +25,25 @@ a = sys.argv[1:]
 def opt(name, default=None):
     return a[a.index(name) + 1] if name in a else default
 if a[0] == "api":
+    ids = {}
     out = []
     for d in sorted(root.iterdir()) if root.exists() else []:
-        out.append({"tag_name": d.name, "draft": True, "assets": [
-            {"name": f.name, "digest": "sha256:" + hashlib.sha256(f.read_bytes()).hexdigest()}
-            for f in sorted(d.iterdir())]})
+        assets = []
+        for f in sorted(d.iterdir()):
+            ids[len(ids) + 1000] = f
+            assets.append({"id": len(ids) + 999, "name": f.name,
+                           "digest": "sha256:" + hashlib.sha256(f.read_bytes()).hexdigest()})
+        out.append({"tag_name": d.name, "draft": True, "assets": assets})
+    for arg in a:
+        if "/releases/assets/" in arg:
+            # an asset is addressed by id only; the tag endpoint is unusable for drafts
+            if os.environ.get("FAKE_GH_ASSET_FAIL"): sys.exit(1)
+            sys.stdout.buffer.write(ids[int(arg.rsplit("/", 1)[1])].read_bytes()); sys.exit(0)
     print(json.dumps([out])); sys.exit(0)
 cmd, tag = a[0] + " " + a[1], (a[2] if len(a) > 2 else "")
 rel = root / tag
 if cmd == "release view":
+    if os.environ.get("FAKE_GH_NO_TAG_DOWNLOAD"): print("release not found", file=sys.stderr); sys.exit(1)
     sys.exit(0 if rel.is_dir() else 1)
 if cmd == "release create":
     rel.mkdir(parents=True, exist_ok=True); sys.exit(0)
@@ -44,6 +54,7 @@ if cmd == "release upload":
             shutil.copy2(f, rel / Path(f).name)
     sys.exit(0)
 if cmd == "release download":
+    if os.environ.get("FAKE_GH_NO_TAG_DOWNLOAD"): print("release not found", file=sys.stderr); sys.exit(1)
     n = 0
     for f in sorted(rel.iterdir()) if rel.is_dir() else []:
         if fnmatch.fnmatch(f.name, opt("--pattern")):
@@ -112,6 +123,23 @@ class ShardCacheTests(unittest.TestCase):
         self.assertEqual(self.run_cli("restore", *self.common, "--recipes", str(self.recipes),
                                       "--out-dir", str(dest), "--names", "lib"), 0)
         self.assertEqual([p.name for p in dest.iterdir()], ["lib-1.0-1.nawa.tar.zst"])
+
+    def test_draft_lookup_by_tag_is_never_needed(self):
+        # `gh release view/download TAG` answered "release not found" for drafts in CI:
+        # listing and asset ids must be enough to restore and to merge
+        self.build("lib-1.0-1", "w1s1")
+        self.build("app-1.0-1", "w1s2")
+        os.environ["FAKE_GH_NO_TAG_DOWNLOAD"] = "1"
+        self.addCleanup(os.environ.pop, "FAKE_GH_NO_TAG_DOWNLOAD", None)
+        dest = self.root / "restore"
+        self.assertEqual(self.run_cli("restore", *self.common, "--recipes", str(self.recipes),
+                                      "--out-dir", str(dest), "--all"), 0)
+        self.assertEqual(sorted(p.name for p in dest.iterdir()),
+                         ["app-1.0-1.nawa.tar.zst", "lib-1.0-1.nawa.tar.zst"])
+        self.assertEqual(self.run_cli("merge", *self.common, "--recipes", str(self.recipes),
+                                      "--run-id", "11", "--head-sha", "a" * 40), 0)
+        # no second draft with the manifest tag may appear
+        self.assertEqual(sum(1 for p in self.state.iterdir() if p.name.endswith("-manifest")), 1)
 
     def test_changed_dependency_invalidates_dependent_entry(self):
         self.build("lib-1.0-1", "w1s1")

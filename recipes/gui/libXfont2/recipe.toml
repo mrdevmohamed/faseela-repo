@@ -18,7 +18,7 @@ sha256 = "8b7b82fdeba48769b69433e8e3fbb984a5f6bf368b0d5f47abeec49de3e58efb"
 strip_components = 1
 
 [depends]
-build = ["pkgconf", "xorgproto", "libfontenc", "freetype", "font-util"]
+build = ["pkgconf", "xorgproto", "libfontenc", "freetype", "font-util", "xtrans"]
 run = ["libfontenc", "freetype"]
 
 [capabilities]

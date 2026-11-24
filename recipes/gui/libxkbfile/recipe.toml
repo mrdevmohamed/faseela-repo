@@ -17,7 +17,7 @@ strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto"]
-run = ["libX11"]
+run = ["libX11", "xorgproto"]
 
 [capabilities]
 provides = []

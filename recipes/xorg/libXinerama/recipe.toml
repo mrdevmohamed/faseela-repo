@@ -15,8 +15,8 @@ sha256 = "d00fc1599c303dc5cbc122b8068bdc7405d6fcb19060f4597fc51bd3a8be51d7"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto"]
-run = ["libX11"]
+build = ["meson", "ninja", "pkgconf", "libX11", "xorgproto", "libXext"]
+run = ["libX11", "xorgproto", "libXext"]
 
 [capabilities]
 provides = []

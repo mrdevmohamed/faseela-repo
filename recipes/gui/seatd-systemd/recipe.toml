@@ -4,7 +4,7 @@
 [package]
 name = "seatd-systemd"
 version = "0.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Shared systemd unit and DRM permissions for seatd-based Wayland desktops"
@@ -47,11 +47,11 @@ printf '%s\n' 'enable seatd.service' > %{pkgdir}/usr/lib/systemd/system-preset/8
 
 # Render nodes are safe for unprivileged GPU command submission. Keep the
 # primary DRM nodes restricted; compositor clients only need render access.
-install -d -m755 %{pkgdir}/etc/udev/rules.d
-cat > %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules <<'DRM'
+install -d -m755 %{pkgdir}/usr/lib/udev/rules.d
+cat > %{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules <<'DRM'
 SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"
 DRM
-chmod 644 %{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules
+chmod 644 %{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules
 '''
 
 [hooks]

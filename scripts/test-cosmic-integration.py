@@ -221,12 +221,12 @@ assert "linux-pam" in greetd["depends"]["run"]
 seatd = recipe("gui", "seatd-systemd")
 seatd_install = seatd["build"]["install"]
 assert "/usr/lib/systemd/system/seatd.service" in seatd_install
-assert "/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
+assert "/usr/lib/udev/rules.d/70-faseela-drm.rules" in seatd_install
 assert "ensure-system-account group" in seatd["hooks"]["post_install"]
 gui_session = recipe("gui", "gui-session")
 assert "seatd-systemd" in gui_session["depends"]["run"]
 assert "/etc/sv/seatd/run" not in gui_session["build"]["install"]
-assert "/etc/udev/rules.d/70-faseela-drm.rules" not in gui_session["build"]["install"]
+assert "/usr/lib/udev/rules.d/70-faseela-drm.rules" not in gui_session["build"]["install"]
 
 # The shared audio supervisor must remain alive for COSMIC until its session ends.
 audio = recipe("gui", "audio-session")

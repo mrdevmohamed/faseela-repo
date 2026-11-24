@@ -3,7 +3,7 @@
 [package]
 name = "network-manager"
 version = "1.58.1"
-rel = 10
+rel = 11
 arch = ["x86_64"]
 summary = "NetworkManager daemon and nmcli with Wi-Fi, polkit and wpa_supplicant support"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
@@ -65,8 +65,12 @@ test -s "$NM_DISPATCHER_POLICY" || {
     echo "NetworkManager: missing D-Bus system policy: $NM_DISPATCHER_POLICY" >&2
     exit 1
 }
-install -d -m755 %{pkgdir}/etc/NetworkManager
-cat > %{pkgdir}/etc/NetworkManager/NetworkManager.conf <<'CONF'
+# Vendor defaults: NetworkManager merges /usr/lib/NetworkManager/conf.d before
+# /etc/NetworkManager/NetworkManager.conf and /etc/NetworkManager/conf.d, so the
+# administrator's files keep the last word and nothing here is a config file
+# nawa has to protect.
+install -d -m755 %{pkgdir}/usr/lib/NetworkManager/conf.d
+cat > %{pkgdir}/usr/lib/NetworkManager/conf.d/00-faseela.conf <<'CONF'
 [main]
 plugins=keyfile
 dhcp=internal

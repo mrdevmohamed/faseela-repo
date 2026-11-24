@@ -12,6 +12,10 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 name = "mtdev"
 url = "https://bitmath.org/code/mtdev/mtdev-%{version}.tar.bz2"
 sha256 = "15d7b28da8ac71d8bc8c9287c2045fd174267bc740bec10cfda332dc1204e0e0"
+mirrors = [
+  "https://deb.debian.org/debian/pool/main/m/mtdev/mtdev_%{version}.orig.tar.bz2",
+  "https://archive.ubuntu.com/ubuntu/pool/main/m/mtdev/mtdev_%{version}.orig.tar.bz2",
+]
 strip_components = 1
 
 [depends]

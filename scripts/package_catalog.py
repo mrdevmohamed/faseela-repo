@@ -150,7 +150,9 @@ def parse_pkginfo(text: str, where: str) -> dict:
 
 def _safe_parts(name: str, where: str):
     """Return normalized archive path components, rejecting traversal."""
-    if not isinstance(name, str) or not name or "\x00" in name or "\\" in name:
+    # A backslash is an ordinary file name character on Linux (systemd ships
+    # units such as system-systemd\x2dmute\x2dconsole.slice), not a separator.
+    if not isinstance(name, str) or not name or "\x00" in name:
         raise CatalogError(f"{where}: unsafe archive path {name!r}")
     if name.startswith("/"):
         raise CatalogError(f"{where}: absolute archive path {name!r}")
@@ -265,7 +267,7 @@ def validate_record(rec, where: str) -> dict:
                 or item.get("kind") not in ("dir", "other")):
             raise CatalogError(f"{where}: record has a malformed files entry {item!r}")
         raw_path = item["path"]
-        if (not raw_path or raw_path.startswith("/") or "\\" in raw_path
+        if (not raw_path or raw_path.startswith("/")
                 or "\x00" in raw_path or any(part in ("", ".", "..") for part in raw_path.split("/"))):
             raise CatalogError(f"{where}: record has an unsafe payload path {raw_path!r}")
         if raw_path in seen_paths:

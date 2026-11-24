@@ -156,7 +156,7 @@ class Records(Base):
     def test_record_rejects_unsafe_and_duplicate_paths(self):
         arc = self.archive("tool", {"usr/bin/tool": b"x"})
         rec = pc.make_record(arc)
-        for bad in ("../escape", "/absolute", "usr//bin/tool", "usr/./bin/tool", r"usr\\bin\\tool"):
+        for bad in ("../escape", "/absolute", "usr//bin/tool", "usr/./bin/tool"):
             changed = dict(rec)
             changed["files"] = [{"path": bad, "kind": "other"}]
             with self.subTest(path=bad), self.assertRaises(pc.CatalogError):
@@ -166,6 +166,15 @@ class Records(Base):
                             {"path": "usr/bin/tool", "kind": "other"}]
         with self.assertRaises(pc.CatalogError):
             pc.validate_record(changed, "test")
+
+    def test_backslash_is_an_ordinary_file_name_character(self):
+        name = "usr/lib/systemd/system/system-systemd\\x2dmute\\x2dconsole.slice"
+        rec = pc.make_record(self.archive("tool", {name: b"x"}))
+        self.assertIn({"path": name, "kind": "other"}, rec["files"])
+        pc.validate_record(rec, "test")
+        # a backslash never hides a traversal component: only "/" separates
+        with self.assertRaises(pc.CatalogError):
+            pc.make_record(self.archive("tool", {"usr/..\\x/../../escape": b"x"}))
 
     def test_archive_payload_path_traversal_is_rejected(self):
         arc = self.archive("tool", {"../escape": b"x"})

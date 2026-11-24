@@ -103,9 +103,9 @@ ForwardToSyslog=no
 EOF
 
 # --- tmpfiles ------------------------------------------------------------------
-# L+ replaces base-files' static /etc/resolv.conf at boot with the resolved stub.
-# Doing it through tmpfiles (not at package install) keeps package builds and
-# chroots, which carry the host's resolv.conf, from losing DNS.
+# L+ creates /etc/resolv.conf at boot as a link to the resolved stub (no package
+# ships the file). Doing it through tmpfiles (not at package install) keeps
+# package builds and chroots, which carry the host's resolv.conf, from losing DNS.
 install -d -m755 %{pkgdir}/usr/lib/tmpfiles.d
 cat > %{pkgdir}/usr/lib/tmpfiles.d/faseela.conf <<'EOF'
 L+ /etc/resolv.conf - - - - ../run/systemd/resolve/stub-resolv.conf

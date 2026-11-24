@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 13
+rel = 14
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
@@ -135,9 +135,11 @@ cat > %{pkgdir}/etc/hosts <<'EOF'
 ::1        localhost
 EOF
 
-cat > %{pkgdir}/etc/resolv.conf <<'EOF'
-# Managed automatically by dhcpcd at boot.
-EOF
+# /etc/resolv.conf is deliberately NOT shipped. It is machine state owned by the
+# network stack (systemd-tmpfiles links it to the resolved stub, dhcpcd writes
+# it otherwise), and build roots and chroots carry the host's copy. A packaged
+# placeholder only ever differs from that, so nawa would divert it to
+# resolv.conf.nawa-new on every install.
 
 cat > %{pkgdir}/etc/shells <<'EOF'
 /bin/sh

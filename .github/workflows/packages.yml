@@ -947,7 +947,7 @@ jobs:
                   --signing-key "$ROOT/nawa.sec" --repository "$GITHUB_REPOSITORY" --stable-tag stable-v5
                   --revision "$GITHUB_SHA" --records-dir "$ROOT/meta/records"
                   --straggler-dir "$ROOT/fetch/build/out" --out-dir "$ROOT/out" --plan "$ROOT/plan.json"
-                  --existing-dir "$ROOT/existing")
+                  --existing-dir "$ROOT/existing" --groups groups.toml)
           [[ "$HAVE_INDEX" == true ]] && update+=(--base-index "$ROOT/base/index.toml")
           python3 -I scripts/publish-schema-v5.py update "${common[@]}" "${update[@]}"
 
@@ -1009,6 +1009,8 @@ jobs:
               --notes "Signed schema-v5 repository index. Package archives are in immutable packages-v5-NNNN releases."
           fi
           up() { gh release upload stable-v5 --repo "$GITHUB_REPOSITORY" --clobber "$@"; }
+          # The index references groups.toml by digest: the file must be there first.
+          up "$ROOT/out/groups.toml"
           up "$ROOT/catalog/$CATALOG_FILE"
           up "$ROOT/catalog/catalog.toml.sig"
           up "$ROOT/catalog/catalog.toml"
@@ -1018,8 +1020,9 @@ jobs:
           # What clients (and the next run) will read must be what was signed here.
           mkdir -p "$ROOT/check"
           gh release download stable-v5 --repo "$GITHUB_REPOSITORY" --dir "$ROOT/check" --clobber \
-            --pattern index.toml --pattern index.toml.sig
+            --pattern index.toml --pattern index.toml.sig --pattern groups.toml
           cmp "$ROOT/check/index.toml" "$ROOT/out/index.toml"
+          cmp "$ROOT/check/groups.toml" groups.toml
           "$RUNNER_TEMP/nawa/nawa" verify "$ROOT/check/index.toml" --key dist/nawa.pub
 
           # The previous catalog file is superseded by the pointer that now names the new one.

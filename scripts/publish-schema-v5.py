@@ -635,7 +635,7 @@ def validate_index_identities(recipe_map: dict[str, dict], indexed: dict[str, di
 
 def verify_updated(
     out_dir: Path, nawa: Path, public_key: Path, recipe_map: dict[str, dict],
-    repository: str, holders: dict[str, set[str]], recipe_tag: str,
+    repository: str, holders: dict[str, set[str]], recipe_tag: str, groups: Path | None = None,
 ) -> dict[str, dict]:
     """Check the index `update` wrote without opening any archive."""
     index_path = out_dir / "index.toml"
@@ -683,6 +683,18 @@ def verify_updated(
         parts = url[len(prefix):].split("/")
         if len(parts) != 2 or unquote(parts[1]) != name or parts[0] not in holders.get(name, set()):
             raise PublishError(f"index URL does not point at a signed release asset: {name}")
+    if groups is not None:
+        groups_meta = doc.get("groups")
+        groups_path = out_dir / "groups.toml"
+        if (
+            not isinstance(groups_meta, dict)
+            or groups_meta.get("file") != "groups.toml"
+            or not groups_path.is_file()
+            or checksum(groups_path) != groups_meta.get("sha256")
+            or groups_path.stat().st_size != groups_meta.get("size")
+            or groups_path.read_bytes() != groups.read_bytes()
+        ):
+            raise PublishError("generated index does not authenticate the group catalog it was given")
     recipes_meta = doc.get("recipes")
     if not isinstance(recipes_meta, dict):
         raise PublishError("generated index does not authenticate a recipe snapshot")
@@ -783,6 +795,8 @@ def update_repository(args: argparse.Namespace) -> None:
                 "--locations", str(locations), "--recipes", str(args.recipes),
                 "--recipes-rev", args.revision, "--key", str(args.signing_key),
             ]
+            if args.groups is not None:
+                command += ["--groups", str(args.groups)]
             if delta.needed:
                 command += ["--add-entries", str(add_entries)]
             for f in delta.remove:
@@ -807,7 +821,9 @@ def update_repository(args: argparse.Namespace) -> None:
         (args.out_dir / "index.toml.sig").unlink()
         run_update(recipe_tag)
 
-    verify_updated(args.out_dir, args.nawa, args.public_key, recipe_map, args.repository, holders, recipe_tag)
+    verify_updated(
+        args.out_dir, args.nawa, args.public_key, recipe_map, args.repository, holders, recipe_tag, args.groups
+    )
     print(
         f"updated the index: {len(delta.needed)} added ({len(delta.stragglers)} derived from downloads), "
         f"{len(delta.remove)} removed, {len(delta.drop)} dropped; plan: {args.plan}"
@@ -919,6 +935,7 @@ def main() -> int:
             p.add_argument("--plan", type=Path, required=True)
             p.add_argument("--existing-dir", type=Path)
             p.add_argument("--max-assets", type=int, default=900)
+            p.add_argument("--groups", type=Path, help="group catalog to publish as signed index metadata")
 
     cat = sub.add_parser("catalog", help="previous signed catalog + new records -> new signed catalog")
     cat.add_argument("--index", type=Path, required=True, help="the NEW index.toml")

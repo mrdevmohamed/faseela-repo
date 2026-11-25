@@ -110,7 +110,7 @@ class Fixture:
         return meta
 
     def update(self, meta: Path | None, base: Path | None, *, stragglers: Path | None = None,
-               revision: str = "abc1234", fail: str | None = None) -> Path:
+               revision: str = "abc1234", fail: str | None = None, groups: Path | None = None) -> Path:
         self.round += 1
         out = self.root / f"out-{self.round}"
         argv = ["update", "--recipes", self.recipes, "--releases-json", self.listing(), "--nawa", self.nawa,
@@ -123,6 +123,8 @@ class Fixture:
             argv += ["--base-index", base]
         if stragglers:
             argv += ["--straggler-dir", stragglers]
+        if groups:
+            argv += ["--groups", groups]
         publish(*argv, expect_fail=fail)
         return out
 
@@ -154,8 +156,14 @@ def main() -> int:
 
         # 1. first publication: nothing published, no base index.
         meta = fx.wave([make_archive(arch, "foo", "1.0", 1), make_archive(arch, "bar", "2.0", 1)])
-        out1 = fx.update(meta, None)
+        groups1 = root / "groups-1.toml"
+        groups1.write_text('[[group]]\nschema = 1\nid = "tools"\nname = "Tools"\nmandatory = ["foo"]\n')
+        out1 = fx.update(meta, None, groups=groups1)
         idx1 = entries(out1 / "index.toml")
+        groups_ref1 = tomllib.loads((out1 / "index.toml").read_text())["groups"]
+        assert groups_ref1["file"] == "groups.toml", groups_ref1
+        assert groups_ref1["sha256"] == hashlib.sha256(groups1.read_bytes()).hexdigest(), groups_ref1
+        assert (out1 / "groups.toml").read_bytes() == groups1.read_bytes()
         assert sorted(idx1) == ["bar-2.0-1" + SUFFIX, "foo-1.0-1" + SUFFIX], sorted(idx1)
         assert all("download_url" in e and "packages-v5-0001" in e["download_url"] for e in idx1.values())
         fx.upload_snapshot(out1)
@@ -171,7 +179,11 @@ def main() -> int:
         # 3. foo is bumped and baz is new; bar is NOT opened, downloaded or rebuilt.
         write_recipe(fx.recipes, "foo", "1.1", 1)
         meta2 = fx.wave([make_archive(arch, "foo", "1.1", 1), make_archive(arch, "baz", "3.0", 1)])
-        out2 = fx.update(meta2, out1 / "index.toml", revision="def5678")
+        groups2 = root / "groups-2.toml"
+        groups2.write_text(groups1.read_text() + '\n[[group]]\nschema = 1\nid = "more"\nname = "More"\nmandatory = ["bar"]\n')
+        out2 = fx.update(meta2, out1 / "index.toml", revision="def5678", groups=groups2)
+        groups_ref2 = tomllib.loads((out2 / "index.toml").read_text())["groups"]
+        assert groups_ref2["sha256"] == hashlib.sha256(groups2.read_bytes()).hexdigest(), "a changed catalog is republished"
         idx2 = entries(out2 / "index.toml")
         assert sorted(idx2) == ["bar-2.0-1" + SUFFIX, "baz-3.0-1" + SUFFIX, "foo-1.1-1" + SUFFIX], sorted(idx2)
         assert idx2["bar-2.0-1" + SUFFIX] == idx1["bar-2.0-1" + SUFFIX], "an untouched package entry must not change"

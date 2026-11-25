@@ -11,7 +11,7 @@
 [package]
 name = "nawa"
 version = "1.0.0"
-rel = 42
+rel = 43
 arch = ["x86_64"]
 summary = "nawa — this distribution's source-based package manager (self-hosting build)"
 license = ["GPL-3.0"]
@@ -44,8 +44,8 @@ conflicts = []
 replaces = []
 [[package.sources]]
 name = "nawa"
-url = "https://github.com/mrdevmohamed/nawa/archive/d326a498fd0cb35d6fc22e43dc796c23bdb0c873.tar.gz"
-sha256 = "fa6fcd12c9e8a0da1edc6b1bfec4091f67d3f104db36af473a9cfc40726370af"
+url = "https://github.com/mrdevmohamed/nawa/archive/8e1cfef7a41f3ec7a8d94339c498c20967e679f1.tar.gz"
+sha256 = "610a47e94c27a7564c7380a7f192c063279b4f5067fea8c999bf66a0a520a8f6"
 strip_components = 1
 
 [fetch.cargo]

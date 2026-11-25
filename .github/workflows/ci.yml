@@ -27,8 +27,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Calculate verified Nawa source pin (temporary)
-        run: python3 scripts/pin-nawa-source.py 88042986c1fef9635d802367349cb7f10fad92c8
       - name: Huion HS64 kernel driver support regression check
         run: python3 -I scripts/test-huion-support.py
       - name: Huion tablet control-panel package regression check

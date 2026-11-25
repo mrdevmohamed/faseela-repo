@@ -294,6 +294,31 @@ require(
     f"systemd-units still depends on replaced packages: {sorted(units_run & obsolete)}",
 )
 units_install = units["build"]["install"]
+
+# systemd-resolved is ordered before sysinit.target for early name resolution,
+# while dbus.socket starts after sysinit.target. Adding After=dbus.service to
+# resolved creates the cycle:
+# resolved -> dbus.service -> dbus.socket -> sysinit.target -> resolved.
+# The D-Bus ordering drop-in is valid for logind and networkd, but not resolved.
+dbus_dropin_loop = re.search(
+    r"for u in ([^\n]+); do\n(.*?)\ndone",
+    units_install,
+    re.DOTALL,
+)
+require(
+    dbus_dropin_loop is not None
+    and set(dbus_dropin_loop.group(1).split()) == {"systemd-logind", "systemd-networkd"},
+    "D-Bus ordering drop-in must target logind and networkd only; resolved must not wait for dbus.service",
+)
+require(
+    "systemd-resolved.service.d/10-faseela-dbus.conf" not in units_install,
+    "systemd-resolved must not receive the D-Bus ordering drop-in (boot ordering cycle)",
+)
+require(
+    "[Unit]\nWants=dbus.service\nAfter=dbus.service\nEOF" in units_install,
+    "logind/networkd D-Bus drop-in must retain Wants and After",
+)
+
 for marker in (
     "80-faseela.preset",
     "enable systemd-networkd.service",

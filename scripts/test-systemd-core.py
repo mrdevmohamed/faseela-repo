@@ -301,7 +301,7 @@ units_install = units["build"]["install"]
 # resolved -> dbus.service -> dbus.socket -> sysinit.target -> resolved.
 # The D-Bus ordering drop-in is valid for logind and networkd, but not resolved.
 dbus_dropin_loop = re.search(
-    r"for u in ([^\\n]+); do\\n(.*?)\\ndone",
+    r"for u in ([^\n]+); do\n(.*?)\ndone",
     units_install,
     re.DOTALL,
 )
@@ -315,7 +315,7 @@ require(
     "systemd-resolved must not receive the D-Bus ordering drop-in (boot ordering cycle)",
 )
 require(
-    "[Unit]\\nWants=dbus.service\\nAfter=dbus.service\\nEOF" in units_install,
+    "[Unit]\nWants=dbus.service\nAfter=dbus.service\nEOF" in units_install,
     "logind/networkd D-Bus drop-in must retain Wants and After",
 )
 

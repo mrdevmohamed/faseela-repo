@@ -13,6 +13,7 @@ The **recipes** job includes:
 - Package selection and flavor resolution tests.
 - Regression tests for creative recipes, Podman prerequisites, firmware splits, audio, Vulkan, and desktop integration.
 - Package archive file-conflict and package-catalog tests.
+- The /etc policy check: recipes may not ship machine state or vendor defaults under `/etc` ([policy](etc-policy.md)).
 - Published-archive downloader and distributed-release planner tests.
 - Telegram notification regression tests.
 

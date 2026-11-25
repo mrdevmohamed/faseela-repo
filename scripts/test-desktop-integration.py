@@ -32,9 +32,9 @@ install_script = session["build"]["install"]
 seatd_runit = recipe("gui", "seatd-systemd")
 seatd_install = seatd_runit["build"]["install"]
 require_deps("gui", "gui-session", "run", {"seatd-systemd"})
-assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" not in install_script
+assert "%{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules" not in install_script
 assert "%{pkgdir}/etc/sv/seatd/run" not in install_script
-assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
+assert "%{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules" in seatd_install
 assert "%{pkgdir}/usr/lib/systemd/system/seatd.service" in seatd_install
 assert "ExecStart=/usr/bin/seatd -g seat" in seatd_install
 assert "ensure-system-account group" in seatd_runit["hooks"]["post_install"]

@@ -5,7 +5,7 @@
 [package]
 name = "base-files"
 version = "0.4"
-rel = 14
+rel = 15
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "FHS skeleton, merged-usr symlinks and core /etc files"
@@ -185,7 +185,12 @@ fi
 EOF
 cp %{pkgdir}/etc/skel/.bashrc %{pkgdir}/root/.bashrc
 
-cat > %{pkgdir}/etc/os-release <<'EOF'
+# The vendor copy lives in /usr (the distribution's identity, replaced with the
+# package); /etc/os-release is only the link systemd and every tool look for.
+# An administrator who needs a different identity replaces the link.
+install -d -m755 %{pkgdir}/usr/lib
+ln -s ../usr/lib/os-release %{pkgdir}/etc/os-release
+cat > %{pkgdir}/usr/lib/os-release <<'EOF'
 NAME="faseela"
 PRETTY_NAME="faseela 0.4"
 ID=faseela

@@ -41,6 +41,10 @@ jobs:
         run: python3 -I scripts/check-recipes.py
       - name: Test versioned recipe dependency parsing
         run: python3 -I scripts/test-check-recipes.py
+      - name: Check what recipes put under /etc
+        run: |
+          python3 -I scripts/test-etc-policy.py
+          python3 -I scripts/check-etc-policy.py
       - name: Validate package workflow syntax
         run: |
           set -euo pipefail

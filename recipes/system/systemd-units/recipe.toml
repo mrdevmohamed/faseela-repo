@@ -126,8 +126,12 @@ auth      required pam_deny.so
 password  required pam_deny.so
 EOF
 
-# --- the system bus must be up before logind, networkd and resolved ---------------
-for u in systemd-logind systemd-networkd systemd-resolved; do
+# --- the system bus must be up before logind and networkd -------------------------
+# Do not add this ordering to systemd-resolved: that unit is ordered before
+# sysinit.target, while dbus.socket is ordered after sysinit.target. Making
+# resolved wait for dbus.service therefore creates a boot ordering cycle:
+# resolved -> dbus.service -> dbus.socket -> sysinit.target -> resolved.
+for u in systemd-logind systemd-networkd; do
     install -d -m755 %{pkgdir}/usr/lib/systemd/system/$u.service.d
     cat > %{pkgdir}/usr/lib/systemd/system/$u.service.d/10-faseela-dbus.conf <<'EOF'
 [Unit]

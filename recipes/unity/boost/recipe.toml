@@ -18,7 +18,7 @@ sha256 = "72e81363dece294942cf4f0ccb86158b390b723d7b332a59a0f869709f306da6"
 strip_components = 1
 
 [depends]
-build = ["zlib"]
+build = ["zlib", "bison", "which"]
 run = ["zlib"]
 
 [capabilities]
@@ -30,7 +30,7 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "./bootstrap.sh --prefix=/usr --with-libraries=filesystem,serialization --with-toolset=gcc"
+configure = "YACC='bison -y' ./bootstrap.sh --prefix=/usr --with-libraries=filesystem,serialization --with-toolset=gcc"
 compile = "./b2 -j%{jobs} --layout=system variant=release link=shared threading=multi runtime-link=shared"
 install = '''
 ./b2 install -j%{jobs} --prefix=%{pkgdir}/usr --libdir=%{pkgdir}/usr/lib --layout=system variant=release link=shared threading=multi runtime-link=shared

@@ -1,7 +1,3 @@
-# Flathub is not imported here: the hook runs in a chroot without /proc or /dev
-# (mkflavor, image builds), where OSTree cannot create /var/lib/flatpak/repo and
-# a failing hook aborts the install. The signed descriptor shipped in
-# /usr/share/flatpak/remotes.d is Flatpak's static system-wide remote source.
 # flatpak recipe: Flatpak runtime, libflatpak API, OSTree integration and system helper.
 # System installations are authorized by Polkit through a system-D-Bus activated
 # helper. Faseela runs systemd and logind; the helper is started by D-Bus activation, so no
@@ -64,8 +60,8 @@ install -d -m755 %{pkgdir}/var/lib/flatpak
 post_install = '''
 /usr/libexec/faseela/ensure-system-account user flatpak flatpak "Flatpak system helper" /nonexistent /usr/bin/false
 install -d -m755 -o root -g root /var/lib/flatpak
-# Import Flathub into the system installation at package-install time.
-# This reads the signed descriptor locally and does not fetch application data.
-flatpak remote-add --system --if-not-exists flathub \
-    /usr/share/flatpak/remotes.d/flathub.flatpakrepo
+# Flathub is not imported here: the hook runs in a chroot without /proc or /dev
+# (mkflavor, image builds), where OSTree cannot create /var/lib/flatpak/repo and
+# a failing hook aborts the install. The signed descriptor shipped in
+# /usr/share/flatpak/remotes.d is Flatpak's static system-wide remote source.
 '''

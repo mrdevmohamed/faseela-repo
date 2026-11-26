@@ -66,7 +66,11 @@ assert "/usr/share/flatpak/remotes.d/flathub.flatpakrepo" in install
 assert "rm -rf" in install and "systemd-disabled" in install
 post = flatpak["hooks"]["post_install"]
 assert "ensure-system-account user flatpak flatpak" in post
-assert "flatpak remote-add --system --if-not-exists flathub" in post
+# The hook also runs inside image-build chroots that have no /proc or /dev, where
+# OSTree cannot create a repository: it must not invoke flatpak at all.
+assert "remote-add" not in post and not any(
+    line.startswith("flatpak ") for line in post.splitlines()
+)
 assert "/var/lib/flatpak" in post
 
 # The Flathub descriptor is upstream's signed source metadata, not a URL-only

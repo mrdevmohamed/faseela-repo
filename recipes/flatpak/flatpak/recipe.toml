@@ -1,3 +1,7 @@
+# Flathub is not imported here: the hook runs in a chroot without /proc or /dev
+# (mkflavor, image builds), where OSTree cannot create /var/lib/flatpak/repo and
+# a failing hook aborts the install. The signed descriptor shipped in
+# /usr/share/flatpak/remotes.d is Flatpak's static system-wide remote source.
 # flatpak recipe: Flatpak runtime, libflatpak API, OSTree integration and system helper.
 # System installations are authorized by Polkit through a system-D-Bus activated
 # helper. Faseela runs systemd and logind; the helper is started by D-Bus activation, so no
@@ -5,7 +9,7 @@
 [package]
 name = "flatpak"
 version = "1.18.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Application sandbox framework, CLI and libflatpak"
 license = ["LGPL-2.1-or-later"]

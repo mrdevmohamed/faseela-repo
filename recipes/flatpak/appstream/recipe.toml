@@ -1,0 +1,62 @@
+# flatpak recipe: AppStream — application metadata library and appstreamcli.
+[package]
+name = "appstream"
+version = "1.2.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Application metadata library and command-line tools"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "appstream"
+url = "https://www.freedesktop.org/software/appstream/releases/AppStream-%{version}.tar.xz"
+sha256 = "8daa01a4d66c73f036aa92af9bf76abfe8408eaa76fcda6ca54fa8ef5b93ed17"
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gperf", "gettext", "glib", "curl", "libxml2", "libxmlb", "libfyaml", "zstd"]
+run = ["glib", "curl", "libxml2", "libxmlb", "libfyaml", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''
+set -eu
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+# The translated metainfo of appstreamcli itself is built with itstool, a Python tool that
+# is not packaged and nothing here needs: keep the untranslated generated file for the
+# validation test and install no copy of it.
+python3 - <<'PY'
+import re
+path = "data/meson.build"
+text = open(path, encoding="utf-8").read()
+text, count = re.subn(r"metainfo_i18n = i18n\.itstool_join\(.*?\n\)\n", "metainfo_i18n = metainfo_with_relinfo\n", text, count=1, flags=re.S)
+assert count == 1, "itstool_join block not found"
+open(path, "w", encoding="utf-8").write(text)
+PY
+'''
+configure = '''
+set -eu
+# The release archive layout is not relied on: build from the directory that holds the
+# top-level meson.build.
+find . -maxdepth 2 | head -n 20
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+ls -A
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dsystemd=false -Dgir=false -Dvapi=false -Dstemming=false -Dcompose=false -Dqt=false -Dapt-support=false -Dtools=true -Dbash-completion=false -Dzstd-support=true -Dblake3-support=false -Ddisplay-detection=none -Ddocs=false -Dapidocs=false -Dinstall-docs=false -Dman=false
+'''
+compile = '''
+set -eu
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+ninja -C build
+'''
+install = '''
+set -eu
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+DESTDIR=%{pkgdir} meson install -C build
+'''

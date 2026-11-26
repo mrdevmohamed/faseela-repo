@@ -116,6 +116,11 @@ assert "CosmicBackground.desktop" not in bg["build"]["install"]
 
 store = recipe("cosmic", "cosmic-store")
 assert "FuturesUnordered::<tokio::sync::oneshot::Receiver" in store["build"]["compile"]
+assert "flatpak" in store["depends"]["build"]
+assert "flatpak" in store["depends"]["run"]
+assert "--features dbus-config,desktop,flatpak,logind,notify,single-instance,wgpu,wayland,xdg-portal" in store["build"]["compile"]
+assert "desktop-systemd" not in store["build"]["compile"]
+assert "flatpak" in recipe("cosmic", "cosmic-desktop")["depends"]["run"]
 for path in (
     "recipes/cosmic/cosmic-bg/recipe.toml",
     "recipes/greeter/cosmic-greeter/recipe.toml",

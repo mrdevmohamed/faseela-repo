@@ -18,6 +18,7 @@ recipes/
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging and Android phone integration apps: Telegram Desktop, NectarLink (opt-in)
+├── flatpak/     opt-in Flatpak engine (flatpak, OSTree, AppStream, GnuPG stack, Polkit agent); COSMIC pulls it in
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── security/   optional ProjectDiscovery reconnaissance and security tools (opt-in)
 ├── peripherals/ optional hardware integrations such as the Huion tablet control panel (opt-in)

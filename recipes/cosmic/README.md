@@ -66,6 +66,33 @@ disables `getty@tty1` and an enabled LightDM service before enabling
 switch explicitly. The package hook preserves a custom `/etc/greetd/config.toml`;
 it only replaces the stock agreety sample.
 
+## Flatpak and COSMIC Store
+
+The COSMIC desktop includes the Flatpak engine and `libflatpak`, and builds
+`cosmic-store` with its native Flatpak backend enabled. The Store discovers
+both **per-user** and **system** installations through the upstream backend;
+it does not shell out to a second package manager.
+
+- **System installation:** applications and runtimes live under
+  `/var/lib/flatpak`. Flathub is imported into this installation by the
+  Flatpak package hook using its signed upstream `.flatpakrepo` descriptor.
+- **User installation:** applications and runtimes stay in the logged-in
+  user's Flatpak installation. COSMIC Store embeds the same official Flathub
+  descriptor as a recommended source that can be enabled in the Store's
+  repository manager.
+- **Authorization:** system operations go through Flatpak's
+  `org.freedesktop.Flatpak.SystemHelper` on the system D-Bus and are authorized
+  by the existing Polkit daemon. COSMIC starts the GTK Polkit authentication
+  agent inside its own session so password prompts are visible. Polkit uses
+  `systemd-logind` session tracking; `dbus-system` and `polkit` run as systemd
+  services.
+- **No extra systemd units:** Flatpak and OSTree are built without libsystemd
+  integration. The system helper is D-Bus activated, not installed as a systemd
+  unit or a permanently running daemon.
+
+This keeps Flatpak transactions separate from Nawa's native package
+transactions while presenting Flatpak applications directly in COSMIC Store.
+
 ## Build and install
 
 The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and

@@ -12,7 +12,6 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 name = "appstream"
 url = "https://www.freedesktop.org/software/appstream/releases/AppStream-%{version}.tar.xz"
 sha256 = "8daa01a4d66c73f036aa92af9bf76abfe8408eaa76fcda6ca54fa8ef5b93ed17"
-strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "gperf", "glib", "curl", "libxml2", "libxmlb", "libfyaml", "zstd"]
@@ -27,6 +26,22 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dsystemd=false -Dgir=false -Dvapi=false -Dstemming=false -Dcompose=false -Dqt=false -Dapt-support=false -Dtools=true -Dbash-completion=false -Dzstd-support=true -Dblake3-support=false -Ddisplay-detection=none -Ddocs=false -Dapidocs=false -Dinstall-docs=false -Dman=false"
-compile = "ninja -C build"
-install = "DESTDIR=%{pkgdir} meson install -C build"
+configure = '''
+set -eu
+# The release archive layout is not relied on: build from the directory that holds the
+# top-level meson.build.
+find . -maxdepth 2 | head -n 20
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+ls -A
+meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dsystemd=false -Dgir=false -Dvapi=false -Dstemming=false -Dcompose=false -Dqt=false -Dapt-support=false -Dtools=true -Dbash-completion=false -Dzstd-support=true -Dblake3-support=false -Ddisplay-detection=none -Ddocs=false -Dapidocs=false -Dinstall-docs=false -Dman=false
+'''
+compile = '''
+set -eu
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+ninja -C build
+'''
+install = '''
+set -eu
+cd "$(dirname "$(find . -maxdepth 3 -name meson.build -not -path "*/subprojects/*" | awk '{ print length($0), $0 }' | sort -n | head -n 1 | cut -d" " -f2-)")"
+DESTDIR=%{pkgdir} meson install -C build
+'''

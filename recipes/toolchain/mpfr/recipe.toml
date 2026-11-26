@@ -2,17 +2,29 @@
 [package]
 name = "mpfr"
 version = "4.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU multiple-precision floating-point library"
 license = ["LGPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/mpfr/mpfr-%{version}.tar.xz"
-# canonical: https://ftp.gnu.org/gnu/mpfr/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mpfr"
+url = "https://mirrors.kernel.org/gnu/mpfr/mpfr-%{version}.tar.xz"
 sha256 = "277807353a6726978996945af13e52829e3abd7a9a5b7fb2793894e18f1fcbb2"
+strip_components = 1
 
 [depends]
 build = ["gmp"]
 run = ["gmp"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

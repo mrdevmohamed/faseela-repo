@@ -4,17 +4,29 @@
 [package]
 name = "craft-anything"
 version = "0.2.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native app for investigating software and crafting evidence-based answers"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/craft-anything/releases/download/v0.2.0/craft-anything-0.2.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "craft-anything"
+url = "https://github.com/storytold/craft-anything/releases/download/v0.2.0/craft-anything-0.2.0-linux-x86_64.tar.gz"
 sha256 = "aa670c166b53265d37a64ec544cf7cabecf993802c27c4733746f7b16c12cb21"
-source_dir = "craft-anything-0.2.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

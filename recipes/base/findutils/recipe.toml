@@ -2,16 +2,29 @@
 [package]
 name = "findutils"
 version = "4.11.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU file-search utilities (find, xargs)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/findutils/findutils-4.11.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "findutils"
+url = "https://mirrors.kernel.org/gnu/findutils/findutils-4.11.0.tar.xz"
 sha256 = "bfd19cb06cc71f3352d567e90284d8cdac02ac89774bbeadf0b533b0c11432fd"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

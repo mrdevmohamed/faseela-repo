@@ -3,12 +3,12 @@
 [package]
 name = "fastfetch"
 version = "2.30.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Fastfetch — system information tool with Faseela branding"
 license = ["MIT"]
 # Fail closed on Nawa versions that predate the recipe-local assets schema.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "fastfetch"
@@ -23,8 +23,16 @@ include = ["config.jsonc", "logos/faseela.txt"]
 build = ["cmake", "pkgconf"]
 run = []
 
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
 [build]
-configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_TESTS=OFF"
+configure = "cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_TESTS=OFF"
 compile = "cmake --build build -j %{jobs}"
 install = '''
 DESTDIR=%{pkgdir} cmake --install build

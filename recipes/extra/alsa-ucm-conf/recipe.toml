@@ -8,16 +8,29 @@
 [package]
 name = "alsa-ucm-conf"
 version = "1.2.13"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "ALSA Use Case Manager configuration (audio profiles for laptops and SoCs)"
 license = ["BSD-3-Clause"]
-source = "https://www.alsa-project.org/files/pub/lib/alsa-ucm-conf-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "alsa-ucm-conf"
+url = "https://www.alsa-project.org/files/pub/lib/alsa-ucm-conf-%{version}.tar.bz2"
 sha256 = "4483b6e3983cca08fd326a73fbae449b5036e444fb1a07c0dee74b504b7ab5af"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

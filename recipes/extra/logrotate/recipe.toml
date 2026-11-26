@@ -2,16 +2,29 @@
 [package]
 name = "logrotate"
 version = "3.22.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "logrotate — rotates, compresses and mails system logs"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "logrotate"
+url = "https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.xz"
 sha256 = "42b4080ee99c9fb6a7d12d8e787637d057a635194e25971997eebbe8d5e57618"
+strip_components = 1
 
 [depends]
 build = ["popt"]
 run = ["popt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

@@ -5,17 +5,29 @@
 [package]
 name = "libpulse"
 version = "17.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "PulseAudio-compatible client libraries and command-line tools"
 license = ["LGPL-2.1-or-later"]
-source = "https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpulse"
+url = "https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%{version}.tar.xz"
 sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
-source_dir = "pulseaudio-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "m4", "glib", "libsndfile"]
 run = ["glib", "libsndfile"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

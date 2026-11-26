@@ -3,17 +3,29 @@
 [package]
 name = "hicolor-icon-theme"
 version = "0.18"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "hicolor-icon-theme — default fallback icon theme"
 license = ["GPL-2.0-only"]
-source = "https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "hicolor-icon-theme"
+url = "https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-%{version}.tar.xz"
 sha256 = "db0e50a80aa3bf64bb45cbca5cf9f75efd9348cf2ac690b907435238c3cf81d7"
-source_dir = "hicolor-icon-theme-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --buildtype=release"

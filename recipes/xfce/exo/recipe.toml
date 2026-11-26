@@ -2,16 +2,29 @@
 [package]
 name = "exo"
 version = "4.20.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Extension library for Xfce applications (exo-2)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/xfce/exo/4.20/exo-4.20.0.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "exo"
+url = "https://archive.xfce.org/src/xfce/exo/4.20/exo-4.20.0.tar.bz2"
 sha256 = "4277f799245f1efde01cd917fd538ba6b12cf91c9f8a73fe2035fd5456ec078d"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4util", "gtk3", "glib"]
 run = ["libxfce4ui", "libxfce4util", "gtk3", "glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

@@ -4,16 +4,29 @@
 [package]
 name = "xf86-input-libinput"
 version = "1.5.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X.Org input driver based on libinput"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/driver/xf86-input-libinput-1.5.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xf86-input-libinput"
+url = "https://xorg.freedesktop.org/archive/individual/driver/xf86-input-libinput-1.5.0.tar.xz"
 sha256 = "2524c35f196554ea11aef3bba1cf324759454e1d49f98ac026ace2f6003580e6"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorg-server", "libinput"]
 run = ["libinput"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static "

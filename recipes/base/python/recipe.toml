@@ -2,16 +2,28 @@
 [package]
 name = "python"
 version = "3.13.17"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Python programming language (CPython)"
 license = ["Python-2.0"]
-source = "https://www.python.org/ftp/python/3.13.17/Python-3.13.17.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "python"
+url = "https://www.python.org/ftp/python/3.13.17/Python-3.13.17.tar.xz"
 sha256 = "6020bd10aff3bf4821be16f088ebb1591beb7b811dcd8fab1da8f7c22a7b27e7"
 
 [depends]
 build = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "sqlite", "xz", "zlib"]
 run = ["bzip2", "expat", "gdbm", "libffi", "ncurses", "openssl", "readline", "sqlite", "xz", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cd %{srcdir}/Python-* && ./configure --prefix=/usr --enable-shared --with-system-expat --with-ensurepip=install --disable-test-modules"

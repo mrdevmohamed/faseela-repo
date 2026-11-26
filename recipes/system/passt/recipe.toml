@@ -2,17 +2,29 @@
 [package]
 name = "passt"
 version = "2026_07_16.090d739"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "User-mode networking for namespaces and virtual machines"
 license = ["BSD-3-Clause", "GPL-2.0-or-later"]
-source = "https://passt.top/passt/snapshot/passt-%{version}.tar.gz"
-# SHA-256 verified against the pinned upstream snapshot in NixOS/nixpkgs.
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "passt"
+url = "https://passt.top/passt/snapshot/passt-%{version}.tar.gz"
 sha256 = "503e1f91cb52a8c0d04e6671a66063475b8a2d5d0b7fd428aad48ad6ef0443ee"
+strip_components = 1
 
 [depends]
 build = ["make", "gcc"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make prefix=/usr PAGE_SIZE=4096"

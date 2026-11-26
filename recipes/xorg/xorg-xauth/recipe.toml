@@ -2,17 +2,29 @@
 [package]
 name = "xorg-xauth"
 version = "1.1.5"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "X authority file utility (manages .Xauthority cookies)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/app/xauth-1.1.5.tar.xz"
-source_dir = "xauth-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-xauth"
+url = "https://xorg.freedesktop.org/archive/individual/app/xauth-1.1.5.tar.xz"
 sha256 = "a4000e2f441facebf569026bedecc23ba262cc6927be52070abe0002625cfbe0"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libXmu", "libXau", "libXext", "libX11", "xorgproto"]
 run = ["libXmu", "libXau", "libX11", "libXext"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static "

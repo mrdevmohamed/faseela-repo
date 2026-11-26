@@ -3,17 +3,29 @@
 [package]
 name = "liburcu"
 version = "0.15.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Userspace RCU (read-copy-update) library"
 license = ["LGPL-2.1-or-later"]
-source = "https://lttng.org/files/urcu/userspace-rcu-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "liburcu"
+url = "https://lttng.org/files/urcu/userspace-rcu-%{version}.tar.bz2"
 sha256 = "2556b83adc0f9b3ac8024e613e17d014d04c4c49110604ce55fcb14eae32edd3"
-source_dir = "userspace-rcu-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"

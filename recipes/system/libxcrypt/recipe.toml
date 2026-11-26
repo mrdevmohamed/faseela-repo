@@ -8,16 +8,29 @@
 [package]
 name = "libxcrypt"
 version = "4.4.38"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Extended crypt library for password hashing (libcrypt)"
 license = ["LGPL-2.1"]
-source = "https://github.com/besser82/libxcrypt/releases/download/v%{version}/libxcrypt-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxcrypt"
+url = "https://github.com/besser82/libxcrypt/releases/download/v%{version}/libxcrypt-%{version}.tar.xz"
 sha256 = "80304b9c306ea799327f01d9a7549bdb28317789182631f1b54f4511b4206dd6"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --enable-hashes=strong,glibc --enable-obsolete-api=glibc --disable-static --disable-failure-tokens"

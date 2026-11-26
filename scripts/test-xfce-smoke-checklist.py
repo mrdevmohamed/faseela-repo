@@ -70,7 +70,7 @@ for heading in (
     "## A. Clean-install scenario",
     "### A3. Perform the controlled LightDM login test",
     "### A5. Exercise session services and desktop features",
-    "### A6. Check runit supervision after desktop use",
+    "### A6. Check systemd supervision after desktop use",
     "## B. Upgrade scenario",
     "## C. Failure report",
     "## D. Pull-request CI checks",
@@ -78,9 +78,9 @@ for heading in (
     assert heading in doc, f"docs/xfce-smoke-tests.md: missing section: {heading}"
 for required in (
     "disposable VM",
-    "runit",
+    "systemd",
     "LightDM",
-    "elogind",
+    "systemd-logind",
     "Polkit",
     "UDisks2",
     "PipeWire",
@@ -106,7 +106,7 @@ xfce = require_deps("xfce", "xfce-session", "run", {
     "xfce4-session", "xfce4-panel", "xfce4-notifyd", "xfce4-screensaver",
     "xfce4-clipman-plugin", "network-manager-applet",
     "xfce-polkit", "audio-session", "dbus-system",
-    "elogind", "polkit", "network-manager", "gvfs",
+    "systemd", "polkit", "network-manager", "gvfs",
     "udisks2", "thunar", "thunar-volman", "upower",
     "xdg-desktop-portal", "xdg-desktop-portal-gtk",
 })
@@ -172,22 +172,22 @@ assert "dbus-update-activation-environment XAUTHORITY" in xfce4_install
 check_shell("xfce/xfce4-session install", xfce4_install)
 
 # The native locker must be part of the standard XFCE closure and use
-# Faseela's PAM + elogind stack. It exposes the D-Bus name that libxfce4ui
+# Faseela's PAM + systemd-logind stack. It exposes the D-Bus name that libxfce4ui
 # queries when the XFCE session manager requests a lock.
 screensaver = require_deps("xfce", "xfce4-screensaver", "run", {
-    "dbus", "dbus-glib", "elogind", "gtk3", "libXScrnSaver",
+    "dbus", "dbus-glib", "systemd", "gtk3", "libXScrnSaver",
     "libwnck3", "libxklavier", "libxfce4ui", "linux-pam", "procps-ng",
     "python", "xfconf",
 })
 screensaver_build = require_deps("xfce", "xfce4-screensaver", "build", {
-    "dbus", "dbus-glib", "elogind", "linux-pam", "meson", "ninja", "pkgconf",
+    "dbus", "dbus-glib", "systemd", "linux-pam", "meson", "ninja", "pkgconf",
 })
 screensaver_configure = screensaver["build"]["configure"]
 for option in (
     "-D x11=enabled",
     "-D wayland=disabled",
     "-D authentication-scheme=pam",
-    "-D session-manager=elogind",
+    "-D session-manager=systemd",
 ):
     assert option in screensaver_configure, (
         f"xfce/xfce4-screensaver: missing configure option: {option}"
@@ -227,92 +227,67 @@ for required in (
     )
 check_shell("system/linux-pam post_install", linux_pam_hook)
 
-# LightDM is deliberately shipped as a manual-enable runit service until its
+# LightDM is deliberately shipped as a manual-enable systemd unit until its
 # installed-system login path has been tested. Validate PAM and session wiring.
 lightdm = require_deps("xfce", "lightdm", "run", {
-    "dbus-system", "elogind", "xorg-server", "linux-pam",
+    "dbus-system", "systemd", "xorg-server", "linux-pam",
 })
 lightdm_install = lightdm["build"]["install"]
-lightdm_run = extract_heredoc(
-    lightdm_install, "etc/sv/lightdm/run", "RUN"
+lightdm_unit = extract_heredoc(
+    lightdm_install, "usr/lib/systemd/system/lightdm.service", "EOF"
 )
-check_shell("xfce/lightdm runit service", lightdm_run)
+for required in ("[Service]", "ExecStart=", "Conflicts=getty@tty7.service", "Alias=display-manager.service"):
+    assert required in lightdm_unit, f"xfce/lightdm: unit is missing: {required}"
 for required in (
     "etc/pam.d/lightdm",
     "etc/pam.d/lightdm-greeter",
     "etc/pam.d/lightdm-autologin",
-    "pam_elogind.so class=user type=x11 desktop=xfce",
-    "pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter",
+    "pam_systemd.so class=user type=x11 desktop=xfce",
+    "pam_systemd.so class=greeter type=x11 desktop=lightdm-greeter",
     "etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf",
     "user-session=xfce",
-    "etc/sv/lightdm/run",
 ):
     assert required in lightdm_install, (
         f"xfce/lightdm: missing login/PAM/service integration: {required}"
     )
-assert "ln -s /etc/sv/lightdm" not in lightdm_install, (
+assert "systemctl enable lightdm" not in lightdm_install and "WantedBy=" not in lightdm_unit, (
     "xfce/lightdm: must remain manual-enable until the runtime login test is passed"
 )
-assert "pam_systemd.so" not in lightdm_install, (
-    "xfce/lightdm: runit systems must use pam_elogind, not pam_systemd"
+assert "pam_elogind" not in lightdm_install, (
+    "xfce/lightdm: systemd systems must use pam_systemd, not pam_elogind"
 )
 
-# runit owns the persistent system services. Validate both service scripts
-# and the explicit default runsvdir links, with package-specific failures.
-dbus = require_deps("gui", "dbus-system", "run", {"dbus", "runit"})
-dbus_install = dbus["build"]["install"]
-dbus_run = extract_heredoc(dbus_install, "etc/sv/dbus/run", "RUN")
-check_shell("gui/dbus-system runit service", dbus_run)
-for required in (
-    "etc/sv/dbus/run",
-    "exec dbus-daemon --system --nofork --nopidfile",
-    "ln -s /etc/sv/dbus %{pkgdir}/etc/runit/runsvdir/default/dbus",
-):
-    assert required in dbus_install, f"gui/dbus-system: missing runit entry: {required}"
+# systemd owns the persistent system services. Validate each unit file and its
+# preset, with package-specific failures.
+dbus = require_deps("gui", "dbus-system", "run", {"dbus"})
+dbus_pkg = recipe("browser", "dbus")
+assert "-D systemd=enabled" in dbus_pkg["build"]["configure"], (
+    "browser/dbus: system bus must be built with systemd socket activation"
+)
+assert "sockets.target.wants/dbus.socket" in dbus_pkg["build"]["install"], (
+    "browser/dbus: dbus.socket must be wanted by sockets.target"
+)
 
-elogind = require_deps("gui", "elogind", "run", {"dbus-system", "runit"})
-elogind_configure = elogind["build"]["configure"]
-assert "-Dpolkit=enabled" in elogind_configure, (
-    "gui/elogind: login1 power-off/reboot authorization must enable Polkit"
-)
-assert "-Dpolkit=disabled" not in elogind_configure, (
-    "gui/elogind: Polkit authorization must not be compiled out"
-)
-assert "polkit" not in elogind["depends"]["build"], (
-    "gui/elogind: do not introduce a build dependency cycle with Polkit"
-)
-elogind_install = elogind["build"]["install"]
-for service, destination, marker in (
-    ("elogind", "etc/sv/elogind/run", "RUN"),
-    ("elogind-userdbd", "etc/sv/elogind-userdbd/run", "RUN"),
-):
-    run_script = extract_heredoc(elogind_install, destination, marker)
-    check_shell(f"gui/elogind {service} runit service", run_script)
-    assert f"/etc/runit/runsvdir/default/{service}" in elogind_install, (
-        f"gui/elogind: {service} is missing its default runsvdir link"
-    )
-
-polkit = require_deps("gui", "polkit", "run", {"dbus-system", "elogind"})
+polkit = require_deps("gui", "polkit", "run", {"dbus-system", "systemd"})
 polkit_install = polkit["build"]["install"]
-polkit_run = extract_heredoc(polkit_install, "etc/sv/polkitd/run", "RUN")
-check_shell("gui/polkitd runit service", polkit_run)
-assert "ln -s /etc/sv/polkitd %{pkgdir}/etc/runit/runsvdir/default/polkitd" in polkit_install, (
-    "gui/polkit: polkitd must be enabled through runit"
+polkit_unit = extract_heredoc(polkit_install, "usr/lib/systemd/system/polkit.service", "EOF")
+assert "After=dbus.service" in polkit_unit, "gui/polkit: polkit.service must start after D-Bus"
+assert "enable polkit.service" in polkit_install, (
+    "gui/polkit: polkit.service must be enabled through a preset"
 )
 
 nm = require_deps("gui", "network-manager", "run", {"dbus-system", "polkit"})
 nm_install = nm["build"]["install"]
-nm_run = extract_heredoc(nm_install, "etc/sv/NetworkManager/run", "RUN")
-check_shell("gui/NetworkManager runit service", nm_run)
-assert "ln -s /etc/sv/NetworkManager %{pkgdir}/etc/runit/runsvdir/default/NetworkManager" in nm_install, (
-    "gui/network-manager: NetworkManager must be enabled through runit"
+nm_unit = extract_heredoc(nm_install, "usr/lib/systemd/system/NetworkManager.service", "EOF")
+assert "Conflicts=systemd-networkd.service" in nm_unit, (
+    "gui/network-manager: NetworkManager and systemd-networkd must not run together"
+)
+assert "enable NetworkManager.service" in nm_install, (
+    "gui/network-manager: NetworkManager must be enabled through a preset"
 )
 
-# D-Bus-activated system daemons must not have duplicate runit service entries.
+# D-Bus-activated system daemons must not get duplicate systemd units.
 udisks = require_deps("gui", "udisks2", "run", {"dbus-system", "polkit"})
-assert "runit" not in udisks["depends"]["run"], (
-    "gui/udisks2: D-Bus-activated UDisks2 must not install a duplicate runit daemon"
-)
 udisks_install = udisks["build"]["install"]
 for required in (
     "org.freedesktop.UDisks2.service",
@@ -322,9 +297,6 @@ for required in (
     assert required in udisks_install, f"gui/udisks2: missing D-Bus activation setup: {required}"
 
 upower = require_deps("gui", "upower", "run", {"dbus-system", "polkit"})
-assert "runit" not in upower["depends"]["run"], (
-    "gui/upower: D-Bus-activated UPower must not install a duplicate runit daemon"
-)
 upower_install = upower["build"]["install"]
 for required in (
     "org.freedesktop.UPower.service",
@@ -332,15 +304,15 @@ for required in (
 ):
     assert required in upower_install, f"gui/upower: missing D-Bus activation setup: {required}"
 
-# Per-user audio belongs to the XFCE session, not a system runit service.
+# Per-user audio belongs to the XFCE session, not a system service.
 audio = require_deps("gui", "audio-session", "run", {
     "pipewire", "wireplumber", "procps-ng", "coreutils"
 })
 audio_install = audio["build"]["install"]
 for required in ("pipewire-pulse", "wireplumber", "pgrep -u", "*XFCE*) session_process=xfce4-session ;;"):
     assert required in audio_install, f"gui/audio-session: missing per-user audio integration: {required}"
-assert "etc/sv/" not in audio_install, (
-    "gui/audio-session: PipeWire and WirePlumber must run per user, not as system runit services"
+assert "usr/lib/systemd/system" not in audio_install, (
+    "gui/audio-session: PipeWire and WirePlumber must run per user, not as system services"
 )
 
 # Tray applet and notifications need to be installed into the XFCE graph and
@@ -361,7 +333,7 @@ assert "xfce4-clipman-plugin" in xfce["depends"]["run"], (
 )
 assert "xfce4-clipman-plugin" in clipman["package"]["name"]
 
-# GVfs talks to UDisks2 through system D-Bus; it is not a runit daemon.
+# GVfs talks to UDisks2 through system D-Bus; it is not a system daemon.
 gvfs = require_deps("xfce", "gvfs", "run", {
     "dbus", "udisks2", "libgudev", "fuse3", "gsettings-desktop-schemas"
 })

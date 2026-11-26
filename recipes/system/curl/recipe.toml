@@ -2,16 +2,29 @@
 [package]
 name = "curl"
 version = "8.16.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Command-line tool and library for transferring data with URLs"
 license = ["curl"]
-source = "https://curl.se/download/curl-8.16.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "curl"
+url = "https://curl.se/download/curl-8.16.0.tar.xz"
 sha256 = "40c8cddbcb6cc6251c03dea423a472a6cea4037be654ba5cf5dec6eb2d22ff1d"
+strip_components = 1
 
 [depends]
 build = ["brotli", "libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
 run = ["brotli", "libidn2", "libpsl", "openssl", "pkgconf", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # brotli is declared and enabled explicitly: left to autodetection, libcurl links

@@ -3,16 +3,29 @@
 [package]
 name = "libXxf86vm"
 version = "1.1.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "XFree86 video mode extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxxf86vm"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-%{version}.tar.xz"
 sha256 = "ae50c0f669e0af5a67cc4cd0f54f21d64a64d2660af883e80e95d3fe51b945d8"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "xorgproto", "libX11", "libXext"]
-run = ["libX11", "libXext"]
+run = ["libX11", "libXext", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"

@@ -4,16 +4,29 @@
 [package]
 name = "libxcb"
 version = "1.17.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X protocol C-language binding (XCB)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libxcb-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxcb"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libxcb-%{version}.tar.xz"
 sha256 = "599ebf9996710fea71622e6e184f3a8ad5b43d0e5fa8c4e407123c88a59a6d55"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xcb-proto", "libXau", "xorgproto"]
 run = ["libXau"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --enable-xinput --enable-xkb --disable-devel-docs --without-doxygen"

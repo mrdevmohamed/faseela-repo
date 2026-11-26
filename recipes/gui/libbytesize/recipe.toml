@@ -3,16 +3,29 @@
 [package]
 name = "libbytesize"
 version = "2.12"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Library for working with arbitrary byte sizes"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/storaged-project/libbytesize/releases/download/%{version}/libbytesize-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libbytesize"
+url = "https://github.com/storaged-project/libbytesize/releases/download/%{version}/libbytesize-%{version}.tar.gz"
 sha256 = "8356bac2cafd2f31f39bf1ad373cef8448cab08b817aeaee5c526d54e81c3c5a"
+strip_components = 1
 
 [depends]
 build = ["gettext", "pcre2", "python"]
 run = ["pcre2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --without-python3 --without-tools --without-gtk-doc"

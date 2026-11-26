@@ -2,16 +2,30 @@
 [package]
 name = "httpx"
 version = "1.12.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "HTTP probing and web technology detection toolkit"
 license = ["MIT"]
-source = "https://github.com/projectdiscovery/httpx/releases/download/v1.12.0/httpx_1.12.0_linux_amd64.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "httpx"
+url = "https://github.com/projectdiscovery/httpx/releases/download/v1.12.0/httpx_1.12.0_linux_amd64.zip"
 sha256 = "9d8439e8b6c9aa7d1e2314817a392e00d5178da3af5652f7475f88868f418f76"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

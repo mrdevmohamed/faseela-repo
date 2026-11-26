@@ -7,17 +7,29 @@
 [package]
 name = "libplacebo"
 version = "7.349.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "libplacebo — GPU-accelerated video/image rendering primitives (OpenGL backend)"
 license = ["LGPL-2.1-or-later"]
-source = "https://code.videolan.org/videolan/libplacebo/-/archive/v%{version}/libplacebo-v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libplacebo"
+url = "https://code.videolan.org/videolan/libplacebo/-/archive/v%{version}/libplacebo-v%{version}.tar.gz"
 sha256 = "79120e685a1836344b51b13b6a5661622486a84e4d4a35f6c8d01679a20fbc86"
-source_dir = "libplacebo-v%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "python-jinja2", "python-glad2", "vulkan-headers", "mesa"]
 run = ["mesa"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D vulkan=disabled -D opengl=enabled -D d3d11=disabled -D glslang=disabled -D shaderc=disabled -D lcms=disabled -D dovi=disabled -D libdovi=disabled -D unwind=disabled -D xxhash=disabled -D demos=false -D tests=false -D bench=false -D fuzz=false"

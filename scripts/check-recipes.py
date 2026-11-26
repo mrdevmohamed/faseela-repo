@@ -19,8 +19,72 @@ import sys
 import tomllib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import recipe_source  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent / "recipes"
 ZERO = "0" * 64
+
+SERVICE_MANAGER_COMMAND = re.compile(
+    r"(?im)(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)\s*(?:if\s+)?(?:!\s*)?"
+    r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*)\s+)*(?:(?:command|sudo|doas)\s+)*"
+    r"(?:/usr/bin/)?(systemctl|sv|service|rc-service)\s+"
+    r"(preset(?:-all)?|enable|disable|start|stop|restart|try-restart|reload|"
+    r"reload-or-restart|daemon-reload|mask|unmask|revert|link|isolate|"
+    r"up|down|force-stop|halt|shutdown)\b"
+)
+
+
+def service_hook_policy(recs):
+    """Reject service state changes in package hooks and transaction triggers."""
+    errors = []
+    for name, recipe in recs.items():
+        recipe_path = Path(recipe["_path"])
+        hooks = recipe.get("hooks", {})
+        if isinstance(hooks, dict):
+            for hook_name, body in hooks.items():
+                if not isinstance(body, str):
+                    continue
+                for match in SERVICE_MANAGER_COMMAND.finditer(body):
+                    line = body.count("\n", 0, match.start()) + 1
+                    manager, action = match.group(1), match.group(2)
+                    errors.append(
+                        f"{recipe_path}: hook {hook_name} line {line} invokes "
+                        f"{manager} {action}; service activation belongs to "
+                        "distribution provisioning or the administrator"
+                    )
+
+        # Nawa executes regular *.sh files from this directory after
+        # package-changing transactions. Inspect every recipe-local shell
+        # asset when the recipe declares the transaction-trigger directory.
+        try:
+            recipe_source = recipe_path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(f"{recipe_path}: cannot read recipe for trigger policy: {error}")
+            continue
+        if "transaction-hooks.d" not in recipe_source:
+            continue
+
+        trigger_sources = []
+        for phase, body in recipe.get("build", {}).items():
+            if isinstance(body, str):
+                trigger_sources.append((f"{recipe_path} [build.{phase}]", body))
+        for asset in sorted(recipe_path.parent.rglob("*.sh")):
+            try:
+                trigger_sources.append((str(asset), asset.read_text(encoding="utf-8")))
+            except (OSError, UnicodeError) as error:
+                errors.append(f"{asset}: cannot inspect transaction-trigger source: {error}")
+
+        for source_name, body in trigger_sources:
+            for match in SERVICE_MANAGER_COMMAND.finditer(body):
+                line = body.count("\n", 0, match.start()) + 1
+                manager, action = match.group(1), match.group(2)
+                errors.append(
+                    f"{source_name}: transaction-trigger source line {line} invokes "
+                    f"{manager} {action}; service activation belongs to "
+                    "distribution provisioning or the administrator"
+                )
+    return errors
 
 
 def load():
@@ -46,6 +110,28 @@ def load():
     return recs, errors
 
 
+def requirement_name(raw):
+    """Return a dependency's package name after validating Nawa's requirement syntax."""
+    if not isinstance(raw, str):
+        raise ValueError(f"dependency must be a string, got {type(raw).__name__}")
+    raw = raw.strip()
+    split = next((i for i, char in enumerate(raw) if char in "<>=!"), None)
+    if split is None:
+        name = raw
+    else:
+        rest = raw[split:]
+        operator = next((op for op in (">=", "<=", "!=", "=", ">", "<") if rest.startswith(op)), None)
+        if operator is None:
+            raise ValueError(f"invalid comparison operator in {raw!r}")
+        version_rel = rest[len(operator):].strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.~:-]*-[1-9][0-9]*", version_rel):
+            raise ValueError(f"version requirement must end in version-rel, got {raw!r}")
+        name = raw[:split].strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.-]{0,127}", name):
+        raise ValueError(f"invalid package name in dependency {raw!r}")
+    return name
+
+
 def deps_of(r):
     d = r.get("depends", {})
     return list(dict.fromkeys(d.get("build", []) + d.get("run", [])))
@@ -60,8 +146,8 @@ def order(recs, targets):
         if n in stack:
             raise SystemExit("dependency cycle: " + " -> ".join(stack[stack.index(n):] + [n]))
         stack.append(n)
-        for d in deps_of(recs[n]):
-            visit(d)
+        for raw in deps_of(recs[n]):
+            visit(requirement_name(raw))
         stack.pop()
         seen.add(n)
         out.append(n)
@@ -93,18 +179,26 @@ def main():
     recs, errors = load()
     placeholders = []
     for n, r in recs.items():
-        for d in deps_of(r):
-            if d not in recs:
-                errors.append(f"{r['_path']}: `{n}` depends on unknown recipe `{d}`")
+        for raw in deps_of(r):
+            try:
+                dependency = requirement_name(raw)
+            except ValueError as error:
+                errors.append(f"{r['_path']}: `{n}` has invalid dependency {raw!r}: {error}")
+                continue
+            if dependency not in recs:
+                errors.append(
+                    f"{r['_path']}: `{n}` depends on unknown recipe `{dependency}`"
+                )
         pkg = r["package"]
-        sha = pkg.get("sha256", "")
-        src = pkg.get("source", "")
-        if src and not src.startswith("local:"):
+        for declared in recipe_source.sources(pkg):
+            sha = declared.get("sha256", "")
             if sha == ZERO:
-                placeholders.append(n)
+                if n not in placeholders:
+                    placeholders.append(n)
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)
+    errors += service_hook_policy(recs)
     if not errors:
         try:
             order(recs, list(recs))

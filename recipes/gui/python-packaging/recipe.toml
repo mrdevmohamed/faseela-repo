@@ -2,17 +2,29 @@
 [package]
 name = "python-packaging"
 version = "24.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Core utilities for python packages (pure python)"
 license = ["Apache-2.0", "BSD-2-Clause"]
-source = "https://github.com/pypa/packaging/archive/refs/tags/%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "python-packaging"
+url = "https://github.com/pypa/packaging/archive/refs/tags/%{version}.tar.gz"
 sha256 = "c448ea78de5134f5002a2aa2bb62a0fb4714bb4ab2d2b00bce8ed6ca22502d5a"
-source_dir = "packaging-%{version}"
+strip_components = 1
 
 [depends]
 build = ["python"]
 run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

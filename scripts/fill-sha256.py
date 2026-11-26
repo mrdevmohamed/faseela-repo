@@ -40,10 +40,14 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import recipe_source  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent / "recipes"
 ZERO = "0" * 64
 CACHE = Path.home() / ".cache" / "nawa-fill-sha256"
 SHA_LINE = re.compile(r'(?m)^sha256 = "[0-9a-f]{64}"')
+# every pinned source (legacy [package] or one [[package.sources]] table) owns one such line, in order
 
 
 def expand(s, pkg):
@@ -185,8 +189,7 @@ def main():
         recipes[pkg["name"]] = (p, text, pkg)
 
     if a.all:
-        force |= {n for n, (_, _, pkg) in recipes.items()
-                  if pkg.get("source") and not pkg["source"].startswith("local:")}
+        force |= {n for n, (_, _, pkg) in recipes.items() if recipe_source.sources(pkg)}
         wanted = force | fill_only
 
     unknown = sorted(wanted - recipes.keys())
@@ -196,38 +199,58 @@ def main():
 
     failed = 0
     for name, (p, text, pkg) in recipes.items():
-        src, sha = pkg.get("source", ""), pkg.get("sha256", "")
         if wanted and name not in wanted:
             continue
-        if not src or src.startswith("local:"):
+        declared = recipe_source.sources(pkg)
+        if not declared:
             if name in wanted:
                 print(f"skip {name}: no downloadable source")
             continue
-        if not wanted and sha != ZERO:              # default mode: placeholders only
-            continue
-        if name in fill_only and sha != ZERO:
+        if not wanted and not any(s.get("sha256") == ZERO for s in declared):
+            continue                                # default mode: placeholders only
+        if name in fill_only and not any(s.get("sha256") == ZERO for s in declared):
             print(f"skip {name}: already pinned (use -r {name} to recompute)")
             continue
-        url = expand(src, pkg)
-        if a.dry_run:
-            print(f"{name}: {url}")
-            continue
-        try:
-            digest = fetch(url, a.use_cache, not a.no_verify, a.retries)
-        except Exception as e:  # noqa: BLE001
-            print(f"FAIL {name}: {url}\n     {e}")
+        lines = list(SHA_LINE.finditer(text))
+        if len(lines) != len(declared):
+            print(f"FAIL {name}: {len(declared)} source(s) but {len(lines)} "
+                  f"'sha256 = \"<64 hex>\"' line(s) in {p}")
             failed += 1
             continue
-        if not SHA_LINE.search(text):
-            print(f"FAIL {name}: no 'sha256 = \"<64 hex>\"' line to update in {p}")
-            failed += 1
+        digests, ok = [], True
+        for index, source in enumerate(declared):
+            sha = source.get("sha256", "")
+            only_placeholders = not (wanted and name in force)
+            if only_placeholders and sha != ZERO:
+                digests.append(sha)                 # keep a pinned sibling untouched
+                continue
+            url = expand(source["url"], pkg)
+            if a.dry_run:
+                print(f"{name}: {url}")
+                digests.append(sha)
+                continue
+            try:
+                digests.append(fetch(url, a.use_cache, not a.no_verify, a.retries))
+            except Exception as e:  # noqa: BLE001
+                print(f"FAIL {name}: {url}\n     {e}")
+                failed += 1
+                ok = False
+                break
+        if not ok or a.dry_run:
             continue
-        if digest == sha:
-            print(f"same {name}: {digest}")
-            continue
-        p.write_text(SHA_LINE.sub(f'sha256 = "{digest}"', text, count=1))
-        old = "placeholder" if sha == ZERO else sha
-        print(f"ok   {name}: {digest}\n     (was {old})")
+        new_text, shift = text, 0
+        for match, digest, source in zip(lines, digests, declared):
+            if digest == source.get("sha256"):
+                print(f"same {name}: {digest}")
+                continue
+            old = "placeholder" if source.get("sha256") == ZERO else source.get("sha256")
+            replacement = f'sha256 = "{digest}"'
+            new_text = (new_text[:match.start() + shift] + replacement
+                        + new_text[match.end() + shift:])
+            shift += len(replacement) - (match.end() - match.start())
+            print(f"ok   {name}: {digest}\n     (was {old})")
+        if new_text != text:
+            p.write_text(new_text)
     sys.exit(1 if failed else 0)
 
 

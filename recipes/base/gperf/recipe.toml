@@ -2,16 +2,29 @@
 [package]
 name = "gperf"
 version = "3.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Perfect hash-function generator"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/gperf/gperf-3.3.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gperf"
+url = "https://mirrors.kernel.org/gnu/gperf/gperf-3.3.tar.gz"
 sha256 = "fd87e0aba7e43ae054837afd6cd4db03a3f2693deb3619085e6ed9d8d9604ad8"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

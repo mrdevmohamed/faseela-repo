@@ -4,17 +4,29 @@
 [package]
 name = "texturecraft"
 version = "0.2.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native 3D texture-painting application for PBR materials"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/texturecraft/releases/download/v0.2.0/texturecraft-0.2.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "texturecraft"
+url = "https://github.com/storytold/texturecraft/releases/download/v0.2.0/texturecraft-0.2.0-linux-x86_64.tar.gz"
 sha256 = "9919068b13d880d512d6a995433446c9fccb3e0b447fdce2c7716e1393d7cfb2"
-source_dir = "texturecraft-0.2.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

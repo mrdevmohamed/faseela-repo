@@ -46,7 +46,7 @@ include = ["base-devel", "nawa", "git", "curl", "ca-certificates"]
 # Keep full firmware out of the ISO; users can install it through Nawa.
 [flavor.iso-nogui]
 summary = "Base live system without a desktop environment"
-include = ["@toolchain", "@base", "@system", "@boot", "@extra"]
+include = ["@toolchain", "@base", "@system", "@boot", "@extra", "dosfstools"]
 exclude = ["linux-firmware", "linux-firmware-extra"]
 
 # Sway desktop image.
@@ -82,9 +82,12 @@ include = [
 ]
 
  
-# COSMIC desktop image.
-# The login greeter stays optional because it takes ownership of a VT.
+# COSMIC desktop image. Select its own login manager and reserve VT 1 for it.
+# Do not ship LightDM in this flavor: greetd/cosmic-greeter owns the login VT.
 [flavor.iso-cosmic]
-summary = "Live system with COSMIC, PipeWire, Firefox, networking and Bluetooth"
+summary = "Live system with COSMIC, COSMIC Greeter, PipeWire, Firefox and networking"
 extends = ["iso-nogui"]
-include = ["@cosmic", "firefox"]
+include = ["@cosmic", "firefox", "greetd", "cosmic-greeter"]
+exclude = ["lightdm", "lightdm-gtk-greeter"]
+disable_services = ["getty@tty1", "lightdm"]
+enable_services = ["cosmic-greeter"]

@@ -6,10 +6,10 @@ Every package in the distribution is described by a declarative
 ```
 recipes/
 ├── toolchain/   compiler + libc + headers (built first, stage 2)
-├── base/        core userland: libs, shells, compressors, interpreters
-├── system/      networking, udev, kmod, shadow, runit, man pages, ...
+├── base/        core userland: shared libraries, shells, compressors, interpreters
+├── system/      networking, systemd (init, udev, logind), kmod, shadow, man pages, ...
 ├── boot/        linux kernel, efibootmgr, grub, busybox (initramfs/rescue)
-├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-runit, ... (opt-in)
+├── gui/         optional Wayland desktop stack and shared services: Sway, PipeWire, NetworkManager, BlueZ, seatd-systemd, ... (opt-in)
 ├── cosmic/      optional COSMIC Wayland desktop and applications (opt-in)
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
@@ -18,6 +18,7 @@ recipes/
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
 ├── messaging/  optional messaging and Android phone integration apps: Telegram Desktop, NectarLink (opt-in)
+├── flatpak/     opt-in Flatpak engine (flatpak, OSTree, AppStream, GnuPG stack, Polkit agent); COSMIC pulls it in
 ├── networking/ optional proxy/VPN clients such as Nekoray (opt-in)
 ├── security/   optional ProjectDiscovery reconnaissance and security tools (opt-in)
 ├── peripherals/ optional hardware integrations such as the Huion tablet control panel (opt-in)
@@ -25,22 +26,22 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 39 base + 57 system + 8 boot + 98 extra =
-**212 core packages**. Optional categories contain 141 GUI, 22 COSMIC, 2 greeter,
+Current set: 10 toolchain + 40 base + 53 system + 8 boot + 97 extra =
+**208 core packages**. Optional categories contain 140 GUI, 23 COSMIC, 2 greeter,
 29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
-12 security, 1 peripheral and 16 developer packages. The recipe tree contains
-**546 recipes** in total.
+12 security, 1 peripheral, 12 dev and 4 development packages. The recipe tree
+contains **542 recipes** in total (counts generated from the current recipe tree).
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
 security, peripheral, developer, Xfce and Xorg packages remain opt-in.
 
+The low-level `glib` library belongs to `base/`, not the optional GUI category:
+non-desktop packages such as `gdk-pixbuf` need it even when `WITH_GUI` is off.
+
 The `dev/` category is opt-in and currently contains Node.js, Go, Deno, Ruby, pip, pipx and their Python runtime dependencies; it is intentionally not selected by the default ISO flavors. The `llvm` recipe also builds clangd alongside Clang.
 
-The first 47 `extra/` recipes are generated from a data table
-(`scripts/recipe_data_extra.py`, `scripts/gen-recipes-extra.py`); the generator
-overwrites, so newer recipes (and everything in `system/`, `boot/`, `gui/`, `creative/`, `messaging/`) are
-written by hand and are not in that table.
+`scripts/recipe_data_extra.py` is a data table describing the first 47 `extra/` recipes. It is kept only as test reference data (`scripts/test-systemd-core.py`); the generator that rendered it is gone, so every recipe is edited by hand.
 
 Recipes added without network access carry an all-zero `sha256` until
 `python3 scripts/fill-sha256.py -r <name>` pins it (`check-recipes.py` lists
@@ -50,9 +51,13 @@ them). Versions and option names come from upstream knowledge, not a test build.
 
 * `[depends].build` lists **recipe-level** build dependencies only.
   Tools provided by the bootstrap seed (bash, coreutils, sed, gawk,
-  python3, curl, ...) are implicit and must NOT be declared. The exception
-  is the Rust toolchain: it is the `rust` recipe, so a recipe that needs
-  cargo (today only `nawa`) declares `build = ["rust"]`.
+  python3, curl, ...) are implicit and must NOT be declared. Rust consumers
+  declare `build = ["rust"]`, and so does `nawa`: its fetch phase and the
+  sandboxed compile need `cargo` on PATH, which the seed's `/opt/cargo` does
+  not provide (the sandbox hides it, stage 3 deletes it). `rust` is a
+  prebuilt binary release with no build dependencies, so there is no cycle;
+  `packages.yml` only uses a temporary pinned toolchain to bootstrap the Nawa
+  *tool* that parses the recipes.
 * `source` URLs point at proven-reachable mirrors: `mirrors.kernel.org`
   for GNU software, upstream hosts elsewhere. Substitutions used where an
   upstream host is unreachable from the build farm (documented per recipe):
@@ -89,8 +94,8 @@ libunistring → libidn2 → less → rust → nawa (self-hosting)
 **system** — attr → acl (POSIX ACLs), libcap → iputils (ping, arping,
 clockdiff, tracepath), liburcu → bind-tools (dig, host, nslookup),
 libndp, efivar (UEFI variable libraries and tools), then libpsl → curl → git → shadow → procps-ng →
-psmisc → e2fsprogs → eudev → kmod → libpipeline → groff → man-db →
-libmnl → iproute2 + net-tools → dhcpcd → sysklogd → runit
+psmisc → e2fsprogs → kmod → libpipeline → groff → man-db →
+libmnl → iproute2 + net-tools → systemd → systemd-units
 
 **boot** — linux; efibootmgr → grub → busybox
 
@@ -102,13 +107,14 @@ includes this category; inspect the current inventory with
 
 **system, later additions** — attr/acl (extended attributes and POSIX ACLs),
 libcap (Linux capabilities), iputils (IP diagnostics), tzdata (time zones),
-chrony (NTP, runit service
-`chronyd`, enabled by default), krb5 (MIT Kerberos/GSSAPI runtime libraries), libnl → iw and wpa_supplicant (Wi-Fi, runit service
-`wpa_supplicant`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
+krb5 (MIT Kerberos/GSSAPI runtime libraries), libnl → iw and wpa_supplicant (Wi-Fi, systemd unit
+`wpa_supplicant@IFACE`), lvm2 + cryptsetup (disk encryption, LUKS), smartmontools,
 dmidecode, lm-sensors, iperf3. `tzdata` defaults to `Africa/Cairo` while preserving
 an administrator's existing `/etc/localtime`; choose another zone by linking it
 from `/usr/share/zoneinfo`. `wpa_supplicant` remains opt-in:
-`nawa service enable wpa_supplicant`.
+`systemctl enable --now wpa_supplicant@wlan0`. Time sync (`systemd-timesyncd`),
+DHCP (`systemd-networkd`), DNS (`systemd-resolved`) and logging (`journald`)
+come with systemd; there are no separate chrony, dhcpcd, cronie or sysklogd packages.
 
 Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `flex` (base) pulls `m4` (toolchain) and `texinfo` (base);
@@ -117,11 +123,12 @@ Cross-group examples: `curl` (system) pulls `pkgconf` (toolchain);
 `kbd` (extra) pulls `meson`, `ninja` (extra);
 `iputils` (system) pulls `libcap` (system), `libidn2` (base), `meson`, `ninja`
 (extra), and `pkgconf` (toolchain); `bind-tools` pulls `libcap`, `libuv`, `liburcu`, `openssl`
-and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system).
+and `perl`; `coreutils` and `tar` pull `acl` + `attr` (system);
+`gdk-pixbuf` (browser) pulls `glib` (base), `libpng` and `libjpeg-turbo`.
 
-**gui, desktop services** — dbus-system → elogind → polkit; bluez and
-network-manager; pipewire → wireplumber. Elogind provides login1 and PAM
-session tracking while runit remains PID 1. NetworkManager uses wpa_supplicant and replaces dhcpcd;
+**gui, desktop services** — dbus-system → systemd (logind) → polkit; bluez and
+network-manager; pipewire → wireplumber. systemd-logind provides login1 and
+`pam_systemd` session tracking. NetworkManager uses wpa_supplicant and conflicts with systemd-networkd (a preset switches between them);
 PipeWire and WirePlumber start in the user's Sway session.
 
 Verify any dependency chain — or the complete recipe graph — with:
@@ -159,8 +166,8 @@ the default ISO and the Sway flavor:
   management still needs libseat integration with Faseela's seatd.
 * **`gui/`** — shared storage services: `libblockdev` supplies UDisks2's
   filesystem and partition operations; `udisks2` is activated on demand by
-  the system D-Bus and integrates with polkit and eudev without a systemd or
-  dedicated runit service.
+  the system D-Bus and integrates with polkit and udev (from systemd) without a
+  dedicated systemd unit.
 * **`xfce/`** — the Xfce 4.20 desktop itself: the core libraries
   (`libxfce4util`, `xfconf`, `libxfce4windowing`, `libxfce4ui`, `exo`,
   `garcon`, `tumbler`, plus `vte`, `libnotify`, `gtksourceview`), the desktop
@@ -169,7 +176,7 @@ the default ISO and the Sway flavor:
   applications and panel plugins. The `xfce-session` meta-package pulls in
   the X11/Xfce core and Faseela's US/Arabic keyboard-layout configuration.
   LightDM 1.33.1 and `lightdm-gtk-greeter` are separate selectable packages;
-  they use Linux-PAM with `pam_elogind.so` and no systemd modules. The LightDM runit service is
+  they use Linux-PAM with `pam_systemd.so`. The LightDM systemd unit is
   shipped but not pre-enabled because its X-server child currently inherits
   the daemon's root UID; rootless LightDM remains pending.
 
@@ -177,7 +184,7 @@ Everything is built X11-only (the upstream Wayland backends of libxfce4ui,
 the panel, xfdesktop and the terminal are disabled), reuses the packaged
 GTK3/mesa/dbus/polkit/pipewire stack, and needs no systemd: session power
 actions go through polkit's shadow backend, UPower and PipeWire keep their
-D-Bus/runit activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
+D-Bus/systemd activation. Sources come from archive.xfce.org, xorg.freedesktop.org, GNOME and tagged
 upstream GitHub releases. SHA-256 pins are recorded in each recipe.
 
 The `iso-xfce` flavor includes Xfce, Xorg, LightDM and the standard desktop
@@ -195,16 +202,16 @@ The `cosmic/` category contains 21 recipes for the System76 COSMIC Wayland
 desktop, all pinned to the `epoch-1.0.8` source snapshot. Each Rust package
 uses Nawa's Cargo fetch phase and locked workspace dependency graph.
 `cosmic-desktop` is the Faseela integration meta-package: it connects the
-session to runit, D-Bus, elogind, PipeWire/WirePlumber, NetworkManager and the
-COSMIC portal backend. It uses the shared `seatd-runit` package, which also
+session to systemd, D-Bus, systemd-logind, PipeWire/WirePlumber, NetworkManager and the
+COSMIC portal backend. It uses the shared `seatd-systemd` package, which also
 owns the seatd service and DRM render-node udev rule used by Sway; the service
 is not duplicated in desktop-specific packages.
 
-The `iso-cosmic` flavor selects `@cosmic` plus Firefox. The login stack
-(`greetd` + `cosmic-greeter`) lives in the separate `greeter/` category and
-remains selectable through the COSMIC package group. This keeps the login
-daemon and greeter-specific dependency closure out of the ISO and avoids taking over VT 1
-during an ordinary package install. To inspect the dependency closure:
+The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
+`cosmic-greeter`, then enables the greeter's systemd unit while disabling
+`getty@tty1` and LightDM in the image. The separate `greeter/` category keeps
+the login stack out of other desktop flavors; the `cosmic` package group still
+makes it optional for an existing desktop installation. To inspect the dependency closure:
 
 ```sh
 python3 scripts/check-recipes.py cosmic-desktop

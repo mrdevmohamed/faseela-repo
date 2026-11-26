@@ -6,16 +6,30 @@
 [package]
 name = "huiontablet"
 version = "15.0.0.193"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Official Huion tablet control panel and background driver"
 license = ["Huion-EULA"]
-source = "https://driverdl.huion.com/driver/Linux/HuionTablet_LinuxDriver_v%{version}.x86_64.deb"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "huiontablet"
+url = "https://driverdl.huion.com/driver/Linux/HuionTablet_LinuxDriver_v%{version}.x86_64.deb"
 sha256 = "cc563c2358dd0ba13c245f97341d20fecfa8509bfa5c75c8258c895f48b6fa02"
+unpack = false
 
 [depends]
 build = ["binutils", "tar", "xz"]
-run = ["bash", "coreutils", "eudev", "mesa", "procps-ng", "psmisc", "xorg-xprop", "xwayland"]
+run = ["bash", "coreutils", "systemd", "mesa", "procps-ng", "psmisc", "xorg-xprop", "xwayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

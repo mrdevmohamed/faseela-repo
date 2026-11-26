@@ -2,16 +2,29 @@
 [package]
 name = "libX11"
 version = "1.8.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Xlib: the X11 client library"
 license = ["X11"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libX11-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libx11"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libX11-%{version}.tar.xz"
 sha256 = "2b3b3dad9347db41dca56beb7db5878f283bde1142f04d9f8e478af435dfdc53"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "xtrans", "libxcb"]
-run = ["libxcb"]
+run = ["libxcb", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

@@ -1,0 +1,34 @@
+# flatpak recipe: mate-polkit — GTK authentication agent for COSMIC's Polkit requests.
+# The upstream agent is desktop-neutral GTK3; scope its autostart entry to COSMIC.
+[package]
+name = "mate-polkit"
+version = "1.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "GTK3 authentication agent for PolicyKit"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-polkit"
+url = "https://pub.mate-desktop.org/releases/1.28/mate-polkit-%{version}.tar.xz"
+sha256 = "350a1dd0a8ed6a2c9c183cff2a21f394299e968fcc6ae2e8c93c565dae604ae8"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "polkit"]
+run = ["glib", "gtk3", "polkit"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = "sed -i 's/^OnlyShowIn=MATE;$/OnlyShowIn=COSMIC;/' src/polkit-mate-authentication-agent-1.desktop.in.in && grep -Fqx 'OnlyShowIn=COSMIC;' src/polkit-mate-authentication-agent-1.desktop.in.in"
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/libexec --sysconfdir=/etc --buildtype=release -Daccountsservice=false -Dappindicator=no"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

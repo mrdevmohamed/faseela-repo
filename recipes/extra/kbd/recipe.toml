@@ -4,16 +4,29 @@
 [package]
 name = "kbd"
 version = "2.7.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "kbd — Linux console keymaps, fonts and utilities"
 license = ["GPL-2.0-or-later"]
-source = "https://kernel.org/pub/linux/utils/kbd/kbd-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "kbd"
+url = "https://kernel.org/pub/linux/utils/kbd/kbd-%{version}.tar.xz"
 sha256 = "f167d899d92b56ccf12f6f49355173f93870a95f15d8aeebf5fdcd28a621aca8"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-vlock --disable-tests"

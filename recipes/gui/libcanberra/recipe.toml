@@ -8,17 +8,29 @@
 [package]
 name = "libcanberra"
 version = "0.30"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libcanberra — freedesktop event sound library (GTK 3, pavucontrol)"
 license = ["LGPL-2.1-or-later"]
-source = "https://deb.debian.org/debian/pool/main/libc/libcanberra/libcanberra_0.30.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libcanberra"
+url = "https://deb.debian.org/debian/pool/main/libc/libcanberra/libcanberra_0.30.orig.tar.xz"
 sha256 = "c2b671e67e0c288a69fc33dc1b6f1b534d07882c2aceed37004bf48c601afa72"
-source_dir = "libcanberra-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "gtk3", "glib", "libpulse", "libvorbis", "libogg", "libtool"]
 run = ["gtk3", "glib", "libpulse", "libvorbis", "libogg"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # --disable-gtk disables the GTK2 module; GTK3 support stays enabled.

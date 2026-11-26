@@ -3,17 +3,29 @@
 [package]
 name = "linux-headers"
 version = "6.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Sanitized Linux kernel headers for userspace"
 license = ["GPL-2.0"]
-source = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "linux-6.10"
+
+[[package.sources]]
+name = "linux-headers"
+url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz"
 sha256 = "774698422ee54c5f1e704456f37c65c06b51b4e9a8b0866f34580d86fef8e226"
-source_dir = "linux-%{version}"
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "make mrproper"

@@ -5,17 +5,29 @@
 [package]
 name = "llvm"
 version = "18.1.8"
-rel = 8
+rel = 9
 arch = ["x86_64"]
 summary = "LLVM, Clang compiler and clangd language server (X86 + AMDGPU)"
 license = ["Apache-2.0 WITH LLVM-exception"]
-source = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "llvm-project-18.1.8.src"
+
+[[package.sources]]
+name = "llvm"
+url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz"
 sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a"
-source_dir = "llvm-project-%{version}.src"
 
 [depends]
 build = ["cmake", "ninja", "python", "zlib", "zstd"]
 run = ["zlib", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

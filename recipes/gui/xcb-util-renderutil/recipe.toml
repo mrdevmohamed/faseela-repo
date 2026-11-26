@@ -2,16 +2,29 @@
 [package]
 name = "xcb-util-renderutil"
 version = "0.3.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Convenience functions for the XCB Render extension"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-renderutil-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xcb-util-renderutil"
+url = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-renderutil-%{version}.tar.xz"
 sha256 = "3e15d4f0e22d8ddbfbb9f5d77db43eacd7a304029bf25a6166cc63caa96d04ba"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxcb", "xcb-util", "xcb-proto", "xorgproto"]
 run = ["libxcb", "xcb-util"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

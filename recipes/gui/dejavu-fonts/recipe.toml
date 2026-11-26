@@ -2,17 +2,29 @@
 [package]
 name = "dejavu-fonts"
 version = "2.37"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "DejaVu TrueType font family"
 license = ["Bitstream-Vera"]
-source = "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "dejavu-fonts"
+url = "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-%{version}.tar.bz2"
 sha256 = "fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7"
-source_dir = "dejavu-fonts-ttf-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = ["fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

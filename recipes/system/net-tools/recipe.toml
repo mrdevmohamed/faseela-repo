@@ -4,16 +4,29 @@
 [package]
 name = "net-tools"
 version = "2.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Legacy network utilities including ifconfig, netstat, route and arp"
 license = ["GPL-2.0-or-later"]
-source = "https://downloads.sourceforge.net/project/net-tools/net-tools-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "net-tools"
+url = "https://downloads.sourceforge.net/project/net-tools/net-tools-%{version}.tar.xz"
 sha256 = "b262435a5241e89bfa51c3cabd5133753952f7a7b7b93f32e08cb9d96f580d69"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

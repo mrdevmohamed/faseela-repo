@@ -3,16 +3,29 @@
 [package]
 name = "libXcomposite"
 version = "0.4.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X Composite extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXcomposite-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxcomposite"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXcomposite-%{version}.tar.xz"
 sha256 = "fe40bcf0ae1a09070eba24088a5eb9810efe57453779ec1e20a55080c6dc2c87"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXfixes"]
-run = ["libX11", "libXfixes"]
+run = ["libX11", "libXfixes", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

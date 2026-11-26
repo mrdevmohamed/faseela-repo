@@ -2,16 +2,29 @@
 [package]
 name = "xcb-util-image"
 version = "0.4.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "XCB image and shared-memory image helper library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-image-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xcb-util-image"
+url = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-image-%{version}.tar.xz"
 sha256 = "ccad8ee5dadb1271fd4727ad14d9bd77a64e505608766c4e98267d9aede40d3d"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxcb", "xcb-util", "xcb-proto", "xorgproto"]
 run = ["libxcb", "xcb-util"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

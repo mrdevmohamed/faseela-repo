@@ -4,17 +4,29 @@
 [package]
 name = "glibc"
 version = "2.40"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "The GNU C Library (glibc)"
 license = ["LGPL-2.1"]
-source = "https://mirrors.kernel.org/gnu/glibc/glibc-%{version}.tar.xz"
-# canonical: https://ftp.gnu.org/gnu/glibc/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "glibc"
+url = "https://mirrors.kernel.org/gnu/glibc/glibc-%{version}.tar.xz"
 sha256 = "19a890175e9263d748f627993de6f4b1af9cd21e03f080e4bfb3a1fac10205a2"
+strip_components = 1
 
 [depends]
 build = ["linux-headers","bison"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = "mkdir -v build"

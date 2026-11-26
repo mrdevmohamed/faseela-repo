@@ -1,9 +1,13 @@
+import sys
 #!/usr/bin/env python3
 """Regression checks for package recipes that failed in CI."""
 
 from pathlib import Path
 import re
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,8 +32,8 @@ assert "require_config CONFIG_KMOD y" not in linux_configure
 
 net_tools = recipe("recipes/system/net-tools/recipe.toml")
 assert net_tools["package"]["version"] == "2.10"
-assert net_tools["package"]["rel"] == 1
-assert net_tools["package"]["sha256"] == (
+assert net_tools["package"]["rel"] == 2
+assert rs.sha256(net_tools["package"]) == (
     "b262435a5241e89bfa51c3cabd5133753952f7a7b7b93f32e08cb9d96f580d69"
 )
 assert net_tools["package"]["license"] == ["GPL-2.0-or-later"]
@@ -61,7 +65,7 @@ assert "xmlto" not in xdg_compile
 volk = recipe("recipes/media/volk/recipe.toml")
 vulkan_tools = recipe("recipes/media/vulkan-tools/recipe.toml")
 assert volk["package"]["version"] == vulkan_tools["package"]["version"] == "1.3.296"
-assert volk["package"]["sha256"] == (
+assert rs.sha256(volk["package"]) == (
     "8ffd0e81e29688f4abaa39e598937160b098228f37503903b10d481d4862ab85"
 )
 assert {"cmake", "ninja", "vulkan-headers"} <= set(volk["depends"]["build"])
@@ -69,7 +73,7 @@ assert "volk" in set(vulkan_tools["depends"]["build"])
 
 cjk = recipe("recipes/gui/noto-cjk/recipe.toml")
 cjk_install = cjk["build"]["install"]
-assert cjk["package"]["sha256"] == (
+assert rs.sha256(cjk["package"]) == (
     "f5dc28a754e17327d99f0a612134d92c8dd6187314ae967cb77f25df60860139"
 )
 assert "binutils" in cjk["depends"]["build"]
@@ -92,7 +96,15 @@ nawa_text = (ROOT / "recipes/base/nawa/recipe.toml").read_text(encoding="utf-8")
 # The commit, release and hash are bumped by scripts/pin-nawa-source.py (and by
 # the automation that runs it), so check their shape rather than one pin.
 assert nawa["package"]["rel"] >= 21
-assert nawa["package"]["source"] == "local:/nawa-schema-2-requires-a-newer-nawa"
+assert nawa["package"]["source"] == "local:/nawa-package-relations-1-requires-a-newer-nawa"
+# Cargo has to be reachable from Nawa's fetch phase and the sandbox, so the
+# recipe depends on the db-owned rust package (stage 2 failed without it).
+assert nawa["depends"]["build"] == ["rust"]
+assert nawa["depends"]["run"] == ["gcc", "glibc"]
+assert nawa["capabilities"]["provides"] == []
+assert nawa["relations"] == {"schema": 1, "conflicts": [], "replaces": []}
+# The previously published stable-v3 archive and standalone transition
+# release remain the bootstrap path; this recipe revision is schema-v5-only.
 assert [source["name"] for source in nawa["package"]["sources"]] == ["nawa"]
 assert re.fullmatch(
     r"https://github\.com/mrdevmohamed/nawa/archive/[0-9a-f]{40}\.tar\.gz",
@@ -100,18 +112,22 @@ assert re.fullmatch(
 )
 assert re.fullmatch(r"[0-9a-f]{64}", nawa["package"]["sources"][0]["sha256"])
 assert nawa["fetch"]["cargo"]["dir"] == "."
-assert "rust" not in nawa.get("depends", {}).get("build", [])
+assert "rust" in nawa["depends"]["build"]
 assert nawa["build"]["compile"] == "cargo build --release --offline --locked"
 assert "vendor/" not in nawa_text
 assert "cargo fetch" not in nawa["build"]["compile"]
 
 # A selected Nawa target must be bootstrapped from the pinned source with the
 # seed Rust toolchain before the ordinary package loop can parse its recipe.
-workflow = (ROOT / ".github/workflows/packages.yml").read_text(encoding="utf-8")
+# The selection lives in packages.yml, the build steps in packages-build.yml.
+workflow = "\n".join(
+    (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
+    for name in ("packages-build.yml", "packages.yml")
+)
 assert "write-nawa-lock" not in workflow
 assert "nawa-source.toml" not in workflow
 assert 'RECIPE="$REPO/recipes/base/nawa/recipe.toml"' in workflow
-assert "building nawa from its pinned source requires the seed rootfs" in workflow
+assert "the pinned Nawa is compiled in every shard" in workflow
 assert "Bootstrapping the selected Nawa source with the seed Rust toolchain." in workflow
 assert "cargo fetch --locked" in workflow
 # The stage-3-derived seed has no /opt/cargo: the pinned Rust (recipe sha256) is
@@ -122,14 +138,9 @@ assert "sha256sum --check --status" in workflow
 assert "--prefix=/opt/cargo" in workflow
 assert workflow.index("has_cargo()") < workflow.index("cargo fetch --locked")
 assert "deps nawa" in workflow
-assert "supports_schema_v3()" in workflow
-assert "supports_recipe_schema()" in workflow
-assert "supports_nawa_features()" in workflow
-assert "recipe check nawa" in workflow
-assert "1 recipe(s), 0 warning(s)" in workflow
-assert "if ! supports_nawa_features; then" in workflow
-assert "supports_nawa_features ||" in workflow
-assert workflow.index("supports_nawa_features()") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
+# no legacy transition package: the pinned source is always compiled
+assert "supports_schema_v3()" not in workflow
+assert "nawa-transition" not in workflow
 assert workflow.index("cargo fetch --locked") < workflow.index("bash /faseela/bootstrap/build-packages-inner.sh")
 
 print("PACKAGE BUILD RECIPE REGRESSION CHECKS PASSED")

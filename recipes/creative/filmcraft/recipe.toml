@@ -4,17 +4,29 @@
 [package]
 name = "filmcraft"
 version = "0.16.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native video editor with timeline, colour grading and effects"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/filmcraft/releases/download/v0.16.0/filmcraft-0.16.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "filmcraft"
+url = "https://github.com/storytold/filmcraft/releases/download/v0.16.0/filmcraft-0.16.0-linux-x86_64.tar.gz"
 sha256 = "588390eee5d7e1634f05794c4f877ddf29494d9cf74405111d67c16cbe215ae9"
-source_dir = "filmcraft-0.16.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

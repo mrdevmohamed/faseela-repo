@@ -6,17 +6,29 @@
 [package]
 name = "fuse2"
 version = "2.9.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Legacy FUSE 2 runtime and fusermount helper for AppImages"
 license = ["GPL-2.0-only", "LGPL-2.1-only"]
-source = "https://github.com/libfuse/libfuse/releases/download/fuse-%{version}/fuse-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "fuse2"
+url = "https://github.com/libfuse/libfuse/releases/download/fuse-%{version}/fuse-%{version}.tar.gz"
 sha256 = "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
-source_dir = "fuse-%{version}"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "automake", "gettext", "libtool", "pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = '''
@@ -79,7 +91,7 @@ configure = "./configure --prefix=/usr --disable-static INIT_D_PATH=/tmp/init.d"
 compile = "make -j%{jobs}"
 install = '''
 make DESTDIR=%{pkgdir} install
-# Faseela uses runit, not SysV init. The init script is never enabled.
+# Faseela uses systemd, not SysV init. The init script is never enabled.
 rm -rf %{pkgdir}/tmp/init.d %{pkgdir}/etc/init.d
 # fuse3 owns the common configuration and FUSE device udev rule.
 rm -f %{pkgdir}/etc/fuse.conf %{pkgdir}/usr/lib/udev/rules.d/99-fuse.rules

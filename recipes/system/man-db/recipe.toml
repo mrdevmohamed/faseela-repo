@@ -2,16 +2,29 @@
 [package]
 name = "man-db"
 version = "2.13.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Manual-page database and viewer"
 license = ["GPL-2.0", "LGPL-2.1"]
-source = "https://mirror.csclub.uwaterloo.ca/nongnu/man-db/man-db-2.13.1.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "man-db"
+url = "https://mirror.csclub.uwaterloo.ca/nongnu/man-db/man-db-2.13.1.tar.xz"
 sha256 = "8afebb6f7eb6bb8542929458841f5c7e6f240e30c86358c1fbcefbea076c87d9"
+strip_components = 1
 
 [depends]
 build = ["gdbm", "groff", "less", "libpipeline"]
 run = ["gdbm", "groff", "less", "libpipeline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --disable-setuid --enable-cache-owner=bin --with-browser=/usr/bin/less"

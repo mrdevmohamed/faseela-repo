@@ -2,16 +2,29 @@
 [package]
 name = "iptables"
 version = "1.8.11"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "iptables — administration tool for IPv4/IPv6 packet filtering and NAT"
 license = ["GPL-2.0-or-later"]
-source = "https://netfilter.org/projects/iptables/files/iptables-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "iptables"
+url = "https://netfilter.org/projects/iptables/files/iptables-%{version}.tar.xz"
 sha256 = "d87303d55ef8c92bcad4dd3f978b26d272013642b029425775f5bad1009fe7b2"
+strip_components = 1
 
 [depends]
 build = ["libmnl", "libnftnl"]
 run = ["libmnl", "libnftnl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

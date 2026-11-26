@@ -3,16 +3,29 @@
 [package]
 name = "libXdamage"
 version = "1.1.6"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X Damage extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXdamage-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxdamage"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXdamage-%{version}.tar.xz"
 sha256 = "52733c1f5262fca35f64e7d5060c6fcd81a880ba8e1e65c9621cf0727afb5d11"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11", "libXfixes"]
-run = ["libX11", "libXfixes"]
+run = ["libX11", "libXfixes", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

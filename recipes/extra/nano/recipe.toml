@@ -2,16 +2,29 @@
 [package]
 name = "nano"
 version = "8.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU nano — small, friendly text editor"
 license = ["GPL-3.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/nano/nano-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nano"
+url = "https://mirrors.kernel.org/gnu/nano/nano-%{version}.tar.gz"
 sha256 = "0f63a784d61d230570f6fb9c86d6c7a98aa8e63ddac82d04bebdf7fc70d010d0"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

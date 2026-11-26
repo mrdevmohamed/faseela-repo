@@ -4,16 +4,29 @@
 [package]
 name = "swaylock"
 version = "1.8.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Screen locker for Wayland (sway)"
 license = ["MIT"]
-source = "https://github.com/swaywm/swaylock/releases/download/v%{version}/swaylock-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "swaylock"
+url = "https://github.com/swaywm/swaylock/releases/download/v%{version}/swaylock-%{version}.tar.gz"
 sha256 = "6a1175442380b87b2d2868c4a5366ee3592163158d02e3a7fbf3a0bfe07d8b00"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "wayland", "wayland-protocols", "libxkbcommon", "cairo", "libxcrypt"]
 run = ["wayland", "libxkbcommon", "cairo", "libxcrypt", "shadow"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

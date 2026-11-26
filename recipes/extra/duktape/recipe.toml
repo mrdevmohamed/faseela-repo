@@ -2,16 +2,29 @@
 [package]
 name = "duktape"
 version = "2.7.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Embeddable JavaScript engine"
 license = ["MIT"]
-source = "https://github.com/svaarala/duktape/releases/download/v%{version}/duktape-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "duktape"
+url = "https://github.com/svaarala/duktape/releases/download/v%{version}/duktape-%{version}.tar.xz"
 sha256 = "90f8d2fa8b5567c6899830ddef2c03f3c27960b11aca222fa17aa7ac613c2890"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} -f Makefile.sharedlibrary"

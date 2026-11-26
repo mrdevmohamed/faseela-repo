@@ -27,6 +27,8 @@ class Flavors(unittest.TestCase):
         d = Path(self.tmp.name)
         self.recipes = flavor.load_recipes(tree(d, {
             "libc": ("base", {}),
+            "base-files": ("base", {}),
+            "systemd": ("system", {"run": ["base-files >= 0.4-12"]}),
             "cc": ("base", {"run": ["libc"]}),
             "rust": ("extra", {"run": ["cc"]}),
             "nawa": ("base", {"build": ["rust"], "run": []}),
@@ -34,9 +36,15 @@ class Flavors(unittest.TestCase):
             "sway": ("gui", {"run": ["libc"]}),
         }))
         (d / "f.toml").write_text(textwrap.dedent("""
+            [flavor.systemd-test]
+            include = ["systemd"]
             [flavor.boot]
             include = ["nawa"]
             closure = "build"
+            disable_services = ["getty-tty1"]
+            [flavor.boot-child]
+            extends = ["boot"]
+            enable_services = ["cosmic-greeter"]
             [flavor.min]
             include = ["nawa", "vim"]
             [flavor.big]
@@ -54,6 +62,9 @@ class Flavors(unittest.TestCase):
 
     def test_run_closure_skips_build_deps(self):
         self.assertEqual(self.r("min"), ["nawa", "libc", "vim"])
+
+    def test_versioned_runtime_dependency_uses_package_name(self):
+        self.assertEqual(self.r("systemd-test"), ["base-files", "systemd"])
 
     def test_build_closure_adds_build_deps_first(self):
         self.assertEqual(self.r("boot"), ["libc", "cc", "rust", "nawa"])
@@ -73,6 +84,23 @@ class Flavors(unittest.TestCase):
         self.flavors["b"] = {"extends": ["a"]}
         with self.assertRaises(flavor.FlavorError):
             self.r("a")
+
+    def test_service_actions_are_inherited(self):
+        self.assertEqual(
+            flavor.resolve_services(self.flavors, "boot-child"),
+            [("disable", "getty-tty1"), ("enable", "cosmic-greeter")],
+        )
+
+    def test_invalid_service_names_and_conflicts_are_rejected(self):
+        path = Path(self.tmp.name) / "bad-services.toml"
+        for fields in (
+            'enable_services = ["../lightdm"]',
+            'enable_services = ["getty/tty1"]',
+            'enable_services = ["same"]\ndisable_services = ["same"]',
+        ):
+            path.write_text("[flavor.bad]\n" + fields + "\n", encoding="utf-8")
+            with self.assertRaises(flavor.FlavorError):
+                flavor.load_flavors(path)
 
 
 class RealTree(unittest.TestCase):
@@ -94,8 +122,18 @@ class RealTree(unittest.TestCase):
         self.assertIn("cosmic-comp", got["iso-cosmic"])
         self.assertIn("cosmic-files", got["iso-cosmic"])
         self.assertNotIn("sway", got["iso-cosmic"])
-        self.assertNotIn("greetd", got["iso-cosmic"])
-        self.assertNotIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertIn("greetd", got["iso-cosmic"])
+        self.assertIn("cosmic-greeter", got["iso-cosmic"])
+        self.assertNotIn("lightdm", got["iso-cosmic"])
+        self.assertNotIn("lightdm-gtk-greeter", got["iso-cosmic"])
+        self.assertIn("lightdm", got["iso-xfce"])
+        self.assertIn("lightdm-gtk-greeter", got["iso-xfce"])
+        self.assertNotIn("greetd", got["iso-xfce"])
+        self.assertNotIn("cosmic-greeter", got["iso-xfce"])
+        self.assertEqual(
+            flavor.resolve_services(flavors, "iso-cosmic"),
+            [("disable", "getty@tty1"), ("disable", "lightdm"), ("enable", "cosmic-greeter")],
+        )
         self.assertNotIn("cosmic-desktop", got["iso-sway"])
         self.assertNotIn("sway", got["iso-nogui"])
         self.assertNotIn("zed", got["iso-sway"])
@@ -133,11 +171,17 @@ class RealTree(unittest.TestCase):
             got = flavor.resolve(flavors, recipes, n)
             pos = {p: i for i, p in enumerate(got)}
             for p in got:
-                for dep in recipes[p][1].get("run", []):
+                for raw_dep in recipes[p][1].get("run", []):
+                    dep = flavor.requirement_name(raw_dep)
                     if dep in pos:
                         self.assertLess(pos[dep], pos[p], f"{n}: {dep} must precede {p}")
                     else:
-                        self.assertIn(dep, flavors[n].get("exclude", []) + [x for f in flavors.values() for x in f.get("exclude", [])], f"{n}: {p} needs {dep}, which is not in the flavor")
+                        self.assertIn(
+                            dep,
+                            flavors[n].get("exclude", [])
+                            + [x for f in flavors.values() for x in f.get("exclude", [])],
+                            f"{n}: {p} needs {dep}, which is not in the flavor",
+                        )
 
 
 if __name__ == "__main__":

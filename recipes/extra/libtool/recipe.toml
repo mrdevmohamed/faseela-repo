@@ -2,16 +2,29 @@
 [package]
 name = "libtool"
 version = "2.5.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU libtool — generic library support script"
 license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
-source = "https://mirrors.kernel.org/gnu/libtool/libtool-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libtool"
+url = "https://mirrors.kernel.org/gnu/libtool/libtool-%{version}.tar.xz"
 sha256 = "f81f5860666b0bc7d84baddefa60d1cb9fa6fceb2398cc3baca6afaa60266675"
+strip_components = 1
 
 [depends]
 build = []
 run = ["autoconf", "automake", "m4"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

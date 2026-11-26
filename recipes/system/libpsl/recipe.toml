@@ -2,16 +2,29 @@
 [package]
 name = "libpsl"
 version = "0.21.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Public Suffix List library"
 license = ["MIT"]
-source = "https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpsl"
+url = "https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz"
 sha256 = "1dcc9ceae8b128f3c0b3f654decd0e1e891afc6ff81098f227ef260449dae208"
+strip_components = 1
 
 [depends]
 build = ["libunistring", "libidn2"]
 run = ["libunistring", "libidn2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

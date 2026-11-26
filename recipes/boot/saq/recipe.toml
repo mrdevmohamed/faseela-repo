@@ -7,17 +7,29 @@
 [package]
 name = "saq"
 version = "1.2.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Initramfs generator and kernel boot-image maintenance for Faseela"
 license = ["GPL-2.0"]
-source = "https://github.com/mrdevmohamed/saq/archive/9103517acdfa9755b4d45733c680530d4a88db43.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "saq"
+url = "https://github.com/mrdevmohamed/saq/archive/9103517acdfa9755b4d45733c680530d4a88db43.tar.gz"
 sha256 = "5621395645ac95888e324d9798596bc92801a7c9a4fa26a81f9acef37ac49826"
-source_dir = "saq-9103517acdfa9755b4d45733c680530d4a88db43"
+strip_components = 1
 
 [depends]
 build = []
 run = ["bash", "busybox", "kmod", "cpio", "gzip", "findutils", "coreutils", "util-linux", "sed", "grep", "xz", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 check = """

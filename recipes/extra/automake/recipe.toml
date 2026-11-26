@@ -2,16 +2,29 @@
 [package]
 name = "automake"
 version = "1.17"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU automake — generate Makefile.in from Makefile.am"
 license = ["GPL-2.0-or-later"]
-source = "https://mirrors.kernel.org/gnu/automake/automake-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "automake"
+url = "https://mirrors.kernel.org/gnu/automake/automake-%{version}.tar.xz"
 sha256 = "8920c1fc411e13b90bf704ef9db6f29d540e76d232cb3b2c9f4dc4cc599bd990"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "perl"]
 run = ["autoconf", "perl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

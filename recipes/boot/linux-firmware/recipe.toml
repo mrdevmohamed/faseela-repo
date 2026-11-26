@@ -7,12 +7,22 @@
 [package]
 name = "linux-firmware"
 version = "20260910"
-rel = 2
+rel = 3
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "Meta package: all Linux kernel firmware (linux-firmware-lite + linux-firmware-extra)"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 run = ["linux-firmware-lite", "linux-firmware-extra"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # meta package: no sources, ships the manifest so the set is introspectable

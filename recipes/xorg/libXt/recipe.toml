@@ -2,16 +2,29 @@
 [package]
 name = "libXt"
 version = "1.3.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X11 Toolkit Intrinsics library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXt-1.3.1.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxt"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXt-1.3.1.tar.xz"
 sha256 = "e0a774b33324f4d4c05b199ea45050f87206586d81655f8bef4dba434d931288"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libSM", "libICE", "libX11", "xorgproto"]
-run = ["libSM", "libICE", "libX11"]
+run = ["libSM", "libICE", "libX11", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-debug"

@@ -11,17 +11,29 @@
 [package]
 name = "intel-media-driver"
 version = "24.4.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Intel media driver for VA-API (iHD, gen8+): hardware video decode/encode"
 license = ["MIT", "BSD-3-Clause"]
-source = "https://github.com/intel/media-driver/archive/refs/tags/intel-media-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "intel-media-driver"
+url = "https://github.com/intel/media-driver/archive/refs/tags/intel-media-%{version}.tar.gz"
 sha256 = "3000723faf4dc56eb8276f402c4aa798459bbce860b408a0c480d863b28130ed"
-source_dir = "media-driver-intel-media-%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake", "pkgconf", "libva", "gmmlib"]
 run = ["libva", "gmmlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DLIBVA_DRIVERS_PATH=/usr/lib/dri -DINSTALL_DRIVER_SYSCONF=OFF -DENABLE_KERNELS=ON -DENABLE_NONFREE_KERNELS=ON -DBUILD_CMRTLIB=OFF -DMEDIA_BUILD_FATAL_WARNINGS=OFF -DMEDIA_RUN_TEST_SUITE=OFF"

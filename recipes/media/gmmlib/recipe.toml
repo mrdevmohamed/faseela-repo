@@ -3,17 +3,29 @@
 [package]
 name = "gmmlib"
 version = "22.5.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Intel Graphics Memory Management Library (libigdgmm)"
 license = ["MIT"]
-source = "https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gmmlib"
+url = "https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-%{version}.tar.gz"
 sha256 = "08db696071510b7e03aa2d9fb7375c6c35f7c327ecd6747424c664c622bb4377"
-source_dir = "gmmlib-intel-gmmlib-%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DRUN_TEST_SUITE=OFF"

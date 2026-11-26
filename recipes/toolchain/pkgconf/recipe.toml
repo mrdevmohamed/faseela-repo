@@ -2,16 +2,29 @@
 [package]
 name = "pkgconf"
 version = "2.3.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Package compiler and linker metadata toolkit"
 license = ["ISC"]
-source = "https://distfiles.ariadne.space/pkgconf/pkgconf-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pkgconf"
+url = "https://distfiles.ariadne.space/pkgconf/pkgconf-%{version}.tar.xz"
 sha256 = "3a9080ac51d03615e7c1910a0a2a8df08424892b5f13b0628a204d3fcce0ea8b"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

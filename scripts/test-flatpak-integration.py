@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression checks for Flatpak, COSMIC Store, and Faseela's runit auth stack."""
+"""Regression checks for Flatpak, COSMIC Store, and Faseela's systemd auth stack."""
 from pathlib import Path
 import re
 import subprocess
@@ -14,12 +14,12 @@ def recipe(category: str, name: str) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-flatpak = recipe("gui", "flatpak")
+flatpak = recipe("flatpak", "flatpak")
 pkg = flatpak["package"]
 assert pkg["name"] == "flatpak"
 assert pkg["version"] == "1.18.4"
-assert re.fullmatch(r"[0-9a-f]{64}", pkg["sha256"])
-assert pkg["source"].startswith("https://github.com/flatpak/flatpak/releases/")
+assert re.fullmatch(r"[0-9a-f]{64}", pkg["sources"][0]["sha256"])
+assert pkg["sources"][0]["url"].startswith("https://github.com/flatpak/flatpak/releases/")
 assert "assets/flathub.flatpakrepo" in flatpak["assets"]["include"]
 
 build = set(flatpak["depends"]["build"])
@@ -51,7 +51,7 @@ for option in (
     "-Ddbus_config_dir=/usr/share/dbus-1/system.d",
 ):
     assert option in configure, f"Flatpak configure is missing {option}"
-assert "systemd" not in configure.replace("-Dsystemd=disabled", "").replace(
+assert "systemd" not in configure.replace("nosystemd", "").replace("-Dsystemd=disabled", "").replace(
     "-Dsystemdsystemunitdir=no", ""
 ).replace("-Dsystemduserunitdir=no", "").replace(
     "-Dsystemdsystemenvgendir=no", ""
@@ -71,7 +71,7 @@ assert "/var/lib/flatpak" in post
 
 # The Flathub descriptor is upstream's signed source metadata, not a URL-only
 # remote with signature verification disabled.
-flathub_path = ROOT / "recipes/gui/flatpak/assets/flathub.flatpakrepo"
+flathub_path = ROOT / "recipes/flatpak/flatpak/assets/flathub.flatpakrepo"
 flathub = flathub_path.read_text(encoding="utf-8")
 assert "[Flatpak Repo]" in flathub
 assert "Title=Flathub" in flathub
@@ -79,19 +79,17 @@ assert "Url=https://dl.flathub.org/repo/" in flathub
 assert "GPGKey=mQIN" in flathub
 
 # OSTree is the Flatpak storage engine. It must not pull libsystemd or units.
-ostree = recipe("system", "ostree")
+ostree = recipe("flatpak", "ostree")
 assert "--without-libsystemd" in ostree["build"]["configure"]
 assert "libsystemd" not in ostree["depends"]["run"]
 
 # The existing Faseela authorization stack remains the only privileged path:
-# system D-Bus activation -> Flatpak helper -> Polkit -> elogind session state.
+# system D-Bus activation -> Flatpak helper -> Polkit -> systemd-logind sessions.
 polkit = recipe("gui", "polkit")
-assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
-assert "/etc/sv/polkitd/run" in polkit["build"]["install"]
-assert "/etc/runit/runsvdir/default/polkitd" in polkit["build"]["install"]
+assert "-Dsession_tracking=logind" in polkit["build"]["configure"]
+assert "/usr/lib/systemd/system/polkit.service" in polkit["build"]["install"]
 dbus_system = recipe("gui", "dbus-system")
-assert "/etc/sv/dbus/run" in dbus_system["build"]["install"]
-assert "/etc/runit/runsvdir/default/dbus" in dbus_system["build"]["install"]
+assert "dbus.socket and dbus.service" in dbus_system["build"]["install"]
 
 # COSMIC Store compiles the upstream libflatpak backend for both scopes.
 store = recipe("cosmic", "cosmic-store")
@@ -105,35 +103,36 @@ assert "desktop-systemd" not in store_compile
 assert "packagekit" not in store_compile
 
 desktop = recipe("cosmic", "cosmic-desktop")
-assert desktop["package"]["rel"] >= 3
+assert desktop["package"]["rel"] >= 4
 assert "flatpak" in desktop["depends"]["run"]
 assert "mate-polkit" in desktop["depends"]["run"]
-agent = recipe("gui", "mate-polkit")
+agent = recipe("flatpak", "mate-polkit")
 assert "polkit" in agent["depends"]["run"]
 assert "gtk3" in agent["depends"]["run"]
 assert "s/^OnlyShowIn=MATE;$/OnlyShowIn=COSMIC;/" in agent["build"]["prepare"]
 
 # AppStream and its XML/YAML dependencies are packaged, rather than relying on
 # the pure-Rust catalog parser alone or host libraries from the build runner.
-appstream = recipe("gui", "appstream")
+appstream = recipe("flatpak", "appstream")
 assert "libxmlb" in appstream["depends"]["build"]
 assert "libfyaml" in appstream["depends"]["build"]
 assert "systemd=false" in appstream["build"]["configure"]
 for category, name in (
-    ("gui", "libxmlb"),
-    ("gui", "libfyaml"),
-    ("gui", "appstream"),
-    ("system", "libassuan"),
-    ("system", "libksba"),
-    ("system", "npth"),
-    ("system", "gnupg"),
-    ("system", "gpgme"),
-    ("system", "ostree"),
-    ("gui", "flatpak"),
-    ("gui", "mate-polkit"),
+    ("flatpak", "libxmlb"),
+    ("flatpak", "libfyaml"),
+    ("flatpak", "appstream"),
+    ("flatpak", "libassuan"),
+    ("flatpak", "libksba"),
+    ("flatpak", "npth"),
+    ("flatpak", "gnupg"),
+    ("flatpak", "gpgme"),
+    ("flatpak", "ostree"),
+    ("flatpak", "flatpak"),
+    ("flatpak", "mate-polkit"),
 ):
     item = recipe(category, name)
-    assert re.fullmatch(r"[0-9a-f]{64}", item["package"]["sha256"]), (
+    sources = item["package"]["sources"]
+    assert sources and all(re.fullmatch(r"[0-9a-f]{64}", src["sha256"]) for src in sources), (
         f"{name}: source SHA-256 is not pinned"
     )
 
@@ -147,4 +146,4 @@ for label, script in (
     )
     assert result.returncode == 0, f"{label} shell syntax error: {result.stderr}"
 
-print("test-flatpak-integration: Flatpak/libflatpak, Flathub, D-Bus/Polkit/elogind/runit, and COSMIC Store checks passed")
+print("test-flatpak-integration: Flatpak/libflatpak, Flathub, D-Bus/Polkit/systemd-logind, and COSMIC Store checks passed")

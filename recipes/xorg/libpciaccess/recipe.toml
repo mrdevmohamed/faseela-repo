@@ -2,16 +2,29 @@
 [package]
 name = "libpciaccess"
 version = "0.19"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Generic PCI access library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libpciaccess-0.19.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpciaccess"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libpciaccess-0.19.tar.xz"
 sha256 = "3c55aa86c82e54a4e3109786f0463530d53b36b6d1cfd14616454f985dd2aa43"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release "

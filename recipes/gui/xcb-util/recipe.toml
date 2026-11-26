@@ -2,16 +2,29 @@
 [package]
 name = "xcb-util"
 version = "0.4.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Base utility library for XCB extension helper modules"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xcb-util"
+url = "https://xorg.freedesktop.org/archive/individual/xcb/xcb-util-%{version}.tar.xz"
 sha256 = "5abe3bbbd8e54f0fa3ec945291b7e8fa8cfd3cccc43718f8758430f94126e512"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxcb", "xcb-proto", "xorgproto"]
 run = ["libxcb"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

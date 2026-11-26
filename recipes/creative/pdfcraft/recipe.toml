@@ -4,17 +4,29 @@
 [package]
 name = "pdfcraft"
 version = "0.17.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native PDF reader, editor, forms and signing workbench"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/pdfcraft/releases/download/v0.17.0/pdfcraft-0.17.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pdfcraft"
+url = "https://github.com/storytold/pdfcraft/releases/download/v0.17.0/pdfcraft-0.17.0-linux-x86_64.tar.gz"
 sha256 = "f9814a7a0af77b905adba1c3079caedee537586797043cf5af9503914f6abec5"
-source_dir = "pdfcraft-0.17.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

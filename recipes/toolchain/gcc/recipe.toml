@@ -4,17 +4,29 @@
 [package]
 name = "gcc"
 version = "14.2.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GNU Compiler Collection (C, C++)"
 license = ["GPL-3.0", "LGPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/gcc/gcc-%{version}/gcc-%{version}.tar.xz"
-# canonical: https://ftp.gnu.org/gnu/gcc/
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "gcc-14.2.0"
+
+[[package.sources]]
+name = "gcc"
+url = "https://mirrors.kernel.org/gnu/gcc/gcc-%{version}/gcc-%{version}.tar.xz"
 sha256 = "a7b39bc69cbf9e25826c5a60ab26477001f7c08d85cec04bc0e29cabed6f3cc9"
 
 [depends]
 build = ["binutils", "glibc", "gmp", "mpfr", "mpc"]
 run = ["glibc", "gmp", "mpfr", "mpc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # x86_64 gcc names the 64-bit multilib dir ../lib64 even with --disable-multilib

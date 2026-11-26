@@ -2,17 +2,29 @@
 [package]
 name = "xdg-dbus-proxy"
 version = "0.1.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Filtering proxy for sandboxed D-Bus connections"
 license = ["LGPL-2.1-or-later"]
-source = "https://github.com/flatpak/xdg-dbus-proxy/releases/download/%{version}/xdg-dbus-proxy-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xdg-dbus-proxy"
+url = "https://github.com/flatpak/xdg-dbus-proxy/releases/download/%{version}/xdg-dbus-proxy-%{version}.tar.xz"
 sha256 = "5450dda586ec3bb3ca709d311e845487883faa3b09cf562608d7e84f4311dced"
-source_dir = "xdg-dbus-proxy-%{version}"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "glib"]
 run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D man=disabled -D tests=false -D installed_tests=false"

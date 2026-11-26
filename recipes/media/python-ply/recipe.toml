@@ -2,17 +2,29 @@
 [package]
 name = "python-ply"
 version = "3.11"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Python Lex-Yacc parser used to build Mesa's Intel Vulkan driver"
 license = ["BSD-3-Clause"]
-source = "https://files.pythonhosted.org/packages/source/p/ply/ply-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "python-ply"
+url = "https://files.pythonhosted.org/packages/source/p/ply/ply-%{version}.tar.gz"
 sha256 = "00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3"
-source_dir = "ply-%{version}"
+strip_components = 1
 
 [depends]
 build = ["python"]
 run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

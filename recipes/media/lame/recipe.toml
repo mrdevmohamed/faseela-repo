@@ -4,16 +4,29 @@
 [package]
 name = "lame"
 version = "3.100"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "LAME — MP3 encoder library (libmp3lame)"
 license = ["LGPL-2.0-or-later"]
-source = "https://download.sourceforge.net/lame/lame-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lame"
+url = "https://download.sourceforge.net/lame/lame-%{version}.tar.gz"
 sha256 = "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-frontend --disable-gtktest"

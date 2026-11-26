@@ -68,7 +68,7 @@ name = "Container Host"
 description = "Podman and the supporting OCI runtime, network, and storage components."
 mandatory = ["podman", "crun", "conmon"]
 default = ["aardvark-dns", "netavark", "fuse-overlayfs", "passt"]
-optional = ["catatonit", "runit-services"]
+optional = ["catatonit"]
 
 [[group]]
 schema = 1

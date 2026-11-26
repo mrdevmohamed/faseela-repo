@@ -1,17 +1,17 @@
 # cosmic recipe: cosmic-locker — COSMIC user-session lock screen.
 # This is the normal-user mode of cosmic-greeter, not the greetd login UI.
-# cosmic-session launches it inside the session; it listens for elogind Lock
+# cosmic-session launches it inside the session; it listens for logind Lock
 # and Unlock signals and creates the compositor's Wayland session-lock surface.
 # Keep it separate from the optional greetd package so a basic COSMIC install
 # can lock its screen without installing or enabling another login manager.
 [package]
 name = "cosmic-locker"
 version = "1.11.0"
-rel = 1
+rel = 3
 arch = ["x86_64"]
-summary = "COSMIC Wayland session lock screen using elogind"
+summary = "COSMIC Wayland session lock screen using systemd-logind"
 license = ["GPL-3.0-only"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-greeter"
@@ -20,8 +20,16 @@ sha256 = "f31c5bac8e50ed5df75cb7d07fb8167e7835dc22b3438a48c8c1f27e7de36e48"
 strip_components = 1
 
 [depends]
-build = ["rust", "pkgconf", "linux-pam", "wayland", "libxkbcommon", "mesa", "eudev", "libinput", "dav1d"]
-run = ["linux-pam", "wayland", "mesa", "libxkbcommon", "eudev", "dbus", "elogind", "network-manager", "bluez", "upower", "cosmic-icons", "hicolor-icon-theme", "libinput", "dav1d"]
+build = ["rust", "pkgconf", "linux-pam", "wayland", "libxkbcommon", "mesa", "systemd", "libinput", "dav1d"]
+run = ["linux-pam", "wayland", "mesa", "libxkbcommon", "systemd", "dbus", "network-manager", "bluez", "upower", "cosmic-icons", "hicolor-icon-theme", "libinput", "dav1d"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."
@@ -38,7 +46,7 @@ install = '''
 install -Dm755 target/release/cosmic-greeter %{pkgdir}/usr/bin/cosmic-greeter
 
 # The locker authenticates through the "cosmic-greeter" PAM service. Faseela
-# uses linux-pam + pam_elogind, never pam_systemd or a systemd session stack.
+# uses linux-pam + pam_systemd, which registers the lock session with logind.
 install -d -m755 %{pkgdir}/etc/pam.d
 cat > %{pkgdir}/etc/pam.d/cosmic-greeter <<'PAM'
 #%PAM-1.0
@@ -48,7 +56,7 @@ auth      required pam_unix.so
 account   required pam_unix.so
 password  required pam_unix.so
 session   required pam_unix.so
-session   optional pam_elogind.so class=user type=wayland desktop=COSMIC
+session   optional pam_systemd.so class=user type=wayland desktop=COSMIC
 PAM
 chmod 644 %{pkgdir}/etc/pam.d/cosmic-greeter
 

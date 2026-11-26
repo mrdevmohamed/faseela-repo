@@ -1,0 +1,32 @@
+# flatpak recipe: AppStream — application metadata library and appstreamcli.
+[package]
+name = "appstream"
+version = "1.2.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Application metadata library and command-line tools"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "appstream"
+url = "https://www.freedesktop.org/software/appstream/releases/AppStream-%{version}.tar.xz"
+sha256 = "8daa01a4d66c73f036aa92af9bf76abfe8408eaa76fcda6ca54fa8ef5b93ed17"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gperf", "glib", "curl", "libxml2", "libxmlb", "libfyaml", "zstd"]
+run = ["glib", "curl", "libxml2", "libxmlb", "libfyaml", "zstd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dsystemd=false -Dgir=false -Dvapi=false -Dstemming=false -Dcompose=false -Dqt=false -Dapt-support=false -Dtools=true -Dbash-completion=false -Dzstd-support=true -Dblake3-support=false -Ddisplay-detection=none -Ddocs=false -Dapidocs=false -Dinstall-docs=false -Dman=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

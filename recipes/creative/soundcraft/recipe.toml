@@ -4,17 +4,29 @@
 [package]
 name = "soundcraft"
 version = "0.16.0"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native digital audio workstation for recording, editing and mixing"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/soundcraft/releases/download/v0.16.0/soundcraft-0.16.0-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "soundcraft"
+url = "https://github.com/storytold/soundcraft/releases/download/v0.16.0/soundcraft-0.16.0-linux-x86_64.tar.gz"
 sha256 = "25c6b0cb8924198f22e3a6f2771d7dcc9e041a3244a4be445cbde9d00e7dc19e"
-source_dir = "soundcraft-0.16.0-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

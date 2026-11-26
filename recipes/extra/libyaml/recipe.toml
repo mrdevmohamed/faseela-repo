@@ -3,17 +3,29 @@
 [package]
 name = "libyaml"
 version = "0.2.5"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libyaml — YAML 1.1 parser and emitter library"
 license = ["MIT"]
-source = "https://pyyaml.org/download/libyaml/yaml-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libyaml"
+url = "https://pyyaml.org/download/libyaml/yaml-%{version}.tar.gz"
 sha256 = "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4"
-source_dir = "yaml-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static"

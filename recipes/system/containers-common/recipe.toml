@@ -2,12 +2,12 @@
 [package]
 name = "containers-common"
 version = "0.1.0"
-rel = 3
+rel = 5
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Shared configuration defaults for OCI container tools"
 license = ["Apache-2.0", "GPL-2.0-or-later"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [assets]
 include = ["containers.conf", "storage.conf", "registries.conf", "policy.json"]
@@ -15,6 +15,14 @@ include = ["containers.conf", "storage.conf", "registries.conf", "policy.json"]
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = 'install -Dm0644 "%{assetsdir}/containers.conf" "%{pkgdir}/usr/share/containers/containers.conf" && install -Dm0644 "%{assetsdir}/storage.conf" "%{pkgdir}/usr/share/containers/storage.conf" && install -Dm0644 "%{assetsdir}/registries.conf" "%{pkgdir}/usr/share/containers/registries.conf" && install -Dm0644 "%{assetsdir}/policy.json" "%{pkgdir}/usr/share/containers/policy.json"'

@@ -3,17 +3,29 @@
 [package]
 name = "libvpx"
 version = "1.15.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libvpx — VP8/VP9 video codec library"
 license = ["BSD-3-Clause"]
-source = "https://github.com/webmproject/libvpx/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libvpx"
+url = "https://github.com/webmproject/libvpx/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "e935eded7d81631a538bfae703fd1e293aad1c7fd3407ba00440c95105d2011e"
-source_dir = "libvpx-%{version}"
+strip_components = 1
 
 [depends]
 build = ["nasm"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --as=nasm --enable-shared --disable-static --enable-pic --enable-runtime-cpu-detect --enable-vp8 --enable-vp9 --enable-vp9-highbitdepth --enable-postproc --enable-vp9-postproc --disable-examples --disable-tools --disable-docs --disable-unit-tests"

@@ -4,15 +4,15 @@
 # workspaces and OSD, and exports the compositor environment to D-Bus
 # activation. Explicitly disable the upstream default "systemd" feature;
 # enable only "logind" (pure zbus calls to org.freedesktop.login1, provided by
-# elogind on Faseela) and "autostart" for XDG autostart entries.
+# systemd-logind on Faseela) and "autostart" for XDG autostart entries.
 [package]
 name = "cosmic-session"
 version = "1.11.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "COSMIC session manager"
 license = ["GPL-3.0-only"]
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "cosmic-session"
@@ -22,7 +22,15 @@ strip_components = 1
 
 [depends]
 build = ["rust"]
-run = ["dbus", "dbus-system", "elogind", "xdg-desktop-portal-cosmic", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-locker", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings-daemon", "cosmic-files", "cosmic-randr"]
+run = ["dbus", "dbus-system", "systemd", "xdg-desktop-portal-cosmic", "cosmic-comp", "cosmic-panel", "cosmic-applets", "cosmic-launcher", "cosmic-locker", "cosmic-notifications", "cosmic-workspaces", "cosmic-osd", "cosmic-bg", "cosmic-idle", "cosmic-settings-daemon", "cosmic-files", "cosmic-randr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [fetch.cargo]
 dir = "."
@@ -34,7 +42,7 @@ install -Dm755 target/release/cosmic-session %{pkgdir}/usr/bin/cosmic-session
 # Upstream session start script: re-executes through the login shell for the
 # environment, then wraps cosmic-session in a per-session D-Bus bus. The
 # systemd branches are guarded by `command -v systemctl` and stay off under
-# runit.
+# systemd.
 install -m755 data/start-cosmic %{pkgdir}/usr/bin/start-cosmic
 # Wayland session entry for display managers / greetd.
 install -Dm644 data/cosmic.desktop %{pkgdir}/usr/share/wayland-sessions/cosmic.desktop

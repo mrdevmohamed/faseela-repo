@@ -3,17 +3,29 @@
 [package]
 name = "lpeg"
 version = "1.1.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "lpeg — pattern-matching library for Lua (static liblpeg.a for Neovim)"
 license = ["MIT"]
-source = "https://www.inf.puc-rio.br/~roberto/lpeg/lpeg-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lpeg"
+url = "https://www.inf.puc-rio.br/~roberto/lpeg/lpeg-%{version}.tar.gz"
 sha256 = "4b155d67d2246c1ffa7ad7bc466c1ea899bbc40fef0257cc9c03cecbaed4352a"
-source_dir = "lpeg-%{version}"
+strip_components = 1
 
 [depends]
 build = ["luajit"]
 run = ["luajit"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = """

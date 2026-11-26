@@ -4,15 +4,15 @@ This checklist verifies the installed XFCE desktop, not just whether its package
 compile. Run it in a disposable VM before declaring a LightDM/XFCE integration
 change runtime-verified.
 
-Faseela uses **runit** for PID 1 and service supervision. Elogind provides
-login1 session tracking; it does not replace runit. UPower and UDisks2 are
-activated by the system D-Bus and must not be given duplicate runit daemons.
+Faseela uses **systemd** for PID 1, service supervision and login1 session
+tracking (`systemd-logind`, registered through `pam_systemd`). UPower and UDisks2
+are activated by the system D-Bus and must not be given duplicate systemd units.
 
 ## Test layers
 
 | Layer | Where it runs | What it proves |
 |---|---|---|
-| Static/recipe checks | Pull-request CI | Required package dependencies, staged desktop files, PAM/session wiring, runit service scripts and enabled-service links are present and syntactically valid |
+| Static/recipe checks | Pull-request CI | Required package dependencies, staged desktop files, PAM/session wiring, systemd unit files and presets are present and syntactically valid |
 | Package build | Package-build workflow | The changed packages build and their install hooks complete |
 | Runtime smoke tests | Disposable VM or installed test machine | LightDM login, user session, D-Bus activation, Polkit prompts, storage, audio, notifications, portals and panel interactions actually work |
 
@@ -47,40 +47,40 @@ another display manager.
    account-creation process).
 3. Boot the installed system to a TTY first. Do not enable LightDM until the
    prerequisite checks below pass.
-4. Confirm that PID 1 is runit:
+4. Confirm that PID 1 is systemd:
 
 ```sh
 ps -p 1 -o comm=
 ```
 
-Expected: `runit`.
+Expected: `systemd`.
 
 ### A2. Verify system services and session prerequisites
 
 Run as root or prefix privileged commands with `doas`:
 
 ```sh
-for service in dbus elogind elogind-userdbd polkitd NetworkManager; do
+for service in dbus systemd-logind polkit NetworkManager; do
     printf '\\n===== %s =====\\n' "$service"
-    sv status "/etc/sv/$service"
+    systemctl status --no-pager "$service.service" || true
 done
 
-for service in dbus elogind elogind-userdbd polkitd NetworkManager; do
-    test -L "/etc/runit/runsvdir/default/$service" || {
-        echo "Missing enabled runit service: $service" >&2
+for service in dbus polkit NetworkManager; do
+    systemctl is-enabled --quiet "$service.service" || {
+        echo "Service is not enabled: $service" >&2
         exit 1
     }
 done
 
-test -x /etc/sv/lightdm/run
-test ! -L /etc/runit/runsvdir/default/lightdm
+test -s /usr/lib/systemd/system/lightdm.service
+! systemctl is-enabled --quiet lightdm.service
 test -s /etc/pam.d/lightdm
 test -s /etc/pam.d/lightdm-greeter
 test -s /etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
 grep -Fqx 'user-session=xfce' /etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
-grep -q 'pam_elogind.so class=user type=x11 desktop=xfce' /etc/pam.d/lightdm
-grep -q 'pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter' /etc/pam.d/lightdm-greeter
-! grep -R 'pam_systemd.so' /etc/pam.d/lightdm /etc/pam.d/lightdm-greeter /etc/pam.d/lightdm-autologin
+grep -q 'pam_systemd.so class=user type=x11 desktop=xfce' /etc/pam.d/lightdm
+grep -q 'pam_systemd.so class=greeter type=x11 desktop=lightdm-greeter' /etc/pam.d/lightdm-greeter
+! grep -R 'pam_elogind.so' /etc/pam.d/
 
 # PAM shadow-password authentication requires this helper to retain SUID.
 test -f /usr/sbin/unix_chkpwd
@@ -89,13 +89,14 @@ test "$(stat -c '%u:%g:%a' /usr/sbin/unix_chkpwd)" = "0:0:4755"
 
 Expected:
 
-- The five enabled services report `run:` (or a short, clearly diagnosed
+- The four services report `active (running)` (or a short, clearly diagnosed
   startup failure that is fixed before proceeding).
-- Each enabled service link points into `/etc/sv`.
-- LightDM has a runit service definition but is not enabled by package
-  installation; this is intentional.
-- LightDM's user and greeter PAM stacks use `pam_elogind.so`, not
-  `pam_systemd.so`.
+- `systemctl is-enabled` succeeds for dbus, polkit and NetworkManager; they are
+  enabled by presets (`systemctl preset`), not by hand-made links.
+- LightDM has a unit file but is not enabled by package installation; this is
+  intentional.
+- LightDM's user and greeter PAM stacks use `pam_systemd.so`; no `pam_elogind.so`
+  remains anywhere under `/etc/pam.d`.
 - `/usr/sbin/unix_chkpwd` is owned by `root:root` and has mode `4755`.
   Nawa intentionally strips SUID/SGID bits while extracting package archives;
   linux-pam restores this required helper mode in its post-install hook.
@@ -119,9 +120,8 @@ test -s /usr/share/xdg-desktop-portal/xfce-portals.conf
 From the VM's TTY/console, enable LightDM manually:
 
 ```sh
-doas ln -s /etc/sv/lightdm /etc/runit/runsvdir/default/lightdm
-doas sv up /etc/sv/lightdm
-doas sv status /etc/sv/lightdm
+doas systemctl enable --now lightdm.service
+doas systemctl status --no-pager lightdm.service
 ```
 
 Expected: LightDM stays up and displays the GTK greeter. Log in as the normal
@@ -129,12 +129,12 @@ test user and confirm that the XFCE desktop loads without returning to the
 greeter, a black screen, or a shell.
 
 If the display manager does not start, switch back to the VM console, run
-`doas sv down /etc/sv/lightdm`, remove the enable link, and inspect LightDM and
+`doas systemctl disable --now lightdm.service` and inspect LightDM and
 Xorg logs before retrying:
 
 ```sh
-doas sv down /etc/sv/lightdm
-doas rm -f /etc/runit/runsvdir/default/lightdm
+doas systemctl disable --now lightdm.service
+journalctl -b -u lightdm.service --no-pager
 ```
 
 Do not enable LightDM automatically in the package recipe as a workaround for
@@ -170,7 +170,7 @@ loginctl list-sessions
 Expected: XFCE reports X11, the runtime directory exists and belongs to the
 logged-in user, the session process is present, and both D-Bus commands return
 a list of names. The portal frontend activates on the session bus exactly once
-and inherits `XDG_CURRENT_DESKTOP=XFCE` plus the active `DISPLAY`. Elogind
+and inherits `XDG_CURRENT_DESKTOP=XFCE` plus the active `DISPLAY`. `loginctl list-sessions`
 lists the active user session.
 
 ### A5. Exercise session services and desktop features
@@ -197,22 +197,20 @@ Perform each interaction, not just a process check:
 Do not use a real data disk for mount-policy tests. Use disposable virtual
 storage only.
 
-### A6. Check runit supervision after desktop use
+### A6. Check systemd supervision after desktop use
 
 From a terminal in XFCE:
 
 ```sh
-doas sv status /etc/sv/dbus
-doas sv status /etc/sv/elogind
-doas sv status /etc/sv/elogind-userdbd
-doas sv status /etc/sv/polkitd
-doas sv status /etc/sv/NetworkManager
+doas systemctl status --no-pager dbus.service systemd-logind.service \
+    polkit.service NetworkManager.service
+systemctl --failed --no-pager
 ```
 
-Expected: the services remain supervised by runit. UPower and UDisks2 should
-appear through D-Bus activation when requested; do not add separate runit
-services for them. PipeWire and WirePlumber are per-user session processes,
-not system runit services.
+Expected: the services remain active and `systemctl --failed` is empty. UPower and
+UDisks2 should appear through D-Bus activation when requested; do not add
+separate systemd units for them. PipeWire and WirePlumber are per-user session
+processes, not system services.
 
 Log out and log back in once. Confirm that the session starts cleanly again and
 that the audio, Polkit agent, notification daemon, network applet and Thunar
@@ -250,12 +248,12 @@ For every failed check, record:
 - Faseela build and package versions.
 - Section/check ID (for example, A3 LightDM login or A5 audio).
 - Exact command or UI action and full error output.
-- Relevant `sv status` output for runit-managed services.
+- Relevant `systemctl status` and `journalctl -b` output for the affected services.
 - Relevant LightDM/Xorg logs and a screenshot when the failure is graphical.
 - Whether the issue reproduces after restoring the VM snapshot.
 
 File the failure against the responsible package or integration area (LightDM,
-elogind/PAM, D-Bus, Polkit, NetworkManager, GVfs/UDisks2, PipeWire, XFCE panel,
+systemd-logind/PAM, D-Bus, Polkit, NetworkManager, GVfs/UDisks2, PipeWire, XFCE panel,
 notifications or portals). Do not report a generic “XFCE build failed” when
 the package build succeeded and the runtime smoke test failed.
 

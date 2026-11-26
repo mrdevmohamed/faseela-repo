@@ -1,0 +1,32 @@
+# flatpak recipe: GPGME — GnuPG Made Easy API used for Flatpak remote verification.
+[package]
+name = "gpgme"
+version = "2.2.0"
+rel = 2
+arch = ["x86_64"]
+summary = "High-level GnuPG cryptography API"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gpgme"
+url = "https://gnupg.org/ftp/gcrypt/gpgme/gpgme-%{version}.tar.bz2"
+sha256 = "7160e80e84dafd00d956c84891c533bb7ab16a6a54fbe1574b2f3acf0496977b"
+strip_components = 1
+
+[depends]
+build = ["libassuan", "libgpg-error"]
+run = ["libassuan", "libgpg-error", "gnupg"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --disable-static --disable-gpg-test --disable-gpgconf-test --disable-gpgsm-test --disable-g13-test"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

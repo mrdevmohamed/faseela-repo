@@ -2,16 +2,29 @@
 [package]
 name = "nftables"
 version = "1.1.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "nftables — packet filtering and classification (nft)"
 license = ["GPL-2.0-or-later"]
-source = "https://netfilter.org/projects/nftables/files/nftables-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nftables"
+url = "https://netfilter.org/projects/nftables/files/nftables-%{version}.tar.xz"
 sha256 = "6358830f3a64f31e39b0ad421d7dadcd240b72343ded48d8ef13b8faf204865a"
+strip_components = 1
 
 [depends]
 build = ["libmnl", "libnftnl", "gmp", "readline"]
 run = ["libmnl", "libnftnl", "gmp", "readline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # configure defaults to --with-cli=editline (libedit, not in the tree); readline is declared above

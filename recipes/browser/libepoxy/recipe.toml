@@ -9,16 +9,29 @@
 [package]
 name = "libepoxy"
 version = "1.5.9"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "OpenGL function pointer management library (EGL + GLX dispatch)"
 license = ["MIT"]
-source = "https://github.com/anholt/libepoxy/releases/download/%{version}/libepoxy-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libepoxy"
+url = "https://github.com/anholt/libepoxy/releases/download/%{version}/libepoxy-%{version}.tar.xz"
 sha256 = "d168a19a6edfdd9977fef1308ccf516079856a4275cf876de688fb7927e365e4"
+strip_components = 1
 
 [depends]
 build = ["meson", "ninja", "pkgconf", "mesa", "libX11", "xorgproto"]
 run = ["mesa", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D docs=false -D glx=yes -D egl=yes -D x11=true"

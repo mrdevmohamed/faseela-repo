@@ -2,16 +2,29 @@
 [package]
 name = "fontconfig"
 version = "2.15.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Font configuration and lookup library"
 license = ["MIT"]
-source = "https://www.freedesktop.org/software/fontconfig/release/fontconfig-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "fontconfig"
+url = "https://www.freedesktop.org/software/fontconfig/release/fontconfig-%{version}.tar.xz"
 sha256 = "63a0658d0e06e0fa886106452b58ef04f21f58202ea02a94c39de0d3335d7c0e"
+strip_components = 1
 
 [depends]
 build = ["freetype", "expat", "gperf", "pkgconf"]
 run = ["freetype", "expat"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --sysconfdir=/etc --localstatedir=/var --disable-docs"

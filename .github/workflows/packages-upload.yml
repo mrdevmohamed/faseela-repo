@@ -1,0 +1,115 @@
+name: Upload built packages (one wave)
+
+# Called by packages.yml after each wave; not meant to be started by hand.
+#
+# Signs the archives the wave's shards built and uploads them to the immutable
+# packages-v5-NNNN releases RIGHT AWAY, even when another shard of the wave
+# failed: the next run sees them as published and builds only what is missing.
+# The signing key lives in this job only, never in the jobs that run recipe
+# build scripts. The signed index is NOT touched here (the publish job does that
+# once the whole set is complete).
+#
+# It also writes the small "meta-<label>" artifact (index entries + catalog
+# records of exactly the archives it uploaded) that lets the publish job update
+# the index without downloading any archive.
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: "Wave label, used in names (w0, w1, ...)"
+        type: string
+        required: true
+      artifact_pattern:
+        description: "Pattern of the built-<shard> artifacts of this wave"
+        type: string
+        required: true
+
+jobs:
+  upload:
+    name: ${{ format('upload {0}', inputs.label) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NAWA_SIGN_KEY_B64: ${{ secrets.NAWA_SIGN_KEY_B64 }}
+      LABEL: ${{ inputs.label }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nawa-pinned
+          path: ${{ runner.temp }}/nawa
+
+      - name: Download the archives this wave built
+        uses: actions/download-artifact@v4
+        continue-on-error: true # a wave whose shards all failed early has none
+        with:
+          pattern: ${{ inputs.artifact_pattern }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/upload/built
+
+      - name: Sign, upload and describe the new archives
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/upload"
+          mkdir -p "$root/built" "$root/meta"
+          nawa="$RUNNER_TEMP/nawa/nawa"; chmod +x "$nawa"
+          printf '%s' "$NAWA_SIGN_KEY_B64" | base64 --decode > "$root/nawa.sec"
+          chmod 600 "$root/nawa.sec"
+
+          retry() { local n; for n in 1 2 3 4; do "$@" && return 0; echo "attempt $n failed: $*" >&2; sleep $((n * 15)); done; return 1; }
+
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$root/releases.json"
+          python3 -I scripts/publish-schema-v5.py stage-wave \
+            --recipes recipes --built-dir "$root/built" --releases-json "$root/releases.json" \
+            --stage-dir "$root/stage" --nawa "$nawa" --signing-key "$root/nawa.sec"
+
+          python3 -I scripts/distributed-releases.py plan \
+            --releases-json "$root/releases.json" --repo-dir "$root/stage" \
+            --repository "$GITHUB_REPOSITORY" --stable-tag stable-v5 --index-version 5 \
+            --output "$root/plan.json" --manifest "$root/locations.toml"
+
+          # A concurrent run may create the same new shard first: that is fine.
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$tag" \
+              --notes "Immutable schema-v5 package archive shard." \
+              || gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null
+          done < <(python3 -I scripts/distributed-releases.py create --plan "$root/plan.json")
+
+          mapfile -t tags < <(python3 -I -c 'import json,sys; print("\n".join(sorted(json.load(open(sys.argv[1])).get("uploads", {}))))' "$root/plan.json")
+          for tag in "${tags[@]}"; do
+            [[ -n "$tag" ]] || continue
+            mapfile -t assets < <(python3 -I scripts/distributed-releases.py uploads \
+              --plan "$root/plan.json" --repo-dir "$root/stage" --tag "$tag")
+            sigs=(); archives=()
+            for asset in "${assets[@]}"; do
+              if [[ "$asset" == *.sig ]]; then sigs+=("$asset"); else archives+=("$asset"); fi
+            done
+            # An archive only becomes visible once its signature is there, and
+            # --clobber replaces the empty leftover of an interrupted upload.
+            if ((${#sigs[@]})); then retry gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber "${sigs[@]}"; fi
+            if ((${#archives[@]})); then retry gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber "${archives[@]}"; fi
+          done
+
+          python3 -I scripts/publish-schema-v5.py derive \
+            --archive-dir "$root/stage" --repository "$GITHUB_REPOSITORY" \
+            --nawa "$nawa" --signing-key "$root/nawa.sec" \
+            --out-entries "$root/meta/entries-$LABEL.toml" --records-dir "$root/meta/records"
+          rm -f "$root/nawa.sec"
+          echo "### Uploaded wave $LABEL" >> "$GITHUB_STEP_SUMMARY"
+          echo "$(find "$root/stage" -name '*.nawa.tar.zst' | wc -l) new archive(s) in ${#tags[@]} shard release(s)." >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meta-${{ inputs.label }}
+          path: ${{ runner.temp }}/upload/meta
+          overwrite: true
+          retention-days: 1
+          if-no-files-found: ignore

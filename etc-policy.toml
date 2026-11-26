@@ -1,0 +1,279 @@
+# What a package may put under /etc. Read docs/etc-policy.md first.
+#
+# scripts/check-etc-policy.py compares every `%{pkgdir}/etc/...` path a recipe
+# writes with this file. A path that matches no [[allow]] entry, or that matches
+# a [[forbid]] entry, fails CI. Patterns are shell globs (`*` also crosses `/`).
+#
+# Adding an [[allow]] entry is a design decision: the reason must say why the
+# file cannot live under /usr (vendor default) or be created at install/boot
+# (machine state).
+
+# ---------------------------------------------------------------- forbidden --
+# Machine state, or files with a vendor directory under /usr. A package that
+# ships these makes nawa divert them to `.nawa-new` on every system where the
+# administrator or the machine already has its own copy.
+
+[[forbid]]
+pattern = "/etc/resolv.conf"
+reason = "machine state: systemd-tmpfiles links it to the resolved stub, dhcpcd writes it otherwise"
+instead = "nothing; systemd-units' tmpfiles.d entry creates it at boot"
+
+[[forbid]]
+pattern = "/etc/machine-id"
+reason = "machine identity: generated on first boot"
+instead = "nothing; systemd creates it"
+
+[[forbid]]
+pattern = "/etc/localtime"
+reason = "machine state chosen by the installer or administrator"
+instead = "create it from the package's post_install hook only when missing (tzdata does)"
+
+[[forbid]]
+pattern = "/etc/udev/rules.d/*"
+reason = "/etc/udev/rules.d is the administrator's override directory"
+instead = "/usr/lib/udev/rules.d"
+
+[[forbid]]
+pattern = "/etc/udev/hwdb.d/*"
+reason = "/etc/udev/hwdb.d is the administrator's override directory"
+instead = "/usr/lib/udev/hwdb.d"
+
+[[forbid]]
+pattern = "/etc/systemd/*"
+reason = "/etc/systemd is the administrator's override directory (and where enabled units are linked)"
+instead = "/usr/lib/systemd/{system,user,network,...} plus a preset in /usr/lib/systemd/system-preset"
+
+[[forbid]]
+pattern = "/etc/tmpfiles.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/tmpfiles.d"
+
+[[forbid]]
+pattern = "/etc/sysusers.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/sysusers.d"
+
+[[forbid]]
+pattern = "/etc/sysctl.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/sysctl.d"
+
+[[forbid]]
+pattern = "/etc/modprobe.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/modprobe.d"
+
+[[forbid]]
+pattern = "/etc/modules-load.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/modules-load.d"
+
+[[forbid]]
+pattern = "/etc/binfmt.d/*"
+reason = "vendor directory exists"
+instead = "/usr/lib/binfmt.d"
+
+[[forbid]]
+pattern = "/etc/init.d/*"
+reason = "Faseela boots with systemd; SysV scripts are dead weight"
+instead = "a systemd unit in /usr/lib/systemd/system"
+
+# ------------------------------------------------------------------ allowed --
+# category = "identity": the account databases. base-files installs first so
+#   that later packages can create users.
+
+[[allow]]
+pattern = "/etc/passwd"
+category = "identity"
+reason = "account database; base-files seeds it, nawa keeps local edits"
+
+[[allow]]
+pattern = "/etc/group"
+category = "identity"
+reason = "account database; base-files seeds it, nawa keeps local edits"
+
+[[allow]]
+pattern = "/etc/shadow"
+category = "identity"
+reason = "account database; base-files seeds it, nawa keeps local edits"
+
+[[allow]]
+pattern = "/etc/gshadow"
+category = "identity"
+reason = "account database; base-files seeds it, nawa keeps local edits"
+
+# category = "seed": a default for a new system that the administrator owns
+#   from then on. Candidates for moving out of the package are tracked in
+#   docs/etc-policy.md.
+
+[[allow]]
+pattern = "/etc/fstab"
+category = "seed"
+reason = "template with commented examples; the installer writes the real one"
+
+[[allow]]
+pattern = "/etc/hosts"
+category = "seed"
+reason = "localhost entries; the administrator adds hosts"
+
+[[allow]]
+pattern = "/etc/hostname"
+category = "seed"
+reason = "default host name until the installer sets one (tracked: DEFAULT_HOSTNAME in os-release can replace it)"
+
+[[allow]]
+pattern = "/etc/shells"
+category = "seed"
+reason = "login shells; shell packages extend it through their hooks"
+
+[[allow]]
+pattern = "/etc/profile"
+category = "seed"
+reason = "login shell environment; drop-ins go to /etc/profile.d"
+
+[[allow]]
+pattern = "/etc/environment"
+category = "seed"
+reason = "target of systemd's environment.d compatibility link"
+
+[[allow]]
+pattern = "/etc/locale.conf"
+category = "seed"
+reason = "single source of truth for the system locale"
+
+[[allow]]
+pattern = "/etc/nsswitch.conf"
+category = "seed"
+reason = "glibc has no vendor directory for it"
+
+[[allow]]
+pattern = "/etc/ld.so.conf"
+category = "seed"
+reason = "glibc has no vendor directory for it; drop-ins go to /etc/ld.so.conf.d"
+
+[[allow]]
+pattern = "/etc/skel/*"
+category = "seed"
+reason = "template copied into new home directories"
+
+[[allow]]
+pattern = "/etc/opt"
+category = "seed"
+reason = "FHS directory for add-on package configuration"
+
+[[allow]]
+pattern = "/etc/mtab"
+category = "link"
+reason = "link to /proc/mounts, no content of its own"
+
+[[allow]]
+pattern = "/etc/os-release"
+category = "link"
+reason = "link to the vendor copy in /usr/lib/os-release"
+
+[[allow]]
+pattern = "/etc/logrotate.conf"
+category = "seed"
+reason = "logrotate has no vendor directory for its main file"
+
+[[allow]]
+pattern = "/etc/screenrc"
+category = "seed"
+reason = "screen has no vendor directory"
+
+[[allow]]
+pattern = "/etc/doas.conf"
+category = "seed"
+reason = "privilege policy; doas has no vendor directory"
+
+[[allow]]
+pattern = "/etc/fuse.conf"
+category = "seed"
+reason = "fuse has no vendor directory"
+
+# category = "drop-in": a file a package owns inside a directory that exists
+#   to be extended by many packages. Names carry a number and `faseela`/the
+#   package name so they never collide with an administrator's file.
+
+[[allow]]
+pattern = "/etc/profile.d/*"
+category = "drop-in"
+reason = "sourced by /etc/profile"
+
+[[allow]]
+pattern = "/etc/ld.so.conf.d/*"
+category = "drop-in"
+reason = "read by ldconfig"
+
+[[allow]]
+pattern = "/etc/logrotate.d/*"
+category = "drop-in"
+reason = "read by logrotate"
+
+[[allow]]
+pattern = "/etc/sway/config.d/*"
+category = "drop-in"
+reason = "included by /etc/sway/config"
+
+[[allow]]
+pattern = "/etc/lightdm/*.conf.d/*"
+category = "drop-in"
+reason = "lightdm reads drop-ins only from /etc"
+
+[[allow]]
+pattern = "/etc/X11/xorg.conf.d/*"
+category = "drop-in"
+reason = "Xorg searches /etc/X11/xorg.conf.d and /usr/share/X11/xorg.conf.d; prefer the latter for new files"
+
+[[allow]]
+pattern = "/etc/fonts/conf.d/*"
+category = "drop-in"
+reason = "fontconfig enables a configuration by linking it here"
+
+# category = "no-vendor-dir": the program reads /etc only. Revisit when the
+#   program grows a vendor directory (tracked in docs/etc-policy.md).
+
+[[allow]]
+pattern = "/etc/pam.d/*"
+category = "no-vendor-dir"
+reason = "PAM stacks; Linux-PAM can read /usr/lib/pam.d (vendordir) once the build and the login path have been verified"
+
+[[allow]]
+pattern = "/etc/xdg/*"
+category = "no-vendor-dir"
+reason = "XDG autostart and application defaults are searched in XDG_CONFIG_DIRS only"
+
+[[allow]]
+pattern = "/etc/sway/config"
+category = "no-vendor-dir"
+reason = "sway reads /etc/sway/config only"
+
+[[allow]]
+pattern = "/etc/greetd/*"
+category = "no-vendor-dir"
+reason = "greetd reads /etc/greetd only"
+
+[[allow]]
+pattern = "/etc/emptty/*"
+category = "no-vendor-dir"
+reason = "emptty reads /etc/emptty only"
+
+[[allow]]
+pattern = "/etc/wpa_supplicant/*"
+category = "no-vendor-dir"
+reason = "wpa_supplicant reads /etc only"
+
+[[allow]]
+pattern = "/etc/dconf/*"
+category = "no-vendor-dir"
+reason = "dconf profiles are read from /etc/dconf/profile"
+
+[[allow]]
+pattern = "/etc/nawa/*"
+category = "no-vendor-dir"
+reason = "package manager system configuration"
+
+[[allow]]
+pattern = "/etc/ssl/*"
+category = "generated"
+reason = "CA bundle generated by ca-certificates at build time; the paths are a de-facto standard"

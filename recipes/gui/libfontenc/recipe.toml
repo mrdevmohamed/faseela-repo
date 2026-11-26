@@ -5,17 +5,29 @@
 [package]
 name = "libfontenc"
 version = "1.1.9"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libfontenc — X11 font encoding library (libXfont2 dependency)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libfontenc"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-%{version}.tar.xz"
 sha256 = "9d8392705cb10803d5fe1d27d236cbab3f664e26841ce01916bbbe430cf273e2"
-source_dir = "libfontenc-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "zlib", "xorgproto"]
 run = ["zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-docs --disable-devel-docs"

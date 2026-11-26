@@ -2,16 +2,29 @@
 [package]
 name = "gdbm"
 version = "1.26"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU database manager (dbm/hash-style key-value store)"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/gdbm/gdbm-1.26.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gdbm"
+url = "https://mirrors.kernel.org/gnu/gdbm/gdbm-1.26.tar.gz"
 sha256 = "6a24504a14de4a744103dcb936be976df6fbe88ccff26065e54c1c47946f4a5e"
+strip_components = 1
 
 [depends]
 build = ["readline"]
 run = ["readline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --enable-libgdbm-compat"

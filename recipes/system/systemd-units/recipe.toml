@@ -1,0 +1,169 @@
+# system recipe: systemd-units — Faseela's systemd configuration.
+# Provides what the upstream systemd package deliberately leaves to the
+# distribution: the preset policy, wired/wireless DHCP for networkd, resolved,
+# timesyncd and journald defaults, tmpfiles rules, the systemd-user PAM
+# service, the sshd unit (available, not enabled) and compatibility links for
+# the /sbin paths that systemd's getty units hardcode.
+#
+# Service management on Faseela is exclusively through systemctl:
+#   systemctl enable --now sshd
+#   journalctl -b
+[package]
+name = "systemd-units"
+version = "0.5"
+rel = 5
+arch = ["x86_64"]
+source_date_epoch = 1767225600
+summary = "Faseela systemd presets, network/time/journal defaults and PAM service"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[depends]
+build = []
+run = ["systemd", "linux-pam", "util-linux", "shadow", "dbus-system", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+# --- preset policy ----------------------------------------------------------
+# 80- sorts before systemd's own 90-systemd.preset, so these win. Everything
+# not listed stays at upstream's default (its last rule is `disable *`).
+install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
+cat > %{pkgdir}/usr/lib/systemd/system-preset/80-faseela.preset <<'EOF'
+# Faseela default services. More getty instances start on demand: logind spawns
+# autovt@ttyN when the user switches to a free virtual terminal.
+enable getty@tty1.service
+enable systemd-networkd.service
+enable systemd-resolved.service
+enable systemd-timesyncd.service
+enable dbus.socket
+# available, not enabled: systemctl enable --now sshd
+disable sshd.service
+EOF
+
+# --- networking: wired and wireless DHCP through networkd ---------------------
+# Kind=!* skips veth, bridges and tunnels (Podman creates those); only physical
+# NICs are configured. Desktop flavors use NetworkManager and disable networkd.
+install -d -m755 %{pkgdir}/usr/lib/systemd/network
+cat > %{pkgdir}/usr/lib/systemd/network/80-faseela-wired.network <<'EOF'
+[Match]
+Type=ether
+Kind=!*
+
+[Network]
+DHCP=yes
+
+[DHCPv4]
+RouteMetric=100
+
+[IPv6AcceptRA]
+RouteMetric=100
+EOF
+cat > %{pkgdir}/usr/lib/systemd/network/80-faseela-wireless.network <<'EOF'
+# Association is done by wpa_supplicant (wpa_supplicant@IFACE.service);
+# networkd only configures the address once the link is up.
+[Match]
+Type=wlan
+
+[Network]
+DHCP=yes
+IgnoreCarrierLoss=3s
+
+[DHCPv4]
+RouteMetric=600
+
+[IPv6AcceptRA]
+RouteMetric=600
+EOF
+
+# --- resolved, timesyncd, journald defaults -----------------------------------
+install -d -m755 %{pkgdir}/usr/lib/systemd/resolved.conf.d %{pkgdir}/usr/lib/systemd/timesyncd.conf.d %{pkgdir}/usr/lib/systemd/journald.conf.d
+cat > %{pkgdir}/usr/lib/systemd/resolved.conf.d/10-faseela.conf <<'EOF'
+[Resolve]
+# No hardcoded third-party fallback resolvers: use what DHCP or the admin gives.
+FallbackDNS=
+EOF
+cat > %{pkgdir}/usr/lib/systemd/timesyncd.conf.d/10-faseela.conf <<'EOF'
+[Time]
+NTP=0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org
+EOF
+cat > %{pkgdir}/usr/lib/systemd/journald.conf.d/10-faseela.conf <<'EOF'
+[Journal]
+# Persistent when /var/log/journal exists (tmpfiles below creates it).
+Storage=auto
+SystemMaxUse=256M
+ForwardToSyslog=no
+EOF
+
+# --- tmpfiles ------------------------------------------------------------------
+# L+ creates /etc/resolv.conf at boot as a link to the resolved stub (no package
+# ships the file). Doing it through tmpfiles (not at package install) keeps
+# package builds and chroots, which carry the host's resolv.conf, from losing DNS.
+install -d -m755 %{pkgdir}/usr/lib/tmpfiles.d
+cat > %{pkgdir}/usr/lib/tmpfiles.d/faseela.conf <<'EOF'
+L+ /etc/resolv.conf - - - - ../run/systemd/resolve/stub-resolv.conf
+d /var/log/journal 2755 root systemd-journal - -
+EOF
+
+# --- login1/user sessions -------------------------------------------------------
+# Faseela has no system-auth/system-account stacks, so the systemd-user service
+# is self-contained instead of including them.
+install -d -m755 %{pkgdir}/etc/pam.d
+cat > %{pkgdir}/etc/pam.d/systemd-user <<'EOF'
+#%PAM-1.0
+account   required pam_unix.so
+session   required pam_limits.so
+session   required pam_unix.so
+session   optional pam_systemd.so
+auth      required pam_deny.so
+password  required pam_deny.so
+EOF
+
+# --- the system bus must be up before logind and networkd -------------------------
+# Do not add this ordering to systemd-resolved: that unit is ordered before
+# sysinit.target, while dbus.socket is ordered after sysinit.target. Making
+# resolved wait for dbus.service therefore creates a boot ordering cycle:
+# resolved -> dbus.service -> dbus.socket -> sysinit.target -> resolved.
+for u in systemd-logind systemd-networkd; do
+    install -d -m755 %{pkgdir}/usr/lib/systemd/system/$u.service.d
+    cat > %{pkgdir}/usr/lib/systemd/system/$u.service.d/10-faseela-dbus.conf <<'EOF'
+[Unit]
+Wants=dbus.service
+After=dbus.service
+EOF
+done
+
+# --- sshd (available, not enabled) -------------------------------------------------
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/sshd.service <<'EOF'
+[Unit]
+Description=OpenSSH server daemon
+After=network.target
+
+[Service]
+ExecStartPre=/usr/bin/ssh-keygen -A
+ExecStart=/usr/sbin/sshd -D -e
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# --- compatibility links ------------------------------------------------------------
+# util-linux installs agetty and sulogin in /usr/sbin, but /sbin is a link to
+# /usr/bin and systemd's getty units run /sbin/agetty.
+install -d -m755 %{pkgdir}/usr/bin
+for t in agetty sulogin; do
+    ln -s ../sbin/$t %{pkgdir}/usr/bin/$t
+done
+'''

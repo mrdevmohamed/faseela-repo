@@ -2,16 +2,29 @@
 [package]
 name = "conmon"
 version = "2.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "OCI container monitor"
 license = ["Apache-2.0"]
-source = "https://github.com/containers/conmon/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "conmon"
+url = "https://github.com/containers/conmon/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3"
+strip_components = 1
 
 [depends]
 build = ["gcc", "make", "pkgconf", "glib", "libseccomp"]
 run = ["glib", "libseccomp"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} DISABLE_SYSTEMD=1"

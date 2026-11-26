@@ -2,16 +2,29 @@
 [package]
 name = "xfce4-terminal"
 version = "1.1.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Xfce terminal emulator (tabs, drop-down mode, based on vte)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/apps/xfce4-terminal/1.1/xfce4-terminal-1.1.4.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfce4-terminal"
+url = "https://archive.xfce.org/src/apps/xfce4-terminal/1.1/xfce4-terminal-1.1.4.tar.bz2"
 sha256 = "873c921da1f4b986ffb459d4960789c9c063af98648c9f0ca146dc6f6f5b71b7"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "vte", "pcre2"]
 run = ["libxfce4ui", "libxfce4util", "xfconf", "gtk3", "glib", "vte", "pcre2", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug"

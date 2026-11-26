@@ -3,17 +3,29 @@
 [package]
 name = "libXtst"
 version = "1.2.5"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "X11 XTEST extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXtst-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxtst"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXtst-%{version}.tar.xz"
 sha256 = "b50d4c25b97009a744706c1039c598f4d8e64910c9fde381994e1cae235d9242"
-source_dir = "libXtst-%{version}"
+strip_components = 1
 
 [depends]
-build = ["pkgconf", "xorg-util-macros", "xorgproto", "libX11", "libXi"]
-run = ["libX11", "libXi"]
+build = ["pkgconf", "xorg-util-macros", "xorgproto", "libX11", "libXi", "libXext"]
+run = ["libX11", "libXi", "xorgproto", "libXext"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

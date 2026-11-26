@@ -2,16 +2,29 @@
 [package]
 name = "htop"
 version = "3.3.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "htop — interactive process viewer"
 license = ["GPL-2.0-or-later"]
-source = "https://github.com/htop-dev/htop/releases/download/%{version}/htop-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "htop"
+url = "https://github.com/htop-dev/htop/releases/download/%{version}/htop-%{version}.tar.xz"
 sha256 = "a69acf9b42ff592c4861010fce7d8006805f0d6ef0e8ee647a6ee6e59b743d5c"
+strip_components = 1
 
 [depends]
 build = ["ncurses"]
 run = ["ncurses"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc"

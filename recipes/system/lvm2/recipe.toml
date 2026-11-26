@@ -5,17 +5,29 @@
 [package]
 name = "lvm2"
 version = "2.03.30"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "LVM2 and device-mapper: logical volume manager, libdevmapper, dmsetup"
 license = ["GPL-2.0-only", "LGPL-2.1-only"]
-source = "https://sourceware.org/pub/lvm2/LVM2.%{version}.tgz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lvm2"
+url = "https://sourceware.org/pub/lvm2/LVM2.%{version}.tgz"
 sha256 = "ad76abecb8dc887733e06c449cb9add04a3506f9f0780c128817a6e1a17cec05"
-source_dir = "LVM2.%{version}"
+strip_components = 1
 
 [depends]
-build = ["eudev", "util-linux", "readline", "ncurses", "libaio", "pkgconf"]
-run = ["eudev", "util-linux", "readline", "ncurses", "libaio"]
+build = ["systemd", "util-linux", "readline", "ncurses", "libaio", "pkgconf"]
+run = ["systemd", "util-linux", "readline", "ncurses", "libaio"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --sbindir=/usr/bin --enable-pkgconfig --enable-udev_rules --enable-udev_sync --with-udevdir=/usr/lib/udev/rules.d --with-thin=none --with-cache=none --disable-selinux --disable-notify-dbus --disable-app-machineid --disable-systemd-journal"

@@ -2,16 +2,29 @@
 [package]
 name = "bash"
 version = "5.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "GNU Bourne-Again SHell"
 license = ["GPL-3.0"]
-source = "https://mirrors.kernel.org/gnu/bash/bash-5.3.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "bash"
+url = "https://mirrors.kernel.org/gnu/bash/bash-5.3.tar.gz"
 sha256 = "0d5cd86965f869a26cf64f4b71be7b96f90a3ba8b3d74e27e8e9d9d5550f31ba"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --without-bash-malloc"

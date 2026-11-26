@@ -2,16 +2,30 @@
 [package]
 name = "proxify"
 version = "0.0.16"
-rel = 1
+rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "HTTP and HTTPS traffic capture and replay proxy"
 license = ["MIT"]
-source = "https://github.com/projectdiscovery/proxify/releases/download/v0.0.16/proxify_0.0.16_linux_amd64.zip"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "proxify"
+url = "https://github.com/projectdiscovery/proxify/releases/download/v0.0.16/proxify_0.0.16_linux_amd64.zip"
 sha256 = "242eb958d95b05ca2cf9e2b874ddbee8f143ac13eac4aba3637b2f5736f9c1be"
+unpack = false
 
 [depends]
 build = ["unzip"]
 run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

@@ -3,16 +3,29 @@
 [package]
 name = "p7zip"
 version = "17.05"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "p7zip — command line version of 7-Zip for POSIX"
 license = ["LGPL-2.1-or-later", "BSD-3-Clause"]
-source = "https://github.com/p7zip-project/p7zip/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "p7zip"
+url = "https://github.com/p7zip-project/p7zip/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "d2788f892571058c08d27095c22154579dfefb807ebe357d145ab2ddddefb1a6"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} 7za && make -j%{jobs} 7zr"

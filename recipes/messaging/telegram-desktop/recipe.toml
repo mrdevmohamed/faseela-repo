@@ -6,18 +6,30 @@
 [package]
 name = "telegram-desktop"
 version = "7.3.3"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Official Telegram Desktop instant messaging client"
 license = ["GPL-3.0-or-later WITH OpenSSL-exception"]
-source = "https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/td-setup-linux-x64-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "telegram-desktop"
+url = "https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/td-setup-linux-x64-%{version}.tar.xz"
 sha256 = "7bcd524ea17f3eefda95b2ffdb3d5b355e7f727d44045a6ff2316cd077355df9"
-source_dir = "Telegram"
+strip_components = 1
 
 [depends]
 # Platform libraries for graphics, fonts, X11/Wayland, audio and desktop integration.
 build = ["glib", "fontconfig", "freetype", "mesa", "gtk3", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info"]
 run = ["gcc", "glibc", "glib", "fontconfig", "freetype", "mesa", "gtk3", "webkit2gtk-4.1", "libX11", "libxcb", "libXext", "libXrender", "wayland", "libxkbcommon", "alsa-lib", "libpulse", "shared-mime-info", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [slim]
 # Preserve the official upstream executable and its bundled runtime payload.

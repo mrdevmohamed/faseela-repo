@@ -2,17 +2,29 @@
 [package]
 name = "xdg-utils"
 version = "1.2.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Desktop integration helpers including xdg-open and xdg-mime"
 license = ["MIT"]
-source = "https://gitlab.freedesktop.org/xdg/xdg-utils/-/archive/v%{version}/xdg-utils-v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xdg-utils"
+url = "https://gitlab.freedesktop.org/xdg/xdg-utils/-/archive/v%{version}/xdg-utils-v%{version}.tar.gz"
 sha256 = "f6b648c064464c2636884c05746e80428110a576f8daacf46ef2e554dcfdae75"
-source_dir = "xdg-utils-v%{version}"
+strip_components = 1
 
 [depends]
 build = ["make", "python"]
 run = ["bash", "coreutils", "dbus", "file", "glib", "gawk", "grep", "sed"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --mandir=/usr/share/man"

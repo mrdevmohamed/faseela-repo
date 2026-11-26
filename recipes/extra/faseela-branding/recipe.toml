@@ -4,13 +4,13 @@
 [package]
 name = "faseela-branding"
 version = "1.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Faseela visual identity: icon theme entry, logo marks, default wallpaper and GRUB theme"
 license = ["MIT"]
 # Require Nawa's recipe-local asset support.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [assets]
 include = [
@@ -38,6 +38,14 @@ include = [
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = '''

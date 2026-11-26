@@ -4,17 +4,29 @@
 [package]
 name = "lightdm"
 version = "1.33.1"
-rel = 8
+rel = 10
 arch = ["x86_64"]
 summary = "LightDM display manager (X11 greeters and user sessions)"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
-source = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
-source_dir = "lightdm-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "lightdm"
+url = "https://github.com/ubuntu/lightdm/releases/download/%{version}/lightdm-%{version}.tar.xz"
 sha256 = "1a3ca2fea2c97065d85d989048a30fc4148fd0eaf94cffd683f0b3f389fe1ed0"
+strip_components = 1
 
 [depends]
 build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "xorgproto", "linux-pam", "libgcrypt"]
-run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "elogind", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+run = ["glib", "libxklavier", "libX11", "libxcb", "libXdmcp", "dbus-system", "systemd", "xorg-server", "xorg-xauth", "shadow", "coreutils", "linux-pam", "libgcrypt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''set -eu
@@ -62,7 +74,7 @@ user-session=xfce
 LIGHTDM
 chmod 644 %{pkgdir}/etc/lightdm/lightdm.conf.d/50-faseela-xfce.conf
 
-# PAM services for runit: use elogind's session module, never pam_systemd.
+# PAM services: pam_systemd registers each session with systemd-logind.
 install -d -m755 %{pkgdir}/etc/pam.d
 cat > %{pkgdir}/etc/pam.d/lightdm <<'PAM'
 #%PAM-1.0
@@ -72,7 +84,7 @@ auth      required pam_unix.so
 account   required pam_unix.so
 password  required pam_unix.so
 session   required pam_unix.so
-session   optional pam_elogind.so class=user type=x11 desktop=xfce
+session   optional pam_systemd.so class=user type=x11 desktop=xfce
 PAM
 cat > %{pkgdir}/etc/pam.d/lightdm-greeter <<'PAM'
 #%PAM-1.0
@@ -81,7 +93,7 @@ auth      required pam_permit.so
 account   required pam_permit.so
 password  required pam_deny.so
 session   required pam_unix.so
-session   optional pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter
+session   optional pam_systemd.so class=greeter type=x11 desktop=lightdm-greeter
 PAM
 cat > %{pkgdir}/etc/pam.d/lightdm-autologin <<'PAM'
 #%PAM-1.0
@@ -92,27 +104,32 @@ auth      required pam_permit.so
 account   required pam_unix.so
 password  required pam_deny.so
 session   required pam_unix.so
-session   optional pam_elogind.so class=user type=x11 desktop=xfce
+session   optional pam_systemd.so class=user type=x11 desktop=xfce
 PAM
-# Keep the service manual-enable only until the classic root-run Xorg path has
+# Keep the unit manual-enable only until the classic root-run Xorg path has
 # passed an installed-system login test. This initial path does not require
-# Xorg.wrap or rootless Xorg. Elogind supplies login1 tracking, not Xorg privilege handling.
-install -d -m755 %{pkgdir}/etc/sv/lightdm
-cat > %{pkgdir}/etc/sv/lightdm/run <<'RUN'
-#!/bin/sh
-# LightDM uses the login1 D-Bus API; pam_elogind opens and closes each PAM session.
-# Exit so runsv retries and `sv status` shows the flapping instead of hanging.
-[ -S /run/dbus/system_bus_socket ] || { sleep 2; exit 1; }
-# /tmp is cleared at boot, so the post_install-time creation of these dirs is not
-# enough. Without /tmp/.ICE-unix the Xfce session logs "_IceTransmkdir: ERROR:
-# euid != 0, directory /tmp/.ICE-unix will not be created" (session manager ICE
-# sockets are created by an unprivileged user and cannot make the directory).
-for d in /tmp/.X11-unix /tmp/.ICE-unix; do
-    install -d -m1777 -o root -g root "$d"
-done
-exec lightdm
-RUN
-chmod 755 %{pkgdir}/etc/sv/lightdm/run
+# Xorg.wrap or rootless Xorg. systemd-logind supplies login1 tracking, not Xorg privilege handling.
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/lightdm.service <<'EOF'
+[Unit]
+Description=Light Display Manager
+Documentation=man:lightdm(1)
+After=systemd-user-sessions.service systemd-logind.service dbus.service getty@tty7.service
+Wants=dbus.service
+Conflicts=getty@tty7.service
+
+[Service]
+# /tmp is cleared at boot. Without /tmp/.ICE-unix the Xfce session logs
+# "_IceTransmkdir: ERROR: euid != 0, directory /tmp/.ICE-unix will not be
+# created" (the ICE sockets are made by an unprivileged user).
+ExecStartPre=/usr/bin/install -d -m1777 -o root -g root /tmp/.X11-unix /tmp/.ICE-unix
+ExecStart=/usr/bin/lightdm
+Restart=on-failure
+
+[Install]
+Alias=display-manager.service
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/lightdm.service
 '''
 
 [hooks]

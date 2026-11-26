@@ -39,6 +39,56 @@ jobs:
           python3 -I scripts/test-huiontablet-package.py "$deb"
       - name: Validate recipes
         run: python3 -I scripts/check-recipes.py
+      - name: Test versioned recipe dependency parsing
+        run: python3 -I scripts/test-check-recipes.py
+      - name: Check what recipes put under /etc
+        run: |
+          python3 -I scripts/test-etc-policy.py
+          python3 -I scripts/check-etc-policy.py
+      - name: Validate package workflow syntax
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$archive"
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" .github/workflows/packages.yml
+      - name: Check recipes are in the schema-v5 form
+        run: python3 -I scripts/test-schema-v5-recipes.py
+      - name: Test schema-v5 metadata audit
+        run: python3 -I scripts/test-audit-schema-v5-metadata.py
+      - name: Enforce schema-v5 metadata coverage
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/schema-v5-metadata.json"
+          python3 -I scripts/audit-schema-v5-metadata.py --recipes recipes --strict --json "$report"
+          python3 -I - "$report" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lines = [
+              "## Schema-v5 metadata audit",
+              "",
+              f"- Recipes audited: **{report['recipe_count']}**",
+              f"- Missing declarations: **{report['missing_count']}**",
+              f"- Missing by field: `{report['missing_by_field']}`",
+              f"- Invalid declarations/references: **{report['error_count']}**",
+              f"- Relation entries: `{report['relation_entries']}`",
+              f"- Recipe source formats: `{report['source_formats']}`",
+              "",
+              "Strict gate: every recipe must declare its metadata; missing is never inferred as empty.",
+          ]
+          Path(sys.argv[2]).open("a", encoding="utf-8").write("\n".join(lines) + "\n")
+          PY
+      - name: Upload schema-v5 metadata audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-v5-metadata-audit
+          path: ${{ runner.temp }}/schema-v5-metadata.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Telegram WebKitGTK 4.1 and optional-flavor regression checks
         run: python3 -I scripts/test-webkitgtk.py
       - name: Validate package groups against recipes
@@ -51,8 +101,12 @@ jobs:
         run: python3 -I scripts/test-podman-support.py
       - name: Package selection and multi-select regression checks
         run: python3 -I scripts/test-package-selection.py
-      - name: Incremental pull request package cache regression checks
-        run: python3 -I scripts/test-pr-build-cache.py
+      - name: Bootstrap Toolchain cache key tests
+        run: python3 -I scripts/test-toolchain-cache-key.py
+      - name: Shard planner (dependency waves) regression checks
+        run: python3 -I scripts/test-plan-build-shards.py
+      - name: Sharded package workflow structure checks
+        run: python3 -I scripts/test-sharded-workflow.py
       - name: creative recipes install bin/share and usr payload layouts
         run: python3 -I scripts/test-creative-recipes.py
       - name: flavors.toml resolves (every flavor, every dependency)
@@ -71,13 +125,15 @@ jobs:
         run: python3 -I scripts/test-kernel-audio.py
       - name: Mesa Vulkan drivers and Zed runtime closure
         run: python3 -I scripts/test-vulkan-stack.py
-      - name: Desktop integration dependencies and session activation
+      - name: Core systemd init, units and system D-Bus integration
+        run: python3 -I scripts/test-systemd-core.py
+      - name: Desktop integration dependencies and session activation (systemd)
         run: python3 -I scripts/test-desktop-integration.py
-      - name: COSMIC recipes and runit desktop integration
+      - name: COSMIC recipes and systemd desktop integration
         run: python3 -I scripts/test-cosmic-integration.py
       - name: Flatpak engine, Flathub, Polkit and COSMIC Store integration
         run: python3 -I scripts/test-flatpak-integration.py
-      - name: XFCE smoke-test checklist and runit service definitions
+      - name: XFCE smoke-test checklist and systemd unit definitions
         run: python3 -I scripts/test-xfce-smoke-checklist.py
       - name: mpv X11/EGL, Wayland/EGL and DRM output backends
         run: python3 -I scripts/test-mpv-x11.py
@@ -87,6 +143,8 @@ jobs:
           [ "$(wc -l < "$RUNNER_TEMP/ids.txt")" -eq "$(ls recipes/*/*/recipe.toml | wc -l)" ]
       - name: distributed-release planner (GitHub Releases asset limits)
         run: python3 -I scripts/test-distributed-releases.py
+      - name: isolated schema-v5 publisher validation
+        run: python3 -I scripts/test-publish-schema-v5.py
       - name: Telegram notification regression checks
         run: python3 -I scripts/test-telegram-notify.py
 

@@ -1,3 +1,4 @@
+import sys
 #!/usr/bin/env python3
 """Validate Faseela's desktop integration packages and the D-Bus session path."""
 
@@ -5,6 +6,9 @@ from pathlib import Path
 import re
 import subprocess
 import tomllib
+
+__import__('sys').path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import recipe_source as rs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,14 +29,14 @@ assert session["package"]["rel"] >= 29, "Bump gui-session rel for AppImage runti
 require_deps("gui", "gui-session", "run", {"xdg-utils", "gnome-keyring", "upower", "rsync", "xdg-desktop-portal-gtk"})
 
 install_script = session["build"]["install"]
-seatd_runit = recipe("gui", "seatd-runit")
+seatd_runit = recipe("gui", "seatd-systemd")
 seatd_install = seatd_runit["build"]["install"]
-require_deps("gui", "gui-session", "run", {"seatd-runit"})
-assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" not in install_script
+require_deps("gui", "gui-session", "run", {"seatd-systemd"})
+assert "%{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules" not in install_script
 assert "%{pkgdir}/etc/sv/seatd/run" not in install_script
-assert "%{pkgdir}/etc/udev/rules.d/70-faseela-drm.rules" in seatd_install
-assert "%{pkgdir}/etc/sv/seatd/run" in seatd_install
-assert "/etc/runit/runsvdir/default/seatd" in seatd_install
+assert "%{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules" in seatd_install
+assert "%{pkgdir}/usr/lib/systemd/system/seatd.service" in seatd_install
+assert "ExecStart=/usr/bin/seatd -g seat" in seatd_install
 assert "ensure-system-account group" in seatd_runit["hooks"]["post_install"]
 assert (chr(36) + "{pkgdir}") not in install_script, (
     "Use the recipe %{pkgdir} macro; an unset shell variable breaks package staging"
@@ -93,7 +97,7 @@ assert "chmod 4755 /usr/bin/fusermount3" in fuse3_post_install, (
 # and require libfuse.so.2; keep FUSE 2 alongside the existing FUSE 3 stack.
 fuse2 = recipe("gui", "fuse2")
 assert fuse2["package"]["version"] == "2.9.9"
-assert fuse2["package"]["sha256"] == "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
+assert rs.sha256(fuse2["package"]) == "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
 fuse2_prepare = fuse2["build"]["prepare"]
 assert "AC_CHECK_FUNCS([closefrom])" in fuse2_prepare
 assert "HAVE_CLOSEFROM" in fuse2_prepare
@@ -128,8 +132,8 @@ require_deps("cosmic", "cosmic-desktop", "run", {"appimage-support"})
 assert recipe("cosmic", "cosmic-desktop")["package"]["rel"] >= 2
 
 for name in ("fuse3", "fuse2", "json-glib", "bubblewrap"):
-    assert recipe("gui", name)["package"]["sha256"] == "0" * 64 or re.fullmatch(
-        r"[0-9a-f]{64}", recipe("gui", name)["package"]["sha256"]
+    assert rs.sha256(recipe("gui", name)["package"]) == "0" * 64 or re.fullmatch(
+        r"[0-9a-f]{64}", rs.sha256(recipe("gui", name)["package"])
     ), f"{name} must have a SHA-256 field"
 audio_session = recipe("gui", "audio-session")
 audio_install = audio_session["build"]["install"]
@@ -153,7 +157,7 @@ assert "exec /usr/bin/faseela-audio-session" in install_script
 desktop_file_utils = recipe("gui", "desktop-file-utils")
 assert desktop_file_utils["package"]["version"] == "0.29"
 assert desktop_file_utils["package"]["rel"] >= 3
-assert re.fullmatch(r"[0-9a-f]{64}", desktop_file_utils["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(desktop_file_utils["package"]))
 require_deps("gui", "desktop-file-utils", "build", {"meson", "ninja", "pkgconf", "glib"})
 require_deps("xfce", "xfce-session", "run", {"desktop-file-utils"})
 desktop_post_install = desktop_file_utils["hooks"]["post_install"]
@@ -176,7 +180,7 @@ assert "update-desktop-database" not in xfce_session_hooks.get("post_install", "
 )
 
 # XFCE must start the same audio supervisor and establish a private runtime dir
-# before the desktop is launched from LightDM (which has no pam_systemd).
+# before the desktop is launched from LightDM.
 xfce_session = recipe("xfce", "xfce-session")
 assert xfce_session["package"]["rel"] >= 14, (
     "Bump xfce-session rel when adding XFCE XDG Desktop Portal integration"
@@ -228,28 +232,28 @@ assert "xfconf_file" in xfce4_install and "sed -i" in xfce4_install, (
     "xfce4-session must update the upstream-owned Xfconf profile in place"
 )
 lightdm = recipe("xfce", "lightdm")
-assert not re.search(
-    r"^\s*(?:auth|account|password|session)\s+\S+\s+pam_systemd\.so",
+assert re.search(
+    r"^\s*session\s+optional\s+pam_systemd\.so",
     lightdm["build"]["install"],
     re.MULTILINE,
-), "LightDM PAM must not load pam_systemd"
+), "LightDM PAM must register sessions through pam_systemd"
 
-# LightDM, elogind and Polkit must use one login1 session-tracking backend.
-assert lightdm["package"]["rel"] >= 8
+# LightDM, systemd-logind and Polkit must use one login1 session-tracking backend.
+assert lightdm["package"]["rel"] >= 9
 lightdm_install = lightdm["build"]["install"]
-assert "pam_elogind.so class=user type=x11 desktop=xfce" in lightdm_install
-assert "pam_elogind.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
-require_deps("xfce", "lightdm", "run", {"elogind"})
-require_deps("xfce", "xfce-session", "run", {"elogind", "xfce-polkit"})
+assert "pam_systemd.so class=user type=x11 desktop=xfce" in lightdm_install
+assert "pam_systemd.so class=greeter type=x11 desktop=lightdm-greeter" in lightdm_install
+require_deps("xfce", "lightdm", "run", {"systemd"})
+require_deps("xfce", "xfce-session", "run", {"systemd", "xfce-polkit"})
 
 polkit = recipe("gui", "polkit")
-assert polkit["package"]["rel"] >= 5, "Bump Polkit rel when wiring logind_dep into polkitd"
-require_deps("gui", "polkit", "build", {"elogind"})
-require_deps("gui", "polkit", "run", {"elogind"})
-assert "-Dsession_tracking=elogind" in polkit["build"]["configure"]
+assert polkit["package"]["rel"] >= 6, "Bump Polkit rel when wiring logind_dep into polkitd"
+require_deps("gui", "polkit", "build", {"systemd"})
+require_deps("gui", "polkit", "run", {"systemd"})
+assert "-Dsession_tracking=logind" in polkit["build"]["configure"]
 polkit_prepare = polkit["build"].get("prepare", "")
 assert "dependencies: [libpolkit_gobject_dep, logind_dep]" in polkit_prepare, (
-    "Polkit's polkitd executable must receive libelogind include and link flags directly"
+    "Polkit's polkitd executable must receive the logind include and link flags directly"
 )
 assert "src/polkitbackend/meson.build" in polkit_prepare
 polkit_prepare_syntax = subprocess.run(
@@ -259,70 +263,16 @@ assert polkit_prepare_syntax.returncode == 0, (
     f"polkit prepare patch has invalid shell syntax: {polkit_prepare_syntax.stderr}"
 )
 
-elogind = recipe("gui", "elogind")
-assert elogind["package"]["version"] == "257.16"
-assert elogind["package"]["rel"] >= 5, "Bump elogind rel when changing Elogind PolicyKit authorization"
-assert elogind["package"]["sha256"] == "3c8146409bfb9daa77f272212c2b0bf0ae727c782ec87ece0d2d25e0e5bf5f4c"
-require_deps("gui", "elogind", "build", {
-    "meson", "ninja", "pkgconf", "gperf", "acl", "libcap", "eudev",
-    "linux-pam", "util-linux", "python-jinja2", "python-markupsafe",
-})
-require_deps("gui", "elogind", "run", {
-    "acl", "libcap", "eudev", "linux-pam", "util-linux",
-    "dbus-system", "runit", "coreutils",
-})
-for flag in (
-    "-Dcgroup-controller=elogind",
-    "-Dpam=enabled",
-    "-Dpamlibdir=/usr/lib/security",
-    "-Dpolkit=enabled",
-    "-Dnss-elogind=false",
-    "-Duserdb=true",
-    "-Dvarlink=true",
-    "-Ddefault-kill-user-processes=false",
-    "-Dsysvinit-path=''",
-    "-Dsysvrcnd-path=''",
-):
-    assert flag in elogind["build"]["configure"], (
-        f"elogind must use the standalone runit/PAM configuration: {flag}"
-    )
-elogind_prepare = elogind["build"]["prepare"]
-assert "043d7fe5de1b151054735450f23a6ab1b4e31e0f" in elogind_prepare
-assert "get_option('userdb') != false" in elogind_prepare
-assert "ENABLE_USERDB || ENABLE_NSS_ELOGIND" in elogind_prepare, (
-    "UserDatabase must retain its local libc NSS fallback without installing the nss-elogind module"
-)
-assert "get_option('nss-elogind') != false or get_option('userdb') != false" in elogind_prepare
-assert "src/shared/userdb.c" in elogind_prepare
-prepare_syntax = subprocess.run(
-    ["bash", "-n"], input=elogind_prepare, text=True, capture_output=True, check=False
-)
-assert prepare_syntax.returncode == 0, (
-    f"elogind prepare backport script has invalid shell syntax: {prepare_syntax.stderr}"
-)
-
-elogind_install = elogind["build"]["install"]
-for required in (
-    "/usr/lib/elogind/elogind",
-    "/usr/lib/elogind/elogind-userdbd",
-    "/usr/lib/elogind/elogind-userwork",
-    "/usr/lib/security/pam_elogind.so",
-    "libelogind.pc",
-    "org.freedesktop.login1.service",
-    "Exec=/usr/lib/elogind/elogind --daemon",
-    "/etc/sv/elogind",
-    "/etc/runit/runsvdir/default/elogind",
-    "/etc/sv/elogind-userdbd",
-    "exec /usr/lib/elogind/elogind-userdbd",
-    "/etc/runit/runsvdir/default/elogind-userdbd",
-):
-    assert required in elogind_install, (
-        f"elogind install must provide/validate: {required}"
-    )
+# systemd replaces elogind: it provides login1, libudev and pam_systemd.so.
+systemd = recipe("system", "systemd")
+assert systemd["package"]["version"] == "261.5"
+require_deps("system", "systemd", "build", {"meson", "ninja", "pkgconf", "gperf", "libcap", "kmod", "linux-pam", "util-linux"})
+assert "pamlibdir" in systemd["build"]["configure"], "pam_systemd.so must land in /usr/lib/security"
+assert "usr/lib/systemd/systemd-logind" in systemd["build"]["install"]
 
 jinja = recipe("media", "python-jinja2")
 assert jinja["package"]["version"] == "3.1.6"
-assert jinja["package"]["sha256"] == "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337"
+assert rs.sha256(jinja["package"]) == "2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337"
 require_deps("media", "python-jinja2", "run", {"python", "python-markupsafe"})
 markupsafe = recipe("gui", "python-markupsafe")
 assert markupsafe["package"]["version"] == "3.0.2"
@@ -365,13 +315,13 @@ for required in (
 # Removable storage is integrated through system D-Bus -> UDisks2 -> GVfs.
 libblockdev = recipe("gui", "libblockdev")
 assert libblockdev["package"]["version"] == "3.5.0"
-assert re.fullmatch(r"[0-9a-f]{64}", libblockdev["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(libblockdev["package"]))
 require_deps("gui", "libblockdev", "build", {
-    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "glib", "systemd", "kmod", "util-linux", "e2fsprogs",
     "libbytesize", "libnvme", "cryptsetup", "keyutils",
 })
 require_deps("gui", "libblockdev", "run", {
-    "glib", "eudev", "kmod", "util-linux", "e2fsprogs",
+    "glib", "systemd", "kmod", "util-linux", "e2fsprogs",
     "libbytesize", "libnvme", "cryptsetup", "keyutils", "mdadm",
 })
 libblockdev_configure = libblockdev["build"]["configure"]
@@ -405,23 +355,23 @@ assert "--without-nvme" not in libblockdev_configure, (
 
 libbytesize = recipe("gui", "libbytesize")
 assert libbytesize["package"]["version"] == "2.12"
-assert re.fullmatch(r"[0-9a-f]{64}", libbytesize["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(libbytesize["package"]))
 require_deps("gui", "libbytesize", "build", {"gettext", "pcre2", "python"})
 require_deps("gui", "libbytesize", "run", {"pcre2"})
 
 libnvme = recipe("gui", "libnvme")
 assert libnvme["package"]["version"] == "1.16.2"
-assert re.fullmatch(r"[0-9a-f]{64}", libnvme["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(libnvme["package"]))
 require_deps("gui", "libnvme", "build", {"meson", "ninja", "pkgconf", "json-c"})
 require_deps("gui", "libnvme", "run", {"json-c"})
 
 keyutils = recipe("system", "keyutils")
 assert keyutils["package"]["version"] == "1.6.3"
-assert re.fullmatch(r"[0-9a-f]{64}", keyutils["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(keyutils["package"]))
 
 udisks2 = recipe("gui", "udisks2")
 assert udisks2["package"]["version"] == "2.11.2"
-assert re.fullmatch(r"[0-9a-f]{64}", udisks2["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(udisks2["package"]))
 require_deps("gui", "udisks2", "run", {"dbus-system", "polkit", "libblockdev", "libgudev"})
 udisks_configure = udisks2["build"]["configure"]
 for flag in (
@@ -452,7 +402,7 @@ assert "runit" not in udisks2["depends"]["run"], (
 
 gvfs = recipe("xfce", "gvfs")
 assert gvfs["package"]["version"] == "1.56.3"
-assert re.fullmatch(r"[0-9a-f]{64}", gvfs["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(gvfs["package"]))
 require_deps("xfce", "gvfs", "run", {"dbus", "udisks2", "libgudev", "fuse3", "gsettings-desktop-schemas"})
 gvfs_configure = gvfs["build"]["configure"]
 for flag in ("-D udisks2=true", "-D gudev=true", "-D logind=false",
@@ -520,7 +470,7 @@ assert "xfce4-clipman-plugin" not in xfce_group["optional"], (
 
 network_applet = recipe("gui", "network-manager-applet")
 assert network_applet["package"]["version"] == "1.36.0"
-assert re.fullmatch(r"[0-9a-f]{64}", network_applet["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(network_applet["package"]))
 assert network_applet["package"]["rel"] >= 2, (
     "Bump network-manager-applet rel when fixing its GSettings schema installation"
 )
@@ -554,11 +504,11 @@ require_deps("xfce", "tumbler", "run", {"dbus"})
 
 archive_plugin = recipe("xfce", "thunar-archive-plugin")
 assert archive_plugin["package"]["version"] == "0.6.0"
-assert re.fullmatch(r"[0-9a-f]{64}", archive_plugin["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(archive_plugin["package"]))
 require_deps("xfce", "thunar-archive-plugin", "run", {"thunar", "xarchiver"})
 xarchiver = recipe("xfce", "xarchiver")
 assert xarchiver["package"]["version"] == "0.5.4.27"
-assert re.fullmatch(r"[0-9a-f]{64}", xarchiver["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(xarchiver["package"]))
 require_deps("xfce", "xarchiver", "run", {"tar", "gzip", "bzip2", "xz", "zip", "unzip", "p7zip"})
 xarchiver_configure_check = subprocess.run(
     ["bash", "-n"],
@@ -589,7 +539,6 @@ for package_name in (
 for category, package_name in (
     ("gui", "audio-session"),
     ("gui", "udisks2"),
-    ("gui", "elogind"),
     ("media", "python-jinja2"),
     ("gui", "python-markupsafe"),
     ("xfce", "lightdm"),
@@ -624,7 +573,7 @@ for program in ("exec mako", "exec waybar", "exec xdg-user-dirs-update"):
 # The ScreenCast backend: basu replaces libsystemd for sd-bus, inih parses
 # its config, and the systemd user unit must not be installed.
 portal_wlr = recipe("gui", "xdg-desktop-portal-wlr")
-assert re.fullmatch(r"[0-9a-f]{64}", portal_wlr["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(portal_wlr["package"]))
 require_deps("gui", "xdg-desktop-portal-wlr", "run", {"xdg-desktop-portal", "pipewire", "basu", "inih"})
 for flag in ("-D sd-bus-provider=basu", "-D systemd=disabled"):
     assert flag in portal_wlr["build"]["configure"], (
@@ -632,17 +581,17 @@ for flag in ("-D sd-bus-provider=basu", "-D systemd=disabled"):
     )
 
 basu = recipe("gui", "basu")
-assert re.fullmatch(r"[0-9a-f]{64}", basu["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(basu["package"]))
 assert "-D audit=false" in basu["build"]["configure"], "basu must not require the audit library"
 
 # The notification daemon and the status bar, both on basu's sd-bus.
 mako = recipe("gui", "mako")
-assert re.fullmatch(r"[0-9a-f]{64}", mako["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(mako["package"]))
 assert "basu" in mako["depends"]["run"], "mako speaks D-Bus through basu's sd-bus"
 assert "-D sd-bus-provider=basu" in mako["build"]["configure"]
 
 waybar = recipe("gui", "waybar")
-assert re.fullmatch(r"[0-9a-f]{64}", waybar["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(waybar["package"]))
 for flag in ("-D systemd=disabled", "-D man-pages=disabled", "-D logind=disabled"):
     assert flag in waybar["build"]["configure"], f"waybar must not need systemd: {flag}"
 require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsoncpp", "gtkmm"})
@@ -651,9 +600,10 @@ require_deps("gui", "waybar", "run", {"gtk-layer-shell", "fmt", "spdlog", "jsonc
 dbusmenu = recipe("gui", "libdbusmenu")
 assert dbusmenu["package"]["version"] == "18.10.20180917"
 assert dbusmenu["package"]["rel"] >= 3
-assert re.fullmatch(r"[0-9a-f]{64}", dbusmenu["package"]["sha256"])
-assert dbusmenu["package"]["source_dir"] == "libdbusmenu-%{version}~bzr492", (
-    "Debian's repacked orig archive extracts under the bzr revision name without +repack1"
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(dbusmenu["package"]))
+assert rs.primary(dbusmenu["package"]).get("strip_components") == 1, (
+    "Debian's repacked orig archive extracts under the bzr revision name without +repack1; "
+    "strip it so the build runs from that single source directory"
 )
 require_deps("gui", "libdbusmenu", "build", {
     "pkgconf", "glib", "gtk3", "autoconf", "automake", "libtool", "gettext",
@@ -705,7 +655,7 @@ basu = recipe("gui", "basu")
 assert "gperf" in basu["depends"]["build"], "basu's Meson configure requires gperf"
 
 deno = recipe("dev", "deno")
-assert deno["package"]["source"].endswith(".zip")
+assert rs.url(deno["package"]).endswith(".zip")
 assert "unzip" in deno["depends"]["build"]
 assert "unzip " in deno["build"]["install"] and "install -Dm755 deno " in deno["build"]["install"]
 
@@ -745,13 +695,13 @@ assert "curl " not in yt_install and "wget " not in yt_install, (
 # under OFL, all hashed, all refreshing the fontconfig cache on install.
 for name in ("noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"):
     fonts = recipe("gui", name)
-    assert re.fullmatch(r"[0-9a-f]{64}", fonts["package"]["sha256"]), f"{name} sha256 must be pinned"
+    assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(fonts["package"])), f"{name} sha256 must be pinned"
     assert fonts["package"]["license"] == ["OFL-1.1"]
     assert "fc-cache" in fonts.get("hooks", {}).get("post_install", "")
     assert "fontconfig" in fonts["depends"]["run"]
 naskh = recipe("gui", "noto-naskh-arabic")
 assert naskh["package"]["version"] == "2.021"
-assert re.fullmatch(r"[0-9a-f]{64}", naskh["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(naskh["package"]))
 assert "NotoNaskhArabic/hinted/ttf/*.ttf" in naskh["build"]["install"]
 
 # Xwayland: wlroots enables the feature and sway picks it up; the session
@@ -763,14 +713,14 @@ sway = recipe("gui", "sway")
 assert sway["package"]["rel"] >= 3, "Bump sway rel when wlroots gains Xwayland support"
 xkbcomp = recipe("gui", "xkbcomp")
 assert xkbcomp["package"]["version"] == "1.5.0"
-assert re.fullmatch(r"[0-9a-f]{64}", xkbcomp["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(xkbcomp["package"]))
 assert {"libX11", "libxkbfile"} <= set(xkbcomp["depends"]["run"]), (
     "xkbcomp must ship its X11 and XKB file library runtime dependencies"
 )
 assert "install" in xkbcomp["build"] and "DESTDIR=%{pkgdir}" in xkbcomp["build"]["install"]
 
 xwayland = recipe("gui", "xwayland")
-assert re.fullmatch(r"[0-9a-f]{64}", xwayland["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(xwayland["package"]))
 for flag in ("-D xdmcp=false", "-D xdm-auth-1=false", "-D systemd_notify=false"):
     assert flag in xwayland["build"]["configure"], f"Xwayland must not need extra daemons: {flag}"
 assert xwayland["package"]["rel"] >= 2, "Bump Xwayland rel when changing its XKB runtime"
@@ -790,13 +740,13 @@ for required in (
 
 # pavucontrol mixes PipeWire's PulseAudio server on the gtkmm 3 stack.
 pavucontrol = recipe("gui", "pavucontrol")
-assert re.fullmatch(r"[0-9a-f]{64}", pavucontrol["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(pavucontrol["package"]))
 require_deps("gui", "pavucontrol", "run", {"gtkmm", "libpulse"})
 assert "pavucontrol.desktop" in pavucontrol["build"]["install"]
 
 # xdg-user-dirs ships the update helper the session autostarts.
 user_dirs = recipe("gui", "xdg-user-dirs")
-assert re.fullmatch(r"[0-9a-f]{64}", user_dirs["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(user_dirs["package"]))
 
 # NetworkManager's dispatcher is D-Bus-activated, not a persistent runit
 # service. The package install step must validate all three staged artifacts
@@ -823,7 +773,7 @@ assert "nm-dispatcher" not in nm.get("depends", {}).get("run", []), (
 
 xdg = recipe("gui", "xdg-utils")
 assert xdg["package"]["version"] == "1.2.1"
-assert re.fullmatch(r"[0-9a-f]{64}", xdg["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(xdg["package"]))
 assert "./configure" in xdg["build"]["configure"]
 assert "make DESTDIR=%{pkgdir} install" in xdg["build"]["install"]
 assert {"bash", "dbus", "file", "glib"} <= set(xdg["depends"]["run"])
@@ -833,7 +783,7 @@ assert rsync["package"]["name"] == "rsync"
 
 gkr = recipe("gui", "gnome-keyring")
 assert gkr["package"]["version"] == "51.1"
-assert re.fullmatch(r"[0-9a-f]{64}", gkr["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(gkr["package"]))
 assert {"dbus", "glib", "gcr", "libgcrypt", "p11-kit"} <= set(gkr["depends"]["run"])
 gkr_configure = gkr["build"]["configure"]
 for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
@@ -842,19 +792,19 @@ for flag in ("-Dsystemd=disabled", "-Dpam=false", "-Dssh-agent=false"):
 
 gudev = recipe("gui", "libgudev")
 assert gudev["package"]["version"] == "238"
-assert re.fullmatch(r"[0-9a-f]{64}", gudev["package"]["sha256"])
-assert gudev["package"]["sha256"] != "0" * 64, "libgudev source checksum must be pinned"
-require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "eudev"})
-require_deps("gui", "libgudev", "run", {"glib", "eudev"})
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(gudev["package"]))
+assert rs.sha256(gudev["package"]) != "0" * 64, "libgudev source checksum must be pinned"
+require_deps("gui", "libgudev", "build", {"meson", "ninja", "pkgconf", "glib", "systemd"})
+require_deps("gui", "libgudev", "run", {"glib", "systemd"})
 assert "-D gtk_doc=false" in gudev["build"]["configure"]
 
 upower = recipe("gui", "upower")
 assert upower["package"]["version"] == "1.91.5"
 assert upower["package"]["rel"] >= 2, "Bump UPower rel when fixing build metadata"
-assert upower["package"]["source_dir"] == "upower-v%{version}", (
+assert rs.primary(upower["package"]).get("strip_components") == 1, (
     "UPower GitLab archives extract into upower-v<version>; configure must run from that source tree"
 )
-assert re.fullmatch(r"[0-9a-f]{64}", upower["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(upower["package"]))
 require_deps("gui", "upower", "build", {
     "meson", "ninja", "pkgconf", "glib", "libgudev", "libusb", "polkit",
 })
@@ -881,7 +831,7 @@ assert "runit" not in upower.get("depends", {}).get("run", []), (
 libusb = recipe("extra", "libusb")
 assert libusb["package"]["version"] == "1.0.30"
 assert libusb["package"]["rel"] >= 2
-assert libusb["package"]["sha256"] == "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
+assert rs.sha256(libusb["package"]) == "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf"
 
 gcr = recipe("gui", "gcr")
 assert {"glib", "libgcrypt", "p11-kit"} <= set(gcr["depends"]["run"])
@@ -901,9 +851,9 @@ assert "libffi" in p11["depends"]["run"]
 
 gcrypt = recipe("system", "libgcrypt")
 assert "libgpg-error" in gcrypt["depends"]["run"]
-assert re.fullmatch(r"[0-9a-f]{64}", gcrypt["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(gcrypt["package"]))
 libgpg = recipe("system", "libgpg-error")
-assert re.fullmatch(r"[0-9a-f]{64}", libgpg["package"]["sha256"])
+assert re.fullmatch(r"[0-9a-f]{64}", rs.sha256(libgpg["package"]))
 
 readme = (ROOT / "recipes" / "gui" / "README.md").read_text(encoding="utf-8")
 assert "org.freedesktop.secrets.service" in readme

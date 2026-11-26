@@ -16,22 +16,22 @@ before the offline build.
 | Session and shell | `cosmic-comp`, `cosmic-session`, `cosmic-panel`, `cosmic-applets`, `cosmic-launcher`, `cosmic-notifications`, `cosmic-workspaces`, `cosmic-osd`, `cosmic-osk`, `cosmic-bg`, `cosmic-idle`, `cosmic-settings`, `cosmic-settings-daemon`, `cosmic-randr` |
 | Portal and visual assets | `xdg-desktop-portal-cosmic`, `cosmic-icons`, `cosmic-screenshot` |
 | Applications | `cosmic-files`, `cosmic-term`, `cosmic-edit`, `cosmic-store` |
-| Optional login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |
+| COSMIC login (separate `greeter/` category) | `greetd`, `cosmic-greeter` |
 | Faseela integration | `cosmic-desktop` |
 
 ## Faseela integration
 
-Faseela uses runit as PID 1. COSMIC therefore uses the existing system
-infrastructure rather than introducing systemd:
+Faseela uses systemd as PID 1. COSMIC uses the system's own
+infrastructure:
 
 - **Session:** run `start-cosmic` from a tty. The upstream launcher creates a
   private D-Bus session and starts the COSMIC session manager. The desktop
   session entry is installed under `/usr/share/wayland-sessions`.
 - **Seat and DRM:** `cosmic-comp` uses libseat with
-  `LIBSEAT_BACKEND=seatd`. The shared `seatd-runit` package owns the runit
-  service and render-node udev rule used by both COSMIC and Sway.
+  `LIBSEAT_BACKEND=seatd`. The shared `seatd-systemd` package owns the systemd
+  unit and render-node udev rule used by both COSMIC and Sway.
 - **Login/session tracking:** COSMIC's login1 D-Bus calls are served by
-  elogind. The compositor and core session do not require systemd.
+  systemd-logind.
 - **Audio:** `cosmic-desktop` adds an XDG autostart entry that runs the shared
   `faseela-audio-session` helper. The helper keeps PipeWire, WirePlumber and
   pipewire-pulse alive for the COSMIC session.
@@ -44,10 +44,11 @@ infrastructure rather than introducing systemd:
 The desktop meta-package is a normal opt-in package. It does not enable a
 login manager, take over a virtual terminal, or install a greeter service.
 
-## Optional login greeter
+## Login greeter
 
-The greeter stack is separate from `cosmic-desktop`. Install it only when
-you want greetd to own a virtual terminal:
+The greeter stack stays separate from `cosmic-desktop` so the desktop can be
+installed without taking over a terminal. The complete `iso-cosmic` flavor
+selects it and enables its systemd unit in the image:
 
 ```sh
 doas nawa install cosmic-greeter
@@ -55,14 +56,15 @@ doas nawa service enable cosmic-greeter
 ```
 
 The package includes greetd, its COSMIC greeter, PAM integration through
-`pam_elogind.so`, and a runit service shipped disabled. Its dedicated
-service account is provisioned when that runit service starts, against the
+`pam_systemd.so`, and a systemd unit shipped disabled. Its dedicated
+service account is provisioned when that unit starts, against the
 installed account databases. The privileged
 `cosmic-greeter-daemon` is started on demand by the system D-Bus activation
-file, so this path does not depend on a systemd unit. Disable the
-`getty-tty1` service first when it owns the selected VT. The package hook
-preserves a custom `/etc/greetd/config.toml`; it only replaces the stock
-agreety sample.
+file, so no separate unit is needed for it. The COSMIC image flavor
+disables `getty@tty1` and an enabled LightDM service before enabling
+`cosmic-greeter`. A manual install on an existing system must perform that
+switch explicitly. The package hook preserves a custom `/etc/greetd/config.toml`;
+it only replaces the stock agreety sample.
 
 ## Flatpak and COSMIC Store
 
@@ -82,20 +84,21 @@ it does not shell out to a second package manager.
   `org.freedesktop.Flatpak.SystemHelper` on the system D-Bus and are authorized
   by the existing Polkit daemon. COSMIC starts the GTK Polkit authentication
   agent inside its own session so password prompts are visible. Polkit uses
-  `elogind` session tracking; `dbus-system` and `polkitd` remain supervised
-  by **runit**.
-- **No systemd dependency:** Flatpak and OSTree are built without systemd
-  support. The system helper is D-Bus activated, not installed as a systemd
-  unit or a permanently running runit daemon.
+  `systemd-logind` session tracking; `dbus-system` and `polkit` run as systemd
+  services.
+- **No extra systemd units:** Flatpak and OSTree are built without libsystemd
+  integration. The system helper is D-Bus activated, not installed as a systemd
+  unit or a permanently running daemon.
 
 This keeps Flatpak transactions separate from Nawa's native package
 transactions while presenting Flatpak applications directly in COSMIC Store.
 
 ## Build and install
 
-The `iso-cosmic` flavor selects `@cosmic` plus Firefox. Because the login
-packages live in the separate `greeter/` category, the image does not pull in
-greetd or the greeter-specific dependency closure (PAM is already in the base system).
+The `iso-cosmic` flavor selects `@cosmic`, Firefox, `greetd` and
+`cosmic-greeter`. It excludes LightDM and configures systemd to start the COSMIC
+greeter instead of a console getty on VT 1. The `cosmic` group keeps the greeter
+optional for users who install the desktop onto an existing system.
 
 Inspect the dependency closure:
 

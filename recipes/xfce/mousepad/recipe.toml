@@ -2,16 +2,29 @@
 [package]
 name = "mousepad"
 version = "0.6.3"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Xfce text editor (simple and fast, based on gtksourceview-4)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/apps/mousepad/0.6/mousepad-0.6.3.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mousepad"
+url = "https://archive.xfce.org/src/apps/mousepad/0.6/mousepad-0.6.3.tar.bz2"
 sha256 = "2ff162c185f18014ab9c82c2ac2dfce4fba20eb0005e7690ee27f00b9cb929b9"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "gtksourceview4", "gtk3", "glib", "libxfce4ui"]
 run = ["gtksourceview4", "gtk3", "glib", "libxfce4ui", "hicolor-icon-theme"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --disable-plugin-gspell"

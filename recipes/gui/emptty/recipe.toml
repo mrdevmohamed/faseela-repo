@@ -2,12 +2,12 @@
 [package]
 name = "emptty"
 version = "0.16.1"
-rel = 3
+rel = 5
 arch = ["x86_64"]
 summary = "TUI display manager for Wayland and X11 sessions (no PAM)"
 license = ["MIT"]
 # Require Nawa's recipe-local asset support.
-source = "local:/nawa-schema-2-requires-a-newer-nawa"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "emptty"
@@ -16,11 +16,19 @@ sha256 = "e85d0658fd793ad97be90af241451a9374b299d9525d2aeb57a6f83f10ad4931"
 strip_components = 1
 
 [assets]
-include = ["conf", "emptty.1", "runit-run", "LICENSE"]
+include = ["conf", "emptty.1", "LICENSE"]
 
 [depends]
 build = ["golang", "gcc", "libxcrypt"]
-run = ["gui-session", "libxcrypt", "shadow", "runit", "coreutils", "util-linux"]
+run = ["gui-session", "libxcrypt", "shadow", "coreutils", "util-linux"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "go test -tags nopam ./..."
@@ -30,13 +38,31 @@ install -Dm755 dist/emptty "%{pkgdir}/usr/bin/emptty"
 install -Dm644 "%{assetsdir}/conf" "%{pkgdir}/etc/emptty/conf"
 install -Dm644 "%{assetsdir}/emptty.1" "%{pkgdir}/usr/share/man/man1/emptty.1"
 gzip -f "%{pkgdir}/usr/share/man/man1/emptty.1"
-install -Dm755 "%{assetsdir}/runit-run" "%{pkgdir}/etc/sv/emptty/run"
+install -d -m755 "%{pkgdir}/usr/lib/systemd/system"
+cat > "%{pkgdir}/usr/lib/systemd/system/emptty.service" <<'EOF'
+[Unit]
+Description=emptty display manager
+After=systemd-user-sessions.service systemd-logind.service getty@tty7.service
+Conflicts=getty@tty7.service
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/emptty
+StandardInput=tty
+TTYPath=/dev/tty7
+TTYReset=yes
+TTYVHangup=yes
+Restart=always
+
+[Install]
+Alias=display-manager.service
+EOF
+chmod 644 "%{pkgdir}/usr/lib/systemd/system/emptty.service"
 install -Dm644 "%{assetsdir}/LICENSE" "%{pkgdir}/usr/share/licenses/emptty/LICENSE"
 '''
 
 [hooks]
 post_install = '''
-echo "emptty: optional runit service; enable with:"
-echo "  ln -s /etc/sv/emptty /etc/runit/runsvdir/default/emptty"
-echo "emptty: disable with: rm /etc/runit/runsvdir/default/emptty"
+echo "emptty: optional unit; enable with: systemctl enable emptty"
+echo "emptty: disable with: systemctl disable emptty"
 '''

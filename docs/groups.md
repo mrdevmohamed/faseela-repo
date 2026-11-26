@@ -31,15 +31,17 @@ to a recipe in this repository; CI validates the entire catalog.
 
 ## Signed publication
 
-The package workflow asks Nawa to validate and copy **groups.toml** into the
-repository output. Nawa writes a `[groups]` reference into the schema-v3
-**index.toml**, including the catalog schema, filename, exact byte size, and
+The package workflow asks Nawa (`repo-update --groups`) to validate and copy
+**groups.toml** into the repository output. Nawa writes a `[groups]` reference
+into the schema-v5 **index.toml**, including the catalog schema, filename, exact byte size, and
 SHA-256 digest. The Ed25519 index signature therefore authenticates the
 catalog reference; the client verifies the catalog bytes against that digest
 before parsing any group definition.
 
-The publisher uploads **groups.toml** before replacing the signed index in the
-**stable-v3** release. A legacy v1 index cannot reference group metadata.
+The publisher uploads **groups.toml** to the **stable-v5** release before
+replacing the signed index there, and afterwards checks that the published copy
+is byte-identical to the one in the repository. A legacy v1 index cannot
+reference group metadata.
 
 ## Client commands
 

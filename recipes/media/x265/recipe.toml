@@ -1,26 +1,45 @@
 # media recipe: x265 — H.265/HEVC encoder library (libx265, for ffmpeg -c:v libx265)
 # Multilib build (the usual distro layout): 12-bit and 10-bit static libraries are built first and
 # linked INTO the 8-bit shared libx265, so one library encodes 8/10/12-bit. Library only (no CLI).
-# -DCMAKE_POLICY_VERSION_MINIMUM=3.5: x265's CMake files declare an old minimum, rejected by cmake 4.
+# -DCMAKE_POLICY_VERSION_MINIMUM=3.5 handles x265's pre-3.5 minimum with CMake 4.
+# CMake 4 rejects x265's explicit OLD settings for CMP0025 and CMP0054;
+# switch those two compatibility policies to NEW before configuring.
 # GPL-2.0-or-later: ffmpeg built with it is GPL (it already is, through x264).
-# sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r x265` pins it.
 [package]
 name = "x265"
 version = "4.1"
-rel = 1
+rel = 3
 arch = ["x86_64"]
 summary = "x265 — H.265/HEVC video encoder library (libx265, 8/10/12-bit)"
 license = ["GPL-2.0-or-later"]
-source = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "x265"
+url = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_%{version}.tar.gz"
 sha256 = "a31699c6a89806b74b0151e5e6a7df65de4b49050482fe5ebf8a4379d7af8f29"
-source_dir = "x265_%{version}"
+strip_components = 1
 
 [depends]
 build = ["cmake", "nasm"]
 run = []
 
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
 [build]
 configure = '''
+grep -q 'cmake_policy(SET CMP0025 OLD)' source/CMakeLists.txt
+grep -q 'cmake_policy(SET CMP0054 OLD)' source/CMakeLists.txt
+sed -i \
+  -e 's/cmake_policy(SET CMP0025 OLD)/cmake_policy(SET CMP0025 NEW)/' \
+  -e 's/cmake_policy(SET CMP0054 OLD)/cmake_policy(SET CMP0054 NEW)/' \
+  source/CMakeLists.txt
 common="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_CLI=OFF -DENABLE_LIBNUMA=OFF"
 cmake -S source -B 12bit $common -DHIGH_BIT_DEPTH=ON -DMAIN12=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF
 cmake -S source -B 10bit $common -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_SHARED=OFF

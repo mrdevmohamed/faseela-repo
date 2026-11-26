@@ -2,17 +2,29 @@
 [package]
 name = "xorg-setxkbmap"
 version = "1.3.5"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "X11 keyboard layout configuration utility"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/app/setxkbmap-1.3.5.tar.xz"
-source_dir = "setxkbmap-%{version}"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-setxkbmap"
+url = "https://xorg.freedesktop.org/archive/individual/app/setxkbmap-1.3.5.tar.xz"
 sha256 = "360193cecc93f906d8383a8fb5c1f3a7eed35e6ced0e118a64ee56ae13c88cac"
+strip_components = 1
 
 [depends]
-build = ["pkgconf", "libxkbfile", "libX11", "xorgproto"]
-run = ["libxkbfile", "libX11", "xkeyboard-config"]
+build = ["pkgconf", "libxkbfile", "libX11", "xorgproto", "libXrandr"]
+run = ["libxkbfile", "libX11", "xkeyboard-config", "libXrandr"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"

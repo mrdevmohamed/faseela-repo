@@ -5,17 +5,29 @@
 [package]
 name = "libXfont2"
 version = "2.0.7"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libXfont2 — X11 server-side font rendering library (Xwayland dependency)"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxfont2"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-%{version}.tar.xz"
 sha256 = "8b7b82fdeba48769b69433e8e3fbb984a5f6bf368b0d5f47abeec49de3e58efb"
-source_dir = "libXfont2-%{version}"
+strip_components = 1
 
 [depends]
-build = ["pkgconf", "xorgproto", "libfontenc", "freetype", "font-util"]
+build = ["pkgconf", "xorgproto", "libfontenc", "freetype", "font-util", "xtrans"]
 run = ["libfontenc", "freetype"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-docs --disable-devel-docs"

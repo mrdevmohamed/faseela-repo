@@ -1,20 +1,33 @@
 # system recipe: wpa_supplicant — Wi-Fi authentication, driven with wpa_cli.
 # nl80211 + D-Bus control interface for NetworkManager integration.
-# Service is available but not enabled: nawa service enable wpa_supplicant
+# Unit is available but not enabled: systemctl enable --now wpa_supplicant@wlan0
 # sha256 is an all-zero placeholder until `python3 scripts/fill-sha256.py -r wpa_supplicant` pins it.
 [package]
 name = "wpa_supplicant"
 version = "2.12"
-rel = 3
+rel = 5
 arch = ["x86_64"]
 summary = "WPA/WPA2/WPA3 supplicant for Wi-Fi (nl80211, OpenSSL, D-Bus control interface)"
 license = ["BSD-3-Clause"]
-source = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "wpa_supplicant"
+url = "https://w1.fi/releases/wpa_supplicant-%{version}.tar.gz"
 sha256 = "08e23937e16d0155e55cab2b51f51fbe10d80a1aa91c4e15442645059b737ef6"
+strip_components = 1
 
 [depends]
 build = ["libnl", "openssl", "readline", "pkgconf", "dbus"]
 run = ["libnl", "openssl", "readline", "dbus-system"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = '''
@@ -51,36 +64,30 @@ CONF
 chmod 0600 %{pkgdir}/etc/wpa_supplicant/wpa_supplicant.conf
 install -Dm644 dbus/dbus-wpa_supplicant.conf %{pkgdir}/usr/share/dbus-1/system.d/wpa_supplicant.conf
 install -Dm644 dbus/fi.w1.wpa_supplicant1.service %{pkgdir}/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
-install -d -m755 %{pkgdir}/etc/sv/wpa_supplicant
-cat > %{pkgdir}/etc/sv/wpa_supplicant/run <<'RUN'
-#!/bin/sh
-# first wireless interface; override with IFACE=... in /etc/default/wpa_supplicant
-# NetworkManager starts its own wpa_supplicant over D-Bus (the activation file
-# below). Running this service as well would put two instances on one
-# interface, so stay down while NetworkManager is enabled.
-if [ -L /etc/runit/runsvdir/default/NetworkManager ]; then
-    echo "wpa_supplicant: NetworkManager is enabled and starts wpa_supplicant itself; staying down" >&2
-    sv down /etc/runit/runsvdir/default/wpa_supplicant
-    exit 0
-fi
-IFACE=
-for d in /sys/class/net/*/wireless; do
-    [ -d "$d" ] || continue
-    IFACE=${d%/wireless}; IFACE=${IFACE##*/}
-    break
-done
-[ -r /etc/default/wpa_supplicant ] && . /etc/default/wpa_supplicant
-if [ -z "$IFACE" ]; then
-    echo "wpa_supplicant: no wireless interface found" >&2
-    sleep 10
-    exit 1
-fi
-exec wpa_supplicant -i "$IFACE" -c /etc/wpa_supplicant/wpa_supplicant.conf
-RUN
-chmod 755 %{pkgdir}/etc/sv/wpa_supplicant/run
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+# One instance per wireless interface: systemctl enable --now wpa_supplicant@wlan0
+# (networkd then configures the address, see systemd-units). NetworkManager starts
+# its own wpa_supplicant through the D-Bus activation file installed above, so do
+# not enable an instance for an interface that NetworkManager manages.
+cat > %{pkgdir}/usr/lib/systemd/system/wpa_supplicant@.service <<'EOF'
+[Unit]
+Description=WPA supplicant for %I
+Requires=sys-subsystem-net-devices-%i.device
+After=sys-subsystem-net-devices-%i.device
+Before=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant.conf -i %I
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
 '''
 
 [hooks]
 post_install = '''
-echo "wpa_supplicant: enable with  nawa service enable wpa_supplicant  (dhcpcd then gets the address)"
+echo "wpa_supplicant: enable per interface with  systemctl enable --now wpa_supplicant@wlan0  (networkd then gets the address)"
 '''

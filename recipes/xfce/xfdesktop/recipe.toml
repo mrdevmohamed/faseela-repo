@@ -5,16 +5,29 @@
 [package]
 name = "xfdesktop"
 version = "4.20.2"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Xfce desktop manager (wallpaper, desktop icons and right-click menu)"
 license = ["GPL-2.0-or-later"]
-source = "https://archive.xfce.org/src/xfce/xfdesktop/4.20/xfdesktop-4.20.2.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xfdesktop"
+url = "https://archive.xfce.org/src/xfce/xfdesktop/4.20/xfdesktop-4.20.2.tar.bz2"
 sha256 = "1d9bd76015fb6e9aca05e73cd998c7c66ed4fc8c10b626e08fc2eb7c39df3f7b"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo", "libX11", "xorgproto"]
 run = ["faseela-branding", "libxfce4ui", "libxfce4windowing", "xfconf", "garcon", "exo", "thunar", "libnotify", "gtk3", "gtk-layer-shell", "glib", "cairo"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-debug --with-default-backdrop-filename=/usr/share/backgrounds/faseela/default.png"

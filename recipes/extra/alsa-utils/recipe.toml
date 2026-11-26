@@ -4,22 +4,35 @@
 [package]
 name = "alsa-utils"
 version = "1.2.13"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "ALSA utilities: alsamixer, amixer, aplay, arecord, alsactl"
 license = ["GPL-2.0-or-later"]
-source = "https://www.alsa-project.org/files/pub/utils/alsa-utils-%{version}.tar.bz2"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "alsa-utils"
+url = "https://www.alsa-project.org/files/pub/utils/alsa-utils-%{version}.tar.bz2"
 sha256 = "1702a6b1cdf9ba3e996ecbc1ddcf9171e6808f5961d503d0f27e80ee162f1daa"
+strip_components = 1
 
 [depends]
 build = ["alsa-lib", "ncurses", "pkgconf", "shadow"]
-run = ["alsa-lib", "ncurses", "eudev", "shadow", "base-files", "coreutils"]
+run = ["alsa-lib", "ncurses", "systemd", "shadow", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --sbindir=/usr/bin --with-curses=ncursesw --disable-alsaconf --disable-bat --disable-xmlto --with-udev-rules-dir=/usr/lib/udev/rules.d --with-systemdsystemunitdir=no"
 compile = "make -j%{jobs}"
 # the stock 90-alsa-restore.rules has a GOTO to a missing label with
-# --with-systemdsystemunitdir=no (eudev spams "has no matching label"), so ship
+# --with-systemdsystemunitdir=no (udev spams "has no matching label"), so ship
 # a minimal rule instead
 install = '''
 make DESTDIR=%{pkgdir} install

@@ -113,6 +113,78 @@ def main():
         cleanup = run("cleanup", "--plan", plan_path, "--kind", "legacy").splitlines()
         assert f"stable\t{names[1]}" in cleanup
 
+        # Schema-v5 is a separate release namespace. Every archive, including
+        # the recipe snapshot, is paired with its detached signature and the
+        # asset limit is calculated against both uploaded files.
+        for name in names + [recipe]:
+            (repo / f"{name}.sig").write_bytes(b"signature")
+
+        v5_releases = [
+            {"tag_name": "stable", "assets": [{"name": names[0]}]},
+            {"tag_name": "stable-v3", "assets": [{"name": "index.toml"}]},
+            {"tag_name": "packages-9999", "assets": [{"name": names[2]}]},
+            {"tag_name": "stable-v5", "assets": [{"name": "index.toml"}, {"name": "index.toml.sig"}]},
+            {
+                "tag_name": "packages-v5-0001",
+                "assets": [
+                    {"name": names[1]},
+                    {"name": names[1] + ".sig"},
+                ],
+            },
+        ]
+        metadata.write_text(json.dumps(v5_releases), encoding="utf-8")
+        listed_v5 = run(
+            "list", "--releases-json", metadata, "--stable-tag", "stable-v5",
+            "--index-version", "5",
+        ).splitlines()
+        assert listed_v5 == [f"packages-v5-0001\t{names[1]}"], listed_v5
+
+        v5_plan_path = root / "plan-v5.json"
+        v5_manifest = root / "locations-v5.toml"
+        run(
+            "plan",
+            "--releases-json", metadata,
+            "--repo-dir", repo,
+            "--repository", "mrdevmohamed/faseela-repo",
+            "--stable-tag", "stable-v5",
+            "--recipe-file", recipe,
+            "--max-assets", "4",
+            "--index-version", "5",
+            "--output", v5_plan_path,
+            "--manifest", v5_manifest,
+        )
+        v5_plan = json.loads(v5_plan_path.read_text(encoding="utf-8"))
+        assert v5_plan["index_version"] == 5
+        assert v5_plan["assignments"][names[1]] == "packages-v5-0001"
+        assert v5_plan["create_releases"] == ["packages-v5-0002"]
+        assert set(v5_plan["uploads"]["packages-v5-0001"]) == {
+            names[0], names[0] + ".sig"
+        }
+        assert set(v5_plan["uploads"]["packages-v5-0002"]) == {
+            names[2], names[2] + ".sig", recipe, recipe + ".sig"
+        }
+        assert v5_plan["cleanup"] == []
+        assert v5_plan["legacy_cleanup"] == []
+        v5_urls = tomllib.loads(v5_manifest.read_text(encoding="utf-8"))["package_urls"]
+        assert "/packages-v5-0001/" in v5_urls[names[1]]
+        assert "/packages-v5-0002/" in v5_urls[names[2]]
+
+        # A schema-v5 view fails closed if a published package loses its
+        # signature sidecar; it never silently reuses an unsigned archive.
+        v5_releases[-1]["assets"] = [{"name": names[1]}]
+        metadata.write_text(json.dumps(v5_releases), encoding="utf-8")
+        unsigned = subprocess.run(
+            [
+                "python3", "-I", str(SCRIPT), "list",
+                "--releases-json", str(metadata), "--stable-tag", "stable-v5",
+                "--index-version", "5",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert unsigned.returncode != 0
+        assert "unsigned archive" in unsigned.stderr
+
     print("distributed release tests: passed")
 
 

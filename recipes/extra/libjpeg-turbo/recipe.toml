@@ -3,16 +3,29 @@
 [package]
 name = "libjpeg-turbo"
 version = "3.0.4"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "libjpeg-turbo — fast JPEG codec (libjpeg API)"
 license = ["IJG", "BSD-3-Clause", "Zlib"]
-source = "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/%{version}/libjpeg-turbo-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libjpeg-turbo"
+url = "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/%{version}/libjpeg-turbo-%{version}.tar.gz"
 sha256 = "99130559e7d62e8d695f2c0eaeef912c5828d5b84a0537dcb24c9678c9d5b76b"
+strip_components = 1
 
 [depends]
 build = ["cmake", "nasm"]
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_STATIC=FALSE -DWITH_JAVA=FALSE"

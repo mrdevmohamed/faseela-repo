@@ -2,16 +2,29 @@
 [package]
 name = "libXrender"
 version = "0.9.11"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X Render extension client library"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/lib/libXrender-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxrender"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXrender-%{version}.tar.xz"
 sha256 = "bc53759a3a83d1ff702fb59641b3d2f7c56e05051fa0cfa93501166fa782dc24"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "xorgproto", "libX11"]
-run = ["libX11"]
+run = ["libX11", "xorgproto"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr --disable-static --disable-specs --without-xmlto --without-fop --without-xsltproc"

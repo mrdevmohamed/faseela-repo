@@ -2,16 +2,29 @@
 [package]
 name = "libinput"
 version = "1.26.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Input device handling library"
 license = ["MIT"]
-source = "https://gitlab.freedesktop.org/libinput/libinput/-/archive/%{version}/libinput-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libinput"
+url = "https://gitlab.freedesktop.org/libinput/libinput/-/archive/%{version}/libinput-%{version}.tar.gz"
 sha256 = "5c1c4150f217fea1db2d1fd88e2607b2f1928cfde65c34da65a9f24dcfd69464"
+strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "libevdev", "mtdev", "eudev"]
-run = ["libevdev", "mtdev", "eudev"]
+build = ["meson", "ninja", "pkgconf", "libevdev", "mtdev", "systemd"]
+run = ["libevdev", "mtdev", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D libwacom=false -D debug-gui=false -D tests=false -D documentation=false -D udev-dir=/usr/lib/udev"

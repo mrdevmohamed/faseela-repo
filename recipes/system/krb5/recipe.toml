@@ -2,16 +2,29 @@
 [package]
 name = "krb5"
 version = "1.22.3"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "MIT Kerberos V5 libraries and network authentication tools"
 license = ["MIT"]
-source = "https://kerberos.org/dist/krb5/1.22/krb5-%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "krb5"
+url = "https://kerberos.org/dist/krb5/1.22/krb5-%{version}.tar.gz"
 sha256 = "fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b"
+strip_components = 1
 
 [depends]
 build = ["e2fsprogs", "bison", "openssl", "perl"]
 run = ["e2fsprogs", "openssl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = """

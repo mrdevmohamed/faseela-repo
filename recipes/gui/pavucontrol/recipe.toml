@@ -10,17 +10,29 @@
 [package]
 name = "pavucontrol"
 version = "5.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "pavucontrol — PulseAudio volume control for the PipeWire compatibility server"
 license = ["GPL-2.0-or-later"]
-source = "https://deb.debian.org/debian/pool/main/p/pavucontrol/pavucontrol_5.0.orig.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pavucontrol"
+url = "https://deb.debian.org/debian/pool/main/p/pavucontrol/pavucontrol_5.0.orig.tar.xz"
 sha256 = "7aea10913916b98f369e20254398e12149a57c971d61018ba826430a0623c56b"
-source_dir = "pavucontrol-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "gtkmm", "gtk3", "libsigc++", "glibmm", "json-glib", "libcanberra", "libpulse"]
 run = ["gtkmm", "glibmm", "json-glib", "libcanberra", "libpulse"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = '''

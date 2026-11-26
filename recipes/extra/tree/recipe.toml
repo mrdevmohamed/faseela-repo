@@ -3,16 +3,29 @@
 [package]
 name = "tree"
 version = "2.2.1"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "tree — recursive directory listing in a tree view"
 license = ["GPL-2.0-or-later"]
-source = "https://deb.debian.org/debian/pool/main/t/tree/tree_%{version}.orig.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "tree"
+url = "https://deb.debian.org/debian/pool/main/t/tree/tree_%{version}.orig.tar.gz"
 sha256 = "68ac45dc78c0c311ada06200ffc3c285e74223ba208061f8d15ffac25e44b2ec"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs}"

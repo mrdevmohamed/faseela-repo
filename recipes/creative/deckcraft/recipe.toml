@@ -4,17 +4,29 @@
 [package]
 name = "deckcraft"
 version = "0.14.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Native presentation editor with PowerPoint compatibility"
 license = ["MIT", "Apache-2.0"]
-source = "https://github.com/storytold/deckcraft/releases/download/v0.14.1/deckcraft-0.14.1-linux-x86_64.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "deckcraft"
+url = "https://github.com/storytold/deckcraft/releases/download/v0.14.1/deckcraft-0.14.1-linux-x86_64.tar.gz"
 sha256 = "e86c7fa0ecb55f1a553ee425b93dcfdc806b7b3798f272b41f1d1ff74ac5c12a"
-source_dir = "deckcraft-0.14.1-linux-x86_64"
+strip_components = 1
 
 [depends]
 build = []
 run = ["gcc", "glibc", "libxkbcommon", "mesa", "wayland", "alsa-lib", "pipewire"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 install = """

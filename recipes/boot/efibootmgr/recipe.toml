@@ -2,16 +2,29 @@
 [package]
 name = "efibootmgr"
 version = "18"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Manage UEFI firmware boot entries"
 license = ["GPL-2.0"]
-source = "https://github.com/rhboot/efibootmgr/archive/%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "efibootmgr"
+url = "https://github.com/rhboot/efibootmgr/archive/%{version}.tar.gz"
 sha256 = "442867d12f8525034a404fc8af3036dba8e1fc970998af2486c3b940dfad0874"
+strip_components = 1
 
 [depends]
 build = ["efivar", "popt", "pkgconf"]
 run = ["efivar", "popt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # Keep the build compatible with current compilers; upstream enables -Werror.

@@ -1,0 +1,66 @@
+# gui recipe: seatd-systemd — shared seatd unit and DRM device permissions.
+# Both Sway and COSMIC use libseat with the seatd backend. Keeping the service
+# and render-node rule here avoids desktop-specific duplicate file ownership.
+[package]
+name = "seatd-systemd"
+version = "0.1"
+rel = 5
+arch = ["x86_64"]
+source_date_epoch = 1767225600
+summary = "Shared systemd unit and DRM permissions for seatd-based Wayland desktops"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[depends]
+build = []
+run = ["seatd", "systemd", "base-files", "coreutils"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+# seatd runs as root and grants access through the `seat` group.
+install -d -m755 %{pkgdir}/usr/lib/systemd/system
+cat > %{pkgdir}/usr/lib/systemd/system/seatd.service <<'EOF'
+[Unit]
+Description=Seat management daemon
+Documentation=man:seatd(1)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/seatd -g seat
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 644 %{pkgdir}/usr/lib/systemd/system/seatd.service
+install -d -m755 %{pkgdir}/usr/lib/systemd/system-preset
+printf '%s\n' 'enable seatd.service' > %{pkgdir}/usr/lib/systemd/system-preset/85-seatd.preset
+
+# Render nodes are safe for unprivileged GPU command submission. Keep the
+# primary DRM nodes restricted; compositor clients only need render access.
+install -d -m755 %{pkgdir}/usr/lib/udev/rules.d
+cat > %{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules <<'DRM'
+SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="render", MODE="0660"
+DRM
+chmod 644 %{pkgdir}/usr/lib/udev/rules.d/70-faseela-drm.rules
+'''
+
+[hooks]
+post_install = '''
+for group in seat video render input; do
+    /usr/libexec/faseela/ensure-system-account group "$group"
+done
+udevadm control --reload-rules 2>/dev/null || true
+udevadm trigger --subsystem-match=drm 2>/dev/null || true
+udevadm settle 2>/dev/null || true
+echo "seatd-systemd: add desktop users to seat,video,render,input."
+'''

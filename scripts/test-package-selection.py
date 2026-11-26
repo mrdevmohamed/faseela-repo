@@ -30,7 +30,7 @@ class PackageSelectionTests(unittest.TestCase):
             "nawa": ("base", {"build": ["rust"], "run": ["bash"]}),
             "base-devel": ("base", {"run": ["bash"]}),
             "kernel": ("boot", {"build": ["gcc"]}),
-            "runit": ("system", {}),
+            "systemd": ("system", {}),
             "curl": ("extra", {"run": ["bash"]}),
             "sway": ("gui", {"run": ["bash"]}),
             "firefox": ("browser", {"run": ["sway"]}),
@@ -78,7 +78,7 @@ class PackageSelectionTests(unittest.TestCase):
     def test_all_includes_every_current_non_toolchain_category(self):
         plan = self.resolve(all_packages=True)
         self.assertEqual(set(plan["packages"]), {
-            "base-files", "bash", "nawa", "base-devel", "kernel", "runit", "curl",
+            "base-files", "bash", "nawa", "base-devel", "kernel", "systemd", "curl",
             "sway", "firefox", "mpv", "creative-app", "telegram-desktop", "docs-tool",
         })
         self.assertNotIn("gcc", plan["packages"])
@@ -91,10 +91,10 @@ class PackageSelectionTests(unittest.TestCase):
         self.assertEqual(plan["packages"], ["telegram-desktop"])
         self.assertEqual(plan["category_counts"], {"messaging": 1})
 
-    def test_core_keeps_the_legacy_base_system_boot_extra_scope(self):
+    def test_core_includes_the_systemd_base_system_boot_extra_scope(self):
         plan = self.resolve(core=True)
         self.assertEqual(set(plan["packages"]), {
-            "base-files", "bash", "nawa", "base-devel", "kernel", "runit", "curl",
+            "base-files", "bash", "nawa", "base-devel", "kernel", "systemd", "curl",
         })
         self.assertNotIn("sway", plan["packages"])
         self.assertNotIn("docs-tool", plan["packages"])
@@ -197,9 +197,9 @@ class PackageSelectionTests(unittest.TestCase):
             subprocess.run(["git", "add", "recipes"], check=True)
             subprocess.run(["git", "commit", "-qm", "push B"], check=True)
 
-            runit_file = self.recipes_dir / "system" / "runit" / "recipe.toml"
-            runit_file.parent.mkdir(parents=True, exist_ok=True)
-            runit_file.write_text('[package]\\nname = "runit"\\n', encoding="utf-8")
+            systemd_file = self.recipes_dir / "system" / "systemd" / "recipe.toml"
+            systemd_file.parent.mkdir(parents=True, exist_ok=True)
+            systemd_file.write_text('[package]\\nname = "systemd"\\n', encoding="utf-8")
             subprocess.run(["git", "add", "recipes"], check=True)
             subprocess.run(["git", "commit", "-qm", "push C"], check=True)
             head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -207,7 +207,7 @@ class PackageSelectionTests(unittest.TestCase):
             changed = select_packages.changed_recipes(
                 Path("recipes"), last_successful, head, cwd=self.root,
             )
-            self.assertEqual(changed, ["bash", "runit"])
+            self.assertEqual(changed, ["bash", "systemd"])
         finally:
             os.chdir(previous_cwd)
 
@@ -264,17 +264,20 @@ class RealRecipeTreeTests(unittest.TestCase):
         workflow = (root / ".github/workflows/packages.yml").read_text(encoding="utf-8")
         self.assertIn("  pull_request:", workflow)
         self.assertIn('--changed-from "$base" --changed-to "$head"', workflow)
-        self.assertIn("Restore previous package builds from this pull request", workflow)
-        self.assertIn("pr-build-cache.py restore", workflow)
-        self.assertIn("for previous_run in", workflow)
-        self.assertIn("reverse | .[].id", workflow)
-        self.assertIn("gh run download", workflow)
-        self.assertIn("pr-build-cache.py save", workflow)
-        self.assertIn("name: pr-package-cache", workflow)
-        self.assertIn(
-            "if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/feat/cosmic-desktop-support' && always() && steps.published.conclusion == 'success' }}",
-            workflow,
-        )
+        build = (root / ".github/workflows/packages-build.yml").read_text(encoding="utf-8")
+        # archives pass between jobs as artifacts: no draft releases, no run-id hand-off
+        self.assertIn("actions/download-artifact", build)
+        self.assertIn("actions/upload-artifact", build)
+        self.assertNotIn("gh run download", workflow + build)
+        self.assertNotIn("pr-shard-cache", workflow + build)
+        self.assertNotIn("draft", (workflow + build).lower().replace("# draft", ""))
+        # a pull request never publishes: only main does, and only when nothing failed
+        self.assertIn("github.event_name != 'pull_request' && github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("!contains(needs.*.result, 'failure')", workflow)
+        # build shards never see the signing key; only the signer check and the
+        # publish job read it here (the upload workflow gets it via `secrets: inherit`)
+        self.assertNotIn("NAWA_SIGN_KEY_B64", build)
+        self.assertEqual(workflow.count("secrets.NAWA_SIGN_KEY_B64"), 2)
         self.assertIn("Selects every non-toolchain package (hundreds)", workflow)
 
 

@@ -2,17 +2,29 @@
 [package]
 name = "xorg-util-macros"
 version = "1.20.2"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "X.Org Autotools macros"
 license = ["MIT"]
-source = "https://xorg.freedesktop.org/archive/individual/util/util-macros-%{version}.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xorg-util-macros"
+url = "https://xorg.freedesktop.org/archive/individual/util/util-macros-%{version}.tar.xz"
 sha256 = "9ac269eba24f672d7d7b3574e4be5f333d13f04a7712303b1821b2a51ac82e8e"
-source_dir = "util-macros-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 configure = "./configure --prefix=/usr"

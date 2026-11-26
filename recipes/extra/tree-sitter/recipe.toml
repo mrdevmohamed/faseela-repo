@@ -3,17 +3,29 @@
 [package]
 name = "tree-sitter"
 version = "0.25.10"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "tree-sitter — incremental parsing library (libtree-sitter only)"
 license = ["MIT"]
-source = "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v%{version}.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "tree-sitter"
+url = "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v%{version}.tar.gz"
 sha256 = "ad5040537537012b16ef6e1210a572b927c7cdc2b99d1ee88d44a7dcdc3ff44c"
-source_dir = "tree-sitter-%{version}"
+strip_components = 1
 
 [depends]
 build = []
 run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 compile = "make -j%{jobs} PREFIX=/usr"

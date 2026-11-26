@@ -2,16 +2,31 @@
 [package]
 name = "iproute2"
 version = "7.3.0"
-rel = 1
+rel = 2
 arch = ["x86_64"]
 summary = "Network routing/control utilities (ip, ss, tc)"
 license = ["GPL-2.0"]
-source = "https://cdn.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.3.0.tar.xz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "iproute2"
+url = "https://cdn.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.3.0.tar.xz"
 sha256 = "5c1789d290bba048a6135ed1ab81b0402dd0fb528d1f1421765c42b1fc3d6289"
+strip_components = 1
 
 [depends]
-build = ["libmnl"]
+# tc generates its ematch lexer/parser at build time, so flex and bison are
+# required (base-devel does not ship them).
+build = ["libmnl", "flex", "bison"]
 run = ["libmnl"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 prepare = "./configure"

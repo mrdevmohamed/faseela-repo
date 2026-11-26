@@ -4,17 +4,29 @@
 [package]
 name = "libcups"
 version = "2.4.20"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "CUPS client library (without printing daemon)"
 license = ["Apache-2.0 WITH LLVM-exception"]
-source = "https://github.com/OpenPrinting/cups/releases/download/v%{version}/cups-%{version}-source.tar.gz"
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libcups"
+url = "https://github.com/OpenPrinting/cups/releases/download/v%{version}/cups-%{version}-source.tar.gz"
 sha256 = "ab4d9cd7f3e58060091d2b24972223d6401675f11c49b65abf4f6ef31dea22ff"
-source_dir = "cups-%{version}"
+strip_components = 1
 
 [depends]
 build = ["pkgconf", "openssl", "zlib"]
 run = ["openssl", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
 
 [build]
 # Upstream commit 23a183b fixes CUPS 2.4.20 when Avahi/DNS-SD is not present:

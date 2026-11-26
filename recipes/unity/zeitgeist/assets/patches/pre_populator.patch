@@ -1,0 +1,153 @@
+Description: Pre-populate the log with some events so that the dash isn't empty on first run.
+
+=== modified file 'src/Makefile.am'
+Bug-Ubuntu: https://launchpad.net/bugs/962265
+Forwarded: not-needed
+---
+ datahub/Makefile.am            |    1 
+ datahub/pre-populator.vala     |  117 +++++++++++++++++++++++++++++++++++++++++
+ datahub/zeitgeist-datahub.vala |    3 +
+ 3 files changed, 121 insertions(+)
+
+--- a/datahub/Makefile.am
++++ b/datahub/Makefile.am
+@@ -30,6 +30,7 @@ zeitgeist_datahub_VALASOURCES = \
+ 	desktop-launch-listener.vala \
+ 	kde-recent-document-provider.vala \
+ 	recent-manager-provider.vala \
++	pre-populator.vala \
+ 	utils.vala \
+ 	zeitgeist-datahub.vala \
+ 	$(NULL)
+--- /dev/null
++++ b/datahub/pre-populator.vala
+@@ -0,0 +1,117 @@
++/*
++ * Copyright (C) 2012 Canonical Ltd.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU Lesser General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ * Authored by Michal Hruby <michal.mhr@gmail.com>
++ *
++ */
++
++using Zeitgeist;
++
++public class PrePopulator : DataProvider
++{
++  public PrePopulator (DataHub datahub)
++  {
++    GLib.Object (unique_id: "com.canonical,datahub,pre-populator",
++                 name: "Pre-populate the log",
++                 description: "Pushes a couple of events so Ubuntu Dash home is not empty when doing new install",
++                 datahub: datahub);
++  }
++
++  // if vala didn't have bug in construct-only properties, the properties
++  // would be construct-only
++  public override string unique_id { get; construct set; }
++  public override string name { get; construct set; }
++  public override string description { get; construct set; }
++
++  public override DataHub datahub { get; construct set; }
++  public override bool enabled { get; set; default = true; }
++  public override bool register { get; construct set; default = true; }
++
++  construct
++  {
++  }
++
++  public override void start ()
++  {
++    this.prepare_events.begin ();
++  }
++
++  private Event event_for_desktop_file (string desktop_file, int64 timestamp)
++  {
++    var event = new Event ();
++    event.timestamp = timestamp;
++    var subject = new Subject ();
++
++    event.actor = "application://zeitgeist-datahub.desktop";
++    event.interpretation = Zeitgeist.ZG.ACCESS_EVENT;
++    event.manifestation = Zeitgeist.ZG.USER_ACTIVITY;
++    event.add_subject (subject);
++
++    subject.uri = "application://%s".printf (desktop_file);
++    subject.interpretation = Zeitgeist.NFO.SOFTWARE;
++    subject.manifestation = Zeitgeist.NFO.SOFTWARE_ITEM;
++    subject.mimetype = "application/x-desktop";
++
++    return event;
++  }
++
++  private async void prepare_events ()
++  {
++    var arr = new GenericArray<Event> ();
++    var ts = Timestamp.from_now ();
++    // the timestamp is in milliseconds, we can safely increment it
++    // (dash will display latest first)
++    arr.add (event_for_desktop_file ("rhythmbox.desktop", ++ts));
++    arr.add (event_for_desktop_file ("org.gnome.Calculator.desktop", ++ts));
++    arr.add (event_for_desktop_file ("org.gnome.gedit.desktop", ++ts));
++    arr.add (event_for_desktop_file ("org.gnome.Totem.desktop", ++ts));
++    arr.add (event_for_desktop_file ("thunderbird.desktop", ++ts));
++    arr.add (event_for_desktop_file ("yelp.desktop", ++ts));
++
++    try
++    {
++      var log = new Zeitgeist.Log ();
++      var ids = yield log.find_event_ids (new TimeRange.anytime (),
++                                          new GLib.GenericArray<Zeitgeist.Event> (),
++                                          StorageState.ANY,
++                                          1,
++                                          ResultType.MOST_RECENT_EVENTS,
++                                          null);
++
++      if (ids.length == 0)
++      {
++        // pre-populate only if there are no events at all
++        items_available (arr);
++
++        Timeout.add_seconds (5, prepare_events.callback);
++        yield;
++      }
++
++      var registry = new DataSourceRegistry ();
++      // this is one-time only module, disable ourselves when done
++      yield registry.set_data_source_enabled (unique_id, false, null);
++    }
++    catch (Error err)
++    {
++      warning ("%s", err.message);
++    }
++  }
++
++  public override void stop ()
++  {
++  }
++}
++
+--- a/datahub/zeitgeist-datahub.vala
++++ b/datahub/zeitgeist-datahub.vala
+@@ -122,6 +122,9 @@ public class DataHub : Object, DataHubSe
+ 
+     providers.prepend (new DesktopLaunchListener (this));
+ 
++    // Ubuntu-specific
++    providers.prepend (new PrePopulator (this));
++
+     foreach (unowned DataProvider prov in providers)
+     {
+       bool enabled = true;

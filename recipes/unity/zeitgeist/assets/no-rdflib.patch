@@ -1,0 +1,43 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -251,14 +251,6 @@
+ # Ontology parsing dependencies
+ #################################################
+ 
+-# check for python3-rdflib
+-AC_MSG_CHECKING([for python3-rdflib])
+-echo "import rdflib" | $PYTHON - 2>/dev/null
+-if test $? -ne 0 ; then
+-  AC_MSG_FAILURE([failed.  Please install the python3-rdflib package.])
+-else
+-  AC_MSG_RESULT([yes])
+-fi
+ 
+ #################################################
+ # Summary
+--- a/libzeitgeist/Makefile.am
++++ b/libzeitgeist/Makefile.am
+@@ -227,9 +227,6 @@
+ 	$(NULL)
+ endif
+ 
+-ontology.vala ontology-uris.vala: ontology.vala.in ontology-uris.vala.in \
+-		$(ONTOLOGY) $(top_srcdir)/data/ontology2code
+-	$(AM_V_GEN)$(PYTHON) $(top_srcdir)/data/ontology2code --vala $(top_srcdir)/libzeitgeist/ontology-uris.vala.in $(top_srcdir)/libzeitgeist/ontology.vala.in ontology-uris.vala ontology.vala
+ 
+ distclean-local:
+ 	rm -f *.c *.o *.stamp *.~[0-9]~
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -7,11 +7,7 @@
+ 	src \
+ 	extensions \
+ 	data \
+-	python \
+-	test \
+-	examples \
+ 	po \
+-	doc \
+ 	$(NULL)
+ 
+ if ENABLE_DATAHUB

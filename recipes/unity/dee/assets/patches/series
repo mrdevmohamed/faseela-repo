@@ -1,0 +1,7 @@
+gtkdocize.patch
+strict-prototype.patch
+icu-pkg-config.patch
+build_no_werror.patch
+vapi-skip-properties.patch
+vala-gir.patch
+incompatible-pointer-types.patch

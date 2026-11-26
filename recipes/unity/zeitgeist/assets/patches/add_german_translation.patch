@@ -1,0 +1,44 @@
+Description: add german translation
+Author: Chris Leick <c.leick@vollbio.de>
+Last-Update: 2021-01-30
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- /dev/null
++++ b/po/de.po
+@@ -0,0 +1,30 @@
++# Translation of zeitgeist to German
++# Copyright (C) 2011-2012, Collabora Ltd.,
++#               2011, Michal Hruby <michal.mhr@gmail.com>,
++#               2011, Manish Sinha <manishsinha@ubuntu.com>,
++#               2011-2012, Canonical Ltd.
++# This file is distributed under the same license as the zeitgeist package.
++# Copyright (C) of this file 2017, Chris Leick <c.leick@vollbio.de>.
++#
++msgid ""
++msgstr ""
++"Project-Id-Version: zeitgeist 1.0-0.1\n"
++"Report-Msgid-Bugs-To: https://bugs.freedesktop.org/enter_bug.cgi?"
++"product=Zeitgeist\n"
++"POT-Creation-Date: 2017-02-18 16:35+0100\n"
++"PO-Revision-Date: 2017-11-19 10:17+0200\n"
++"Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
++"Language-Team: German <debian-l10n-german@lists.debian.org>\n"
++"Language: de\n"
++"MIME-Version: 1.0\n"
++"Content-Type: text/plain; charset=UTF-8\n"
++"Content-Transfer-Encoding: 8bit\n"
++
++
++#: data/zeitgeist-datahub.desktop.in:3
++msgid "Zeitgeist Datahub"
++msgstr "Zeitgeist Datahub"
++
++#: data/zeitgeist-datahub.desktop.in:4
++msgid "Start the Zeitgeist Datahub for passive loggers"
++msgstr "Den Zeitgeist Datahub für passive Protokollierungsprogramme starten"
+--- a/po/LINGUAS
++++ b/po/LINGUAS
+@@ -1,2 +1,2 @@
+ # please keep this list sorted alphabetically
+-#
++de

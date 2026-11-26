@@ -1,0 +1,45 @@
+# unity recipe: libunity-misc — Miscellaneous Unity helper library
+# Source: Ubuntu archive orig tarball (4.0.5+14.04.20140115); Ubuntu's patches are vendored under assets/patches.
+[package]
+name = "libunity-misc"
+version = "4.0.5"
+rel = 2
+arch = ["x86_64"]
+summary = "Miscellaneous Unity helper library"
+license = ["LGPL-2.1-only", "GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libunity-misc"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libu/libunity-misc/libunity-misc_4.0.5+14.04.20140115.orig.tar.gz"
+sha256 = "197fd17077c3ceac219cbfbe3cfa511a17dd47a86c441c386c7bdec200d119b7"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "libX11", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/ubuntu-upstream.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/ubuntu-upstream.patch
+cp /usr/share/gtk-doc/data/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libunity-misc.so
+'''

@@ -1,0 +1,28 @@
+Description: skip failing tests
+ Instead of not running tests at all,
+ let's just skip the ones that aren't working
+Author: Jeremy Bicha <jbicha@ubuntu.com>
+Bug: https://gitlab.freedesktop.org/zeitgeist/zeitgeist/-/issues/4
+Last-Update: 2021-01-30
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- a/test/c/Makefile.am
++++ b/test/c/Makefile.am
+@@ -26,7 +26,6 @@
+ 	test-timestamp \
+ 	test-symbols \
+ 	test-monitor \
+-	test-log \
+ 	test-event \
+ 	test-datasource \
+ 	test-mimetypes \
+--- a/test/direct/Makefile.am
++++ b/test/direct/Makefile.am
+@@ -47,7 +47,6 @@
+ 	datamodel-test \
+ 	datasource-test \
+ 	event-test \
+-	log-test \
+ 	marshalling-test \
+ 	mimetype-test \
+ 	monitor-test \

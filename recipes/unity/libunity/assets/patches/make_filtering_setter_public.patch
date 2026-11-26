@@ -1,0 +1,21 @@
+Description: Make "set" method of class "Filter" public.
+ Some packages (for example unity-scope-home) fail to compile due to missing
+ unavailable setter for class "Filter".
+
+ This patch makes setter of "Filter" class public so that other packages can
+ use it.
+Author: Tomasz Jeruzalski <tomekdev17@gmail.com>
+Bug: https://bugs.launchpad.net/ubuntu/+source/libunity/+bug/2141346
+Last-Update: 2026-02-16
+---
+--- a/src/unity-filters.vala
++++ b/src/unity-filters.vala
+@@ -76,7 +76,7 @@
+   public FilterRenderer renderer { get; construct; }
+   public bool visible { get; construct set; }
+   public bool collapsed { get; internal construct set; }
+-  public bool filtering { get; internal construct set; }
++  public bool filtering { get; construct set; }
+ 
+   public signal void changed ();
+   

@@ -1,0 +1,20 @@
+--- indicator-application-12.10.1+19.04.20190308.1.orig/src/Makefile.am
++++ indicator-application-12.10.1+19.04.20190308.1/src/Makefile.am
+@@ -21,7 +21,7 @@
+ 	-Wl,-Bsymbolic-functions \
+ 	-Wl,-z,defs \
+ 	-Wl,--as-needed \
+-	-Werror -Wno-error=deprecated-declarations \
++	-Wno-error=deprecated-declarations \
+ 	-DG_LOG_DOMAIN=\"Indicator-Application\"
+ libapplication_la_LIBADD = $(INDICATOR_LIBS) 
+ libapplication_la_LDFLAGS = $(COVERAGE_LDFLAGS) \
+@@ -55,7 +55,7 @@
+ 	$(APPINDICATOR_CFLAGS) \
+ 	$(COVERAGE_CFLAGS) \
+ 	-DDATADIR="\"$(pkgdatadir)\"" \
+-	-Wall -Werror -Wno-error=deprecated-declarations \
++	-Wall -Wno-error=deprecated-declarations \
+ 	-DG_LOG_DOMAIN=\"indicator-application-service\"
+ 
+ indicator_application_service_LDADD = \

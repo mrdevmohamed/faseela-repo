@@ -1,0 +1,25 @@
+Description: Update prototypes for no-argument functions to "(void)", to comply
+with -Werror=strict-prototypes.
+Author: Iain Lane <iain@orangesquash.org.uk>
+--- dee.orig/src/dee-icu.h
++++ dee/src/dee-icu.h
+@@ -56,7 +56,7 @@
+                                                           const gchar  *rules,
+                                                        GError      **error);
+ 
+-DeeICUTermFilter*        dee_icu_term_filter_new_ascii_folder ();
++DeeICUTermFilter*        dee_icu_term_filter_new_ascii_folder (void);
+ 
+ gchar*                   dee_icu_term_filter_apply       (DeeICUTermFilter *self,
+                                                           const gchar *text);
+--- dee.orig/src/dee-sequence-model.h
++++ dee/src/dee-sequence-model.h
+@@ -95,7 +95,7 @@
+  **/
+ GType          dee_sequence_model_get_type               (void);
+ 
+-DeeModel*      dee_sequence_model_new                    ();
++DeeModel*      dee_sequence_model_new                    (void);
+ 
+ G_END_DECLS
+

@@ -1,0 +1,38 @@
+# unity recipe: protobuf — Protocol Buffers 3.21 (C++ runtime and protoc)
+# Compiz serialises plugin state with protobuf. The 3.21 series is the last one
+# without an Abseil dependency, and it is what Ubuntu's Compiz is built against.
+[package]
+name = "protobuf"
+version = "3.21.12"
+rel = 2
+arch = ["x86_64"]
+summary = "Protocol Buffers C++ runtime and compiler"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "protobuf"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/protobuf_%{version}.orig.tar.gz"
+sha256 = "930c2c3b5ecc6c9c12615cf5ad93f1cd6e12d0aba862b572e076259970ac3a53"
+strip_components = 1
+
+[depends]
+build = ["zlib"]
+run = ["zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -x %{pkgdir}/usr/bin/protoc
+test -s %{pkgdir}/usr/lib/pkgconfig/protobuf.pc
+'''

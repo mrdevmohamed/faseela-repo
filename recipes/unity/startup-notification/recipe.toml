@@ -1,0 +1,36 @@
+# unity recipe: startup-notification — freedesktop startup-notification protocol library
+# Compiz and the Unity launcher report application start-up through it.
+[package]
+name = "startup-notification"
+version = "0.12"
+rel = 2
+arch = ["x86_64"]
+summary = "Application start-up notification library"
+license = ["LGPL-2.0-or-later", "MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "startup-notification"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/s/startup-notification/startup-notification_%{version}.orig.tar.gz"
+sha256 = "3c391f7e930c583095045cd2d10eb73a64f085c7fde9d260f2652c7cb3cfbe4a"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "libX11", "libxcb", "xcb-util", "xorgproto", "libSM", "libICE"]
+run = ["libX11", "libxcb", "xcb-util"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -s %{pkgdir}/usr/lib/pkgconfig/libstartup-notification-1.0.pc
+'''

@@ -1,0 +1,43 @@
+# unity recipe: dconf — GSettings backend, service and command-line tool
+# Compiz, Unity and unity-settings-daemon keep their settings in GSettings; the
+# dconf backend persists them per user. The gsettings module is registered with
+# gio-querymodules. The Vala client binding and bash completion are not built.
+[package]
+name = "dconf"
+version = "51.0"
+rel = 2
+arch = ["x86_64"]
+summary = "GSettings backend, service and tools"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "dconf"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/d/dconf/dconf_%{version}.orig.tar.xz"
+sha256 = "e65c1b7867f836faad9f9ee04acf5c5a6cae2bbc784833fe093207e0cb590248"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "dbus", "systemd"]
+run = ["glib", "dbus"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[hooks]
+post_install = "gio-querymodules /usr/lib/gio/modules"
+post_remove = "gio-querymodules /usr/lib/gio/modules"
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D bash_completion=false -D man=false -D gtk_doc=false -D vapi=false"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/gio/modules/libdconfsettings.so
+test -x %{pkgdir}/usr/bin/dconf
+'''

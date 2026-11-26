@@ -114,6 +114,7 @@ assert "s/^OnlyShowIn=MATE;$/OnlyShowIn=COSMIC;/" in agent["build"]["prepare"]
 # AppStream and its XML/YAML dependencies are packaged, rather than relying on
 # the pure-Rust catalog parser alone or host libraries from the build runner.
 appstream = recipe("flatpak", "appstream")
+assert "python-pyparsing" in flatpak["depends"]["build"]
 assert "libxmlb" in appstream["depends"]["build"]
 assert "libfyaml" in appstream["depends"]["build"]
 assert "systemd=false" in appstream["build"]["configure"]
@@ -127,6 +128,7 @@ for category, name in (
     ("flatpak", "gnupg"),
     ("flatpak", "gpgme"),
     ("flatpak", "ostree"),
+    ("flatpak", "python-pyparsing"),
     ("flatpak", "flatpak"),
     ("flatpak", "mate-polkit"),
 ):

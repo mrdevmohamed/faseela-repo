@@ -21,7 +21,7 @@ strip_components = 1
 include = ["assets/flathub.flatpakrepo"]
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "bison", "gettext", "glib", "libarchive", "curl", "libxml2", "libcap", "json-glib", "appstream", "ostree", "gpgme", "fuse3", "libseccomp", "polkit", "libXau", "bubblewrap", "xdg-dbus-proxy", "p11-kit", "zstd", "gdk-pixbuf"]
+build = ["meson", "ninja", "pkgconf", "python-pyparsing", "bison", "gettext", "glib", "libarchive", "curl", "libxml2", "libcap", "json-glib", "appstream", "ostree", "gpgme", "fuse3", "libseccomp", "polkit", "libXau", "bubblewrap", "xdg-dbus-proxy", "p11-kit", "zstd", "gdk-pixbuf"]
 run = ["glib", "libarchive", "curl", "libxml2", "libcap", "json-glib", "appstream", "ostree", "gpgme", "gnupg", "fuse3", "libseccomp", "polkit", "dbus-system", "p11-kit", "bubblewrap", "xdg-dbus-proxy", "zstd", "libXau", "gdk-pixbuf"]
 
 [capabilities]

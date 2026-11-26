@@ -1,0 +1,38 @@
+# unity recipe: unity-build-shims — build-only stand-ins for gtk-doc and gobject-introspection macros
+# Bamf, Dee, libunity and the indicator libraries call GTK_DOC_CHECK and
+# GOBJECT_INTROSPECTION_CHECK from configure.ac. Neither gtk-doc nor
+# GObject-Introspection is packaged, and the manuals/typelibs are not wanted, so
+# these shims define the macros as "unavailable" (documentation and introspection off).
+# Only ever a build dependency: nothing installs it into an image.
+[package]
+name = "unity-build-shims"
+version = "1.0"
+rel = 2
+arch = ["x86_64"]
+source_date_epoch = 1767225600
+summary = "Build-only gtk-doc and gobject-introspection autoconf stand-ins for the Unity libraries"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[assets]
+include = ["assets/gtk-doc.m4", "assets/introspection.m4", "assets/gtk-doc.make", "assets/gtkdocize"]
+
+[depends]
+build = []
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+install -Dm644 %{assetsdir}/assets/gtk-doc.m4 %{pkgdir}/usr/share/aclocal/gtk-doc.m4
+install -Dm644 %{assetsdir}/assets/introspection.m4 %{pkgdir}/usr/share/aclocal/introspection.m4
+install -Dm644 %{assetsdir}/assets/gtk-doc.make %{pkgdir}/usr/share/gtk-doc/data/gtk-doc.make
+install -Dm755 %{assetsdir}/assets/gtkdocize %{pkgdir}/usr/bin/gtkdocize
+'''

@@ -1,0 +1,36 @@
+# unity recipe: gnome-common — autoconf macros and gnome-autogen.sh
+# Bamf and several Unity libraries still call GNOME_COMMON_INIT from configure.ac.
+[package]
+name = "gnome-common"
+version = "3.14.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Autoconf macros shared by older GNOME projects"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gnome-common"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/g/gnome-common/gnome-common_%{version}.orig.tar.xz"
+sha256 = "4c00242f781bb441289f49dd80ed1d895d84de0c94bfc2c6818a104c9e39262c"
+strip_components = 1
+
+[depends]
+build = []
+run = ["autoconf", "automake", "libtool"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -s %{pkgdir}/usr/share/aclocal/gnome-common.m4
+'''

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Build-time stand-in for gtkdocize: put the (empty) gtk-doc.make where the
+# real tool would, honouring --docdir. Every other option is accepted and ignored.
+dir=.
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --docdir) dir=$2; shift ;;
+        --docdir=*) dir=${1#*=} ;;
+        --version) echo "gtkdocize (Faseela unity-build-shims stand-in)"; exit 0 ;;
+    esac
+    shift
+done
+mkdir -p "$dir"
+cp /usr/share/gtk-doc/data/gtk-doc.make "$dir/gtk-doc.make"

@@ -7,6 +7,8 @@ Checks (no network, no cargo needed):
   * every build/run dependency names an existing recipe
   * the dependency graph (build + run) has no cycles
   * sha256 is a 64-hex string (or the all-zero placeholder, reported)
+  * relation-only recipes (schema marker, no external sources) pin
+    package.source_date_epoch (Nawa rejects them otherwise)
   * linux-firmware-lite / -extra carry the same KEEP list
 
 Usage:
@@ -163,6 +165,31 @@ def keep_list(r):
     return m.group(1).split() if m else None
 
 
+SCHEMA_MARKER = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+
+def relation_only_epoch(recs):
+    """A relation-only recipe (schema marker, no external sources) must pin
+    package.source_date_epoch: Nawa rejects it at load time otherwise
+    ('a relation-only recipe uses the schema marker instead of an external
+    source and must pin package.source_date_epoch'), which fails every
+    shard in 'Prepare the build root' when `nawa deps` validates the tree."""
+    errors = []
+    for name, recipe in recs.items():
+        pkg = recipe["package"]
+        if pkg.get("source") != SCHEMA_MARKER:
+            continue
+        if recipe_source.sources(pkg):
+            continue
+        if pkg.get("source_date_epoch") is None:
+            errors.append(
+                f"{recipe['_path']}: `{name}` is relation-only (schema marker, "
+                "no external sources) but does not pin package.source_date_epoch "
+                "(Nawa rejects it)"
+            )
+    return errors
+
+
 def firmware_split(recs):
     """linux-firmware-lite and -extra split ONE file set: their KEEP lists must match."""
     lite, extra = recs.get("linux-firmware-lite"), recs.get("linux-firmware-extra")
@@ -198,6 +225,7 @@ def main():
             elif not re.fullmatch(r"[0-9a-f]{64}", sha):
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)
+    errors += relation_only_epoch(recs)
     errors += service_hook_policy(recs)
     if not errors:
         try:

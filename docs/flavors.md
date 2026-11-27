@@ -15,6 +15,7 @@ Nawa; they do not create separate ISO variants.
 | `iso-sway` | Common base plus the Sway Wayland desktop (console login). |
 | `iso-xfce` | Common base plus Xfce on Xorg and the LightDM packages. |
 | `iso-cosmic` | Common base plus COSMIC and COSMIC Greeter (greetd). |
+| `iso-unity` | Common base plus Unity 7 (Compiz + Nux) on Xorg and the LightDM packages. |
 
 The desktop images extend `iso-nogui`, so core packages, boot support,
 networking and command-line tools remain shared. Desktop-specific packages

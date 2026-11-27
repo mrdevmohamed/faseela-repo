@@ -43,8 +43,11 @@ install = '''set -eu
 install -d %{pkgdir}/usr/bin
 cat > %{pkgdir}/usr/bin/unity-session <<'ENTRY'
 #!/bin/sh
+export XDG_CURRENT_DESKTOP="Unity:Unity7"
+export XDG_SESSION_DESKTOP=unity
+export XDG_SESSION_TYPE=x11
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=${XDG_RUNTIME_DIR}/bus}"
-dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_SESSION_ID XDG_SEAT XDG_VTNR
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_SESSION_ID XDG_SEAT XDG_VTNR
 exec /usr/libexec/run-systemd-session unity-session.target "$@"
 ENTRY
 chmod 0755 %{pkgdir}/usr/bin/unity-session

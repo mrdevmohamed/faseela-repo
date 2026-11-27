@@ -4,7 +4,7 @@
 [package]
 name = "audio-session"
 version = "0.1"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Shared per-user PipeWire, WirePlumber and PulseAudio-compatible session startup"
@@ -96,6 +96,7 @@ session_process=
 case "${XDG_CURRENT_DESKTOP:-}" in
     *COSMIC*|*cosmic*) session_process=cosmic-session ;;
     *XFCE*) session_process=xfce4-session ;;
+    *Unity*) session_process=compiz ;;
     *sway*|*Sway*) session_process=sway ;;
     *)
         echo "faseela-audio-session: unsupported desktop session: ${XDG_CURRENT_DESKTOP:-unset}" >&2

@@ -1,0 +1,48 @@
+# unity recipe: gsettings-ubuntu-touch-schemas — GSettings schemas used by Unity and Ubuntu components
+# Source: Launchpad orig tarball (0.0.7+21.10.20210712). The Ubuntu pool copy is
+# gone (the package was removed from the archive); the Launchpad +sourcefiles
+# copy is byte-identical (sha256 verified). Ubuntu's patches are vendored under patches/.
+[package]
+name = "gsettings-ubuntu-touch-schemas"
+version = "0.0.7"
+rel = 2
+arch = ["x86_64"]
+summary = "GSettings schemas used by Unity and Ubuntu components"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gsettings-ubuntu-touch-schemas"
+url = "https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/gsettings-ubuntu-touch-schemas/0.0.7+21.10.20210712-0ubuntu4/gsettings-ubuntu-touch-schemas_0.0.7+21.10.20210712.orig.tar.gz"
+sha256 = "a4a1c328f73e82b5ef69293c7e051fb37c25184cc5cb52e7b7a96f5a9de5b3fc"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -e %{pkgdir}/usr/share/pkgconfig/gsettings-unity-schemas.pc
+'''

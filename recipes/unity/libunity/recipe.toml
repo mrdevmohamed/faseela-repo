@@ -1,0 +1,47 @@
+# unity recipe: libunity — Unity launcher/dash integration library
+# Source: Ubuntu archive orig tarball (7.1.4+19.04.20190319); Ubuntu's patches are vendored under patches/.
+[package]
+name = "libunity"
+version = "7.1.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity launcher/dash integration library"
+license = ["LGPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libunity"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libu/libunity/libunity_7.1.4+19.04.20190319.orig.tar.gz"
+sha256 = "56ecb380d74bf74caba193d9e8ad6b0c85ccf9eeb461bc9731c2b8636e1f1492"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "dee", "libdbusmenu", "vala", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "dee", "libdbusmenu"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/debian.patch", "patches/make_filtering_setter_public.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libunity.so
+'''

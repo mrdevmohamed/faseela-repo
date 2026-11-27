@@ -4,10 +4,15 @@
 # GObject-Introspection is packaged, and the manuals/typelibs are not wanted, so
 # these shims define the macros as "unavailable" (documentation and introspection off).
 # Only ever a build dependency: nothing installs it into an image.
+# NOTE: gtk-doc.make lives under /usr/lib/unity-build-shims, NOT under
+# /usr/share/gtk-doc/data: nawa's doc split moves anything under the gtk-doc
+# data directory into the -doc subpackage, and the packages that copy this file
+# at prepare time only declare the main package. (That split is what broke the
+# first Unity build: the published rel-2 main archive had no gtk-doc.make.)
 [package]
 name = "unity-build-shims"
 version = "1.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Build-only gtk-doc and gobject-introspection autoconf stand-ins for the Unity libraries"
@@ -33,6 +38,6 @@ replaces = []
 install = '''
 install -Dm644 %{assetsdir}/assets/gtk-doc.m4 %{pkgdir}/usr/share/aclocal/gtk-doc.m4
 install -Dm644 %{assetsdir}/assets/introspection.m4 %{pkgdir}/usr/share/aclocal/introspection.m4
-install -Dm644 %{assetsdir}/assets/gtk-doc.make %{pkgdir}/usr/share/gtk-doc/data/gtk-doc.make
+install -Dm644 %{assetsdir}/assets/gtk-doc.make %{pkgdir}/usr/lib/unity-build-shims/gtk-doc.make
 install -Dm755 %{assetsdir}/assets/gtkdocize %{pkgdir}/usr/bin/gtkdocize
 '''

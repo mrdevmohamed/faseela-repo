@@ -1,0 +1,48 @@
+# unity recipe: nux — Nux: OpenGL toolkit used by the Unity shell
+# Source: Ubuntu archive orig tarball (4.0.8+18.10.20180623); Ubuntu's patches are vendored under patches/.
+[package]
+name = "nux"
+version = "4.0.8"
+rel = 2
+arch = ["x86_64"]
+summary = "Nux: OpenGL toolkit used by the Unity shell"
+license = ["LGPL-3.0-only", "GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nux"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/n/nux/nux_4.0.8+18.10.20180623.orig.tar.gz"
+sha256 = "5ec296f8e9d445fc2e2bf2814e4fa6ed36a62068937d0a2e0122fa68492361b3"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gdk-pixbuf", "cairo", "pango", "libpng", "boost", "glewmx", "libglu", "mesa", "libX11", "libXdamage", "libXcomposite", "libXinerama", "libXxf86vm", "libXtst", "libsigc++", "pcre2", "pciutils", "ibus", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gdk-pixbuf", "cairo", "pango", "libpng", "boost", "glewmx", "libglu", "mesa", "libX11", "libXdamage", "libXcomposite", "libXinerama", "libXxf86vm", "libXtst", "libsigc++", "pcre2", "pciutils", "ibus"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/add-shared_ptr-include.patch", "patches/boost1.90.patch", "patches/disable-TestLoggingWriter-test.diff", "patches/drop-std.patch", "patches/migrate-to-libpcre2.patch", "patches/no-Werror.patch", "patches/remove_unicode_licensed.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+export CXXFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -fpermissive -std=gnu++14"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --disable-gestures --enable-documentation=no --disable-tests
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libnux-4.0.so
+'''

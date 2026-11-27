@@ -1,0 +1,58 @@
+# unity recipe: unity-settings-daemon — session settings daemon for Unity 7 (fork of gnome-settings-daemon 3.x)
+# Native Ubuntu tarball. Built without the wacom (librsvg/libwacom), PackageKit,
+# smartcard, fcitx and NetworkManager plugins.
+[package]
+name = "unity-settings-daemon"
+version = "26.10.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Settings daemon of the Unity 7 session (keyboard, media keys, power, sound, xsettings, background...)"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-settings-daemon"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-settings-daemon/unity-settings-daemon_26.10.2ubuntu.tar.gz"
+sha256 = "df93cf6534ac3efd7d3c2777ffae9caef11bc18bcf36dad8f0d8e8565af1de8d"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "gdk-pixbuf", "gnome-desktop3", "gsettings-desktop-schemas", "gsettings-ubuntu-touch-schemas", "libnotify", "libX11", "libXi", "libXext", "libXt", "libXtst", "libxkbfile", "xkeyboard-config", "fontconfig", "libpulse", "alsa-lib", "libcanberra", "polkit", "accountsservice", "libappindicator", "upower", "colord", "lcms2", "nss", "libgudev", "ibus", "systemd", "mesa", "dbus-glib", "hwdata", "gperf", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "gdk-pixbuf", "gnome-desktop3", "gsettings-desktop-schemas", "gsettings-ubuntu-touch-schemas", "libnotify", "libX11", "libXi", "libXext", "libXtst", "libxkbfile", "fontconfig", "libpulse", "alsa-lib", "libcanberra", "polkit", "accountsservice", "libappindicator", "upower", "colord", "lcms2", "nss", "libgudev", "ibus", "systemd", "dbus-glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-wacom.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-wacom.patch
+cp /usr/lib/unity-build-shims/gtk-doc.make . 2>/dev/null || true
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --libexecdir=/usr/lib/unity-settings-daemon --disable-static --disable-gtk-doc --disable-packagekit --enable-ibus --disable-fcitx --disable-network-manager --disable-man --disable-smartcard-support
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+# systemd user unit and /usr/bin symlink (Ubuntu ships these from debian/)
+install -D -m 0644 debian/user/unity-settings-daemon.service %{pkgdir}/usr/lib/systemd/user/unity-settings-daemon.service
+install -d %{pkgdir}/usr/lib/systemd/user/unity-session.target.wants
+ln -s ../unity-settings-daemon.service %{pkgdir}/usr/lib/systemd/user/unity-session.target.wants/unity-settings-daemon.service
+install -d %{pkgdir}/usr/bin
+ln -s ../lib/unity-settings-daemon/unity-settings-daemon %{pkgdir}/usr/bin/unity-settings-daemon
+test -x %{pkgdir}/usr/lib/unity-settings-daemon/unity-settings-daemon
+test -e %{pkgdir}/usr/lib/libunity-settings-daemon.so
+'''

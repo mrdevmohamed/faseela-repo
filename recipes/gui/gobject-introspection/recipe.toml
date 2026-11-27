@@ -1,0 +1,32 @@
+# gui recipe: gobject-introspection — Middleware for language bindings of GNOME libraries
+[package]
+name = "gobject-introspection"
+version = "1.82.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Middleware for language bindings of GNOME libraries"
+license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gobject-introspection"
+url = "https://download.gnome.org/sources/gobject-introspection/1.82/gobject-introspection-%{version}.tar.xz"
+sha256 = "0f5a4c1908424bf26bc41e9361168c363685080fbdb87a196c891c8401ca2f09"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "python", "glib", "libffi", "cairo", "setuptools"]
+run = ["glib", "libffi"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtk_doc=false -D doctool=disabled -D cairo=enabled -D build_introspection_data=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

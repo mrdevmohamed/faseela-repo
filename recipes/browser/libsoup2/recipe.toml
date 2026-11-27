@@ -1,0 +1,35 @@
+# browser recipe: libsoup2 — GLib HTTP client and server library (libsoup 2)
+# Last 2.x release; coexists with libsoup3 (disjoint .so/.pc names).
+[package]
+name = "libsoup2"
+version = "2.74.3"
+rel = 2
+arch = ["x86_64"]
+summary = "GLib HTTP client and server library (libsoup 2)"
+license = ["LGPL-2.0"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libsoup2"
+url = "https://download.gnome.org/sources/libsoup/2.74/libsoup-%{version}.tar.xz"
+sha256 = "e4b77c41cfc4c8c5a035fcdc320c7bc6cfb75ef7c5a034153df1413fa1d92f13"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking"]
+run = ["glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+# Mirrors libsoup3 minus nghttp2. tls_check=false as in libsoup3: glib-networking
+# is a runtime backend, not a libsoup compile-time dependency.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dintrospection=disabled -Dvapi=disabled -Dtests=false -Dinstalled_tests=false -Dsysprof=disabled -Dgssapi=disabled -Dntlm=disabled -Dbrotli=enabled -Dtls_check=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

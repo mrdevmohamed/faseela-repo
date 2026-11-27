@@ -109,7 +109,7 @@ class RealTree(unittest.TestCase):
         flavors = flavor.load_flavors(root / "flavors.toml")
         recipes = flavor.load_recipes(root / "recipes")
         got = {n: flavor.resolve(flavors, recipes, n) for n in flavors}
-        for n in ("iso-nogui", "iso-sway", "iso-xfce", "iso-cosmic", "rootfs-min"):
+        for n in ("iso-nogui", "iso-sway", "iso-xfce", "iso-mate", "iso-cosmic", "rootfs-min"):
             # the bootstrap core must be installable into every image
             self.assertTrue({"base-devel", "nawa"} <= set(got[n]), n)
         # seed extends bootstrap and deliberately adds the Rust toolchain.
@@ -128,6 +128,12 @@ class RealTree(unittest.TestCase):
         self.assertNotIn("lightdm-gtk-greeter", got["iso-cosmic"])
         self.assertIn("lightdm", got["iso-xfce"])
         self.assertIn("lightdm-gtk-greeter", got["iso-xfce"])
+        self.assertIn("mate-session", got["iso-mate"])
+        self.assertIn("marco", got["iso-mate"])
+        self.assertIn("lightdm", got["iso-mate"])
+        self.assertIn("lightdm-gtk-greeter", got["iso-mate"])
+        self.assertNotIn("greetd", got["iso-mate"])
+        self.assertNotIn("cinnamon-desktop-session", got["iso-mate"])
         self.assertNotIn("greetd", got["iso-xfce"])
         self.assertNotIn("cosmic-greeter", got["iso-xfce"])
         self.assertEqual(
@@ -144,7 +150,7 @@ class RealTree(unittest.TestCase):
         self.assertNotIn("telegram-desktop", got["iso-sway"])
         self.assertEqual(
             set(flavors),
-            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce", "iso-cosmic"},
+            {"bootstrap", "seed", "rootfs-min", "iso-nogui", "iso-sway", "iso-xfce", "iso-mate", "iso-cosmic"},
         )
 
     def test_base_files_first_everywhere(self):

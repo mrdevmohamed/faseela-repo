@@ -1,0 +1,32 @@
+# gui recipe: libgsf — Structured file library
+[package]
+name = "libgsf"
+version = "1.14.61"
+rel = 2
+arch = ["x86_64"]
+summary = "Structured file library"
+license = ["LGPL-2.1"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgsf"
+url = "https://download.gnome.org/sources/libgsf/1.14/libgsf-%{version}.tar.xz"
+sha256 = "59698b8fdf3db2dae03bb492826168dd9073ff762ccc11e980306aabe97087aa"
+strip_components = 1
+
+[depends]
+build = ["glib", "libxml2", "zlib", "bzip2", "gdk-pixbuf", "gettext", "pkgconf"]
+run = ["glib", "libxml2", "zlib", "bzip2", "gdk-pixbuf"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-introspection"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

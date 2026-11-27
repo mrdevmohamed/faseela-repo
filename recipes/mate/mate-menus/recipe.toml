@@ -1,0 +1,36 @@
+# mate recipe: mate-menus — MATE menu library
+# Implements the freedesktop menu specification for MATE (libmate-menu).
+# Autotools only: the 1.28.1 tarball ships a prebuilt configure and no
+# meson.build. The GObject-introspection check is non-fatal, so no
+# gobject-introspection dependency is needed.
+[package]
+name = "mate-menus"
+version = "1.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE menu library (freedesktop menu specification implementation)"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-menus"
+url = "https://github.com/mate-desktop/mate-menus/releases/download/v%{version}/mate-menus-%{version}.tar.xz"
+sha256 = "d6a61d3bfbf58176fb52049f115d4e3a0d108fe5f1ef87438fafd86384e603d1"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "mate-common"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

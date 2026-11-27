@@ -1,0 +1,39 @@
+# mate recipe: mate-control-center — MATE Control Center (system settings)
+# The 1.28.2 release: meson only (no prebuilt configure in the tarball).
+# AppIndicator: the meson option is a string (auto/ayatana/appindicator);
+# it accepts EITHER ayatana-appindicator3-0.1 OR appindicator3-0.1, and
+# errors when neither is found. We pin it to `appindicator`, provided by
+# the recipes/unity/libappindicator recipe (12.10.1) in this same branch.
+# accountsservice is a feature option (auto by default); it is enabled
+# explicitly because the accountsservice recipe exists on this branch.
+[package]
+name = "mate-control-center"
+version = "1.28.2"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE Control Center — system settings"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-control-center"
+url = "https://github.com/mate-desktop/mate-control-center/releases/download/v1.28.2/mate-control-center-1.28.2.tar.xz"
+sha256 = "6ca6205e6f89502c76bd73c2355a8ef9e3f60e478895820b94be6dde739cc798"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "mate-desktop", "marco", "mate-menus", "libxml2", "pango", "libXcursor", "dconf", "fontconfig", "libgtop", "udisks2", "polkit", "libmatekbd", "libxklavier", "libX11", "libXi", "libXext", "libXScrnSaver", "accountsservice", "libappindicator"]
+run = ["glib", "gtk3", "mate-desktop", "marco", "mate-menus", "libxml2", "pango", "libXcursor", "dconf", "fontconfig", "libgtop", "udisks2", "polkit", "libmatekbd", "libxklavier", "libX11", "libXi", "libXext", "libXScrnSaver", "accountsservice", "libappindicator"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Daccountsservice=enabled -Dlibappindicator=appindicator"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

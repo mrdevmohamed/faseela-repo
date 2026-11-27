@@ -1,0 +1,37 @@
+# mate recipe: marco — MATE window manager
+# Metacity fork with a built-in compositor. Meson only: the 1.28.2 tarball
+# ships no prebuilt configure. The libcanberra-gtk3 dependency is satisfied
+# by the libcanberra recipe, which builds the GTK 3 module. All X extension
+# dependencies are optional in meson.build but are listed here so the
+# compositor, shape, render, and Xinerama paths build enabled.
+[package]
+name = "marco"
+version = "1.28.2"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE window manager (Metacity fork) with compositing"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "marco"
+url = "https://github.com/mate-desktop/marco/releases/download/v%{version}/marco-%{version}.tar.xz"
+sha256 = "2d20820ae9855feb6abc0650300e0c666127bdf0b8380416530703df7f1834ca"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "pango", "mate-desktop", "libcanberra", "libX11", "libXext", "libXrender", "libXcomposite", "libXdamage", "libXfixes", "libXcursor", "libXrandr", "libXres", "libXpresent", "libXinerama", "libSM", "libICE", "startup-notification", "libgtop"]
+run = ["glib", "gtk3", "pango", "mate-desktop", "libcanberra", "libX11", "libXext", "libXrender", "libXcomposite", "libXdamage", "libXfixes", "libXcursor", "libXrandr", "libXres", "libXpresent", "libXinerama", "libSM", "libICE", "startup-notification", "libgtop"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

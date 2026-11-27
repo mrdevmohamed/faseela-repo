@@ -1,0 +1,35 @@
+# gui recipe: librsvg — SVG rendering library
+[package]
+name = "librsvg"
+version = "2.63.4"
+rel = 2
+arch = ["x86_64"]
+summary = "SVG rendering library"
+license = ["LGPL-2.1-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "librsvg"
+url = "https://download.gnome.org/sources/librsvg/2.63/librsvg-%{version}.tar.xz"
+sha256 = "31f07d9350dad3f8964fd613c31309ac160fdef13dfac59df6fd082de78d6e8f"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "rust", "cairo", "glib", "gdk-pixbuf", "pango", "libxml2", "freetype", "fontconfig"]
+run = ["cairo", "glib", "gdk-pixbuf", "pango", "libxml2", "freetype", "fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[fetch.cargo]
+dir = "."
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dintrospection=disabled -Dvala=disabled -Ddocs=disabled -Dtests=false -Davif=disabled -Dpixbuf-loader=disabled -Drsvg-convert=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

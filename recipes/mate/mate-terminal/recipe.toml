@@ -1,0 +1,36 @@
+# mate recipe: mate-terminal — MATE terminal emulator
+# VTE-based terminal. AUTOTOOLS, not meson: the meson.build in the tarball
+# falls back to a git fetch of mate-submodules, which is forbidden offline.
+# The shipped configure works as-is. The vte recipe (0.84.1) provides the
+# vte-2.91 API this needs (>= 0.49.1).
+[package]
+name = "mate-terminal"
+version = "1.28.3"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE terminal emulator (VTE-based)"
+license = ["GPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-terminal"
+url = "https://github.com/mate-desktop/mate-terminal/releases/download/v%{version}/mate-terminal-%{version}.tar.xz"
+sha256 = "9c7d4f884fc21342814a186020e04aa1a5d436e9a13ea128d132e232d04b07e4"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "vte", "dconf", "libSM", "libICE", "mate-common"]
+run = ["glib", "gtk3", "vte", "dconf", "libSM", "libICE"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

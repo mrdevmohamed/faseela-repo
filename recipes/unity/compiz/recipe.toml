@@ -1,6 +1,9 @@
 # unity recipe: compiz — the OpenGL compositing window manager Unity 7 runs on
 # Source: Ubuntu's native source tarball. The Python bindings and ccsm are not
 # built (no cython in Faseela); the GSettings backend is.
+# OpenGL_GL_PREFERENCE=LEGACY: Faseela's mesa is built with glvnd disabled, so
+# there is no libGLX/libOpenGL for CMake's GLVND mode; legacy mode finds mesa's
+# libGL.so instead.
 [package]
 name = "compiz"
 version = "0.9.14.2"
@@ -39,7 +42,7 @@ post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
 prepare = '''set -eu
 patch -p1 < %{assetsdir}/patches/no-python-bindings.patch
 '''
-configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCOMPIZ_BUILD_WITH_RPATH=FALSE -DCOMPIZ_PACKAGING_ENABLED=TRUE -DCOMPIZ_DISABLE_GS_SCHEMAS_INSTALL=OFF -DCOMPIZ_BUILD_TESTING=OFF -DBUILD_XORG_GTEST=OFF -DCOMPIZ_WERROR=FALSE"
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DOpenGL_GL_PREFERENCE=LEGACY -DCOMPIZ_BUILD_WITH_RPATH=FALSE -DCOMPIZ_PACKAGING_ENABLED=TRUE -DCOMPIZ_DISABLE_GS_SCHEMAS_INSTALL=OFF -DCOMPIZ_BUILD_TESTING=OFF -DBUILD_XORG_GTEST=OFF -DCOMPIZ_WERROR=FALSE"
 compile = "cmake --build build --parallel %{jobs}"
 install = '''
 DESTDIR=%{pkgdir} cmake --install build

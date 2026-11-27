@@ -1,5 +1,7 @@
 # unity recipe: gnome-desktop3 — GNOME desktop library, GTK3 API (needed by unity-settings-daemon and Unity)
 # Ubuntu's patch series is vendored; no-introspection.patch drops the GIR (no g-ir-scanner in Faseela).
+# -Wno-error=return-mismatch: gnome-languages.c returns a value from a void
+# function; GCC 14 makes -Wreturn-mismatch an error by default.
 [package]
 name = "gnome-desktop3"
 version = "3.36.8"
@@ -36,7 +38,7 @@ for p in $(cat %{assetsdir}/patches/series); do
     patch -p1 < %{assetsdir}/patches/$p
 done
 '''
-configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/libexec --buildtype=release -Dudev=enabled -Dsystemd=enabled -Dgtk_doc=false -Ddesktop_docs=false -Dinstalled_tests=false -Ddebug_tools=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/libexec --buildtype=release -Dc_args=-Wno-error=return-mismatch -Dudev=enabled -Dsystemd=enabled -Dgtk_doc=false -Ddesktop_docs=false -Dinstalled_tests=false -Ddebug_tools=false"
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build

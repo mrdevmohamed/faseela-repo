@@ -35,7 +35,7 @@ prepare = '''set -eu
 for p in $(cat %{assetsdir}/patches/series); do
     patch -p1 < %{assetsdir}/patches/$p
 done
-cp /usr/share/gtk-doc/data/gtk-doc.make .
+cp /usr/lib/unity-build-shims/gtk-doc.make .
 # rdflib/python are not part of Faseela: ship the generated ontology sources instead
 patch -p1 < %{assetsdir}/no-rdflib.patch
 cp %{assetsdir}/ontology.vala %{assetsdir}/ontology-uris.vala libzeitgeist/

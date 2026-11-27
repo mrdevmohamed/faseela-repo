@@ -1,5 +1,7 @@
 # unity recipe: gsettings-ubuntu-touch-schemas — GSettings schemas used by Unity and Ubuntu components
-# Source: Ubuntu archive orig tarball (0.0.7+21.10.20210712); Ubuntu's patches are vendored under patches/.
+# Source: Launchpad orig tarball (0.0.7+21.10.20210712). The Ubuntu pool copy is
+# gone (the package was removed from the archive); the Launchpad +sourcefiles
+# copy is byte-identical (sha256 verified). Ubuntu's patches are vendored under patches/.
 [package]
 name = "gsettings-ubuntu-touch-schemas"
 version = "0.0.7"
@@ -11,7 +13,7 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "gsettings-ubuntu-touch-schemas"
-url = "https://archive.ubuntu.com/ubuntu/pool/universe/g/gsettings-ubuntu-touch-schemas/gsettings-ubuntu-touch-schemas_0.0.7+21.10.20210712.orig.tar.gz"
+url = "https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/gsettings-ubuntu-touch-schemas/0.0.7+21.10.20210712-0ubuntu4/gsettings-ubuntu-touch-schemas_0.0.7+21.10.20210712.orig.tar.gz"
 sha256 = "a4a1c328f73e82b5ef69293c7e051fb37c25184cc5cb52e7b7a96f5a9de5b3fc"
 strip_components = 1
 
@@ -33,7 +35,7 @@ post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
 
 [build]
 prepare = '''set -eu
-cp /usr/share/gtk-doc/data/gtk-doc.make .
+cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
 autoreconf -fi

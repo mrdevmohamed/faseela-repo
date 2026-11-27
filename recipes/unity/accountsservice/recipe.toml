@@ -15,7 +15,7 @@ sha256 = "77e26080fd644df3e339fef561bb77f901e43557dc73e620afb6c10789b9a9e8"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "polkit", "systemd", "json-c", "libxcrypt", "dbus"]
+build = ["meson", "ninja", "pkgconf", "glib", "polkit", "systemd", "json-c", "libxcrypt", "dbus", "gettext"]
 run = ["glib", "polkit", "systemd", "json-c", "libxcrypt", "dbus"]
 
 [capabilities]

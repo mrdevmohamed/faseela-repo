@@ -1,5 +1,7 @@
 # unity recipe: dee — Dee: model-sharing library over D-Bus (Unity)
-# Source: Ubuntu archive orig tarball (1.2.7+17.10.20170616); Ubuntu's patches are vendored under patches/.
+# Source: Launchpad orig tarball (1.2.7+17.10.20170616). The Ubuntu pool copy is
+# gone (dee was removed from the archive); the Launchpad +sourcefiles copy is
+# byte-identical (sha256 verified). Ubuntu's patches are vendored under patches/.
 [package]
 name = "dee"
 version = "1.2.7"
@@ -11,7 +13,7 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "dee"
-url = "https://archive.ubuntu.com/ubuntu/pool/universe/d/dee/dee_1.2.7+17.10.20170616.orig.tar.gz"
+url = "https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/dee/1.2.7+17.10.20170616-8build1/dee_1.2.7+17.10.20170616.orig.tar.gz"
 sha256 = "e63f979a7a5012a7786786f8081a9279256ab28ece6e557c6ce5bf87535ae899"
 strip_components = 1
 
@@ -35,7 +37,7 @@ prepare = '''set -eu
 for p in $(cat %{assetsdir}/patches/series); do
     patch -p1 < %{assetsdir}/patches/$p
 done
-cp /usr/share/gtk-doc/data/gtk-doc.make .
+cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
 autoreconf -fi

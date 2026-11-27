@@ -1,0 +1,36 @@
+# mate recipe: mate-screensaver — MATE screen saver and locker
+# Autotools only. PAM locking stays on (linux-pam), systemd support is
+# explicit, and elogind/console-kit are off. The keyboard-layout indicator
+# stays on via libmatekbd, and libnotify support stays on (both default
+# auto and both recipes are present).
+[package]
+name = "mate-screensaver"
+version = "1.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE screen saver and screen locker"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-screensaver"
+url = "https://github.com/mate-desktop/mate-screensaver/releases/download/v%{version}/mate-screensaver-%{version}.tar.xz"
+sha256 = "a20d49bcf4e577287c0cd78596158923c729d6370b6da19a98ac655b029cce36"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "dbus-glib", "mate-desktop", "mate-menus", "libX11", "libXScrnSaver", "linux-pam", "systemd", "libmatekbd", "libnotify", "mate-common"]
+run = ["glib", "gtk3", "dbus-glib", "mate-desktop", "mate-menus", "libX11", "libXScrnSaver", "linux-pam", "systemd", "libmatekbd", "libnotify"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --enable-pam --with-systemd --without-elogind --without-console-kit"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

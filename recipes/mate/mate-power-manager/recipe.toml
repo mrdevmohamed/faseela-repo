@@ -1,0 +1,36 @@
+# mate recipe: mate-power-manager — MATE power manager
+# Battery, brightness, and suspend handling. Meson only in practice: the
+# tarball also ships configure, but the meson build is the maintained one.
+# The panel applet is off (no libmatepanelapplet dependency), GNOME Keyring
+# is off, libsecret stays on, and tests are off.
+[package]
+name = "mate-power-manager"
+version = "1.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE power manager: battery, brightness, and suspend"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-power-manager"
+url = "https://github.com/mate-desktop/mate-power-manager/releases/download/v%{version}/mate-power-manager-%{version}.tar.xz"
+sha256 = "8ebdcb74b607e868336ba9a8146cdef8f97bce535c2b0cb3bf650c58f71eee21"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "libXext", "libXrandr", "xorgproto", "dbus", "dbus-glib", "libnotify", "libcanberra", "upower", "libsecret", "mate-desktop"]
+run = ["glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "libXext", "libXrandr", "dbus", "dbus-glib", "libnotify", "libcanberra", "upower", "libsecret", "mate-desktop"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D applets=false -D gnome-keyring=false -D libsecret=true -D enable-tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

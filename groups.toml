@@ -36,6 +36,29 @@ optional = ["xfce4-cpugraph-plugin", "xfce4-netload-plugin", "xfce4-systemload-p
 
 [[group]]
 schema = 1
+id = "cinnamon"
+name = "Cinnamon Desktop (X11)"
+description = "The Cinnamon 6.6 X11 session. LightDM and desktop applications are selectable defaults; the shell, window manager, settings daemon and file manager come with cinnamon-desktop-session."
+mandatory = ["cinnamon-desktop-session"]
+default = ["lightdm", "lightdm-gtk-greeter", "xfce4-terminal", "mousepad", "ristretto", "xfce4-taskmanager", "network-manager-applet", "thunar-archive-plugin", "xarchiver", "pavucontrol", "firefox"]
+# No optional Cinnamon packages yet: every Cinnamon component in the repository is
+# already in cinnamon-desktop-session's run closure (shell, window manager,
+# settings daemon, file manager, control center). The build-only tools the
+# stack needs (cbindgen, js128) are not installable desktop selections.
+
+[[group]]
+schema = 1
+id = "mate"
+name = "MATE Desktop (X11)"
+description = "The MATE 1.28 X11 session. LightDM and desktop applications are selectable defaults; the window manager, panel, file manager and core applications come with mate-session."
+mandatory = ["mate-session"]
+default = ["lightdm", "lightdm-gtk-greeter", "network-manager-applet", "xarchiver", "pavucontrol", "firefox"]
+# No optional MATE packages yet: every MATE component in the repository is
+# already in mate-session's run closure (window manager, panel, file manager,
+# terminal, editor, image viewer, document viewer, archiver).
+
+[[group]]
+schema = 1
 id = "multimedia"
 name = "Multimedia"
 description = "Audio services, media playback, codecs, and media download utilities."

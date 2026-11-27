@@ -1,0 +1,36 @@
+# mate recipe: mate-desktop — MATE desktop library
+# Core library every MATE component links: desktop items, menus, GSettings
+# helpers, and the mate-about dialog. Introspection is off upstream by
+# default (the in-tarball macro defaults to auto/off), so no
+# gobject-introspection dependency is needed.
+[package]
+name = "mate-desktop"
+version = "1.28.2"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE desktop library: menus, desktop items, and session helpers"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-desktop"
+url = "https://github.com/mate-desktop/mate-desktop/releases/download/v%{version}/mate-desktop-%{version}.tar.xz"
+sha256 = "32bb4b792014b391c1e1b8ae9c18a82b4d447650984b4cba7d28e95564964aa2"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "dconf", "libX11", "libXrandr", "startup-notification", "iso-codes", "mate-common"]
+run = ["glib", "gtk3", "gdk-pixbuf", "dconf", "libX11", "libXrandr", "startup-notification", "iso-codes"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=false -D gtk-doc=false -D startup-notification=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

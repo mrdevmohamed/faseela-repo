@@ -1,10 +1,10 @@
 # gui recipe: GCR/GCK — GNOME crypto and PKCS#11 base libraries
-# GTK UI, introspection, SSH agent and systemd integration are disabled. The
+# GTK UI, SSH agent and systemd integration are disabled. The
 # base/GCK libraries are the interfaces needed by gnome-keyring's Secret Service.
 [package]
 name = "gcr"
 version = "3.41.2"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "GNOME crypto and PKCS#11 base libraries"
 license = ["LGPL-2.1-or-later"]
@@ -17,7 +17,7 @@ sha256 = "bad10f3c553a0e1854649ab59c5b2434da22ca1a54ae6138f1f53961567e1ab7"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit", "gobject-introspection"]
 run = ["glib", "libgcrypt", "p11-kit"]
 
 [capabilities]
@@ -49,7 +49,7 @@ for old, new in replacements.items():
 path.write_text(source, encoding="utf-8")
 PY
 
-meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dintrospection=false -Dgtk=false -Dgtk_doc=false -Dssh_agent=false -Dsystemd=disabled -Dgpg_path=/usr/bin/false
+meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -Dintrospection=true -Dgtk=false -Dgtk_doc=false -Dssh_agent=false -Dsystemd=disabled -Dgpg_path=/usr/bin/false
 '''
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,36 @@
+# mate recipe: mate-panel — MATE panel
+# Taskbar, applets, and menus. Autotools only: the 1.28.7 tarball ships a
+# prebuilt configure and no meson.build. Wayland support is off (this is
+# the X11 session); X11 is explicit. The clock applet needs libmateweather,
+# and the window-list applet needs libwnck3.
+[package]
+name = "mate-panel"
+version = "1.28.7"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE panel: taskbar, applets, and menus"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-panel"
+url = "https://github.com/mate-desktop/mate-panel/releases/download/v%{version}/mate-panel-%{version}.tar.xz"
+sha256 = "b254791dc05219566cec9a1cec71a3dcc7674e87d94e9628b98157b764bc724c"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "pango", "mate-desktop", "mate-menus", "dconf", "libwnck3", "libmateweather", "libX11", "libXrandr", "libSM", "libICE", "mate-common"]
+run = ["glib", "gtk3", "gdk-pixbuf", "pango", "mate-desktop", "mate-menus", "dconf", "libwnck3", "libmateweather", "libX11", "libXrandr", "libSM", "libICE"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-wayland --enable-x11"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

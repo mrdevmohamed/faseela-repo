@@ -1,0 +1,41 @@
+# cinnamon recipe: muffin — Cinnamon window manager and compositor (Mutter fork)
+# Muffin vendors its own cogl/clutter (subdir('cogl'), subdir('clutter')),
+# so no separate clutter recipe is needed. Cinnamon runs on X11 only, but
+# the Wayland backend is kept at its upstream default (wayland,
+# wayland-protocols, libinput and pipewire recipes all exist).
+[package]
+name = "muffin"
+version = "6.6.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon window manager and compositor (Mutter fork)"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "muffin"
+url = "https://github.com/linuxmint/muffin/archive/refs/tags/%{version}.tar.gz"
+sha256 = "af1aa8e68699895a841415c007c7f3f48efc06f07c50d219d30f8131a981248e"
+strip_components = 1
+
+[depends]
+# libxcb covers xcb-randr, xcb-res and x11-xcb; libxkbcommon covers
+# xkbcommon-x11; mesa covers gl, egl and glesv2; systemd covers libudev;
+# at-spi2-core covers atk and atk-bridge-2.0.
+build = ["meson", "ninja", "pkgconf", "gettext", "graphene", "gtk3", "gdk-pixbuf", "pango", "cairo", "fribidi", "glib", "json-glib", "cinnamon-desktop", "gobject-introspection", "libX11", "libXext", "libXcomposite", "libXcursor", "libXdamage", "libXfixes", "libXi", "libXtst", "libxkbfile", "xkeyboard-config", "libxkbcommon", "libXrender", "libXrandr", "libXinerama", "libXau", "libICE", "libSM", "at-spi2-core", "libcanberra", "dbus", "mesa", "systemd", "startup-notification", "libdrm", "wayland", "wayland-protocols", "libinput", "pipewire", "libxcb"]
+run = ["graphene", "gtk3", "gdk-pixbuf", "pango", "cairo", "fribidi", "glib", "json-glib", "cinnamon-desktop", "libX11", "libXext", "libXcomposite", "libXcursor", "libXdamage", "libXfixes", "libXi", "libXtst", "libxkbfile", "xkeyboard-config", "libxkbcommon", "libXrender", "libXrandr", "libXinerama", "libXau", "libICE", "libSM", "at-spi2-core", "libcanberra", "dbus", "mesa", "systemd", "startup-notification", "libdrm", "wayland", "libinput", "pipewire", "libxcb"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+# The cogl/clutter/core test suites default to true upstream; they are
+# disabled alongside tests so the build needs no test-only dependencies.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=true -D libwacom=false -D wayland_eglstream=false -D profiler=false -D tests=false -D cogl_tests=false -D clutter_tests=false -D core_tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,37 @@
+# cinnamon recipe: cjs — JavaScript bindings for Cinnamon (Mozilla SpiderMonkey)
+# cjs 128.1 pairs with mozjs-128 (Firefox 128 ESR); cjs 140.x needs glib >= 2.86,
+# which Faseela does not have yet, so 128.1 is the supported line for now.
+[package]
+name = "cjs"
+version = "128.1"
+rel = 2
+arch = ["x86_64"]
+summary = "JavaScript bindings for Cinnamon (Mozilla SpiderMonkey)"
+license = ["MIT", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cjs"
+url = "https://github.com/linuxmint/cjs/archive/refs/tags/%{version}.tar.gz"
+sha256 = "20e59f7402f960fbba184b2eb2cdee60e316554fd771bf4d5598ec5e3b9d1002"
+strip_components = 1
+
+[depends]
+# js128 is the mozjs-128 recipe (Firefox 128 ESR source); it lands separately.
+build = ["meson", "ninja", "pkgconf", "glib", "libffi", "cairo", "gobject-introspection", "js128", "readline"]
+run = ["glib", "cairo", "libffi", "js128", "readline"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+# profiler needs sysprof-capture-4, which has no recipe; it auto-disables,
+# but disable it explicitly so the build is deterministic.
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D profiler=disabled -D installed_tests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

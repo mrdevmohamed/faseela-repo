@@ -12,6 +12,8 @@
 #   iso-nogui   common base system without a desktop
 #   iso-sway    common base + Sway Wayland desktop
 #   iso-xfce    common base + Xfce desktop on Xorg
+#   iso-cinnamon  common base + Cinnamon desktop on Xorg
+#   iso-mate    common base + MATE desktop on Xorg
 #   iso-cosmic  common base + COSMIC Wayland desktop
 #
 # Optional applications (media players, editors, messaging, VPN clients,
@@ -81,7 +83,40 @@ include = [
     "pavucontrol"
 ]
 
- 
+# Cinnamon desktop image.
+[flavor.iso-cinnamon]
+summary = "Live system with Cinnamon on Xorg and LightDM"
+extends = ["iso-nogui"]
+include = [
+    "cinnamon-desktop-session",
+    "lightdm",
+    "lightdm-gtk-greeter",
+    "xfce4-terminal",
+    "mousepad",
+    "ristretto",
+    "xfce4-taskmanager",
+    "network-manager-applet",
+    "thunar-archive-plugin",
+    "xarchiver",
+    "pavucontrol",
+    "firefox"
+]
+
+# MATE desktop image. MATE's own applications (mate-terminal, pluma, eom,
+# atril, engrampa, caja) already come with mate-session's run closure.
+[flavor.iso-mate]
+summary = "Live system with MATE on Xorg and LightDM"
+extends = ["iso-nogui"]
+include = [
+    "mate-session",
+    "lightdm",
+    "lightdm-gtk-greeter",
+    "network-manager-applet",
+    "xarchiver",
+    "pavucontrol",
+    "firefox"
+]
+
 # COSMIC desktop image. Select its own login manager and reserve VT 1 for it.
 # Do not ship LightDM in this flavor: greetd/cosmic-greeter owns the login VT.
 [flavor.iso-cosmic]

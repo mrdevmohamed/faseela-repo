@@ -1,0 +1,41 @@
+# unity recipe: ido — Indicator display objects (GTK3 menu items)
+# Source: Ubuntu archive orig tarball (13.10.0+17.04.20161028); Ubuntu's patches are vendored under patches/.
+[package]
+name = "ido"
+version = "13.10.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Indicator display objects (GTK3 menu items)"
+license = ["LGPL-2.1-only", "LGPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ido"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/i/ido/ido_13.10.0+17.04.20161028.orig.tar.gz"
+sha256 = "52224d2a9f19f12ec4696ce29418ae24a70756158543e620d131f135a2bbd03c"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''set -eu
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --with-gtk=3
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libido3-0.1.so
+'''

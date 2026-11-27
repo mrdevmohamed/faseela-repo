@@ -1,0 +1,38 @@
+# mate recipe: pluma — MATE text editor
+# Autotools only: the 1.28.1 tarball ships a prebuilt configure and no
+# meson.build. Spell checking is off (no enchant recipe); the editor still
+# builds with gtksourceview4 syntax highlighting and libpeas plugins. The
+# introspection check is non-fatal and stays off because
+# gobject-introspection is not a declared build dependency, so it is absent
+# from the build root.
+[package]
+name = "pluma"
+version = "1.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE text editor"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pluma"
+url = "https://github.com/mate-desktop/pluma/releases/download/v%{version}/pluma-%{version}.tar.xz"
+sha256 = "27137ff1bb1c53a90d2308b8a6b203e5d07f13a644a0d950f3ead7bb9cf1e241"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "libxml2", "libX11", "libSM", "libICE", "mate-desktop", "gtksourceview4", "libpeas"]
+run = ["glib", "gtk3", "libxml2", "libX11", "libSM", "libICE", "mate-desktop", "gtksourceview4", "libpeas"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-enchant"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

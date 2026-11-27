@@ -1,0 +1,36 @@
+# gui recipe: pygobject — Python bindings for GObject Introspection
+# Pairs with gobject-introspection 1.82.0 / glib 2.82.2: pygobject 3.50.2
+# requires glib >= 2.64 and gobject-introspection >= 1.64 (meson.build),
+# both satisfied here. pycairo integration is forced on (-Dpycairo=enabled)
+# because libxapp and Cinnamon helpers use it.
+[package]
+name = "pygobject"
+version = "3.50.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Python bindings for GObject Introspection"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pygobject"
+url = "https://files.pythonhosted.org/packages/a7/5d/f2946cc6c1baf56dee6e942af8cfa16472538a8ad9d780d9f484e7554288/pygobject-%{version}.tar.gz"
+sha256 = "ece6b860aab77cb649fdfc6e88d8a83765e7a62f7ffd39a628d6e2a0d397a7ff"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "python", "pycairo", "glib", "gobject-introspection", "libffi", "cairo"]
+run = ["python", "pycairo", "glib", "gobject-introspection", "cairo"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dtests=false -Dpycairo=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

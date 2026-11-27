@@ -1,0 +1,39 @@
+# gui recipe: psutil — Cross-platform library for process and system monitoring (C extension)
+# Cinnamon's Python helpers import psutil at runtime.
+#
+# Build approach: same pip pattern as setproctitle — `pip install
+# --no-build-isolation` with the repo's setuptools (84.2.1) and pip (26.3)
+# recipes, verified empirically to build a wheel with no wheel package
+# installed. --no-index/--no-cache-dir keep the build offline.
+[package]
+name = "psutil"
+version = "7.2.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Cross-platform library for process and system monitoring"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "psutil"
+url = "https://files.pythonhosted.org/packages/aa/c6/d1ddf4abb55e93cebc4f2ed8b5d6dbad109ecb8d63748dd2b20ab5e57ebe/psutil-%{version}.tar.gz"
+sha256 = "0746f5f8d406af344fd547f1c8daa5f5c33dbc293bb8d6a16d80b4bb88f59372"
+strip_components = 1
+
+[depends]
+build = ["python", "pip", "setuptools"]
+run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+python3 -m pip install --no-build-isolation --no-deps --no-index --no-cache-dir --disable-pip-version-check --prefix=/usr --root=%{pkgdir} .
+find %{pkgdir} -name __pycache__ -prune -exec rm -rf {} +
+'''

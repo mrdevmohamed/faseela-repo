@@ -90,4 +90,52 @@ for forbidden in ("greetd", "cosmic-greeter", "sway"):
     assert forbidden not in unity_flavor["include"]
 assert "disable_services" not in unity_flavor  # LightDM stays the login manager
 
+# --- package group: Unity must be installable like Xfce and COSMIC ----------
+groups = tomllib.loads((ROOT / "groups.toml").read_text(encoding="utf-8"))["group"]
+unity_group = next(g for g in groups if g["id"] == "unity")
+assert unity_group["mandatory"] == ["unity-desktop"]
+assert {"lightdm", "lightdm-gtk-greeter", "firefox"} <= set(unity_group["default"])
+# The group mirrors iso-unity's desktop applications (minus the meta package).
+assert set(unity_flavor["include"]) - {"unity-desktop"} <= set(unity_group["default"])
+# Every group member must be a real recipe (check-groups.py also enforces this).
+all_recipes = {p.parent.name for p in (ROOT / "recipes").glob("*/*/recipe.toml")}
+for member in unity_group["mandatory"] + unity_group["default"] + unity_group["optional"]:
+    assert member in all_recipes, f"unity group member {member!r} has no recipe"
+
+# --- documentation: recipe counts, layout and the runtime smoke checklist ----
+recipes_readme = (ROOT / "recipes" / "README.md").read_text(encoding="utf-8")
+assert "├── unity/" in recipes_readme, "recipes/README.md must list the unity category"
+assert "36 Unity" in recipes_readme, "recipes/README.md must count the Unity recipes"
+assert "590 recipes" in recipes_readme, "recipes/README.md total must match the recipe tree"
+assert str(len(all_recipes)) in recipes_readme
+layout = (ROOT / "docs" / "repository-layout.md").read_text(encoding="utf-8")
+assert "| **unity** |" in layout, "docs/repository-layout.md must list the unity category"
+
+smoke_doc = ROOT / "docs" / "unity-smoke-tests.md"
+assert smoke_doc.is_file(), "docs/unity-smoke-tests.md: repeatable runtime checklist is missing"
+doc = smoke_doc.read_text(encoding="utf-8")
+for heading in (
+    "## Test layers",
+    "## A. Clean-install scenario",
+    "### A3. Perform the controlled LightDM login test",
+    "### A5. Exercise session services and desktop features",
+    "### A6. Check systemd supervision after desktop use",
+    "## B. Upgrade scenario",
+    "## C. Failure report",
+    "## D. Pull-request CI checks",
+):
+    assert heading in doc, f"docs/unity-smoke-tests.md: missing section: {heading}"
+for required_text in (
+    "iso-unity",
+    "Exec=/usr/bin/unity-session",
+    "user-session=unity",
+    "unity-session.target",
+    "unity-settings-daemon.service",
+    "OnlyShowIn=Unity;",
+    "unity-portals.conf",
+    "libunityshell.so",
+    "disposable VM",
+):
+    assert required_text in doc, f"docs/unity-smoke-tests.md: missing: {required_text}"
+
 print("Unity integration checks passed")

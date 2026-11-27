@@ -64,7 +64,10 @@ python3 -I scripts/flavor.py services iso-cosmic
 The COSMIC image enables `cosmic-greeter` and disables `getty-tty1` plus
 LightDM, ensuring only the selected login manager owns VT 1. The Xfce image
 contains LightDM and its GTK greeter but deliberately leaves the service
-manual-enable until its Xorg privilege path is validated. Sway and no-GUI
+manual-enable until its Xorg privilege path is validated. The Unity image
+is the same as Xfce in this respect: it contains LightDM and its GTK greeter,
+defaults the LightDM session to `unity` (`50-unity.conf`), and leaves the
+service manual-enable. Sway and no-GUI
 images retain console gettys.
 
 Check every profile against the current recipes:

@@ -36,6 +36,19 @@ optional = ["xfce4-cpugraph-plugin", "xfce4-netload-plugin", "xfce4-systemload-p
 
 [[group]]
 schema = 1
+id = "unity"
+name = "Unity 7 Desktop (X11)"
+description = "The Unity 7 X11 session (Compiz + Nux). LightDM and desktop applications are selectable defaults; the shell, indicators, settings daemon and file manager come with unity-desktop."
+mandatory = ["unity-desktop"]
+default = ["lightdm", "lightdm-gtk-greeter", "xfce4-terminal", "mousepad", "ristretto", "xfce4-taskmanager", "network-manager-applet", "thunar-archive-plugin", "xarchiver", "pavucontrol", "firefox"]
+# No optional Unity packages yet: every Unity component in the repository is
+# already in unity-desktop's run closure (shell, indicators, settings daemon,
+# file manager). The build-only tools in the unity category (vala, intltool,
+# gnome-common, unity-build-shims) are not installable desktop selections.
+optional = []
+
+[[group]]
+schema = 1
 id = "multimedia"
 name = "Multimedia"
 description = "Audio services, media playback, codecs, and media download utilities."

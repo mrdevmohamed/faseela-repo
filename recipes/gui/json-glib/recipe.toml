@@ -2,7 +2,7 @@
 [package]
 name = "json-glib"
 version = "1.10.8"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "JSON parser and generator for GLib"
 license = ["LGPL-2.1-or-later"]
@@ -15,7 +15,7 @@ sha256 = "55c5c141a564245b8f8fbe7698663c87a45a7333c2a2c56f06f811ab73b212dd"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gobject-introspection"]
 run = ["glib"]
 
 [capabilities]
@@ -27,6 +27,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D documentation=disabled -D man=false -D tests=false -D conformance=false -D installed_tests=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=enabled -D documentation=disabled -D man=false -D tests=false -D conformance=false -D installed_tests=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

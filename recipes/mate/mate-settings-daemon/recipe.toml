@@ -1,0 +1,37 @@
+# mate recipe: mate-settings-daemon — MATE settings daemon
+# Applies desktop preferences at login (keyboard, mouse, sound, theme,
+# power, and more). Autotools only. --without-libmatemixer drops the
+# volume-event path (libmatemixer is a separate recipe); PulseAudio support
+# stays on via libpulse. Smartcard support is off so no NSS dependency is
+# needed. libnotify, AT-SPI, and PolicyKit stay on (default auto).
+[package]
+name = "mate-settings-daemon"
+version = "1.28.0"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE settings daemon: applies desktop preferences at login"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-settings-daemon"
+url = "https://github.com/mate-desktop/mate-settings-daemon/releases/download/v%{version}/mate-settings-daemon-%{version}.tar.xz"
+sha256 = "4ed7cdadaaa4c99efffc0282b8411703bb76e072c41c4b57989f8c5b40611a3a"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "mate-desktop", "dconf", "libnotify", "at-spi2-core", "libXi", "fontconfig", "libmatekbd", "libpulse", "polkit"]
+run = ["glib", "gtk3", "mate-desktop", "dconf", "libnotify", "at-spi2-core", "libXi", "fontconfig", "libmatekbd", "libpulse", "polkit"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --without-libmatemixer --enable-pulse --disable-smartcard-support"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

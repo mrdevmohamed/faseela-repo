@@ -1,0 +1,37 @@
+# mate recipe: mate-media — MATE media utilities
+# Volume control and mixer applets. Meson only in practice: the tarball
+# also ships configure, but the meson build is the maintained one. Wayland
+# is off (the wayland option resolves to "no" on its own when in-process
+# is off; passing -Dwayland=no makes it explicit). The panel applet stays
+# on, so mate-panel is a dependency.
+[package]
+name = "mate-media"
+version = "1.28.2"
+rel = 2
+arch = ["x86_64"]
+summary = "MATE media utilities: volume control and mixer applets"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-media"
+url = "https://github.com/mate-desktop/mate-media/releases/download/v%{version}/mate-media-%{version}.tar.xz"
+sha256 = "fc45d7ccbf0be7c27105b52e274acba3c1897a5e0282f88fba9a06a25360b13d"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "mate-desktop", "libmatemixer", "libcanberra", "libxml2", "mate-panel"]
+run = ["glib", "gtk3", "mate-desktop", "libmatemixer", "libcanberra", "libxml2", "mate-panel"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D wayland=no"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

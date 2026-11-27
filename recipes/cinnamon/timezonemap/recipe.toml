@@ -1,0 +1,46 @@
+# cinnamon recipe: timezonemap — Timezone map widget library
+# Upstream is the Debian libtimezonemap source (there is no linuxmint
+# timezonemap repo): the .orig tarball plus Debian's patch set. The tarball
+# ships no configure script (configure.ac says 0.4.4), so the build runs
+# autoreconf; the version is taken from the tarball name, 0.4.6.
+# The Debian patches are vendored under patches/ (see recipes/unity/glewmx
+# for the same pattern) and applied in series order.
+[package]
+name = "timezonemap"
+version = "0.4.6"
+rel = 2
+arch = ["x86_64"]
+summary = "Timezone map widget library"
+license = ["GPL-2.0-or-later", "GPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "timezonemap"
+url = "https://deb.debian.org/debian/pool/main/libt/libtimezonemap/libtimezonemap_%{version}.orig.tar.gz"
+sha256 = "0d634cc2476d8f57d1ee1864bd4f442180ae4bf040a9ae4bf73b66bbd85d7195"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "gtk3", "cairo", "libsoup3", "json-glib", "gobject-introspection"]
+run = ["glib", "gtk3", "cairo", "libsoup3", "json-glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/port-to-libsoup3.patch", "patches/tz-Include-UI-files-from-installed-path.patch", "patches/timezone-map-Never-try-to-access-to-free-d-or-null-values.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/port-to-libsoup3.patch
+patch -p1 < %{assetsdir}/patches/tz-Include-UI-files-from-installed-path.patch
+patch -p1 < %{assetsdir}/patches/timezone-map-Never-try-to-access-to-free-d-or-null-values.patch
+'''
+configure = "autoreconf -fi && ./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

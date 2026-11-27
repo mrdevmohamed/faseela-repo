@@ -1,0 +1,42 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Tue, 21 Mar 2023 23:15:08 +0100
+Subject: tz: Include UI files from installed path
+
+---
+ src/tz.h | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/src/tz.h b/src/tz.h
+index 8eb55d3..f7a5311 100644
+--- a/src/tz.h
++++ b/src/tz.h
+@@ -30,14 +30,26 @@
+ 
+ #include "cc-timezone-location.h"
+ 
++#ifndef DATADIR
++#  define UI_DIR "/usr/share/libtimezonemap/ui"
++#else
++#  define UI_DIR DATADIR
++#endif
++
++#ifndef GNOMECC_DATA_DIR
++#  define UI_DIR "/usr/share/libtimezonemap/ui"
++#else
++#  define UI_DIR DATADIR
++#endif
++
+ #ifndef __sun
+-#  define TZ_DATA_FILE "/usr/share/libtimezonemap/ui/cities15000.txt"
++#  define TZ_DATA_FILE DATADIR "/cities15000.txt"
+ #else
+ #  define TZ_DATA_FILE "/usr/share/lib/zoneinfo/tab/zone_sun.tab"
+ #endif
+ 
+-# define ADMIN1_FILE "/usr/share/libtimezonemap/ui/admin1Codes.txt"
+-# define COUNTRY_FILE "/usr/share/libtimezonemap/ui/countryInfo.txt"
++# define ADMIN1_FILE DATADIR "/admin1Codes.txt"
++# define COUNTRY_FILE DATADIR "/countryInfo.txt"
+ 
+ G_BEGIN_DECLS
+ 

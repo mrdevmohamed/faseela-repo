@@ -2,7 +2,7 @@
 [package]
 name = "libsoup3"
 version = "3.8.1"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "GLib HTTP client and server library (libsoup 3)"
 license = ["LGPL-2.0-only"]
@@ -15,7 +15,7 @@ sha256 = "5013dcef9136f6f861e6529fca578af50c1f52a39219027fb5aff652d1371a04"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2"]
+build = ["meson", "ninja", "pkgconf", "glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2", "gobject-introspection"]
 run = ["glib", "sqlite", "libpsl", "libxml2", "brotli", "glib-networking", "nghttp2"]
 
 [capabilities]
@@ -30,6 +30,6 @@ replaces = []
 # Upstream documents tls_check=false for package builds: glib-networking is
 # a runtime backend, not a libsoup compile-time dependency. Keep it explicit
 # in depends.run and validate runtime TLS separately after installation.
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D vapi=disabled -D docs=disabled -D tests=false -D installed_tests=false -D sysprof=disabled -D gssapi=disabled -D ntlm=disabled -D autobahn=disabled -D brotli=enabled -D tls_check=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=enabled -D vapi=disabled -D docs=disabled -D tests=false -D installed_tests=false -D sysprof=disabled -D gssapi=disabled -D ntlm=disabled -D autobahn=disabled -D brotli=enabled -D tls_check=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

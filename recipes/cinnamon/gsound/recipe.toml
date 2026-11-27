@@ -1,0 +1,34 @@
+# cinnamon recipe: gsound — Small library for playing system sounds
+# (thin libcanberra wrapper used by the Cinnamon stack)
+[package]
+name = "gsound"
+version = "1.0.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Small library for playing system sounds (libcanberra wrapper)"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gsound"
+url = "https://download.gnome.org/sources/gsound/1.0/gsound-%{version}.tar.xz"
+sha256 = "ca2d039e1ebd148647017a7f548862350bc9af01986d39f10cfdc8e95f07881a"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "libcanberra", "gobject-introspection"]
+run = ["glib", "libcanberra"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+# Vala bindings are off; introspection stays at its upstream default (on).
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D enable_vala=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

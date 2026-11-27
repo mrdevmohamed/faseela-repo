@@ -8,7 +8,7 @@
 [package]
 name = "at-spi2-core"
 version = "2.56.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Accessibility toolkit: ATK, the AT-SPI bridge and libatspi"
 license = ["LGPL-2.1-or-later"]
@@ -21,7 +21,7 @@ sha256 = "dbe35b951499e1d6f1fb552c2e0a09cea7cba2adf6c2eba0b2c85b6c094a3a02"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "dbus", "libxml2", "gettext"]
+build = ["meson", "ninja", "pkgconf", "glib", "dbus", "libxml2", "gettext", "gobject-introspection"]
 run = ["glib", "dbus", "libxml2"]
 
 [capabilities]
@@ -33,6 +33,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D introspection=disabled -D x11=disabled -D docs=false -D gtk2_atk_adaptor=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --buildtype=release -D introspection=enabled -D x11=disabled -D docs=false -D gtk2_atk_adaptor=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

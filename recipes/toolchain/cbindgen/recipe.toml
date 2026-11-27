@@ -1,0 +1,36 @@
+# toolchain recipe: cbindgen — Generate C bindings from Rust code
+[package]
+name = "cbindgen"
+version = "0.29.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Generate C bindings from Rust code"
+license = ["MPL-2.0"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "."
+
+[[package.sources]]
+name = "crate"
+url = "https://crates.io/api/v1/crates/cbindgen/%{version}/download"
+sha256 = "2ecb53484c9c167ba674026b656d8a27d7657a58e6066aa902bfb1a4aa00ae20"
+into = "."
+strip_components = 1
+
+[depends]
+build = ["rust"]
+run = ["glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --locked --offline"
+install = 'install -Dm0755 target/release/cbindgen "%{pkgdir}/usr/bin/cbindgen"'

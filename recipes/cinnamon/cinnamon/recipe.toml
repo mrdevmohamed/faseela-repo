@@ -1,0 +1,42 @@
+# cinnamon recipe: cinnamon — Cinnamon desktop environment (shell + settings)
+# The shell itself is JavaScript on top of cjs/muffin; the C library it links
+# (libxapp) is used through GObject Introspection, not through python-xapp:
+# python-xapp is not referenced anywhere in the cinnamon 6.6 sources, so no
+# python-xapp recipe is needed. The keybinder-3.0 and accountsservice
+# requirements are runtime-only (cinnamon-killer-daemon imports Keybinder
+# via GI; the shell talks to AccountsService over D-Bus), so they live in
+# run deps, not build deps.
+[package]
+name = "cinnamon"
+version = "6.6.9"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon desktop environment (shell and settings)"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon"
+url = "https://github.com/linuxmint/cinnamon/archive/refs/tags/%{version}.tar.gz"
+sha256 = "62fe4a47f727fda66b4f38a83d21b23a7ccb9f2af169a5f8e7c0b4258131d6bf"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "gtk3", "gcr", "polkit", "at-spi2-core", "gobject-introspection", "network-manager", "libsecret", "gstreamer", "gst-plugins-base", "libxml2", "dbus", "libX11", "mesa"]
+# accountsservice: the shell reads user data from it over D-Bus at runtime.
+# pygobject: the Python helpers shipped here (cinnamon-settings,
+# cinnamon-killer-daemon) import gi; no pygobject recipe exists yet.
+run = ["cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "gtk3", "gcr", "polkit", "network-manager", "libsecret", "accountsservice", "keybinder-3.0", "gstreamer", "gst-plugins-base", "python", "pygobject", "dbus", "libxml2", "mesa", "at-spi2-core"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D build_recorder=true -D nm_agent=internal"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

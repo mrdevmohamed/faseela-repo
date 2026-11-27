@@ -1,0 +1,37 @@
+# cinnamon recipe: cinnamon-control-center — Cinnamon control center
+# 6.6 ships only the color, common, display, network and wacom panels: there
+# is no keyboard panel and no libgnomekbd dependency in this release, and
+# nothing in the tree references accountsservice or GNOME Online Accounts
+# (the onlineaccounts option is vestigial upstream), so neither is a
+# build dependency. colord, ModemManager and libwacom are dropped by flags.
+[package]
+name = "cinnamon-control-center"
+version = "6.6.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon control center"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-control-center"
+url = "https://github.com/linuxmint/cinnamon-control-center/archive/refs/tags/%{version}.tar.gz"
+sha256 = "2de5fbc5a9fcc2e1dad9c595dfb1d9047ff885d391f45d6ffe8b6711bb4e24e4"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "gtk3", "glib", "cinnamon-desktop", "cinnamon-menus", "libxapp", "libgudev", "libnotify", "libX11", "libXi", "polkit", "upower", "network-manager", "libnma"]
+run = ["gtk3", "glib", "cinnamon-desktop", "cinnamon-menus", "libxapp", "libgudev", "libnotify", "polkit", "upower", "network-manager", "libnma"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D color=false -D modemmanager=false -D wacom=false -D networkmanager=true -D onlineaccounts=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

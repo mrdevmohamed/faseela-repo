@@ -9,6 +9,7 @@ name = "mate-session"
 version = "0.1"
 rel = 2
 arch = ["x86_64"]
+source_date_epoch = 1767225600
 summary = "MATE 1.28 X11 session integration and core desktop components"
 license = ["MIT"]
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"

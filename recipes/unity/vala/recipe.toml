@@ -1,0 +1,40 @@
+# unity recipe: vala — the Vala compiler and API bindings (vapi)
+# Bamf, Dee, libunity, Zeitgeist and unity-greeter are written in Vala. Only the
+# compiler and the standard vapi files are needed; valadoc (graphviz) and the
+# GObject-introspection tooling are not built, so the girdir that configure would
+# read from gobject-introspection-1.0.pc is given explicitly.
+[package]
+name = "vala"
+version = "0.56.19"
+rel = 2
+arch = ["x86_64"]
+summary = "Vala compiler and vapi bindings"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "vala"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/v/vala/vala_%{version}.orig.tar.xz"
+sha256 = "5ad7cbbfcc0de61b403d6797c9ef60455bfbebd8e162aec33b5b0b097adfb9d5"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "flex", "bison"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "GI_GIRDIR=/usr/share/gir-1.0 ./configure --prefix=/usr --libdir=/usr/lib --disable-valadoc --disable-static"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -x %{pkgdir}/usr/bin/valac
+test -s %{pkgdir}/usr/share/vala-0.56/vapi/glib-2.0.vapi
+'''

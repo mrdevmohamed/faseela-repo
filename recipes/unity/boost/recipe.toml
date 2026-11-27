@@ -1,0 +1,46 @@
+# unity recipe: boost — C++ headers plus the libraries Compiz and Nux link
+# Unity's C++ stack (Nux, Compiz, the Unity shell) uses Boost headers, Boost.Serialization
+# (Compiz) and Boost.Filesystem (Nux). Only those two compiled libraries are built;
+# the rest of Boost stays header-only. Boost.System is header-only since 1.89.
+[package]
+name = "boost"
+version = "1.90.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Boost C++ headers with the Serialization and Filesystem libraries"
+license = ["BSL-1.0"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "boost"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/b/boost1.90/boost1.90_%{version}.orig.tar.xz"
+sha256 = "72e81363dece294942cf4f0ccb86158b390b723d7b332a59a0f869709f306da6"
+strip_components = 1
+
+[depends]
+build = ["zlib", "bison", "which"]
+run = ["zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+# Ubuntu's orig tarball ships jamgram.y but not the generated parser the b2 engine
+# build.sh expects, so generate it here (bison -d also writes jamgram.hpp).
+prepare = '''set -eu
+cd tools/build/src/engine
+bison -y -d -o jamgram.cpp jamgram.y
+'''
+configure = "./bootstrap.sh --prefix=/usr --with-libraries=filesystem,serialization --with-toolset=gcc"
+compile = "./b2 -j%{jobs} --layout=system variant=release link=shared threading=multi runtime-link=shared"
+install = '''
+./b2 install -j%{jobs} --no-cmake-config --prefix=%{pkgdir}/usr --libdir=%{pkgdir}/usr/lib --layout=system variant=release link=shared threading=multi runtime-link=shared
+test -d %{pkgdir}/usr/include/boost
+test -e %{pkgdir}/usr/lib/libboost_filesystem.so
+test -e %{pkgdir}/usr/lib/libboost_serialization.so
+'''

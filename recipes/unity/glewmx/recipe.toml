@@ -1,0 +1,46 @@
+# unity recipe: glewmx — GLEW 1.13 built with GLEW_MX (multiple rendering contexts)
+# Nux selects the OpenGL entry points per context through the MX interface, which
+# GLEW 2.x dropped. This is Debian's separate glewmx source, shipped as libGLEWmx and
+# glewmx.pc. The two Debian patches (pkg-config rewrite, current Mesa headers) are
+# vendored as recipe assets.
+[package]
+name = "glewmx"
+version = "1.13.0"
+rel = 2
+arch = ["x86_64"]
+summary = "OpenGL Extension Wrangler with multiple-context support (GLEW_MX)"
+license = ["BSD-3-Clause", "MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "glewmx"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/g/glewmx/glewmx_%{version}.orig.tar.gz"
+sha256 = "aa25dc48ed84b0b64b8d41cdd42c8f40f149c37fa2ffa39cd97f42c78d128bc7"
+strip_components = 1
+
+[depends]
+build = ["mesa", "libglu", "libX11", "libXext", "xorgproto"]
+run = ["mesa", "libglu", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/0002-Drop_PHONY_on_pc_files.patch", "patches/mesa_18.2.5.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/0002-Drop_PHONY_on_pc_files.patch
+patch -p1 < %{assetsdir}/patches/mesa_18.2.5.patch
+'''
+compile = "make -j%{jobs} glew.lib.mx STRIP= POPT=\"$CFLAGS\" GL_LDFLAGS=-lGL GLU_LDFLAGS=-lGLU LIBDIR=/usr/lib 'LD=$(CC)' SYSTEM=linux"
+install = '''
+make install.mx DESTDIR=%{pkgdir} LIBDIR=/usr/lib
+test -e %{pkgdir}/usr/lib/libGLEWmx.so
+test -s %{pkgdir}/usr/lib/pkgconfig/glewmx.pc
+'''

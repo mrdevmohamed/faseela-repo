@@ -1,0 +1,36 @@
+# unity recipe: libgtop — system and process information library
+# Bamf reads process and window ownership through libgtop.
+[package]
+name = "libgtop"
+version = "2.41.3"
+rel = 2
+arch = ["x86_64"]
+summary = "Library for reading system and process information"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgtop"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libg/libgtop2/libgtop2_%{version}.orig.tar.xz"
+sha256 = "775676df958e2ea2452f7568f28b2ea581063d312773dd5c0b7624c1b9b2da8c"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "perl"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --disable-nls"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -s %{pkgdir}/usr/lib/pkgconfig/libgtop-2.0.pc
+'''

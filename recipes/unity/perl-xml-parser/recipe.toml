@@ -1,0 +1,37 @@
+# unity recipe: perl-xml-parser — XML::Parser, the expat binding intltool uses
+[package]
+name = "perl-xml-parser"
+version = "2.47"
+rel = 2
+arch = ["x86_64"]
+summary = "Perl binding for the expat XML parser"
+license = ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "perl-xml-parser"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxml-parser-perl/libxml-parser-perl_%{version}.orig.tar.gz"
+sha256 = "ad4aae643ec784f489b956abe952432871a622d4e2b5c619e8855accbfc4d1d8"
+strip_components = 1
+
+[depends]
+build = ["perl", "expat"]
+run = ["perl", "expat"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "perl Makefile.PL INSTALLDIRS=vendor"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+find %{pkgdir} -name perllocal.pod -delete
+test -n "$(find %{pkgdir}/usr -name Parser.pm -path '*XML/Parser.pm')"
+test -n "$(find %{pkgdir}/usr -name Expat.so)"
+'''

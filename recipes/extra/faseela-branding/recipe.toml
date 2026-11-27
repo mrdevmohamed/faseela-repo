@@ -1,10 +1,11 @@
 # extra recipe: faseela-branding — the Faseela visual identity (app icon, marks, default wallpaper, GRUB theme).
-# Pure assets, nothing is compiled. The files are exported from faseela/branding
-# (branding/build.sh --sync) and staged here through Nawa's recipe-local assets.
+# Pure assets, nothing is compiled. v2 is the Pharaonic identity (approved
+# 2026-11-28): minimal gold palm + sun disc on lapis #0F196C / gold #EBC156.
+# Assets are staged here through Nawa's recipe-local assets.
 [package]
 name = "faseela-branding"
-version = "1.0"
-rel = 3
+version = "2.0"
+rel = 2
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Faseela visual identity: icon theme entry, logo marks, default wallpaper and GRUB theme"

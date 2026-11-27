@@ -1,14 +1,14 @@
-# Faseela GRUB theme.
+# Faseela GRUB theme — Pharaonic identity (approved 2026-11-28).
 #
 # Uses only what GRUB ships: the font loaded from unicode.pf2 ("Unifont Regular 16")
-# and three images exported by branding/build.sh (background.png, logo.png,
-# select_c.png). No Arabic text on purpose: GRUB does not shape Arabic.
+# and three images (background.png, logo.png, select_c.png) in lapis #0F196C
+# and gold #EBC156. No Arabic text on purpose: GRUB does not shape Arabic.
 
 desktop-image: "background.png"
 desktop-image-scale-method: "crop"
 desktop-image-h-align: "center"
 desktop-image-v-align: "center"
-desktop-color: "#0E1A2B"
+desktop-color: "#0F196C"
 
 title-text: ""
 terminal-font: "Unifont Regular 16"
@@ -31,7 +31,7 @@ terminal-border: "0"
     top = 31%
     width = 100%
     align = "center"
-    color = "#E6B53A"
+    color = "#EBC156"
     font = "Unifont Regular 16"
     text = "F A S E E L A"
 }
@@ -42,8 +42,8 @@ terminal-border: "0"
     width = 460
     height = 34%
     item_font = "Unifont Regular 16"
-    item_color = "#EADFC8"
-    selected_item_color = "#E6B53A"
+    item_color = "#F4EBD3"
+    selected_item_color = "#EBC156"
     item_height = 34
     item_padding = 10
     item_spacing = 6
@@ -56,7 +56,7 @@ terminal-border: "0"
     top = 84%
     width = 100%
     align = "center"
-    color = "#B9C2D0"
+    color = "#AEB6E6"
     font = "Unifont Regular 16"
     text = "Booting in %d seconds"
 }
@@ -66,7 +66,7 @@ terminal-border: "0"
     top = 94%
     width = 100%
     align = "center"
-    color = "#8E99AB"
+    color = "#7C86B8"
     font = "Unifont Regular 16"
     text = "Up/Down: choose    Enter: boot    e: edit    c: command line"
 }

@@ -1,0 +1,49 @@
+# unity recipe: compiz — the OpenGL compositing window manager Unity 7 runs on
+# Source: Ubuntu's native source tarball. The Python bindings and ccsm are not
+# built (no cython in Faseela); the GSettings backend is.
+[package]
+name = "compiz"
+version = "0.9.14.2"
+rel = 2
+arch = ["x86_64"]
+summary = "OpenGL compositing window manager (Unity 7 flavour)"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later", "MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "compiz"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/c/compiz/compiz_0.9.14.2+25.10.20250930-0ubuntu3.tar.xz"
+sha256 = "e3547c95187fb9e76f7de8f9525dd20e555684d6757e073c62e9492c11ec5bca"
+strip_components = 1
+
+[depends]
+build = ["cmake", "ninja", "pkgconf", "python", "glib", "glibmm", "gtk3", "pango", "cairo", "libpng", "libjpeg-turbo", "libwnck3", "startup-notification", "libxml2", "libxslt", "libX11", "libxcb", "libXcomposite", "libXdamage", "libXfixes", "libXi", "libXinerama", "libXrandr", "libXrender", "libXcursor", "libXext", "libICE", "libSM", "xorgproto", "protobuf", "boost", "mesa", "libglu", "dbus-glib", "libnotify", "gsettings-desktop-schemas", "intltool", "perl-xml-parser", "gettext"]
+run = ["glib", "glibmm", "gtk3", "pango", "cairo", "libpng", "libjpeg-turbo", "libwnck3", "startup-notification", "libxml2", "libX11", "libxcb", "libXcomposite", "libXdamage", "libXfixes", "libXi", "libXinerama", "libXrandr", "libXrender", "libXcursor", "libXext", "libICE", "libSM", "protobuf", "boost", "mesa", "libglu", "dbus-glib", "libnotify", "gsettings-desktop-schemas"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-python-bindings.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-python-bindings.patch
+'''
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCOMPIZ_BUILD_WITH_RPATH=FALSE -DCOMPIZ_PACKAGING_ENABLED=TRUE -DCOMPIZ_DISABLE_GS_SCHEMAS_INSTALL=OFF -DCOMPIZ_BUILD_TESTING=OFF -DBUILD_XORG_GTEST=OFF -DCOMPIZ_WERROR=FALSE"
+compile = "cmake --build build --parallel %{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -x %{pkgdir}/usr/bin/compiz
+test -e %{pkgdir}/usr/lib/libcompiz_core.so
+test -e %{pkgdir}/usr/lib/libdecoration.so
+'''

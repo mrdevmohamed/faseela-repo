@@ -1,5 +1,5 @@
 # unity recipe: ido — Indicator display objects (GTK3 menu items)
-# Source: Ubuntu archive orig tarball (13.10.0+17.04.20161028); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (13.10.0+17.04.20161028); Ubuntu's patches are vendored under patches/.
 [package]
 name = "ido"
 version = "13.10.0"

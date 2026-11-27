@@ -1,5 +1,5 @@
 # unity recipe: libindicator — Panel indicator library
-# Source: Ubuntu archive orig tarball (16.10.0+18.04.20180321.1); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (16.10.0+18.04.20180321.1); Ubuntu's patches are vendored under patches/.
 [package]
 name = "libindicator"
 version = "16.10.0"

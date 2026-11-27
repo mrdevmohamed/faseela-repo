@@ -1,5 +1,5 @@
 # unity recipe: bamf — Bamf: application-matching framework for Unity
-# Source: Ubuntu archive orig tarball (0.5.6+22.04.20220217); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (0.5.6+22.04.20220217); Ubuntu's patches are vendored under patches/.
 [package]
 name = "bamf"
 version = "0.5.6"

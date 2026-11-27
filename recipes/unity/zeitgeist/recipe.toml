@@ -1,5 +1,5 @@
 # unity recipe: zeitgeist — Zeitgeist activity log (library and daemon, without FTS/telepathy)
-# Source: Ubuntu archive orig tarball (1.0.4); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (1.0.4); Ubuntu's patches are vendored under patches/.
 [package]
 name = "zeitgeist"
 version = "1.0.4"

@@ -1,5 +1,5 @@
 # unity recipe: indicator-application — Panel indicator hosting application indicators
-# Source: Ubuntu archive orig tarball (12.10.1+19.04.20190308.1); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (12.10.1+19.04.20190308.1); Ubuntu's patches are vendored under patches/.
 [package]
 name = "indicator-application"
 version = "12.10.1"

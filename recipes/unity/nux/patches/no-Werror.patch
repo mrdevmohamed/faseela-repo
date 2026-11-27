@@ -1,0 +1,20 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -382,7 +382,7 @@
+ dnl ==========================================================================
+ 
+ if test "x$GCC" = "xyes"; then
+-  GCC_FLAGS="-g -Werror -Wall -Wextra -Wno-unused-parameter -std=c++0x"
++  GCC_FLAGS="-g -Wall -Wextra -Wno-unused-parameter -std=c++0x"
+ fi
+ 
+ # gcc flags for building the tests.
+@@ -397,7 +397,7 @@
+ 
+ AS_IF([test "x$enable_maintainer_mode" = "xyes" && test "x$GCC" = "xyes"],
+       [
+-         MAINTAINER_CFLAGS+="-Werror -Wall -Wextra -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self -Wno-unused-parameter"
++         MAINTAINER_CFLAGS+="-Wall -Wextra -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self -Wno-unused-parameter"
+       ]
+ )
+ 

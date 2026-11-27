@@ -1,5 +1,5 @@
 # unity recipe: libunity — Unity launcher/dash integration library
-# Source: Ubuntu archive orig tarball (7.1.4+19.04.20190319); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (7.1.4+19.04.20190319); Ubuntu's patches are vendored under patches/.
 [package]
 name = "libunity"
 version = "7.1.4"

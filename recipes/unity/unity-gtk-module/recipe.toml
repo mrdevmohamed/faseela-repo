@@ -1,5 +1,5 @@
 # unity recipe: unity-gtk-module — GTK module exporting menus for the Unity global menu
-# Source: Ubuntu archive orig tarball (0.0.0+18.04.20171202); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (0.0.0+18.04.20171202); Ubuntu's patches are vendored under patches/.
 [package]
 name = "unity-gtk-module"
 version = "0.0.0"

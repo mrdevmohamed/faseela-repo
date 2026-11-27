@@ -1,5 +1,5 @@
 # unity recipe: libunity-misc — Miscellaneous Unity helper library
-# Source: Ubuntu archive orig tarball (4.0.5+14.04.20140115); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (4.0.5+14.04.20140115); Ubuntu's patches are vendored under patches/.
 [package]
 name = "libunity-misc"
 version = "4.0.5"

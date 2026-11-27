@@ -1,0 +1,10 @@
+--- a/tests/gtest-nux-windowcompositor.cpp
++++ b/tests/gtest-nux-windowcompositor.cpp
+@@ -4,6 +4,7 @@
+ #include <iostream>
+ #include <gmock/gmock.h>
+ #include <boost/filesystem.hpp>
++#include <boost/shared_ptr.hpp>
+ #include <glib.h>
+ #include <list>
+ 

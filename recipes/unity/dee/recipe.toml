@@ -1,5 +1,5 @@
 # unity recipe: dee — Dee: model-sharing library over D-Bus (Unity)
-# Source: Ubuntu archive orig tarball (1.2.7+17.10.20170616); Ubuntu's patches are vendored under assets/patches.
+# Source: Ubuntu archive orig tarball (1.2.7+17.10.20170616); Ubuntu's patches are vendored under patches/.
 [package]
 name = "dee"
 version = "1.2.7"

@@ -1,0 +1,42 @@
+Author: Dave Jones <dave.jones@canonical.com>
+Forwarded: no
+Description: Fix FTBFS with boost 1.90
+
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -299,14 +299,6 @@ AS_IF([test "x$enable_tests" = "xyes"],
+                         [AC_MSG_WARN([you are missing boost, apt-get install libboost-dev])])
+         AC_LANG_POP([C++])
+ 
+-        #Check for libboost-system
+-
+-        AC_LANG_PUSH([C++])
+-        AC_CHECK_HEADER([boost/system/config.hpp],
+-                        [have_boost_system=yes],
+-                        [AC_MSG_WARN([you are missing boost-system, apt-get install libboost-system-dev])])
+-        AC_LANG_POP([C++])
+-
+         #Check for libboost-filesystem
+ 
+         AC_LANG_PUSH([C++])
+@@ -324,7 +316,6 @@ AS_IF([test "x$enable_tests" = "xyes"],
+ 
+ AS_IF([test "x$have_xtest" = "xyes" &&
+        test "x$have_boost" = "xyes" &&
+-       test "x$have_boost_system" = "xyes" &&
+        test "x$have_boost_fs" = "xyes" &&
+        test "x$have_gmock" = "xyes" &&
+        test "x$have_gtest" = "xyes"],
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -59,8 +59,7 @@ GTestFlags = $(TestFlags) \
+ GTestLibs = $(TestLibs) \
+             libgtest.a
+ 
+-GTestLDFlags = -lboost_system \
+-               -lboost_filesystem
++GTestLDFlags = -lboost_filesystem
+ 
+ ##### gtest-nuxcore ######
+ 

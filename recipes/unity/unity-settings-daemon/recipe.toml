@@ -47,6 +47,12 @@ autoreconf -fi
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install
 rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+# systemd user unit and /usr/bin symlink (Ubuntu ships these from debian/)
+install -D -m 0644 debian/user/unity-settings-daemon.service %{pkgdir}/usr/lib/systemd/user/unity-settings-daemon.service
+install -d %{pkgdir}/usr/lib/systemd/user/unity-session.target.wants
+ln -s ../unity-settings-daemon.service %{pkgdir}/usr/lib/systemd/user/unity-session.target.wants/unity-settings-daemon.service
+install -d %{pkgdir}/usr/bin
+ln -s ../lib/unity-settings-daemon/unity-settings-daemon %{pkgdir}/usr/bin/unity-settings-daemon
 test -x %{pkgdir}/usr/lib/unity-settings-daemon/unity-settings-daemon
 test -e %{pkgdir}/usr/lib/libunity-settings-daemon.so
 '''

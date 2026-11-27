@@ -1,0 +1,78 @@
+# unity recipe: unity-desktop — Unity 7 desktop session: LightDM + Xorg, Unity shell and core components
+# meta package in the xfce-session style: no upstream source, only
+# configuration and service wiring on top of the real packages
+[package]
+name = "unity-desktop"
+version = "0.1"
+rel = 2
+arch = ["x86_64"]
+source_date_epoch = 1767225600
+summary = "Unity 7 X11 session integration and core desktop components"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[depends]
+build = []
+run = ["unity-session", "unity", "unity-settings-daemon", "unity-gtk-module", "indicator-application", "indicator-appmenu", "bamf", "zeitgeist", "compiz", "nux", "appimage-support", "xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "thunar", "gvfs", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "network-manager-applet", "bluez", "polkit", "xfce-polkit", "systemd", "dbus-system", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+# --- Xorg keyboard layout: US + Arabic, Alt+Shift toggles --------------------
+install -d -m755 %{pkgdir}/etc/X11/xorg.conf.d
+cat > %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-unity-keyboard.conf <<'KBD'
+Section "InputClass"
+    Identifier "faseela-unity-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "us,ara"
+    Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+KBD
+chmod 644 %{pkgdir}/etc/X11/xorg.conf.d/00-faseela-unity-keyboard.conf
+
+# Unity's xdg-desktop-autostart.target launches the shared audio supervisor.
+install -d -m755 %{pkgdir}/etc/xdg/autostart
+cat > %{pkgdir}/etc/xdg/autostart/faseela-audio-session-unity.desktop <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Faseela Audio Session
+Comment=Start PipeWire audio services for this desktop session
+Exec=/usr/bin/faseela-audio-session
+TryExec=/usr/bin/faseela-audio-session
+OnlyShowIn=Unity;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+DESKTOP
+chmod 644 %{pkgdir}/etc/xdg/autostart/faseela-audio-session-unity.desktop
+
+# XDG Desktop Portal: use the GTK backend for Unity sessions.
+install -d -m755 %{pkgdir}/usr/share/xdg-desktop-portal
+cat > %{pkgdir}/usr/share/xdg-desktop-portal/unity-portals.conf <<'PORTALS'
+[preferred]
+default=gtk
+PORTALS
+chmod 644 %{pkgdir}/usr/share/xdg-desktop-portal/unity-portals.conf
+'''
+
+[hooks]
+post_install = '''
+for socket_dir in /tmp/.X11-unix /tmp/.ICE-unix; do
+    mkdir -p "$socket_dir"
+    chown root:root "$socket_dir"
+    chmod 1777 "$socket_dir"
+done
+
+for group in video render input audio; do
+    /usr/libexec/faseela/ensure-system-account group "$group"
+done
+
+echo "unity-desktop: add your user to video,render,input,audio for Xorg device access."
+echo "unity-desktop: install lightdm and lightdm-gtk-greeter for a graphical login."
+'''

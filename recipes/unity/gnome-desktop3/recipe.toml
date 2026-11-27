@@ -1,0 +1,45 @@
+# unity recipe: gnome-desktop3 — GNOME desktop library, GTK3 API (needed by unity-settings-daemon and Unity)
+# Ubuntu's patch series is vendored; no-introspection.patch drops the GIR (no g-ir-scanner in Faseela).
+[package]
+name = "gnome-desktop3"
+version = "3.36.8"
+rel = 2
+arch = ["x86_64"]
+summary = "Utility library for loading .desktop files, thumbnails and monitor configuration (GTK3)"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gnome-desktop3"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/g/gnome-desktop3/gnome-desktop3_%{version}.orig.tar.xz"
+sha256 = "bb0bc5daad338beb54200d0b298aaa8de0f59a745dc7a75beb1547a0a512415c"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "gdk-pixbuf", "gsettings-desktop-schemas", "fontconfig", "xkeyboard-config", "iso-codes", "libX11", "libxkbfile", "libseccomp", "bubblewrap", "libgudev", "systemd", "gettext"]
+run = ["glib", "gtk3", "gdk-pixbuf", "gsettings-desktop-schemas", "fontconfig", "xkeyboard-config", "iso-codes", "libX11", "libxkbfile", "libseccomp", "bubblewrap", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/04_compute_average_color.patch", "patches/git_revert_draw_background.patch", "patches/no-introspection.patch", "patches/riscv64_seccomp.patch", "patches/series", "patches/tweak_color_computation.patch", "patches/ubuntu_language_list_from_SUPPORTED.patch"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+'''
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/libexec --buildtype=release -Dudev=enabled -Dsystemd=enabled -Dgtk_doc=false -Ddesktop_docs=false -Dinstalled_tests=false -Ddebug_tools=false"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/libgnome-desktop-3.so
+test -e %{pkgdir}/usr/lib/pkgconfig/gnome-desktop-3.0.pc
+'''

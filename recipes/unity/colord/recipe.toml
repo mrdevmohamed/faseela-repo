@@ -1,0 +1,38 @@
+# unity recipe: colord — colour-profile daemon (required by the settings daemon's colour plugin)
+[package]
+name = "colord"
+version = "1.4.8"
+rel = 2
+arch = ["x86_64"]
+summary = "System daemon that manages colour profiles"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "colord"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/c/colord/colord_%{version}.orig.tar.xz"
+sha256 = "21500bd68975312a7f0f3ce6019d9f75f42aacaa75ca7115ec720b5445406896"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "lcms2", "sqlite", "libgusb", "libgudev", "polkit", "systemd", "dbus"]
+run = ["glib", "lcms2", "sqlite", "libgusb", "libgudev", "polkit", "systemd", "dbus"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --libexecdir=/usr/libexec --localstatedir=/var --buildtype=release -Dargyllcms_sensor=false -Dbash_completion=false -Dintrospection=false -Dtests=false -Dman=false -Ddocs=false -Dvapi=false -Dsane=false -Dsystemd=true -Dudev_rules=true -Ddaemon_user=colord"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+rm -rf %{pkgdir}/var
+test -x %{pkgdir}/usr/libexec/colord
+test -e %{pkgdir}/usr/lib/libcolord.so
+test -e %{pkgdir}/usr/lib/sysusers.d/colord-sysusers.conf
+'''

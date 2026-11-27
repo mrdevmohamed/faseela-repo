@@ -1,0 +1,54 @@
+# unity recipe: unity — the Unity 7 shell (compiz plugin, launcher, dash, panel, switcher)
+# Native Ubuntu tarball. The patch drops appstream-glib (title/icon lookup in the
+# software-center integration only) and the multitouch-gesture code (needs a nux
+# built with libgeis), and adds two missing includes.
+[package]
+name = "unity"
+version = "7.7.1"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity 7 desktop shell"
+license = ["GPL-3.0-only", "LGPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity/unity_7.7.1+26.04.20260306-0ubuntu3.tar.xz"
+sha256 = "2fb80ea1802181ed853862aa8494df169f20911ced41bd315a1a8a0b3b1ee69a"
+strip_components = 1
+
+[depends]
+build = ["cmake", "make", "pkgconf", "python", "glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "libxcb", "linux-pam", "mesa", "libglu", "glewmx", "boost", "protobuf", "libwnck3", "gsettings-desktop-schemas", "gettext", "intltool"]
+run = ["glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "linux-pam", "mesa", "libglu", "glewmx", "boost", "libwnck3", "gsettings-desktop-schemas"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-geis-no-appstream.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-geis-no-appstream.patch
+'''
+# Makefiles generator: Ninja cannot lex the pre-distcheck custom target.
+configure = '''MP=$(dirname $(ls /usr/share/cmake-*/FindCompiz.cmake | head -1))
+export CXXFLAGS="-O2 -Wno-error -fpermissive"
+cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_MODULE_PATH=$MP -DENABLE_UNIT_TESTS=OFF
+'''
+compile = "make -C build -j%{jobs}"
+install = '''make -C build install DESTDIR=%{pkgdir}
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -x %{pkgdir}/usr/bin/unity
+test -e %{pkgdir}/usr/lib/compiz/libunityshell.so
+test -x %{pkgdir}/usr/lib/unity/unity-panel-service
+'''

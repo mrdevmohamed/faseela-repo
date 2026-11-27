@@ -1,0 +1,42 @@
+# unity recipe: xpathselect — XPath-style query library the Unity shell links for its introspection interface
+[package]
+name = "xpathselect"
+version = "1.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Select nodes of an introspection tree with XPath-like queries"
+license = ["LGPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xpathselect"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/x/xpathselect/xpathselect_1.4+15.10.20150824.1.orig.tar.gz"
+sha256 = "d525e1708ba10f601b13ea04c367062915025d76e0d34d93a268a9f5e2506ee0"
+strip_components = 1
+
+[depends]
+build = ["cmake", "ninja", "boost"]
+run = ["gcc", "glibc"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''set -eu
+# the test suite needs gtest, and CMake 4 no longer ships FindBoost (headers only are used)
+sed -i '/add_subdirectory(test)/d' CMakeLists.txt
+sed -i 's|^FIND_PACKAGE( Boost 1.40 REQUIRED )|set(Boost_INCLUDE_DIR /usr/include)|' lib/CMakeLists.txt
+'''
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+compile = "cmake --build build --parallel %{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+ln -sf libxpathselect.so.1.4 %{pkgdir}/usr/lib/libxpathselect.so
+test -e %{pkgdir}/usr/lib/libxpathselect.so.1.4
+test -e %{pkgdir}/usr/lib/pkgconfig/xpathselect.pc
+'''

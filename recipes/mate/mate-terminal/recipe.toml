@@ -19,7 +19,7 @@ sha256 = "9c7d4f884fc21342814a186020e04aa1a5d436e9a13ea128d132e232d04b07e4"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "vte", "dconf", "libSM", "libICE", "mate-common"]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "vte", "dconf", "libSM", "libICE", "mate-common", "itstool"]
 run = ["glib", "gtk3", "vte", "dconf", "libSM", "libICE"]
 
 [capabilities]

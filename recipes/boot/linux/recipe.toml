@@ -67,10 +67,15 @@
 # rel 25: kernel options systemd requires (inotify, signalfd, timerfd, epoll,
 #         fhandle, tmpfs ACL/xattr) and uses (PSI, BPF cgroup, autofs, binfmt_misc),
 #         for systemd as PID 1 and its core kernel facilities.
+# rel 27: SQUASHFS_XATTR. bootstrap/mkiso.sh's mksquashfs stores extended attributes
+#         (file capabilities such as security.capability, ACLs, labels), but the
+#         kernel was built without SQUASHFS_XATTR and logged "SQUASHFS error: Xattrs
+#         in filesystem, these will be ignored" on every live boot, dropping them
+#         from the live root. Now enabled and asserted.
 [package]
 name = "linux"
 version = "6.10"
-rel = 26
+rel = 27
 arch = ["x86_64"]
 summary = "Generic x86_64 Linux kernel for desktop, laptop, workstation and virtual machines"
 license = ["GPL-2.0"]
@@ -243,7 +248,7 @@ scripts/config \
     --enable NLS_CODEPAGE_437 --enable NLS_ISO8859_1 \
     --enable ISO9660_FS --enable OVERLAY_FS --enable BLK_DEV_LOOP \
     --enable SQUASHFS --enable SQUASHFS_ZLIB --enable SQUASHFS_XZ \
-    --enable SQUASHFS_ZSTD --enable XZ_DEC --enable XZ_DEC_X86 \
+    --enable SQUASHFS_ZSTD --enable SQUASHFS_XATTR --enable XZ_DEC --enable XZ_DEC_X86 \
     --enable BLK_DEV_DM \
     --module DM_CRYPT --module WIREGUARD --module EXFAT_FS --module NTFS3_FS
 
@@ -545,6 +550,8 @@ require_config CONFIG_SQUASHFS y
 require_config CONFIG_SQUASHFS_ZLIB y
 require_config CONFIG_SQUASHFS_XZ y
 require_config CONFIG_SQUASHFS_ZSTD y
+require_config CONFIG_SQUASHFS_XATTR y
+require_config CONFIG_BLK_DEV_LOOP y
 require_config CONFIG_XZ_DEC_X86 y
 require_config CONFIG_BLK_DEV_DM y
 

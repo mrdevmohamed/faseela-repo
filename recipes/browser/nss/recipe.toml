@@ -72,10 +72,6 @@ done
 install -d "%{pkgdir}/usr/lib" "%{pkgdir}/usr/include/nss" "%{pkgdir}/usr/bin"
 cp -RL "$dist/public/nss/." "%{pkgdir}/usr/include/nss/"
 cp -aL "$objdir"/lib/*.so* "%{pkgdir}/usr/lib/"
-# NSS ships only the versioned libnssutil3.so, but the hand-written nss.pc
-# below promises -lnssutil — create the unversioned linker name so
-# consumers can link (poppler link failure, PR #237 wave 2, run 46126068976).
-ln -sf libnssutil3.so "%{pkgdir}/usr/lib/libnssutil.so"
 find "$objdir/lib" -maxdepth 1 -type f -name '*.chk' -exec cp -a '{}' "%{pkgdir}/usr/lib/" ';'
 for tool in certutil modutil pk12util; do
     if [ -x "$objdir/bin/$tool" ]; then

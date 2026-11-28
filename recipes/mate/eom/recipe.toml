@@ -6,7 +6,7 @@
 [package]
 name = "eom"
 version = "1.28.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE image viewer (Eye of MATE)"
 license = ["GPL-2.0-or-later"]
@@ -19,7 +19,7 @@ sha256 = "ccc169b8e240828b36965dfd84fa1478957dec2028ffeba553ae97e542e15120"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libpeas", "libexif", "libjpeg-turbo", "lcms2", "libX11", "libxml2", "shared-mime-info", "zlib", "librsvg"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libpeas", "libexif", "libjpeg-turbo", "lcms2", "libX11", "libxml2", "shared-mime-info", "zlib", "librsvg", "itstool"]
 run = ["glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libpeas", "libexif", "libjpeg-turbo", "lcms2", "libX11", "libxml2", "shared-mime-info", "zlib", "librsvg"]
 
 [capabilities]

@@ -1,0 +1,11 @@
+--- a/mate-session/org.gnome.SessionManager.App.c
++++ b/mate-session/org.gnome.SessionManager.App.c
+@@ -1414,7 +1414,7 @@
+   GVariantBuilder builder;
+   guint n;
+ #if GLIB_VERSION_MAX_ALLOWED >= GLIB_VERSION_2_84
+-  g_variant_builder_init_static (&builder, G_VARIANT_TYPE ("a{sv}"));
++  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
+ #else
+   g_variant_builder_init(&builder, G_VARIANT_TYPE ("a{sv}"));
+ #endif

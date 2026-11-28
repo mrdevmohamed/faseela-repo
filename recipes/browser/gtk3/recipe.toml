@@ -27,8 +27,8 @@ sha256 = "80931fa472a77b9a164f6740e3c0b444fac6770054632d35a7ff9d679e5e7b9f"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender", "gobject-introspection"]
-run = ["glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
+build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
 
 [capabilities]
 provides = []

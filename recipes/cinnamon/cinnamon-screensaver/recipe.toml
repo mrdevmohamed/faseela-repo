@@ -21,8 +21,8 @@ strip_components = 1
 
 [depends]
 # linux-pam provides libpam, used for unlocking.
-build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "dbus", "libX11", "libXext", "libXrandr", "libXinerama", "linux-pam", "gobject-introspection"]
-run = ["gtk3", "glib", "dbus", "libX11", "libXext", "linux-pam"]
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "dbus", "libX11", "libXext", "libXrandr", "libXinerama", "linux-pam", "gobject-introspection", "glib-gir"]
+run = ["gtk3", "glib", "glib-gir", "dbus", "libX11", "libXext", "linux-pam"]
 
 [capabilities]
 provides = []

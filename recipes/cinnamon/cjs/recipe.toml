@@ -18,8 +18,8 @@ strip_components = 1
 
 [depends]
 # js128 is the mozjs-128 recipe (Firefox 128 ESR source); it lands separately.
-build = ["meson", "ninja", "pkgconf", "glib", "libffi", "cairo", "gobject-introspection", "js128", "readline"]
-run = ["glib", "cairo", "libffi", "js128", "readline"]
+build = ["meson", "ninja", "pkgconf", "glib", "libffi", "cairo", "gobject-introspection", "glib-gir", "js128", "readline"]
+run = ["glib", "glib-gir", "cairo", "libffi", "js128", "readline"]
 
 [capabilities]
 provides = []

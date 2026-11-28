@@ -17,8 +17,8 @@ sha256 = "bad10f3c553a0e1854649ab59c5b2434da22ca1a54ae6138f1f53961567e1ab7"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit", "gobject-introspection"]
-run = ["glib", "libgcrypt", "p11-kit"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "libgcrypt", "p11-kit", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "libgcrypt", "p11-kit"]
 
 [capabilities]
 provides = []

@@ -15,8 +15,8 @@ sha256 = "8a9eed75021ee734d7fc0fdf3a65c3bba51dfefe4ae51a9b414a60c70b2d1ed8"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "harfbuzz", "fribidi", "cairo", "fontconfig", "freetype", "gobject-introspection"]
-run = ["glib", "harfbuzz", "fribidi", "cairo", "fontconfig", "freetype"]
+build = ["meson", "ninja", "pkgconf", "glib", "harfbuzz", "fribidi", "cairo", "fontconfig", "freetype", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "harfbuzz", "fribidi", "cairo", "fontconfig", "freetype"]
 
 [capabilities]
 provides = []

@@ -18,8 +18,8 @@ strip_components = 1
 
 [depends]
 # gail-3.0 is provided by gtk3 itself.
-build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "gobject-introspection", "libX11", "pango"]
-run = ["gtk3", "glib", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "pango", "libX11"]
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "gobject-introspection", "glib-gir", "libX11", "pango"]
+run = ["gtk3", "glib", "glib-gir", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "pango", "libX11"]
 
 [capabilities]
 provides = []

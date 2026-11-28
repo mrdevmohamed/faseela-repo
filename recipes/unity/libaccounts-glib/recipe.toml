@@ -6,7 +6,7 @@
 [package]
 name = "libaccounts-glib"
 version = "1.23"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Accounts framework client library"
 license = ["LGPL-2.0-only"]
@@ -30,8 +30,12 @@ schema = 1
 conflicts = []
 replaces = []
 
+[assets]
+include = ["patches/cleanfiles-assign.patch"]
+
 [build]
 prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/cleanfiles-assign.patch
 cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"

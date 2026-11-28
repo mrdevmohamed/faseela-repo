@@ -7,7 +7,7 @@
 [package]
 name = "libgeonames"
 version = "0.3.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "GeoNames geocoding library"
 license = ["GPL-3.0-only"]
@@ -32,7 +32,7 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DWANT_DOC=OFF -DWANT_TESTS=OFF -DWANT_DEMO=OFF"
+configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DWANT_DOC=OFF -DWANT_TESTS=OFF -DWANT_DEMO=OFF"
 compile = "make -C build -j%{jobs}"
 install = '''DESTDIR=%{pkgdir} make -C build install
 test -e %{pkgdir}/usr/lib/libgeonames.so

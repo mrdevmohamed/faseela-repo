@@ -12,11 +12,13 @@
 # commits the transaction with the Zeitgeist recent-files results already
 # added. Filename search then yields nothing; Zeitgeist results are
 # preserved. Graceful degradation — no patch, documented here.
-# The Ubuntu patch (01) is test-only valac-compat, so no autoreconf is run.
+# The tarball ships no configure script (only configure.ac), so
+# autoreconf -fi runs first, like unity-lens-applications. Patch 01 is
+# test-only valac-compat and touches no build file.
 [package]
 name = "unity-lens-files"
 version = "7.1.0+17.10.20170605"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity files lens"
 license = ["GPL-3.0-only"]
@@ -50,6 +52,7 @@ for p in $(cat %{assetsdir}/patches/series); do
 done
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
 ./configure --prefix=/usr --libdir=/usr/lib --disable-static
 '''
 compile = "make -j%{jobs}"

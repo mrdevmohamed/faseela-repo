@@ -8,7 +8,7 @@
 [package]
 name = "properties-cpp"
 version = "0.0.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Header-only C++ properties and signals library"
 license = ["LGPL-2.1-only"]

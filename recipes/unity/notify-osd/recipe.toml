@@ -15,7 +15,7 @@
 [package]
 name = "notify-osd"
 version = "0.9.35"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity notification daemon"
 license = ["GPL-3.0-only"]
@@ -40,7 +40,7 @@ conflicts = []
 replaces = []
 
 [build]
-configure = '''export CFLAGS="-O2 -std=gnu17 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+configure = '''export CFLAGS="-O2 -std=gnu17 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types -Wno-error=return-mismatch"
 autoreconf -fi
 ./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-static
 '''

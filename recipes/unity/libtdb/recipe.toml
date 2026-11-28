@@ -9,7 +9,7 @@
 [package]
 name = "libtdb"
 version = "1.4.10"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Trivial database library"
 license = ["LGPL-3.0-or-later"]
@@ -33,7 +33,13 @@ schema = 1
 conflicts = []
 replaces = []
 
+[assets]
+include = ["patches/no-which.patch"]
+
 [build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-which.patch
+'''
 configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-python"
 compile = "make -j%{jobs}"
 install = '''

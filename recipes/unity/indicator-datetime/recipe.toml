@@ -8,6 +8,11 @@
 # cmake_minimum_required with a < 3.5 floor, which CMake 4 removed — same
 # failure indicator-power hit in run 46110173999. Pass
 # -DCMAKE_POLICY_VERSION_MINIMUM=3.5 like indicator-power does.
+# CI note (PR #236, run 46127973592): the vendored cmake/UseGSettings.cmake
+# ran glib-compile-schemas against the absolute /usr/share/glib-2.0/schemas
+# at install time, which fails read-only inside nawa's sandbox — faseela.patch
+# now makes it compile "$ENV{DESTDIR}/usr/share/glib-2.0/schemas" instead,
+# verified locally with a DESTDIR install test (rel 4).
 # The service talks to evolution-source-registry and
 # evolution-calendar-factory over D-Bus (D-Bus activation), so the
 # evolution-data-server run dep is the daemons, not just the libraries.
@@ -17,7 +22,7 @@
 [package]
 name = "indicator-datetime"
 version = "15.10"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Unity date/time indicator service"
 license = ["GPL-3.0-only"]

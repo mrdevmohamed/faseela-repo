@@ -2,7 +2,7 @@
 [package]
 name = "polkit"
 version = "126"
-rel = 10
+rel = 11
 arch = ["x86_64"]
 summary = "PolicyKit authorization framework and privileged action helper"
 license = ["GPL-2.0-or-later"]
@@ -19,7 +19,7 @@ strip_components = 1
 # the distutils-precedence.pth shim only activates if setuptools is
 # installed in this package's build root, so it must be a build dep
 # (PR #239: glib-gir failed with "No module named 'distutils'").
-build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt", "systemd", "gobject-introspection", "glib-gir", "setuptools"]
+build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt", "systemd", "gettext", "gobject-introspection", "glib-gir", "setuptools"]
 run = ["glib", "glib-gir", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "coreutils", "systemd"]
 
 [capabilities]

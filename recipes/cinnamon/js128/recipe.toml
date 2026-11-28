@@ -16,10 +16,16 @@
 #   --with-system-* flags): fewer moving parts for the first build.
 # - MOZBUILD_STATE_PATH is kept inside the build tree so mach never writes
 #   outside the sandbox.
+# - PR #237 wave 1 (run 46113938187): the first CI build failed with
+#   "python3: can't open file '/build/src/js/src/mach'" — mach lives at the
+#   TOP of the Firefox tree, there is no js/src/mach. mach is therefore run
+#   from the tree root, and MOZCONFIG is exported explicitly so mach finds
+#   the js/src/.mozconfig (Firefox Source Docs: mach is "located in the top
+#   directory of your checkout").
 [package]
 name = "js128"
 version = "128.14.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "SpiderMonkey JavaScript engine (Firefox 128 ESR)"
 license = ["MPL-2.0"]
@@ -64,12 +70,14 @@ EOF
 '''
 compile = '''
 export MOZBUILD_STATE_PATH="$PWD/mozbuild-state"
+export MOZCONFIG="$PWD/js/src/.mozconfig"
 export CC=clang CXX=clang++
-cd js/src && python3 mach build
+python3 mach build
 '''
 install = '''
 export MOZBUILD_STATE_PATH="$PWD/mozbuild-state"
-cd js/src && DESTDIR=%{pkgdir} python3 mach install
+export MOZCONFIG="$PWD/js/src/.mozconfig"
+DESTDIR=%{pkgdir} python3 mach install
 test -x %{pkgdir}/usr/bin/js128
 test -e %{pkgdir}/usr/include/mozjs-128/js/Value.h
 '''

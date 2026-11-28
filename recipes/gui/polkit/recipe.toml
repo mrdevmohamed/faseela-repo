@@ -2,7 +2,7 @@
 [package]
 name = "polkit"
 version = "126"
-rel = 8
+rel = 11
 arch = ["x86_64"]
 summary = "PolicyKit authorization framework and privileged action helper"
 license = ["GPL-2.0-or-later"]
@@ -15,8 +15,12 @@ sha256 = "2814a7281989f6baa9e57bd33bbc5e148827e2721ccef22aaf28ab2b376068e8"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt", "systemd"]
-run = ["glib", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "coreutils", "systemd"]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "glib", "expat", "duktape", "libxcrypt", "systemd", "gettext", "gobject-introspection", "glib-gir", "setuptools"]
+run = ["glib", "glib-gir", "expat", "duktape", "libxcrypt", "dbus-system", "base-files", "coreutils", "systemd"]
 
 [capabilities]
 provides = []
@@ -53,7 +57,7 @@ if count != 1:
 path.write_text(data.replace(old, new, 1), encoding="utf-8")
 PY
 '''
-configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=logind -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=false -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
+configure = "meson setup build --prefix=/usr --libdir=lib --sysconfdir=/etc --localstatedir=/var --buildtype=release -Dauthfw=shadow -Dsession_tracking=logind -Dpolkitd_user=polkitd -Dprivileged_group=wheel -Dos_type=lfs -Dintrospection=true -Dgettext=false -Dgtk_doc=false -Dman=false -Dexamples=false -Dtests=false -Dsystemdsystemunitdir=no"
 compile = "ninja -C build"
 install = '''
 DESTDIR=%{pkgdir} meson install -C build

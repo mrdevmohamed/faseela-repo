@@ -3,7 +3,7 @@
 [package]
 name = "libgudev"
 version = "238"
-rel = 2
+rel = 4
 arch = ["x86_64"]
 summary = "GObject bindings for libudev"
 license = ["LGPL-2.1-or-later"]
@@ -16,8 +16,12 @@ sha256 = "61266ab1afc9d73dbc60a8b2af73e99d2fdff47d99544d085760e4fa667b5dd1"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "systemd"]
-run = ["glib", "systemd"]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "glib", "systemd", "gobject-introspection", "glib-gir", "setuptools"]
+run = ["glib", "glib-gir", "systemd"]
 
 [capabilities]
 provides = []
@@ -28,6 +32,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtk_doc=false -D introspection=disabled -D vapi=disabled -D tests=disabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtk_doc=false -D introspection=enabled -D vapi=disabled -D tests=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

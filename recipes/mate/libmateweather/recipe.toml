@@ -5,7 +5,7 @@
 [package]
 name = "libmateweather"
 version = "1.28.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE weather library (forecasts and conditions)"
 license = ["LGPL-2.1-or-later"]
@@ -18,7 +18,9 @@ sha256 = "d2cb300f97da7268855e7506cae4417a88ef296093c79013f79909f70bbee3cb"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "libxml2", "libsoup2"]
+# tzdata: configure errors "Can't find zoneinfo directory" without
+# --with-zoneinfo-dir; tzdata installs /usr/share/zoneinfo (PR #237 wave 2).
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "libxml2", "libsoup2", "tzdata"]
 run = ["glib", "gtk3", "libxml2", "libsoup2"]
 
 [capabilities]
@@ -30,6 +32,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static"
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --with-zoneinfo-dir=/usr/share/zoneinfo"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

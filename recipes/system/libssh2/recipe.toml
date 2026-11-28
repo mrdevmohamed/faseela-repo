@@ -1,0 +1,47 @@
+# system recipe: libssh2 — A library implementing the SSH2 protocol
+#
+# Needed by cargo-cbuild (its libssh2-sys 0.3.1 crate links the system
+# libssh2 via pkg-config) and by libgit2's SSH transport (USE_SSH=libssh2).
+# The CMake build generates libssh2.pc (src/CMakeLists.txt) and installs
+# it to /usr/lib/pkgconfig — that file is what both consumers look up.
+#
+# 1.11.1 (2024-10-16) is still the newest upstream release as of
+# 2026-11-28; post-release CVE fixes (e.g. CVE-2026-55200) exist only as
+# commits on upstream main with no fixed release yet, so none are applied
+# here — flag for a future rel bump when upstream releases 1.11.2.
+#
+# Flags: CRYPTO_BACKEND=OpenSSL (the repo's openssl; the default empty
+# value would also pick OpenSSL first, but this pins it),
+# BUILD_STATIC_LIBS=OFF (shared only, matching the repo's --disable-static
+# convention), BUILD_EXAMPLES=OFF, BUILD_TESTING=OFF.
+[package]
+name = "libssh2"
+version = "1.11.1"
+rel = 2
+arch = ["x86_64"]
+summary = "A library implementing the SSH2 protocol"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libssh2"
+url = "https://libssh2.org/download/libssh2-%{version}.tar.gz"
+sha256 = "d9ec76cbe34db98eec3539fe2c899d26b0c837cb3eb466a56b0f109cabf658f7"
+strip_components = 1
+
+[depends]
+build = ["cmake", "openssl", "zlib"]
+run = ["openssl", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DCRYPTO_BACKEND=OpenSSL"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

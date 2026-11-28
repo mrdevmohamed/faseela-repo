@@ -14,7 +14,7 @@
 [package]
 name = "gtk3"
 version = "3.24.52"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GTK 3 toolkit (Wayland + X11 backends)"
 license = ["LGPL-2.0-or-later"]
@@ -27,7 +27,11 @@ sha256 = "80931fa472a77b9a164f6740e3c0b444fac6770054632d35a7ff9d679e5e7b9f"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender", "gobject-introspection", "glib-gir"]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "gettext", "wayland-protocols", "xorgproto", "glib", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender", "gobject-introspection", "glib-gir", "setuptools"]
 run = ["glib", "glib-gir", "cairo", "pango", "fribidi", "fontconfig", "freetype", "gdk-pixbuf", "libepoxy", "at-spi2-core", "libxkbcommon", "wayland", "mesa", "libX11", "libXext", "libXi", "libXrandr", "libXcursor", "libXfixes", "libXcomposite", "libXdamage", "libXrender"]
 
 [capabilities]

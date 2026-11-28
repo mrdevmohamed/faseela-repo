@@ -12,7 +12,7 @@
 [package]
 name = "unity-build-shims"
 version = "1.0"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Build-only gtk-doc and gobject-introspection autoconf stand-ins for the Unity libraries"

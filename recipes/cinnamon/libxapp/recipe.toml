@@ -1,0 +1,40 @@
+# cinnamon recipe: libxapp — XApp libraries and services shared by Cinnamon,
+# MATE and Xfce (source repo is "xapps" on GitHub, package name is "libxapp")
+# With introspection=true the build enters pygobject/ unconditionally, and
+# that subdir requires pygobject-3.0, so pygobject is a hard build
+# dependency even though only the XApp.py overrides are installed from it.
+# The keyboard-layout controller is disabled (it needs libgnomekbdui, which
+# has no recipe), and Vala bindings are off.
+[package]
+name = "libxapp"
+version = "3.4.3"
+rel = 2
+arch = ["x86_64"]
+summary = "XApp libraries and services shared by Cinnamon, MATE and Xfce"
+license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxapp"
+url = "https://github.com/linuxmint/xapps/archive/refs/tags/%{version}.tar.gz"
+sha256 = "4d016c7b574241ec31885ea1ca324bb4283b5f32c1aa5d7a60c0cbc9b2555527"
+strip_components = 1
+
+[depends]
+# pygobject: no recipe exists yet; the libxapp build cannot configure
+# with introspection=true without it.
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu", "gobject-introspection", "glib-gir", "pygobject"]
+run = ["glib", "glib-gir", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=true -D vapi=false -D gtk-layer-shell=enabled -D kbd-layout-controller=disabled -D mate=false -D xfce=false -D status-notifier=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

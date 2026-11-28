@@ -4,7 +4,7 @@
 [package]
 name = "setuptools"
 version = "84.2.1"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Python packaging and distribution tools (pure python)"
 license = ["MIT"]
@@ -36,14 +36,22 @@ install = '''
 # _distutils_hack at interpreter startup, so that `import distutils`
 # resolves to setuptools' bundled distutils. Without it, g-ir-scanner
 # (gobject-introspection) fails on Python 3.13 with
-# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1),
-# and pip builds with --no-build-isolation fail too ("invalid command
-# 'dist_info'", psutil/setproctitle, PR #237 wave 2). The .pth contents
-# are upstream setuptools' own install_with_pth text.
+# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1).
+# The sdist's setuptools.egg-info/ is installed too: setuptools' own
+# commands (dist_info, egg_info, ...) are registered through entry points
+# in the distribution metadata, and pip's legacy metadata generation runs
+# `setup.py dist_info`. With only the package dirs copied and no metadata,
+# pip builds with --no-build-isolation fail on Python 3.13 with
+# "error: invalid command 'dist_info'" (psutil/setproctitle/python-libxml2,
+# PR #237 wave 2, run 46113938187) even though `import setuptools` works.
+# importlib.metadata discovers *.egg-info dirs on sys.path, so copying the
+# sdist's egg-info is enough to register the entry points. The .pth
+# contents are upstream setuptools' own install_with_pth text.
 site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
 install -d "%{pkgdir}$site"
 cp -r setuptools "%{pkgdir}$site/"
 cp -r _distutils_hack "%{pkgdir}$site/"
+cp -r setuptools.egg-info "%{pkgdir}$site/"
 printf '%s\n' "import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.environ.get(var, 'local') == 'local'; enabled and __import__('_distutils_hack').add_shim()" > "%{pkgdir}$site/distutils-precedence.pth"
 find "%{pkgdir}$site/setuptools" "%{pkgdir}$site/_distutils_hack" -name __pycache__ -prune -exec rm -rf {} +
 '''

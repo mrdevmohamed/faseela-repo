@@ -1,0 +1,37 @@
+# cinnamon recipe: cinnamon-desktop — Cinnamon desktop libraries
+# (libcinnamon-desktop and libcvc, the volume-control library used by
+# cinnamon-settings-daemon). GIR is generated unconditionally.
+# accountsservice is NOT a build dependency: nothing in this tree links it
+# (gnome-bg only talks to it over D-Bus at runtime).
+[package]
+name = "cinnamon-desktop"
+version = "6.6.2"
+rel = 3
+arch = ["x86_64"]
+summary = "Cinnamon desktop libraries (libcinnamon-desktop and libcvc)"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-desktop"
+url = "https://github.com/linuxmint/cinnamon-desktop/archive/refs/tags/%{version}.tar.gz"
+sha256 = "4ed0d52a072551c6d536f1be68d4fcdb4166454fc9e48567ab2550282086b0f4"
+strip_components = 1
+
+[depends]
+# systemd covers libsystemd and libudev.
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd", "gobject-introspection", "glib-gir", "libpulse"]
+run = ["glib", "glib-gir", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd", "libpulse"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D alsa=false -D systemd=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

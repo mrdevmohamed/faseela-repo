@@ -1,0 +1,34 @@
+# cinnamon recipe: cinnamon-menus — Cinnamon menu library
+# (freedesktop menu specification implementation, libcinnamon-menu-3.0).
+# GIR is generated unconditionally.
+[package]
+name = "cinnamon-menus"
+version = "6.6.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon menu library (freedesktop menu specification)"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-menus"
+url = "https://github.com/linuxmint/cinnamon-menus/archive/refs/tags/%{version}.tar.gz"
+sha256 = "87596380720077991f58afdbbabe72d9afd10f56d64043076cf7b09bc6b0f3c1"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

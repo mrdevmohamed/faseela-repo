@@ -1,0 +1,36 @@
+# mate recipe: eom — MATE image viewer (Eye of MATE)
+# Meson only: the 1.28.1 tarball ships no prebuilt configure. Introspection
+# is off (-D introspection=disabled), and XMP is off (no exempi recipe). EXIF, colour management,
+# JPEG, and SVG stay on. The thumbnailer uses gdk-pixbuf-thumbnailer from
+# the gdk-pixbuf package (default), so no ImageMagick is needed.
+[package]
+name = "eom"
+version = "1.28.1"
+rel = 3
+arch = ["x86_64"]
+summary = "MATE image viewer (Eye of MATE)"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "eom"
+url = "https://github.com/mate-desktop/eom/releases/download/v%{version}/eom-%{version}.tar.xz"
+sha256 = "ccc169b8e240828b36965dfd84fa1478957dec2028ffeba553ae97e542e15120"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libpeas", "libexif", "libjpeg-turbo", "lcms2", "libX11", "libxml2", "shared-mime-info", "zlib", "librsvg", "itstool"]
+run = ["glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libpeas", "libexif", "libjpeg-turbo", "lcms2", "libX11", "libxml2", "shared-mime-info", "zlib", "librsvg"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D introspection=disabled -D xmp=disabled -D libexif=enabled -D cms=enabled -D jpeg=enabled -D librsvg=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

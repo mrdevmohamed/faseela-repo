@@ -4,8 +4,6 @@
 # NOTE: LightDM is packaged but NOT pre-enabled here (same as xfce-session):
 # the graphical login stays a manual step until the Xorg privilege path is
 # validated for MATE.
-# NOTE: eom and pluma are NOT in the run list yet: they need the libpeas
-# recipe, which lands in stage 3. They join the session there.
 [package]
 name = "mate-session"
 version = "0.1"
@@ -18,7 +16,7 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
-run = ["marco", "mate-session-manager", "mate-settings-daemon", "mate-desktop", "mate-menus", "caja", "mate-terminal", "engrampa", "mate-screensaver", "mate-power-manager", "mate-panel", "mate-control-center", "atril", "mate-media", "mate-system-monitor", "mate-polkit", "polkit", "network-manager", "network-manager-applet", "bluez", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "faseela-branding", "audio-session", "xorg-server", "xkeyboard-config", "xkbcomp", "xorg-setxkbmap", "mesa", "dejavu-fonts", "noto-fonts", "noto-fonts-arabic"]
+run = ["marco", "mate-session-manager", "mate-settings-daemon", "mate-desktop", "mate-menus", "caja", "mate-terminal", "engrampa", "mate-screensaver", "mate-power-manager", "mate-panel", "mate-control-center", "atril", "eom", "pluma", "mate-media", "mate-system-monitor", "mate-polkit", "polkit", "network-manager", "network-manager-applet", "bluez", "udisks2", "gvfs", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "faseela-branding", "audio-session", "xorg-server", "xkeyboard-config", "xkbcomp", "xorg-setxkbmap", "mesa", "dejavu-fonts", "noto-fonts", "noto-fonts-arabic"]
 
 [capabilities]
 provides = []

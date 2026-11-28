@@ -17,10 +17,20 @@
 # on Debian-style sysconfig layouts. libxslt is NOT built: the tarball's
 # python/ dir ships no libxslt stub generator files, and the repo has no
 # libxslt recipe — itstool only needs the libxml2 module.
+# Python 3.13 removed PyEval_CallObject/PyEval_CallMethod; the bindings
+# call them in python/libxml.c, so GCC 14 fails the build with
+# -Wint-conversion errors on the implicit declarations ("assignment to
+# 'PyObject *' from 'int'"). PyObject_CallObject/PyObject_CallMethod are
+# the exact replacements (same signatures). Replaced in prepare (PR #237
+# wave 2, run 46126068976).
+# pip writes direct_url.json into the dist-info recording the build
+# source path (/build/src); nawa lint errors on sandbox paths in the
+# archive, so it is deleted after install (same fix as psutil /
+# setproctitle, PR #237 wave 2, run 46126068976).
 [package]
 name = "python-libxml2"
 version = "2.9.14"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Python bindings for the libxml2 XML parser"
 license = ["MIT"]
@@ -45,7 +55,10 @@ conflicts = []
 replaces = []
 
 [build]
+prepare = "sed -i 's/PyEval_CallObject/PyObject_CallObject/g; s/PyEval_CallMethod/PyObject_CallMethod/g' python/libxml.c"
+
 install = '''
 cd python && python3 -m pip install --no-build-isolation --no-deps --no-index --no-cache-dir --disable-pip-version-check --prefix=/usr --root=%{pkgdir} .
 find %{pkgdir} -name __pycache__ -prune -exec rm -rf {} +
+find %{pkgdir} -name direct_url.json -delete
 '''

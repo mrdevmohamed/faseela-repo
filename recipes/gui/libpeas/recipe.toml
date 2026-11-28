@@ -1,0 +1,34 @@
+# gui recipe: libpeas — GObject plugin library (last 1.x release)
+# meson.build does an unconditional dependency('gobject-introspection-1.0')
+# lookup, so introspection cannot be disabled: this needs gobject-introspection.
+[package]
+name = "libpeas"
+version = "1.36.0"
+rel = 2
+arch = ["x86_64"]
+summary = "GObject plugin library"
+license = ["LGPL-2.1-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpeas"
+url = "https://download.gnome.org/sources/libpeas/1.36/libpeas-%{version}.tar.xz"
+sha256 = "297cb9c2cccd8e8617623d1a3e8415b4530b8e5a893e3527bbfd1edd13237b4c"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "gtk3", "gobject-introspection"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dintrospection=true -Dpython3=false -Dpython2=false -Dlua51=false -Dwidgetry=true -Dglade_catalog=false -Ddemos=false -Dvapi=false -Dgtk_doc=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

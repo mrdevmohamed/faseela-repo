@@ -1,0 +1,33 @@
+# cinnamon recipe: cinnamon-translations — Cinnamon translation catalogues
+# Data-only package: the upstream Makefile only runs msgfmt over po-export/
+# and has no install target, so the built usr/ tree is copied into place.
+[package]
+name = "cinnamon-translations"
+version = "6.6.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon translation catalogues"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-translations"
+url = "https://github.com/linuxmint/cinnamon-translations/archive/refs/tags/%{version}.tar.gz"
+sha256 = "88ff13650c301e015fee8678f4e0d8e83e648ca86768519ab91697c0d5f0e679"
+strip_components = 1
+
+[depends]
+build = ["gettext"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+compile = "make -j%{jobs}"
+install = "install -d -m755 %{pkgdir}/usr && cp -a usr/share %{pkgdir}/usr/"

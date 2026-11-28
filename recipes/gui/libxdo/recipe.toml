@@ -1,0 +1,69 @@
+# gui recipe: libxdo — X11 automation library (the libxdo half of xdotool)
+# Provides libxdo.so + xdo.h for simulating keyboard/mouse input and
+# querying windows. Needed by cinnamon-screensaver (meson hard-errors
+# "Run-time dependency libxdo found: NO" without it, PR #241 wave 2,
+# run 46126226861).
+#
+# Upstream is xdotool 3.20160805.1 (the last release, 2016); libxdo is its
+# library, built from xdo.c + xdo_search.c. Only the library is built and
+# installed here — the xdotool CLI binary is NOT shipped (no recipe needs
+# it; this keeps the package minimal, per the project's minimal-path rule).
+# Upstream ships no libxdo.pc, so the install step writes one (same
+# pattern as the nss recipe's hand-written nss.pc) — meson's
+# dependency('libxdo') finds it through pkg-config.
+# xdo.c uses xkb_keysym_to_utf32(), so libxkbcommon is a real build+run
+# dep (the recipe exists at recipes/gui/libxkbcommon).
+[package]
+name = "libxdo"
+version = "3.20160805.1"
+rel = 2
+arch = ["x86_64"]
+summary = "X11 automation library (keyboard/mouse input, window queries)"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xdotool"
+url = "https://github.com/jordansissel/xdotool/releases/download/v3.20160805.1/xdotool-3.20160805.1.tar.gz"
+sha256 = "35be5ff6edf0c620a0e16f09ea5e101d5173280161772fca18657d83f20fcca8"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "libX11", "libXtst", "libXinerama", "libxkbcommon"]
+run = ["libX11", "libXtst", "libXinerama", "libxkbcommon"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+compile = "make -j%{jobs} libxdo.so libxdo.so.3"
+install = '''
+make DESTDIR=%{pkgdir} PREFIX=/usr installlib installheader
+
+# Upstream ships no .pc file, but consumers (cinnamon-screensaver's meson)
+# find libxdo through pkg-config — write one (nss.pc pattern).
+install -d "%{pkgdir}/usr/lib/pkgconfig"
+cat > "%{pkgdir}/usr/lib/pkgconfig/libxdo.pc" <<'PC'
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libxdo
+Description: X11 automation library
+Version: %{version}
+Libs: -L${libdir} -lxdo
+Libs.private: -lX11 -lXtst -lXinerama -lxkbcommon
+Cflags: -I${includedir}
+PC
+
+test -e %{pkgdir}/usr/lib/libxdo.so.3
+test -e %{pkgdir}/usr/lib/libxdo.so
+test -e %{pkgdir}/usr/include/xdo.h
+test -e %{pkgdir}/usr/lib/pkgconfig/libxdo.pc
+'''

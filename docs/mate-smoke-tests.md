@@ -59,8 +59,8 @@ another display manager.
    layouts in a terminal (the Xorg drop-in ships `us,ara`).
 4. Open Caja: the file manager shows the home directory, and the sidebar
    lists removable media when a virtual disk is attached.
-5. Open Atril: it opens and renders a PDF
-   (poppler support). (Pluma and Eye of MATE join the session in stage 3.)
+5. Open Pluma, Eye of MATE and Atril: each opens, and Atril renders a PDF
+   (poppler support).
 6. Lock the screen (mate-screensaver): the lock screen appears and
    unlocks with the user password.
 

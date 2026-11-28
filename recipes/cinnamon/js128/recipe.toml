@@ -16,10 +16,31 @@
 #   --with-system-* flags): fewer moving parts for the first build.
 # - MOZBUILD_STATE_PATH is kept inside the build tree so mach never writes
 #   outside the sandbox.
+# - PR #237 wave 1 (run 46113938187): the first CI build failed with
+#   "python3: can't open file '/build/src/js/src/mach'" — mach lives at the
+#   TOP of the Firefox tree, there is no js/src/mach. mach is therefore run
+#   from the tree root, and MOZCONFIG is exported explicitly so mach finds
+#   the js/src/.mozconfig (Firefox Source Docs: mach is "located in the top
+#   directory of your checkout").
+# - PR #237 waves 1-2 (runs 46126068976 + 46126226861): `mach install` fails
+#   with "has_build - Must have a build" even though the build succeeded.
+#   Root cause, verified against mozilla-esr128 source
+#   (python/mozbuild/mozbuild/base.py: MachCommandConditions.has_build is
+#   is_firefox_or_android() or is_thunderbird() — MOZ_BUILD_APP must be
+#   "browser"/"comm/mail"/android; a js-shell build has MOZ_BUILD_APP ==
+#   "js", so has_build is False BY DESIGN, and `mach install` itself is
+#   gated on it (mach_commands.py: @Command("install", ...,
+#   conditions=[conditions.has_build])). The command's body is just
+#   `_run_make(directory=".", target="install")` — make install in the
+#   objdir — so the install step runs that directly instead. The objdir is
+#   obj-<config-guess> at the tree root (MOZ_OBJDIR from the configure
+#   dump). The shell installs as `js` upstream; it is renamed to `js128`
+#   (and js-config to js128-config), the Debian convention, to match the
+#   install tests below.
 [package]
 name = "js128"
 version = "128.14.0"
-rel = 3
+rel = 5
 arch = ["x86_64"]
 summary = "SpiderMonkey JavaScript engine (Firefox 128 ESR)"
 license = ["MPL-2.0"]
@@ -64,12 +85,22 @@ EOF
 '''
 compile = '''
 export MOZBUILD_STATE_PATH="$PWD/mozbuild-state"
+export MOZCONFIG="$PWD/js/src/.mozconfig"
 export CC=clang CXX=clang++
-cd js/src && python3 mach build
+python3 mach build
 '''
 install = '''
-export MOZBUILD_STATE_PATH="$PWD/mozbuild-state"
-cd js/src && DESTDIR=%{pkgdir} python3 mach install
+set -eu
+objdir="$(ls -d %{srcdir}/obj-*/ | head -n 1)"
+test -n "$objdir"
+test -f "$objdir/config.status"
+DESTDIR=%{pkgdir} make -C "$objdir" install
+if [ -x %{pkgdir}/usr/bin/js ] && [ ! -e %{pkgdir}/usr/bin/js128 ]; then
+  mv %{pkgdir}/usr/bin/js %{pkgdir}/usr/bin/js128
+fi
+if [ -e %{pkgdir}/usr/bin/js-config ] && [ ! -e %{pkgdir}/usr/bin/js128-config ]; then
+  mv %{pkgdir}/usr/bin/js-config %{pkgdir}/usr/bin/js128-config
+fi
 test -x %{pkgdir}/usr/bin/js128
 test -e %{pkgdir}/usr/include/mozjs-128/js/Value.h
 '''

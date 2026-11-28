@@ -1,0 +1,35 @@
+# cinnamon recipe: nemo — Cinnamon file manager
+# libgsf is a hard build requirement: search-helpers/meson.build builds
+# nemo-mso-to-txt against libgsf-1 unconditionally.
+[package]
+name = "nemo"
+version = "6.6.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon file manager"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "nemo"
+url = "https://github.com/linuxmint/nemo/archive/refs/tags/%{version}.tar.gz"
+sha256 = "258807feb2e7bac523707d6b3daf2d9439e7135123cbe795183d5aaa6fd691ed"
+strip_components = 1
+
+[depends]
+# gail-3.0 is provided by gtk3 itself.
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "gobject-introspection", "glib-gir", "libX11", "pango"]
+run = ["gtk3", "glib", "glib-gir", "json-glib", "cinnamon-desktop", "libxapp", "libexif", "libgsf", "pango", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tracker=false -D xmp=false -D selinux=false -D exif=true"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

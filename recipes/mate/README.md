@@ -25,6 +25,8 @@ used for every package here.
 | libmateweather | 1.28.2 | Weather library (mate-panel clock applet) |
 | atril | 1.28.7 | Document viewer (PDF via poppler) |
 | mate-panel | 1.28.7 | Panel: taskbar, applets, menus |
+| eom | 1.28.1 | Image viewer (Eye of MATE) |
+| pluma | 1.28.1 | Text editor (gtksourceview4, libpeas plugins) |
 | mate-media | 1.28.2 | Media utilities: volume control, mixer applets |
 | mate-system-monitor | 1.28.1 | System monitor: processes and resources |
 | mate-session | 0.1 | Meta-package: the MATE session (LightDM + Xorg wiring) |
@@ -37,12 +39,11 @@ used for every package here.
    `libmateweather` needs the `libsoup2` recipe (libsoup 2.x API).
 4. `marco`, `mate-session-manager`, `mate-settings-daemon`, `caja`,
    `mate-terminal`, `engrampa`, `mate-screensaver`, `mate-power-manager`,
-   `mate-panel`, `atril`, `mate-media`,
+   `mate-panel`, `atril`, `eom`, `pluma`, `mate-media`,
    `mate-system-monitor` — in any order once 1–3 are built. `atril`
-   needs the `poppler` recipe (PDF support is on);
-   `mate-panel` needs `libmateweather`;
+   needs the `poppler` recipe (PDF support is on); `eom` and `pluma`
+   need the `libpeas` recipe; `mate-panel` needs `libmateweather`;
    `mate-media` needs `libmatemixer` and `mate-panel`.
-   (`eom` and `pluma` land in stage 3 with the `libpeas` recipe.)
 5. `mate-session` last — the meta-package.
 
 ## Notes and known gaps
@@ -53,10 +54,10 @@ used for every package here.
 - **Autotools vs meson, per tarball.** `mate-menus`, `libmatekbd`,
   `mate-session-manager`, `mate-settings-daemon`, `caja`,
   `mate-screensaver`, `libmatemixer`, `libmateweather`, `mate-panel`,
-  ship a prebuilt `configure` and no `meson.build`.
+  and `pluma` ship a prebuilt `configure` and no `meson.build`.
   `atril`, `engrampa`, and `mate-terminal` ship both, but their meson
   build fetches `mate-submodules` from git (forbidden offline), so they
-  use autotools. `marco` is meson-only. `mate-desktop`,
+  use autotools. `marco` and `eom` are meson-only. `mate-desktop`,
   `mate-power-manager`, `mate-media`, and `mate-system-monitor` use the
   maintained meson build.
 - **caja has no `--disable-introspection` flag** in 1.28.1; the check is
@@ -67,11 +68,11 @@ used for every package here.
   `-Dlibappindicator=appindicator` is used now that `libappindicator`
   is packaged (recipes/unity/), together with
   `-Daccountsservice=enabled`. It also needs `marco` (libmarco-private).
-- **Disabled for missing recipes:** mate-settings-daemon smartcard support (no NSS
+- **Disabled for missing recipes:** eom XMP (no exempi), pluma spell
+  checking (no enchant), mate-settings-daemon smartcard support (no NSS
   use), atril djvu/dvi/XPS/PostScript backends (no libspectre, djvulibre,
   libgxps, kpathsea). All of these auto-disable; the flags above just
-  make it explicit. (eom XMP and pluma spell checking stay disabled in
-  stage 3 for the same reason: no exempi, no enchant.)
+  make it explicit.
 - **mate-system-monitor is 1.28.1, not 1.28.2.** The v1.28.2 tag's
   release asset is actually the 1.28.1 tarball.
 - **LightDM is packaged but not pre-enabled** in the session

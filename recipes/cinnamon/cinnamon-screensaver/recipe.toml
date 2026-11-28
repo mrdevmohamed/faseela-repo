@@ -1,0 +1,38 @@
+# cinnamon recipe: cinnamon-screensaver — Cinnamon screen saver and locker
+# GIR is generated (libcscreensaver), so gobject-introspection is required.
+# libxdo is looked up but never used by the build (vestigial
+# dependency('libxdo', required: false) + find_library fallback), so no
+# libxdo recipe is added; if the lookup ever hard-errors, it should be
+# patched out instead. Neither cinnamon-desktop nor libxapp is linked here.
+[package]
+name = "cinnamon-screensaver"
+version = "6.6.3"
+rel = 3
+arch = ["x86_64"]
+summary = "Cinnamon screen saver and locker"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-screensaver"
+url = "https://github.com/linuxmint/cinnamon-screensaver/archive/refs/tags/%{version}.tar.gz"
+sha256 = "18f3e3d2009f076b939937488876feddc7c4f6719d122f2365ef854aef582566"
+strip_components = 1
+
+[depends]
+# linux-pam provides libpam, used for unlocking.
+build = ["meson", "ninja", "pkgconf", "gtk3", "glib", "dbus", "libX11", "libXext", "libXrandr", "libXinerama", "linux-pam", "gobject-introspection", "glib-gir", "libxdo"]
+run = ["gtk3", "glib", "glib-gir", "dbus", "libX11", "libXext", "linux-pam", "libxdo"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

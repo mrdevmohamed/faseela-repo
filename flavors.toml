@@ -12,6 +12,7 @@
 #   iso-nogui   common base system without a desktop
 #   iso-sway    common base + Sway Wayland desktop
 #   iso-xfce    common base + Xfce desktop on Xorg
+#   iso-cinnamon  common base + Cinnamon desktop on Xorg
 #   iso-mate    common base + MATE desktop on Xorg
 #   iso-cosmic  common base + COSMIC Wayland desktop
 #
@@ -82,9 +83,27 @@ include = [
     "pavucontrol"
 ]
 
-# MATE desktop image. MATE's own applications (mate-terminal, atril,
-# engrampa, caja) already come with mate-session's run closure.
-# (eom and pluma join the session in stage 3, with the libpeas recipe.)
+# Cinnamon desktop image.
+[flavor.iso-cinnamon]
+summary = "Live system with Cinnamon on Xorg and LightDM"
+extends = ["iso-nogui"]
+include = [
+    "cinnamon-desktop-session",
+    "lightdm",
+    "lightdm-gtk-greeter",
+    "xfce4-terminal",
+    "mousepad",
+    "ristretto",
+    "xfce4-taskmanager",
+    "network-manager-applet",
+    "thunar-archive-plugin",
+    "xarchiver",
+    "pavucontrol",
+    "firefox"
+]
+
+# MATE desktop image. MATE's own applications (mate-terminal, pluma, eom,
+# atril, engrampa, caja) already come with mate-session's run closure.
 [flavor.iso-mate]
 summary = "Live system with MATE on Xorg and LightDM"
 extends = ["iso-nogui"]

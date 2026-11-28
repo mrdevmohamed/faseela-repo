@@ -1,0 +1,36 @@
+# cinnamon recipe: cinnamon-settings-daemon — Cinnamon settings daemon
+# No NetworkManager dependency in this tree (nothing references libnm), and
+# librsvg is only needed by the wacom plugin, which is disabled. logind comes
+# from systemd (libsystemd), not elogind.
+[package]
+name = "cinnamon-settings-daemon"
+version = "6.6.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Cinnamon settings daemon"
+license = ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cinnamon-settings-daemon"
+url = "https://github.com/linuxmint/cinnamon-settings-daemon/archive/refs/tags/%{version}.tar.gz"
+sha256 = "215006afe3e59e4998fd3bb9f8ecf1b7c926a08b5398b42e482c5008483c970a"
+strip_components = 1
+
+[depends]
+# libcanberra covers libcanberra-gtk3; systemd covers libsystemd/logind.
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "cinnamon-desktop", "libcanberra", "fontconfig", "libgudev", "libnotify", "polkit", "upower", "libX11", "libXext", "libXi", "systemd"]
+run = ["glib", "gtk3", "cinnamon-desktop", "libcanberra", "fontconfig", "libgudev", "libnotify", "polkit", "upower", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D use_color=disabled -D use_cups=disabled -D use_wacom=disabled -D use_smartcard=disabled -D use_polkit=enabled -D use_logind=enabled"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

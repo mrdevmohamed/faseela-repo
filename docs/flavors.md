@@ -14,6 +14,7 @@ Nawa; they do not create separate ISO variants.
 | `iso-nogui` | Common live-system base without a desktop. |
 | `iso-sway` | Common base plus the Sway Wayland desktop (console login). |
 | `iso-xfce` | Common base plus Xfce on Xorg and the LightDM packages. |
+| `iso-cinnamon` | Common base plus Cinnamon on Xorg and the LightDM packages. |
 | `iso-mate` | Common base plus MATE on Xorg and the LightDM packages. |
 | `iso-cosmic` | Common base plus COSMIC and COSMIC Greeter (greetd). |
 
@@ -62,8 +63,8 @@ python3 -I scripts/flavor.py services iso-cosmic
 ~~~
 
 The COSMIC image enables `cosmic-greeter` and disables `getty-tty1` plus
-LightDM, ensuring only the selected login manager owns VT 1. The Xfce
-and MATE images contain LightDM and its GTK greeter but deliberately
+LightDM, ensuring only the selected login manager owns VT 1. The Xfce,
+Cinnamon and MATE images contain LightDM and its GTK greeter but deliberately
 leave the service manual-enable until its Xorg privilege path is validated.
 Sway and no-GUI images retain console gettys.
 

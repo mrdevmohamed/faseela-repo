@@ -11,16 +11,22 @@
 # semver build metadata and the crates.io download endpoint accepts it
 # literally (verified by download).
 #
-# BUILD GAP (honest): the `cargo` library crate pulls in libgit2-sys and
-# libssh2-sys, which link system libgit2/libssh2 via pkg-config (the
-# vendored features are opt-in and cargo does not enable them). The repo
-# has neither recipe yet, so this package cannot link until libgit2 and
-# libssh2 recipes are added. The recipe itself is complete and correct;
-# the missing native libs are the only blocker.
+# BUILD NOTE (PR #237, run 46113938187): the `cargo` library crate pulls
+# in libgit2-sys and libssh2-sys, which link the SYSTEM libgit2/libssh2
+# via pkg-config by default. That breaks the build in two places, because
+# nawa enforces a package's run deps whenever it is installed into a
+# rootfs: the Bootstrap Toolchain job installs cargo-cbuild into the
+# bootstrap rootfs, and every wave shard installs the toolchain the same
+# way — and neither rootfs has libgit2/libssh2 installed (they are ordinary
+# packages built by the waves, not base packages). Both -sys crates honor
+# an opt-out env var, so the build below vendors libgit2/libssh2 instead
+# (statically linked from the crates' bundled C sources, no pkg-config,
+# no system libs at build or run time). The run deps therefore list only
+# glibc/openssl/curl/zlib, which the seed rootfs already provides.
 [package]
 name = "cargo-cbuild"
 version = "0.10.22+cargo-0.96.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Cargo subcommand to build and install C-ABI compatible libraries"
 license = ["MIT"]
@@ -35,8 +41,8 @@ into = "."
 strip_components = 1
 
 [depends]
-build = ["rust", "openssl", "curl", "zlib", "libgit2", "libssh2"]
-run = ["glibc", "openssl", "curl", "zlib", "libgit2", "libssh2"]
+build = ["rust", "openssl", "curl", "zlib"]
+run = ["glibc", "openssl", "curl", "zlib"]
 
 [capabilities]
 provides = []
@@ -50,7 +56,7 @@ replaces = []
 dir = "."
 
 [build]
-compile = "cargo build --release --locked --offline"
+compile = "LIBGIT2_SYS_USE_PKG_CONFIG=0 LIBSSH2_SYS_USE_PKG_CONFIG=0 cargo build --release --locked --offline"
 install = '''install -Dm0755 target/release/cargo-cbuild "%{pkgdir}/usr/bin/cargo-cbuild"
 install -Dm0755 target/release/cargo-capi "%{pkgdir}/usr/bin/cargo-capi"
 install -Dm0755 target/release/cargo-cinstall "%{pkgdir}/usr/bin/cargo-cinstall"

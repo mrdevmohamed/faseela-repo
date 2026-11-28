@@ -1,0 +1,46 @@
+# unity recipe: python-distutils-extra — DistUtils extensions (build_extra/build_i18n)
+# Source: Ubuntu pool native tarball 3.5 (sha256 verified against the signed
+# .dsc). Build-time-only dep of unity-lens-photos: its setup.py uses
+# DistUtilsExtra's build_extra/build_i18n commands (intltool-merge + msgfmt
+# for the .scope/.desktop translations). Pure Python, installed by direct
+# copy (python-mako precedent) — no setup.py run, so this recipe itself
+# needs no setuptools. AT USE TIME (photos build) `import distutils` must
+# resolve: that comes from the setuptools distutils-precedence.pth shim in
+# the build root (setuptools recipe), which is why unity-lens-photos also
+# declares setuptools in its build deps.
+[package]
+name = "python-distutils-extra"
+version = "3.5"
+rel = 2
+arch = ["x86_64"]
+summary = "DistUtils extensions for building Python packages"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "python-distutils-extra"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/p/python-distutils-extra/python-distutils-extra_%{version}.tar.xz"
+sha256 = "0ca718b79d056c5031c82fbd0f201617f7dd6472a2955f22e8cfceb42737aaea"
+strip_components = 1
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+install -d "%{pkgdir}$site"
+cp -r ./DistUtilsExtra "%{pkgdir}$site/"
+find "%{pkgdir}$site/DistUtilsExtra" -name __pycache__ -prune -exec rm -rf {} +
+test -e "%{pkgdir}$site/DistUtilsExtra/command/build_extra.py"
+test -e "%{pkgdir}$site/DistUtilsExtra/command/build_i18n.py"
+'''

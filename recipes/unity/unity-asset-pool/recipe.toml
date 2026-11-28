@@ -1,0 +1,42 @@
+# unity recipe: unity-asset-pool — icons and theme assets required by the
+# unity binary (launcher/panel textures, Unity icon theme).
+# Data-only package: the orig tarball has no build system. Install layout
+# follows Debian's debian/install: launcher/* and panel/* go to
+# /usr/share/unity/themes, unity-icon-theme goes to /usr/share/icons.
+# (Debian also runs icon-name-mapping over the theme; skipped here — the
+# icon names in the theme are already the names Unity looks up.)
+[package]
+name = "unity-asset-pool"
+version = "0.8.24+17.10.20170507"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity launcher, panel and icon theme assets"
+license = ["CC-BY-SA-3.0"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-asset-pool"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-asset-pool/unity-asset-pool_0.8.24+17.10.20170507.orig.tar.gz"
+sha256 = "8f3ff7df84daf28165e6f78d1287b54c86d22a1612f66c8655d8bef729a85b8b"
+strip_components = 1
+
+[depends]
+build = []
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''mkdir -p %{pkgdir}/usr/share/unity/themes %{pkgdir}/usr/share/icons
+cp -r launcher/* %{pkgdir}/usr/share/unity/themes/
+cp -r panel/* %{pkgdir}/usr/share/unity/themes/
+cp -r unity-icon-theme %{pkgdir}/usr/share/icons/
+test -e %{pkgdir}/usr/share/icons/unity-icon-theme/index.theme
+test -e %{pkgdir}/usr/share/unity/themes/panel_background.png
+'''

@@ -1,0 +1,66 @@
+# unity recipe: unity-lens-video — Unity video lens (Dash video)
+# Source: Ubuntu pool orig tarball 0.3.15+16.04.20160212.1 (sha256 verified).
+# LOCAL daemon only (unity-video-lens-daemon): Zeitgeist + local files +
+# thumbnails. unity-scope-video-remote is dropped entirely by patch 01
+# (dead Canonical web service; would need libsoup-gnome-2.4 + json-glib).
+# json-glib was used ONLY by the remote scope, so it is dropped from the
+# build deps too. No libsoup2. Run dep on unity-lens-music: the video
+# previewer plays previews with music-preview-player.
+# .vapi note: --pkg zeitgeist-1.0 needs the 1.0 API from the
+# `libzeitgeist-1.0` recipe (0.3.18), not the repo's `zeitgeist` (2.0 API).
+#
+# locate: KEPT AS-IS, no mlocate/plocate recipe. src/locate.vala follows
+# the same pattern as the files lens: run_locate catches GLib.Error and
+# returns null (scope.vala checks null), updatedb() catches errors, and
+# run_locate only runs if the cache DB file exists — which updatedb
+# creates, and which fails silently without the binary. Fully graceful.
+[package]
+name = "unity-lens-video"
+version = "0.3.15+16.04.20160212.1"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity video lens (local only)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-lens-video"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-lens-video/unity-lens-video_%{version}.orig.tar.gz"
+sha256 = "51a9bceb02587051e374f0914c6ca505c12e04bf3bf978ea4319a391e76fd867"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "dee", "libzeitgeist-1.0", "libunity", "libgee-0.8", "vala", "intltool", "gettext", "gnome-common", "autoconf", "automake", "libtool", "dbus"]
+run = ["glib", "dee", "libzeitgeist-1.0", "libunity", "libgee-0.8", "unity-lens-music"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/01-drop-video-remote.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+rm -f src/remote-scope-globals.vala src/remote-scope.vala src/remote-video-main.vala src/ubuntu-video-search.vala data/unity-scope-video-remote.service.in data/remote.scope.in.in
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/libexec/unity-lens-video/unity-video-lens-daemon
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-video-local.service
+test -e %{pkgdir}/usr/share/unity/scopes/video/local.scope
+test ! -e %{pkgdir}/usr/libexec/unity-lens-video/unity-scope-video-remote
+test ! -e %{pkgdir}/usr/share/unity/scopes/video/remote.scope
+'''

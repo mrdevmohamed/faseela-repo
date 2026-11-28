@@ -130,8 +130,9 @@ class RealTree(unittest.TestCase):
         self.assertIn("lightdm-gtk-greeter", got["iso-xfce"])
         self.assertNotIn("greetd", got["iso-xfce"])
         self.assertNotIn("cosmic-greeter", got["iso-xfce"])
-        for pkg in ("unity-desktop", "unity", "compiz", "unity-session", "lightdm", "lightdm-gtk-greeter"):
+        for pkg in ("unity-desktop", "unity", "compiz", "unity-session", "lightdm", "unity-greeter"):
             self.assertIn(pkg, got["iso-unity"])
+        self.assertNotIn("lightdm-gtk-greeter", got["iso-unity"])
         self.assertNotIn("greetd", got["iso-unity"])
         self.assertNotIn("cosmic-greeter", got["iso-unity"])
         self.assertNotIn("sway", got["iso-unity"])

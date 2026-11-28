@@ -1,0 +1,39 @@
+# unity recipe: sparsehash — Google sparse hash map headers (header-only)
+# Source: Ubuntu pool orig tarball 2.0.4 (sha256 verified against the signed
+# .dsc). Leaf dep of libcolumbus (upstream uses google/dense_hash_map when
+# found, regular hash otherwise). Header-only: no run deps, no libraries.
+[package]
+name = "sparsehash"
+version = "2.0.4"
+rel = 2
+arch = ["x86_64"]
+summary = "Google sparse hash map headers"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "sparsehash"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/s/sparsehash/sparsehash_%{version}.orig.tar.gz"
+sha256 = "b2dfefe6f078db39762eda9eadabb64a897c12628897aa86ac00c95f0159a26e"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "autoconf", "automake", "libtool", "gettext"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/include/google/dense_hash_map
+test -e %{pkgdir}/usr/include/google/sparse_hash_map
+'''

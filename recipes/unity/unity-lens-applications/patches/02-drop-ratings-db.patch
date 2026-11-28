@@ -1,0 +1,160 @@
+# Drop the Software Center ratings database (Berkeley DB) and harden the
+# lens against the always-absent Software Center Xapian index.
+#
+# What this patch does, and why it is enough:
+# - Berkeley DB was used ONLY by unity-ratings-db.c (it reads the ratings
+#   dump written by Ubuntu Software Center). The .c/.h files and their
+#   bundled vapi are deleted by the recipe's prepare step (rm -f); this
+#   patch removes the configure check, the --pkg, the -ldb lib and the
+#   Makefile entries, plus the three daemon.vala references (field,
+#   init_ratings_db, previewer rating block). No db5.3 recipe is needed.
+# - apt-pkg needs NO patch at all: no source file includes an apt header
+#   or calls an apt API (verified by grep over the whole tree). The
+#   libapt-pkg-dev build-dep in debian/control is vestigial. The aptd
+#   D-Bus proxy (aptd-client.vala) and the Software Center D-Bus data
+#   provider (software-center-*.vala, purchase-info-helper.vala) are pure
+#   GLib/GObject Vala with no external deps, so they keep compiling as
+#   dead code; they are never reached at runtime (see next point).
+# - Xapian is KEPT (see the recipe comment): unity-package-search.cc
+#   builds an in-memory Xapian index over the GMenu tree and that index
+#   IS the installed-apps search engine. The Software Center on-disk
+#   index (/var/cache/software-center/xapian) never exists on Faseela, so
+#   unity_package_searcher_new() returns NULL, pkgsearcher stays null,
+#   and every "available apps" path (already guarded by
+#   `pkgsearcher != null`) is dead. The three UNGUARDED pkgsearcher
+#   derefs are guarded here, because on Faseela they would otherwise run
+#   against a null searcher on every app preview / uninstall action /
+#   version lookup.
+--- a/configure.ac
++++ b/configure.ac
+@@ -85,9 +85,6 @@
+ AC_SUBST(LENS_DAEMON_CFLAGS)
+ AC_SUBST(LENS_DAEMON_LIBS)
+ 
+-AC_CHECK_HEADER(db.h, [],
+-                AC_MSG_FAILURE([Unable to find db.h. Please install the package libdb-dev]))
+-
+ AC_CHECK_HEADER(xapian.h, [],
+                 AC_MSG_FAILURE([Unable to find xapian.h. Please install the package libxapian-dev]))
+ 
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -41,18 +41,14 @@
+   --pkg gee-0.8 \
+   --pkg libgnome-menu-3.0 \
+   --pkg unity-package-search \
+-  --pkg unity-ratings-db \
+   --target-glib=2.26 \
+   $(MAINTAINER_VALAFLAGS)
+ 
+ unity_package_search_libs = -lxapian -lstdc++
+ 
+-unity_ratings_db_libs = -ldb
+-
+ unity_scope_applications_la_LIBADD = \
+   $(LENS_DAEMON_LIBS) \
+   $(unity_package_search_libs) \
+-  $(unity_ratings_db_libs) \
+   $(NULL)
+ 
+ unity_scope_runningapps_la_LIBADD = \
+@@ -99,8 +95,6 @@
+   $(unity_scope_applications_la_VALASOURCES:.vala=.c) \
+   unity-package-search.cc \
+   unity-package-search.h \
+-  unity-ratings-db.c \
+-  unity-ratings-db.h \
+   $(NULL)
+ 
+ unity_scope_runningapps_la_SOURCES = \
+@@ -119,8 +113,6 @@
+   $(unity_scope_runningapps_la_VALASOURCES) \
+   unity-package-search.cc \
+   unity-package-search.h \
+-  unity-ratings-db.c \
+-  unity-ratings-db.h \
+   $(NULL)
+ 
+ unity-scope-applications.vala.stamp: $(unity_scope_applications_la_VALASOURCES)
+--- a/src/daemon.vala
++++ b/src/daemon.vala
+@@ -60,9 +60,6 @@
+     public Unity.Package.Searcher? pkgsearcher;
+     public Unity.Package.Searcher appsearcher;
+ 
+-    /* Read the app ratings dumped by the Software Center */
+-    private bool ratings_db_initialized = false;
+-    public Unity.Ratings.Database? ratings = null;
+ 
+     /* Support aptd dbus interface; created when application install/remove was requested by preview action */
+     private AptdProxy aptdclient;
+@@ -183,21 +180,6 @@
+       launcherservice = new LauncherProxy ();
+     }
+ 
+-    public void init_ratings_db ()
+-    {
+-      if (ratings_db_initialized) return;
+-      try
+-      {
+-        ratings = new Unity.Ratings.Database ();
+-      }
+-      catch (FileError e)
+-      {
+-        warning ("%s", e.message);
+-        ratings = null;
+-      }
+-      ratings_db_initialized = true;
+-    }
+-
+     public override string get_group_name ()
+     {
+       return "com.canonical.Unity.Scope.Applications";
+@@ -528,7 +510,9 @@
+           desktopfile = sc_mangler.get (desktopfile);
+         }
+ 
+-        var pkginfo = pkgsearcher.get_by_desktop_file (desktopfile);
++        Unity.Package.PackageInfo? pkginfo = null;
++        if (pkgsearcher != null)
++          pkginfo = pkgsearcher.get_by_desktop_file (desktopfile);
+ 
+         if (pkginfo != null && pkginfo.package_name != null)
+         {
+@@ -777,7 +761,9 @@
+       {
+         mangled_id = app_id;
+       }
+-      var pkginfo = pkgsearcher.get_by_desktop_file (mangled_id);
++      Unity.Package.PackageInfo? pkginfo = null;
++      if (pkgsearcher != null)
++        pkginfo = pkgsearcher.get_by_desktop_file (mangled_id);
+       if (pkginfo != null)
+       {
+         SoftwareCenterData.AppDetailsData? details;
+@@ -1496,7 +1482,9 @@
+           desktopfile = scope.sc_mangler.get (desktopfile);
+         }
+ 
+-        var pkginfo = scope.pkgsearcher.get_by_desktop_file (desktopfile);
++        Unity.Package.PackageInfo? pkginfo = null;
++        if (scope.pkgsearcher != null)
++          pkginfo = scope.pkgsearcher.get_by_desktop_file (desktopfile);
+         if (pkginfo != null)
+         {
+           appname = pkginfo.application_name;
+@@ -1551,14 +1539,6 @@
+           preview = new Unity.ApplicationPreview (details.name, subtitle, details.description, icon, screenshot);
+           preview.license = details.license;
+ 
+-          scope.init_ratings_db ();
+-          if (scope.ratings != null)
+-          {
+-            Unity.Ratings.Result result;
+-            scope.ratings.query (pkgname, out result);
+-            preview.set_rating (result.average_rating / 5.0f, result.total_rating);
+-          }
+-
+           if (details.hardware_requirements != "")
+             preview.add_info (new InfoHint ("hardware-requirements", _("Hardware requirements"), null, details.hardware_requirements));
+ 

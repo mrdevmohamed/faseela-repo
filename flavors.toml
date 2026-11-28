@@ -102,7 +102,7 @@ extends = ["iso-nogui"]
 include = [
     "unity-desktop",
     "lightdm",
-    "lightdm-gtk-greeter",
+    "unity-greeter",
     "xfce4-terminal",
     "mousepad",
     "ristretto",

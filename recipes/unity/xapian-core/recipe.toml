@@ -1,0 +1,46 @@
+# unity recipe: xapian-core — search engine library (Xapian core)
+# Source: Ubuntu pool orig tarball 1.4.32 (newest in the pool; sha256
+# verified against the signed .dsc). Needed by unity-lens-applications:
+# unity-package-search.cc builds an IN-MEMORY Xapian index over the GMenu
+# tree, and that index IS the installed-apps search engine — it cannot be
+# patched out without rewriting the lens's search core (see the
+# unity-lens-applications recipe comment). The apt/Software-Center parts
+# that also used Xapian are dead on Faseela (no Software Center index ever
+# exists, so the package searcher stays null), but the menu index stays.
+# Autotools build; documentation disabled (needs rst2html/sphinx).
+[package]
+name = "xapian-core"
+version = "1.4.32"
+rel = 2
+arch = ["x86_64"]
+summary = "Search engine library"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "xapian-core"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/x/xapian-core/xapian-core_%{version}.orig.tar.xz"
+sha256 = "c4fd64e81127311756adf5579268d14a79f285ce8ac4ead0930c96195897aece"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "zlib", "util-linux", "autoconf", "automake", "libtool", "gettext"]
+run = ["zlib", "util-linux"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-documentation"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libxapian.so
+test -e %{pkgdir}/usr/lib/pkgconfig/xapian-core.pc
+test -e %{pkgdir}/usr/include/xapian.h
+'''

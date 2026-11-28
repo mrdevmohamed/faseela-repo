@@ -15,7 +15,7 @@ Nawa; they do not create separate ISO variants.
 | `iso-sway` | Common base plus the Sway Wayland desktop (console login). |
 | `iso-xfce` | Common base plus Xfce on Xorg and the LightDM packages. |
 | `iso-cosmic` | Common base plus COSMIC and COSMIC Greeter (greetd). |
-| `iso-unity` | Common base plus Unity 7 (Compiz + Nux) on Xorg and the LightDM packages. |
+| `iso-unity` | Common base plus complete Unity 7 (Compiz + Nux) on Xorg, LightDM with Unity's own greeter, Dash lenses, indicators and control-center. |
 
 The desktop images extend `iso-nogui`, so core packages, boot support,
 networking and command-line tools remain shared. Desktop-specific packages
@@ -65,9 +65,9 @@ The COSMIC image enables `cosmic-greeter` and disables `getty-tty1` plus
 LightDM, ensuring only the selected login manager owns VT 1. The Xfce image
 contains LightDM and its GTK greeter but deliberately leaves the service
 manual-enable until its Xorg privilege path is validated. The Unity image
-is the same as Xfce in this respect: it contains LightDM and its GTK greeter,
-defaults the LightDM session to `unity` (`50-unity.conf`), and leaves the
-service manual-enable. Sway and no-GUI
+is the same as Xfce in this respect, except it ships LightDM with Unity's
+own `unity-greeter` instead of the GTK greeter: it defaults the LightDM
+session to `unity` (`50-unity.conf`), and leaves the service manual-enable. Sway and no-GUI
 images retain console gettys.
 
 Check every profile against the current recipes:

@@ -1,0 +1,74 @@
+# unity recipe: unity-scope-home — Unity home scope (Dash home)
+# Source: Ubuntu pool orig tarball 6.8.2+19.04.20190412 (sha256 verified).
+# Single pkglibexec daemon (unity-scope-home) + D-Bus service + home.scope
+# and all 21 master-scope .scope files (home + 20 subscopes, installed
+# flat to $(SCOPESDIR); missing subscopes are tolerated at runtime).
+# Ubuntu's quilt patches are vendored verbatim: 0001 fixes a valac
+# const-visibility error and a python3 shebang, and
+# drop_smart_scopes_search_and_remove_libsoup drops the dead Smart Scopes
+# server code and the libsoup deps. NOTE the drop patch KEEPS json-glib-1.0
+# and uuid in configure.ac/src/Makefile.am (it removes only
+# libsoup-gnome-2.4 / libsoup-2.4), so json-glib + util-linux stay in the
+# build deps. No libsoup, no lsb-release, no python3. Headless tests
+# default ON here — disabled (--disable-headless-tests); they need Xvfb
+# and a fake smart-scopes server. No zeitgeist in this component at all.
+#
+# unity-scopes-runner verdict: NOT built from this source (zero
+# references in the tree; src/Makefile.am builds only unity-scope-home).
+# It is the Python script bindings/python/scope-runner-dbus.py from the
+# libunity source and ships in the `libunity` recipe — Ubuntu's
+# unity-scopes-runner .deb (Source: libunity, arch all) contains only
+# that one file, byte-identical to the libunity tarball copy. It does NOT
+# ship in the `unity` binary package.
+[package]
+name = "unity-scope-home"
+version = "6.8.2+19.04.20190412"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity home scope"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-scope-home"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-scope-home/unity-scope-home_%{version}.orig.tar.gz"
+sha256 = "070acae8dce62240c1ea2f8afcc7a6ea80704e95e525e294c7b0d79f32e2dcb1"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "dee", "libunity", "libgee-0.8", "vala", "intltool", "gettext", "gnome-common", "autoconf", "automake", "libtool", "dbus", "json-glib", "util-linux"]
+run = ["glib", "dee", "libunity", "libgee-0.8", "json-glib", "util-linux"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/0001-Move-old-changes-to-a-patch.patch", "patches/drop_smart_scopes_search_and_remove_libsoup.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-headless-tests
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/libexec/unity-scope-home/unity-scope-home
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-home.service
+test -e %{pkgdir}/usr/share/unity/scopes/home.scope
+test -e %{pkgdir}/usr/share/unity/scopes/applications.scope
+test -e %{pkgdir}/usr/share/unity/scopes/files.scope
+test -e %{pkgdir}/usr/share/unity/scopes/music.scope
+test -e %{pkgdir}/usr/share/unity/scopes/video.scope
+test -e %{pkgdir}/usr/share/unity/scopes/photos.scope
+'''

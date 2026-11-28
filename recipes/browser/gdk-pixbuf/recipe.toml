@@ -7,7 +7,7 @@
 [package]
 name = "gdk-pixbuf"
 version = "2.42.12"
-rel = 2
+rel = 4
 arch = ["x86_64"]
 summary = "Image loading library for GTK (PNG and JPEG built in)"
 license = ["LGPL-2.1-or-later"]
@@ -20,8 +20,12 @@ sha256 = "b9505b3445b9a7e48ced34760c3bcb73e966df3ac94c95a148cb669ab748e3c7"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "libpng", "libjpeg-turbo", "gettext"]
-run = ["glib", "libpng", "libjpeg-turbo"]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "glib", "libpng", "libjpeg-turbo", "gettext", "gobject-introspection", "glib-gir", "setuptools"]
+run = ["glib", "glib-gir", "libpng", "libjpeg-turbo"]
 
 [capabilities]
 provides = []
@@ -32,6 +36,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D png=enabled -D jpeg=enabled -D tiff=disabled -D others=disabled -D builtin_loaders=png,jpeg -D gio_sniffing=false -D introspection=disabled -D man=false -D gtk_doc=false -D installed_tests=false"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D png=enabled -D jpeg=enabled -D tiff=disabled -D others=disabled -D builtin_loaders=png,jpeg -D gio_sniffing=false -D introspection=enabled -D man=false -D gtk_doc=false -D installed_tests=false"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

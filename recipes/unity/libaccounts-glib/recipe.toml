@@ -1,0 +1,45 @@
+# unity recipe: libaccounts-glib — Accounts framework client library
+# Source: Ubuntu archive orig tarball (1.23+17.04.20161104). Autotools.
+# GObject introspection is disabled via the unity-build-shims stand-in
+# macros (same pattern as bamf/dee/libindicator); tests, python bindings
+# and the man page are disabled.
+[package]
+name = "libaccounts-glib"
+version = "1.23"
+rel = 2
+arch = ["x86_64"]
+summary = "Accounts framework client library"
+license = ["LGPL-2.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libaccounts-glib"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/liba/libaccounts-glib/libaccounts-glib_1.23+17.04.20161104.orig.tar.gz"
+sha256 = "8a6a8759183a14efcc5b31ebd48b4c157ba8279053d24e162a31b183f85bd604"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "libxml2", "sqlite", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "libxml2", "sqlite"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''set -eu
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --disable-tests --disable-python --disable-man
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libaccounts-glib.so
+test -e %{pkgdir}/usr/lib/pkgconfig/libaccounts-glib.pc
+'''

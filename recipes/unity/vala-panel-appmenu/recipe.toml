@@ -1,0 +1,42 @@
+# unity recipe: vala-panel-appmenu — global-menu applets for desktop panels.
+# In the ubuntu-unity-desktop seed since 0.28 (LP #2146634, fixes the global
+# menu). Source: Ubuntu orig tarball 25.04 (Resolute).
+# Only the Xfce applet is built: the repo has xfce4-panel/xfconf/libxfce4ui
+# but no vala-panel, mate-panel or budgie. The appmenu-gtk-module subproject
+# and the jayatana/registrar subprojects are disabled — the GTK module itself
+# is the separate appmenu-gtk-module recipe (in Resolute the binary
+# appmenu-gtk3-module is built from that source, not from this one).
+# The appmenu-glib-translator fallback subproject ships inside this tarball.
+[package]
+name = "vala-panel-appmenu"
+version = "25.04"
+rel = 2
+arch = ["x86_64"]
+summary = "Global menu applets for desktop panels"
+license = ["LGPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "vala-panel-appmenu"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/v/vala-panel-appmenu/vala-panel-appmenu_25.04+dfsg.orig.tar.xz"
+sha256 = "687b051fcd1e59bc183b15050486610e50d4ffffb8a7a49fbc877cabaebff3bb"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "gdk-pixbuf", "libwnck3", "vala", "xfce4-panel", "xfconf", "libxfce4ui", "gettext"]
+run = ["glib", "gtk3", "gdk-pixbuf", "libwnck3", "xfce4-panel", "xfconf"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dwm_backend=wnck -Dvalapanel=disabled -Dmate=disabled -Dbudgie=disabled -Dxfce=enabled -Dregistrar=disabled -Djayatana=disabled -Dappmenu-gtk-module=disabled"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/xfce4/panel/plugins/libappmenu-xfce.so
+'''

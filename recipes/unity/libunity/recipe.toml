@@ -3,10 +3,31 @@
 # is gone (libunity was removed from the archive); the Launchpad
 # +sourcefiles copy is byte-identical (sha256 verified). Ubuntu's patches
 # are vendored under patches/.
+# Introspection is ON (not --disable): valac already generates unity.vapi,
+# unity-extras.vapi, unity-protocol.vapi and Unity-7.0.gir/UnityExtras-7.0.gir
+# unconditionally, but the .typelibs (needed at runtime by the photos lens's
+# Python daemons: `from gi.repository import Unity, UnityExtras`) are only
+# compiled when HAVE_INTROSPECTION. The gir includes Dee-1.0 (public API
+# exposes Dee.SerializableModel) and Dbusmenu-0.4 (public quicklist
+# property), so dee and libdbusmenu must also build with introspection (they
+# do) and glib-gir must supply the GLib/GObject/Gio .gir files. No
+# g-ir-scanner runs here (valac writes the .gir), so no setuptools dep.
+# unity-scopes-runner: Ubuntu ships it as a separate binary package
+# (unity-scopes-runner, arch all, Source: libunity) whose ONLY payload file
+# is /usr/share/unity-scopes/scope-runner-dbus.py — a Python host process
+# for scopes written in Python, installed by this source's
+# bindings/python/Makefile.am (scopes_PYTHON). Verified byte-identical
+# between the libunity 7.1.4 tarball and Ubuntu's
+# unity-scopes-runner_7.1.4+19.04.20190319-8_all.deb. It is NOT from the
+# unity 7.7.1 shell source and NOT from unity-scope-home. The install step
+# below installs it explicitly (mode 0644, content untouched, as Ubuntu
+# ships it) so it lands here regardless of automake's python install
+# behaviour; `make install` would put the same file in the same place.
+# It is a script, not a compiled binary — no new recipe, no extra download.
 [package]
 name = "libunity"
 version = "7.1.4"
-rel = 3
+rel = 5
 arch = ["x86_64"]
 summary = "Unity launcher/dash integration library"
 license = ["LGPL-3.0-only"]
@@ -19,7 +40,7 @@ sha256 = "56ecb380d74bf74caba193d9e8ad6b0c85ccf9eeb461bc9731c2b8636e1f1492"
 strip_components = 1
 
 [depends]
-build = ["pkgconf", "glib", "gtk3", "dee", "libdbusmenu", "vala", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+build = ["pkgconf", "glib", "gtk3", "dee", "libdbusmenu", "vala", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext", "gobject-introspection", "glib-gir"]
 run = ["glib", "gtk3", "dee", "libdbusmenu"]
 
 [capabilities]
@@ -42,9 +63,24 @@ cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
 autoreconf -fi
-./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --enable-introspection
 '''
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install
+# unity-scopes-runner payload (see header): the Python scope-runner
+# script, installed explicitly so it is present even if automake's
+# python install step is skipped; same path/mode as Ubuntu's .deb.
+install -D -m 0644 bindings/python/scope-runner-dbus.py %{pkgdir}/usr/share/unity-scopes/scope-runner-dbus.py
+test -e %{pkgdir}/usr/share/unity-scopes/scope-runner-dbus.py
 test -e %{pkgdir}/usr/lib/libunity.so
+test -e %{pkgdir}/usr/lib/libunity-extras.so
+test -e %{pkgdir}/usr/lib/libunity/libunity-protocol-private.so
+test -e %{pkgdir}/usr/lib/pkgconfig/unity-protocol-private.pc
+test -e %{pkgdir}/usr/share/vala/vapi/unity.vapi
+test -e %{pkgdir}/usr/share/vala/vapi/unity-extras.vapi
+test -e %{pkgdir}/usr/share/vala/vapi/unity-protocol.vapi
+test -e %{pkgdir}/usr/share/gir-1.0/Unity-7.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/UnityExtras-7.0.gir
+test -e %{pkgdir}/usr/lib/girepository-1.0/Unity-7.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/UnityExtras-7.0.typelib
 '''

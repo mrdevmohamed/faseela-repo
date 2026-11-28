@@ -1,0 +1,56 @@
+# unity recipe: whoopsie — Ubuntu error-tracker submission daemon + libwhoopsie
+# Source: Ubuntu archive native tarball (0.2.82ubuntu, resolute). Plain
+# Makefile build (no autotools/cmake). Builds libwhoopsie.so (what
+# indicator-session links: identifier + recoverable-problem reporting) and
+# the whoopsie daemon.
+# Dep notes (verified against the Makefile, NOT the research notes, which
+# listed only glib + libcurl): the lib needs glib + libgcrypt; the daemon
+# additionally needs libcurl, libcap, and the libnm HEADERS
+# (connectivity.c includes <libnm/NetworkManager.h> and uses the
+# NM_DEVICE_TYPE_WIFI / NM_STATE_CONNECTED_GLOBAL enums, but calls no
+# libnm functions, so there is no link-time libnm dep — network-manager is
+# a build dep for the headers only, not a run dep). VERSION is passed on
+# the make command line because the Makefile reads it from
+# dpkg-parsechangelog (not available in the build root).
+# Install cleanup: the Makefile also installs an Upstart job
+# (/etc/init/whoopsie.conf) and an apport package-hook, both dropped here;
+# the systemd unit + path files from debian/ are kept.
+[package]
+name = "whoopsie"
+version = "0.2.82ubuntu"
+rel = 2
+arch = ["x86_64"]
+summary = "Ubuntu error-tracker submission daemon and library"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "whoopsie"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/w/whoopsie/whoopsie_0.2.82ubuntu.tar.xz"
+sha256 = "f98362ff36d976250e8e47b3f86145ff57231607ad636e7f6a6e7052dd646807"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "curl", "libgcrypt", "libcap", "network-manager"]
+run = ["glib", "curl", "libgcrypt", "libcap"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "true"
+compile = "make -j%{jobs} VERSION=%{version}"
+install = '''
+make DESTDIR=%{pkgdir} install VERSION=%{version}
+rm -rf %{pkgdir}/etc %{pkgdir}/usr/share/apport
+test -x %{pkgdir}/usr/bin/whoopsie
+test -e %{pkgdir}/usr/lib/libwhoopsie.so
+test -e %{pkgdir}/usr/lib/libwhoopsie.so.0
+test -e %{pkgdir}/usr/lib/pkgconfig/libwhoopsie.pc
+test -e %{pkgdir}/usr/include/libwhoopsie/recoverable-problem.h
+'''

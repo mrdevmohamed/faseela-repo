@@ -4,7 +4,7 @@
 [package]
 name = "unity-desktop"
 version = "0.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Unity 7 X11 session integration and core desktop components"
@@ -13,7 +13,7 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [depends]
 build = []
-run = ["unity-session", "unity", "unity-settings-daemon", "unity-gtk-module", "indicator-application", "indicator-appmenu", "bamf", "zeitgeist", "compiz", "nux", "appimage-support", "xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "thunar", "gvfs", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "network-manager-applet", "bluez", "polkit", "xfce-polkit", "systemd", "dbus-system", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
+run = ["unity-session", "unity", "unity-settings-daemon", "unity-gtk-module", "appmenu-gtk-module", "indicator-application", "indicator-appmenu", "unity-lens-applications", "unity-lens-files", "unity-lens-music", "unity-lens-photos", "unity-lens-video", "unity-scope-home", "indicator-sound", "indicator-session", "indicator-datetime", "indicator-power", "unity-control-center", "notify-osd", "bamf", "zeitgeist", "compiz", "nux", "appimage-support", "xorg-server", "xf86-input-libinput", "mesa", "libdrm", "libepoxy", "xorg-xauth", "xorg-xrandr", "xorg-xset", "xorg-xrdb", "xorg-xmodmap", "xorg-xhost", "xorg-setxkbmap", "xkeyboard-config", "xkbcomp", "faseela-branding", "thunar", "gvfs", "udisks2", "shared-mime-info", "desktop-file-utils", "hicolor-icon-theme", "adwaita-icon-theme", "network-manager", "network-manager-applet", "bluez", "polkit", "xfce-polkit", "systemd", "dbus-system", "shadow", "base-files", "coreutils", "audio-session", "alsa-utils", "brightnessctl", "upower", "gnome-keyring", "xdg-desktop-portal", "xdg-desktop-portal-gtk", "xdg-utils", "xdg-user-dirs", "dejavu-fonts", "nerd-fonts-symbols", "noto-fonts", "noto-fonts-arabic", "noto-naskh-arabic", "noto-color-emoji"]
 
 [capabilities]
 provides = []
@@ -74,5 +74,5 @@ for group in video render input audio; do
 done
 
 echo "unity-desktop: add your user to video,render,input,audio for Xorg device access."
-echo "unity-desktop: install lightdm and lightdm-gtk-greeter for a graphical login."
+echo "unity-desktop: install lightdm and unity-greeter for a graphical login."
 '''

@@ -1,0 +1,89 @@
+# unity recipe: unity-lens-applications — Unity applications lens (Dash apps)
+# Source: Ubuntu pool orig tarball 7.1.0+16.10.20160927 (sha256 verified).
+# The lens is two libtool modules (/usr/lib/unity/unity-scope-*.so) loaded
+# by the Unity shell, plus .scope files, a D-Bus service, a GSettings
+# schema and the XDG menu. runningapps.scope is INTENTIONALLY not
+# installed upstream (data/Makefile.am: scope_DATA = commands.scope only;
+# runningapps.scope.in.in exists but was dropped in LP #1237257).
+#
+# Xapian is KEPT (see below); apt and Berkeley DB are NOT:
+# - apt is used NOWHERE in the source: no file includes an apt header or
+#   calls an apt API (verified by grep). The libapt-pkg-dev build-dep in
+#   debian/control is vestigial. The aptd D-Bus proxy (aptd-client.vala)
+#   and the Software Center D-Bus data provider (software-center-*.vala,
+#   purchase-info-helper.vala, xapian-utils.vala, software-center-utils.vala)
+#   are pure GLib/GObject Vala with no external deps; they compile as
+#   dead code and are never reached at runtime (see next point).
+# - Berkeley DB was used ONLY by unity-ratings-db.c (reads the ratings
+#   dump written by Ubuntu Software Center). Patch 02 deletes it and its
+#   configure/Makefile/daemon references. No db5.3 recipe is needed.
+# - Xapian CANNOT be patched out: unity-package-search.cc builds an
+#   IN-MEMORY Xapian index over the GMenu tree, and that index IS the
+#   installed-apps search engine (daemon.vala: Searcher.for_menu). The
+#   Software Center on-disk index (/var/cache/software-center/xapian)
+#   never exists on Faseela, so unity_package_searcher_new() returns NULL,
+#   pkgsearcher stays null, and every "available apps" path (already
+#   guarded by `pkgsearcher != null`) is dead. Patch 02 also guards the
+#   three UNGUARDED pkgsearcher derefs (uninstall action, version lookup,
+#   previewer), which would otherwise run against a null searcher.
+#   This is the ONE deviation from the brief's "no xapian-core recipe":
+#   the in-memory menu index is the lens's search core, not the dead
+#   Software Center search. No apt recipe, no db5.3 recipe.
+# .vapi note: --pkg zeitgeist-1.0 needs the 1.0 API, which lives in the
+# `libzeitgeist-1.0` recipe (0.3.18) — NOT in the repo's `zeitgeist`
+# recipe (1.0.4, 2.0 API only). See that recipe's comment.
+[package]
+name = "unity-lens-applications"
+version = "7.1.0+16.10.20160927"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity applications lens"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-lens-applications"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-lens-applications/unity-lens-applications_%{version}.orig.tar.gz"
+sha256 = "b5703a9a5cfdd47d9645ea20df1dcd575715e11ae8ecef3a72047d6225a233af"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "dee", "libzeitgeist-1.0", "libunity", "libgee-0.8", "libcolumbus", "gnome-menus", "xapian-core", "vala", "intltool", "gettext", "gnome-common", "autoconf", "automake", "libtool", "dbus"]
+run = ["glib", "dee", "libzeitgeist-1.0", "libunity", "libgee-0.8", "libcolumbus", "gnome-menus", "xapian-core"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/01-ubuntu-valac-compat.patch", "patches/02-drop-ratings-db.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+rm -f src/unity-ratings-db.c src/unity-ratings-db.h vapi/unity-ratings-db.vapi vapi/unity-ratings-db.deps
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/unity/unity-scope-applications.so
+test -e %{pkgdir}/usr/lib/unity/unity-scope-runningapps.so
+test -e %{pkgdir}/usr/share/unity/scopes/applications/applications.scope
+test -e %{pkgdir}/usr/share/unity/scopes/applications/scopes.scope
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-applications.service
+test -e %{pkgdir}/usr/share/glib-2.0/schemas/com.canonical.Unity.AppsLens.gschema.xml
+'''
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"

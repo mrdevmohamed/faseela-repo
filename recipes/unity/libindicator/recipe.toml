@@ -3,7 +3,7 @@
 [package]
 name = "libindicator"
 version = "16.10.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Panel indicator library"
 license = ["GPL-3.0-only"]
@@ -38,4 +38,9 @@ autoreconf -fi
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install
 test -e %{pkgdir}/usr/lib/libindicator3.so
+# The whole point of the indicator-common dep: upstream installs
+# data/indicators-pre.target to SYSTEMD_USERDIR (pkg-config systemd's
+# systemduserunitdir = /usr/lib/systemd/user; systemd is in the transitive
+# build closure). Every indicator's user unit has After=indicators-pre.target.
+test -e %{pkgdir}/usr/lib/systemd/user/indicators-pre.target
 '''

@@ -2,10 +2,15 @@
 # Source: Launchpad orig tarball (1.2.7+17.10.20170616). The Ubuntu pool copy is
 # gone (dee was removed from the archive); the Launchpad +sourcefiles copy is
 # byte-identical (sha256 verified). Ubuntu's patches are vendored under patches/.
+# Introspection is ON: dee-1.0.vapi ships in-tree and installs either way, but
+# libunity's Unity-7.0.gir includes Dee-1.0 (its public API exposes
+# Dee.SerializableModel), so g-ir-compiler needs Dee-1.0.gir in libunity's
+# build root. g-ir-scanner runs here, so setuptools (distutils shim) and
+# glib-gir (GObject/GLib/Gio .gir includes) are build deps.
 [package]
 name = "dee"
 version = "1.2.7"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Dee: model-sharing library over D-Bus (Unity)"
 license = ["LGPL-3.0-only"]
@@ -18,7 +23,7 @@ sha256 = "e63f979a7a5012a7786786f8081a9279256ab28ece6e557c6ce5bf87535ae899"
 strip_components = 1
 
 [depends]
-build = ["pkgconf", "glib", "icu", "vala", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+build = ["pkgconf", "glib", "icu", "vala", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext", "gobject-introspection", "glib-gir", "setuptools"]
 run = ["glib", "icu"]
 
 [capabilities]
@@ -41,10 +46,13 @@ cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
 autoreconf -fi
-./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --enable-introspection
 '''
 compile = "make -j%{jobs}"
 install = '''make DESTDIR=%{pkgdir} install
 rm -rf %{pkgdir}/usr/lib/python* %{pkgdir}/usr/share/dee 2>/dev/null || true
 test -e %{pkgdir}/usr/lib/libdee-1.0.so
+test -e %{pkgdir}/usr/share/vala/vapi/dee-1.0.vapi
+test -e %{pkgdir}/usr/share/gir-1.0/Dee-1.0.gir
+test -e %{pkgdir}/usr/lib/girepository-1.0/Dee-1.0.typelib
 '''

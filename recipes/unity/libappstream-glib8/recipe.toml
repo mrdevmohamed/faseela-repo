@@ -1,0 +1,40 @@
+# unity recipe: libappstream-glib8 — AppStream library (libappstream-glib).
+# Hard run dep of the unity binary. This is the appstream-glib project, a
+# DIFFERENT source from flatpak/appstream (AppStream) — do not confuse them.
+# Minimal library-only build: the builder tool, RPM support, man pages and
+# introspection are disabled; the stemmer is bundled in-tree (no libstemmer
+# dep) and gcab is not used. uuid comes from util-linux, libcurl from curl.
+[package]
+name = "libappstream-glib8"
+version = "0.8.3"
+rel = 2
+arch = ["x86_64"]
+summary = "AppStream library (libappstream-glib)"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libappstream-glib8"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/a/appstream-glib/appstream-glib_0.8.3.orig.tar.xz"
+sha256 = "84754064c560fca6e1ab151dc64354fc235a5798f016b91b38c9617253a8cf11"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gdk-pixbuf", "json-glib", "libarchive", "curl", "util-linux", "libyaml", "gtk3", "freetype", "fontconfig", "gperf", "gettext"]
+run = ["glib", "gdk-pixbuf", "json-glib", "libarchive", "curl", "util-linux", "libyaml", "gtk3", "freetype", "fontconfig"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dbuilder=false -Drpm=false -Dalpm=false -Dman=false -Dintrospection=false -Dgtk-doc=false -Ddep11=true -Dfonts=true"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/libappstream-glib.so
+test -e %{pkgdir}/usr/lib/pkgconfig/appstream-glib.pc
+'''

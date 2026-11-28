@@ -1,0 +1,60 @@
+# unity recipe: unity-greeter — LightDM greeter for the Unity 7 session.
+# Source: Ubuntu native tarball 25.04.1-0ubuntu1 (Resolute). Upstream is frozen
+# at 17.04.1; Ubuntu only bumps the version string in debian/rules.
+# The greeter logo text is Faseela's (" Faseela 0.4", from base-files
+# os-release PRETTY_NAME="faseela 0.4") instead of Debian's hardcoded " 25.04".
+# Tests are skipped (need xvfb/valgrind); appmenu-gtk3, fonts-ubuntu and
+# humanity-icon-theme are dropped — none is referenced by configure.ac.
+# unity-settings-daemon must be INSTALLED in the build root: configure queries
+# its binary path via pkg-config and fails without it.
+[package]
+name = "unity-greeter"
+version = "25.04.1"
+rel = 2
+arch = ["x86_64"]
+summary = "LightDM greeter for the Unity 7 session"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-greeter"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-greeter/unity-greeter_25.04.1-0ubuntu1.tar.xz"
+sha256 = "1a63af6f6c2c46eadc7d86ef392481832e8b76005e3ed0dfd053785791d10844"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libcanberra", "gnome-desktop3", "libindicator", "ido", "lightdm", "pixman", "freetype", "libX11", "libXext", "unity-settings-daemon", "vala", "intltool", "gettext"]
+run = ["glib", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libcanberra", "gnome-desktop3", "libindicator", "ido", "lightdm", "pixman", "freetype", "libX11", "libXext", "unity-settings-daemon", "dconf", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+configure = '''export CFLAGS="-O2 -Wno-error"
+./configure --prefix=/usr --libdir=/usr/lib --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+# Generated logo (Debian's debian/rules runs the same command, with ' 25.04'):
+# logo-generator is a noinst program built by `make`.
+./src/logo-generator --logo data/logo-bare.png --text ' Faseela 0.4' --output logo.png
+install -Dm644 logo.png %{pkgdir}/usr/share/unity-greeter/logo.png
+# Flip the default greeter from lightdm-gtk-greeter to unity-greeter,
+# plus the lightdm-user polkit rules shipped in debian/.
+install -Dm644 debian/50-unity-greeter.conf %{pkgdir}/usr/share/lightdm/lightdm.conf.d/50-unity-greeter.conf
+install -Dm644 debian/01-unity-greeter.rules %{pkgdir}/usr/share/polkit-1/rules.d/01-unity-greeter.rules
+install -Dm644 debian/unity-greeter.pkla %{pkgdir}/var/lib/polkit-1/localauthority/10-vendor.d/unity-greeter.pkla
+test -x %{pkgdir}/usr/sbin/unity-greeter
+test -e %{pkgdir}/usr/share/unity-greeter/logo.png
+test -e %{pkgdir}/usr/share/xgreeters/unity-greeter.desktop
+'''

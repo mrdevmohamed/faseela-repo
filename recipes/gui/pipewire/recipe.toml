@@ -1,8 +1,22 @@
 # gui recipe: PipeWire audio/video server with ALSA and BlueZ support.
+# pipewire-pulse: in PipeWire 1.6.6 the PulseAudio-compatible server is NOT
+# gated by -Dlibpulse. pipewire-pulse is a symlink to the pipewire binary
+# (src/daemon/meson.build installs the alias unconditionally),
+# libpipewire-module-protocol-pulse is built/installed unconditionally
+# (src/modules/meson.build), and pipewire-pulse.conf (which loads that
+# module) is installed unconditionally — so the server daemon is already
+# present with -Dlibpulse=disabled. That flag only gates module-pulse-tunnel
+# (PulseAudio network tunneling, not needed here) via dependency('libpulse').
+# It stays disabled on purpose; the tests below pin the daemon pieces so a
+# future PipeWire bump that re-gates them fails loudly instead of silently
+# dropping the server indicator-sound's `pipewire-pulse | pulseaudio` dep
+# points at. Note: no session manager is configured (session-managers=[]) and
+# no systemd user units are installed (systemd-user-service=disabled), so how
+# the daemon gets STARTED is still an open session-integration question.
 [package]
 name = "pipewire"
 version = "1.6.6"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Low-latency audio/video server with ALSA and Bluetooth audio support"
 license = ["MIT", "LGPL-2.1-or-later", "GPL-2.0"]
@@ -29,4 +43,13 @@ replaces = []
 [build]
 configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Ddocs=disabled -Dman=disabled -Dtests=disabled -Dexamples=disabled -Dspa-plugins=enabled -Dalsa=enabled -Dpipewire-alsa=enabled -Dbluez5=enabled -Ddbus=enabled -Dudev=enabled -Dlibsystemd=disabled -Dlogind=disabled -Dsystemd-system-service=disabled -Dsystemd-user-service=disabled -Dselinux=disabled -Dpipewire-jack=disabled -Dpipewire-v4l2=disabled -Djack=disabled -Dgstreamer=disabled -Dffmpeg=disabled -Dlibpulse=disabled -Dsndfile=disabled -Dlibcamera=disabled -Davahi=disabled -Dlibusb=disabled -Dreadline=disabled -Dgsettings=disabled -Dopus=disabled -Draop=disabled -Dlibcanberra=disabled -Dlibmysofa=disabled -Dlibffado=disabled -Dflatpak=disabled -Dsnap=disabled -Dlegacy-rtkit=false -Dsession-managers=[] -Drlimits-install=false"
 compile = "ninja -C build"
-install = "DESTDIR=%{pkgdir} meson install -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+# pipewire-pulse server daemon (see the header comment): the binary is a
+# symlink to pipewire, the protocol module speaks PulseAudio to clients
+# (indicator-sound links the real libpulse client libs and talks to this),
+# and the conf loads the module.
+test -L %{pkgdir}/usr/bin/pipewire-pulse
+test -e %{pkgdir}/usr/lib/pipewire-0.3/libpipewire-module-protocol-pulse.so
+test -e %{pkgdir}/usr/share/pipewire/pipewire-pulse.conf
+'''

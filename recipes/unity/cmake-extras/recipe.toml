@@ -1,0 +1,44 @@
+# unity recipe: cmake-extras — extra CMake utility modules (GSettings, CoverageReport, Vala, GDBus codegen)
+# Source: Ubuntu archive orig tarball (1.9, resolute). NOTE: 1.9 lives in
+# pool/universe, not pool/main (the main dir only ever had the 0.6 xenial
+# version). Installs its modules as CMake config packages under
+# /usr/share/cmake/<name>/<name>Config.cmake, so find_package(GSettings),
+# find_package(CoverageReport), find_package(Vala) and
+# find_package(GObjectIntrospection) all resolve without extra module paths.
+[package]
+name = "cmake-extras"
+version = "1.9"
+rel = 2
+arch = ["x86_64"]
+summary = "Extra CMake utility modules (GSettings, CoverageReport, Vala, GDBus codegen)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "cmake-extras"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/c/cmake-extras/cmake-extras_1.9.orig.tar.bz2"
+sha256 = "68594201ff35ff9cba82c58fa048030f67cc22f53ca76124576a4c18220ddb18"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "gettext"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -e %{pkgdir}/usr/share/cmake/GSettings/GSettingsConfig.cmake
+test -e %{pkgdir}/usr/share/cmake/CoverageReport/CoverageReportConfig.cmake
+test -e %{pkgdir}/usr/share/cmake/Vala/ValaConfig.cmake
+test -e %{pkgdir}/usr/share/cmake/GdbusCodegen/GdbusCodegenConfig.cmake
+'''

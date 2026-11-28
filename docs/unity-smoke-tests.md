@@ -9,10 +9,15 @@ tracking (`systemd-logind`, registered through `pam_systemd`). UPower and
 UDisks2 are activated by the system D-Bus and must not be given duplicate
 systemd units.
 
-Unity 7 here is the classic Compiz + Nux shell on Xorg, with LightDM and its
-GTK greeter — not Lomiri, and not `unity-greeter`. Gestures/GEIS and
-AppStream are compiled out, and there is no GIR/introspection support in the
-Unity recipes.
+Unity 7 here is the classic Compiz + Nux shell on Xorg, with LightDM and
+Unity's own `unity-greeter` — not Lomiri, and not the GTK greeter.
+Gestures/GEIS and AppStream are compiled out. GObject introspection is
+enabled (gobject-introspection + glib-gir) for the lenses and the shell's
+GIR chain. The Dash ships all five lenses plus the home scope, the panel
+ships the four Unity indicators, and notifications go through Unity's own
+`notify-osd`. The HUD and `unity-tweak-tool` are intentionally not shipped:
+the HUD needs a Qt5 stack the repo does not have, and the tweak tool is
+not part of the default desktop.
 
 ## Test layers
 
@@ -125,6 +130,31 @@ test -s /usr/share/xdg-desktop-portal/unity-portals.conf
 grep -Fqx 'default=gtk' /usr/share/xdg-desktop-portal/unity-portals.conf
 test -s /etc/X11/xorg.conf.d/00-faseela-unity-keyboard.conf
 test -e /usr/lib/compiz/libunityshell.so
+
+Check Unity's own greeter, the Dash lenses, the indicators, the
+control-center and the notification daemon are installed:
+
+```sh
+test -x /usr/sbin/unity-greeter
+test -s /usr/share/lightdm/lightdm.conf.d/50-unity-greeter.conf
+test -s /usr/share/xgreeters/unity-greeter.desktop
+test -s /usr/share/unity-greeter/logo.png
+test -x /usr/bin/unity-control-center
+test -x /usr/libexec/notify-osd
+test -s /usr/share/dbus-1/services/org.freedesktop.Notifications.service
+test -s /usr/share/unity/scopes/applications/applications.scope
+test -s /usr/share/unity/scopes/home.scope
+test -s /usr/share/unity/scopes/photos/shotwell.scope
+test -s /usr/share/unity/scopes/video/local.scope
+test -s /usr/lib/unity/unity-scope-applications.so
+test -s /usr/libexec/unity-lens-files/unity-files-daemon
+test -s /usr/libexec/unity-lens-music/unity-music-daemon
+test -s /usr/libexec/unity-lens-video/unity-video-lens-daemon
+test -s /usr/libexec/unity-scope-home/unity-scope-home
+for indicator in sound session datetime power; do
+    test -s "/usr/share/unity/indicators/com.canonical.indicator.$indicator"
+    test -s "/usr/lib/systemd/user/indicator-$indicator.service"
+done
 ```
 
 ### A3. Perform the controlled LightDM login test
@@ -138,7 +168,7 @@ systemctl start lightdm.service
 
 Expected:
 
-- The LightDM GTK greeter appears, offers the **Unity** session, and logs
+- Unity's own greeter appears, offers the **Unity** session, and logs
   the test user in.
 - After login, Compiz is running (`compiz` is the session process), the Unity
   launcher, top panel and Dash appear, and `unity-settings-daemon` is running
@@ -169,6 +199,16 @@ settings daemon are active.
 
 - Open the Dash and launch an application; open the file manager (Thunar)
   and confirm removable-storage volumes appear via GVfs/UDisks2.
+- Open the Dash and check the five lenses: Applications, Files, Music,
+  Photos (Shotwell only) and Video (local only) all return results, and the
+  home scope aggregates them. The applications lens searches installed apps
+  only — there is no Software Center / apt search and no ratings.
+- Confirm the four Unity indicators are in the top panel: sound, session,
+  date/time (with the Evolution calendar backend) and power. Open
+  `unity-control-center` and confirm its panels open (the Network and Wacom
+  panels are intentionally absent).
+- Send a test notification (for example `notify-send "test"`) and confirm
+  Unity's `notify-osd` bubble appears instead of the Xfce notifier.
 - Play audio through PipeWire (the `faseela-audio-session` autostart entry,
   `OnlyShowIn=Unity;`, starts it per session) and confirm volume control
   works.

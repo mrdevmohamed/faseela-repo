@@ -1,0 +1,50 @@
+# unity recipe: appmenu-gtk-module — GTK+ module that exports application
+# menus over D-Bus for the Unity global menu (the appmenu-gtk3-module
+# binary). In Resolute this is its own source package (25.04), separate from
+# vala-panel-appmenu, which only vendors it as a meson subproject. GTK2 is
+# disabled (no gtk2 in the repo); the systemd user unit is installed when
+# systemd is present in the build root. The module also ships a GSettings
+# schema, hence the glib-compile-schemas hooks.
+# NOTE: GTK_MODULES=appmenu-gtk-module is set for Unity sessions by the
+# unity-session launcher (/usr/bin/unity-session, which also exports it to the
+# D-Bus activation environment); unity-desktop's run closure installs this
+# module, so GTK apps export their menus to the global menu.
+[package]
+name = "appmenu-gtk-module"
+version = "25.04"
+rel = 2
+arch = ["x86_64"]
+summary = "GTK module exporting application menus for the global menu"
+license = ["LGPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "appmenu-gtk-module"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/a/appmenu-gtk-module/appmenu-gtk-module_25.04.orig.tar.xz"
+sha256 = "2ab8cc56c4a14cb9e0dd24351392c3c8d965a65c4e02c155c1a2e8cba5b21b86"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "systemd", "gettext"]
+run = ["glib", "gtk3"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dgtk=3 -Dtests=false -Dgtk_doc=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -e %{pkgdir}/usr/lib/gtk-3.0/modules/libappmenu-gtk-module.so
+test -e %{pkgdir}/usr/lib/libappmenu-gtk3-parser.so
+'''

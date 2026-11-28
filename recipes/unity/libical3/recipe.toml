@@ -1,0 +1,43 @@
+# unity recipe: libical3 — iCalendar library (libical + libical-glib)
+# Source: Ubuntu archive orig tarball (3.0.20; debian revision -3). Provides
+# libical.pc and libical-glib.pc (>= 3.0.7 is required by
+# evolution-data-server). ICU is RECOMMENDED upstream (RSCALE support) and
+# is enabled here; GObject introspection and Vala bindings are OFF (no GI
+# infra on this branch); docs OFF; shared-only build.
+[package]
+name = "libical3"
+version = "3.0.20"
+rel = 2
+arch = ["x86_64"]
+summary = "iCalendar library (libical + libical-glib)"
+license = ["MPL-2.0", "LGPL-2.1-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libical3"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libi/libical3/libical3_3.0.20.orig.tar.gz"
+sha256 = "e73de92f5a6ce84c1b00306446b290a2b08cdf0a80988eca0a2c9d5c3510b4c2"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "glib", "icu", "libxml2", "perl"]
+run = ["glib", "icu", "libxml2", "tzdata"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DSHARED_ONLY=True -DICAL_BUILD_DOCS=False -DGOBJECT_INTROSPECTION=False -DICAL_GLIB_VAPI=False -DICAL_GLIB=True"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -e %{pkgdir}/usr/lib/libical.so
+test -e %{pkgdir}/usr/lib/libical-glib.so
+test -e %{pkgdir}/usr/lib/pkgconfig/libical.pc
+test -e %{pkgdir}/usr/lib/pkgconfig/libical-glib.pc
+'''

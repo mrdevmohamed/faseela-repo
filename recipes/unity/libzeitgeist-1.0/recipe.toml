@@ -1,0 +1,59 @@
+# unity recipe: libzeitgeist-1.0 — Zeitgeist client library, old 1.0 API
+# Source: Ubuntu pool orig tarball 0.3.18 (source package libzeitgeist,
+# resolute 0.3.18-1ubuntu7; sha256 verified against the signed .dsc).
+# This is a SEPARATE library from the repo's `zeitgeist` recipe (1.0.4),
+# which builds ONLY the 2.0 API (zeitgeist-2.0.pc / libzeitgeist-2.0.so).
+# The 1.0 API (zeitgeist-1.0.pc / libzeitgeist-1.0.so / zeitgeist-1.0.vapi)
+# does not exist in the 1.0.4 source at all — it lives only in this old
+# 0.3.18 source. unity-lens-applications and unity-lens-video need
+# `zeitgeist-1.0 >= 0.3.8` (their configure.ac / --pkg lines, verified);
+# unity-lens-files needs zeitgeist-2.0 and keeps the `zeitgeist` recipe.
+# No file conflicts with `zeitgeist`: different .so, .pc, headers
+# (include/zeitgeist-1.0 vs zeitgeist-2.0) and .vapi names.
+# Build notes: pure C + libtool, pre-generated configure (no autoreconf).
+# The .vapi is SHIPPED in the tarball (bindings/zeitgeist-1.0.vapi) and
+# installed as data — no valac runs at build time, so no vala build dep.
+# No GOBJECT_INTROSPECTION_CHECK: no .gir/.typelib, no g-ir-scanner, so
+# no setuptools build dep. GTK_DOC_CHECK exists but docs are disabled
+# explicitly (--disable-gtk-doc); glib-mkenums / glib-genmarshal come
+# from the glib recipe. Tests are noinst_PROGRAMS (only built by
+# `make check`, which nawa never runs).
+[package]
+name = "libzeitgeist-1.0"
+version = "0.3.18"
+rel = 2
+arch = ["x86_64"]
+summary = "Zeitgeist client library (1.0 API)"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libzeitgeist-1.0"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libz/libzeitgeist/libzeitgeist_%{version}.orig.tar.gz"
+sha256 = "82c128d97a68600518b8e3e65ef4d5b123c57f3d5dfa977c7ff733c0fdf80f73"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch"
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libzeitgeist-1.0.so
+test -e %{pkgdir}/usr/lib/pkgconfig/zeitgeist-1.0.pc
+test -e %{pkgdir}/usr/include/zeitgeist-1.0/zeitgeist.h
+test -e %{pkgdir}/usr/share/vala/vapi/zeitgeist-1.0.vapi
+'''

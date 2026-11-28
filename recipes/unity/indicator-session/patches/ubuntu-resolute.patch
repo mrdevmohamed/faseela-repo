@@ -1,0 +1,25 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -47,11 +47,14 @@
+ add_subdirectory (po)
+ 
+ # testing & coverage
+-enable_testing ()
+-add_subdirectory (tests)
+-find_package(CoverageReport)
+-ENABLE_COVERAGE_REPORT(
+-  TARGETS ${COVERAGE_TARGETS}
+-  TESTS ${COVERAGE_TEST_TARGETS}
+-  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
+-)
++#
++# DISABLED becaues gtest no longer supports C++11.
++#
++#enable_testing ()
++#add_subdirectory (tests)
++#find_package(CoverageReport)
++#ENABLE_COVERAGE_REPORT(
++#  TARGETS ${COVERAGE_TARGETS}
++#  TESTS ${COVERAGE_TEST_TARGETS}
++#  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
++#)

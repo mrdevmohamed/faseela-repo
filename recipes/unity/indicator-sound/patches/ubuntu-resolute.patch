@@ -1,0 +1,433 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ project(indicator-sound C CXX)
+-cmake_minimum_required(VERSION 2.8.9)
++cmake_minimum_required(VERSION 3.10)
+ 
+ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
+ 
+@@ -25,14 +25,12 @@
+ set(PULSE_AUDIO_REQUIRED_VERSION 0.9.19)
+ set(GLIB_2_0_REQUIRED_VERSION 2.32)
+ set(GIO_2_0_REQUIRED_VERSION 2.25.13)
+-set(URL_DISPATCHER_1_REQUIRED_VERSION 1)
+ 
+ pkg_check_modules(
+   PULSEAUDIO REQUIRED
+   libpulse-mainloop-glib>=${PULSE_AUDIO_REQUIRED_VERSION}
+   glib-2.0>=${GLIB_2_0_REQUIRED_VERSION}
+   gio-unix-2.0>=${GIO_2_0_REQUIRED_VERSION}
+-  url-dispatcher-1>=${URL_DISPATCHER_1_REQUIRED_VERSION}
+ )
+ include_directories(${PULSEAUDIO_INCLUDE_DIRS})
+ 
+@@ -77,11 +75,13 @@
+ add_subdirectory(src)
+ add_subdirectory(po)
+ 
+-enable_testing()
+-add_subdirectory(tests)
+-find_package(CoverageReport)
+-ENABLE_COVERAGE_REPORT(
+-  TARGETS ${COVERAGE_TARGETS}
+-  TESTS ${COVERAGE_TEST_TARGETS}
+-  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
+-)
++# DISABLED because gtest no longer supports C++11.
++#
++#enable_testing()
++#add_subdirectory(tests)
++#find_package(CoverageReport)
++#ENABLE_COVERAGE_REPORT(
++#  TARGETS ${COVERAGE_TARGETS}
++#  TESTS ${COVERAGE_TEST_TARGETS}
++#  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
++#)
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -31,11 +31,9 @@
+     accounts-service
+   OPTIONS
+     --ccode
+-    --thread
+     --target-glib=${GLIB_2_0_REQUIRED_VERSION}
+     --vapidir=${CMAKE_SOURCE_DIR}/vapi/
+     --vapidir=.
+-    --pkg=url-dispatcher
+     --pkg=bus-watcher
+ )
+ 
+--- a/src/accounts-service-access.vala
++++ b/src/accounts-service-access.vala
+@@ -25,7 +25,7 @@
+ [DBus (name="com.canonical.UnityGreeter.List")]
+ interface GreeterListInterfaceAccess : Object
+ {
+-	public abstract async string get_active_entry () throws IOError;
++	public abstract async string get_active_entry () throws GLib.DBusError, GLib.IOError;
+ 	public signal void entry_selected (string entry_name);
+ }
+ 
+@@ -130,7 +130,7 @@
+ 		// Get master AccountsService object
+ 		DBusProxy accounts_proxy;
+ 		try {
+-			accounts_proxy = yield DBusProxy.create_for_bus (BusType.SYSTEM, DBusProxyFlags.DO_NOT_LOAD_PROPERTIES | DBusProxyFlags.DO_NOT_CONNECT_SIGNALS, null, "org.freedesktop.Accounts", "/org/freedesktop/Accounts", "org.freedesktop.Accounts");
++			accounts_proxy = yield new DBusProxy.for_bus (BusType.SYSTEM, DBusProxyFlags.DO_NOT_LOAD_PROPERTIES | DBusProxyFlags.DO_NOT_CONNECT_SIGNALS, null, "org.freedesktop.Accounts", "/org/freedesktop/Accounts", "org.freedesktop.Accounts");
+ 		} catch (GLib.Error e) {
+ 			warning ("unable to get greeter proxy: %s", e.message);
+ 			return;
+@@ -142,7 +142,7 @@
+ 			string user_path;
+ 			if (user_path_variant.check_format_string ("(o)", true)) {
+ 				user_path_variant.get ("(o)", out user_path);
+-				_user_proxy = yield DBusProxy.create_for_bus (BusType.SYSTEM, DBusProxyFlags.GET_INVALIDATED_PROPERTIES, null, "org.freedesktop.Accounts", user_path, "com.ubuntu.AccountsService.Sound");
++				_user_proxy = yield new DBusProxy.for_bus (BusType.SYSTEM, DBusProxyFlags.GET_INVALIDATED_PROPERTIES, null, "org.freedesktop.Accounts", user_path, "com.ubuntu.AccountsService.Sound");
+ 			} else {
+ 				warning ("Unable to find user name after calling FindUserByName. Expected type: %s and obtained %s", "(o)", user_path_variant.get_type_string () );
+ 				return;
+--- a/src/freedesktop-interfaces.vala
++++ b/src/freedesktop-interfaces.vala
+@@ -19,7 +19,7 @@
+ 
+ [DBus (name = "org.freedesktop.DBus")]
+ public interface FreeDesktopObject: Object {
+-  public abstract async string[] list_names() throws IOError;
++  public abstract async string[] list_names() throws GLib.DBusError, GLib.IOError;
+   public abstract signal void name_owner_changed ( string name,
+                                                    string old_owner,
+                                                    string new_owner );
+@@ -27,7 +27,7 @@
+ 
+ [DBus (name = "org.freedesktop.DBus.Introspectable")]
+ public interface FreeDesktopIntrospectable: Object {
+-  public abstract string Introspect() throws IOError;
++  public abstract string Introspect() throws GLib.DBusError, GLib.IOError;
+ }
+ 
+ [DBus (name = "org.freedesktop.DBus.Properties")]
+--- a/src/greeter-broadcast.vala
++++ b/src/greeter-broadcast.vala
+@@ -20,11 +20,11 @@
+ [DBus (name = "com.canonical.Unity.Greeter.Broadcast")]
+ public interface GreeterBroadcast : Object {
+   // methods
+-  // unused public abstract async void RequestApplicationStart(string name, string appid) throws IOError;
+-  // unused public abstract async void RequestHomeShown(string name) throws IOError;
+-  public abstract async void RequestSoundPlayPause(string name) throws IOError;
+-  public abstract async void RequestSoundNext(string name) throws IOError;
+-  public abstract async void RequestSoundPrev(string name) throws IOError;
++  // unused public abstract async void RequestApplicationStart(string name, string appid) throws GLib.Error;
++  // unused public abstract async void RequestHomeShown(string name) throws GLib.Error;
++  public abstract async void RequestSoundPlayPause(string name) throws GLib.DBusError, GLib.IOError;
++  public abstract async void RequestSoundNext(string name) throws GLib.DBusError, GLib.IOError;
++  public abstract async void RequestSoundPrev(string name) throws GLib.DBusError, GLib.IOError;
+   // signals
+   // unused public signal void StartApplication(string username, string appid);
+   // unused public signal void ShowHome(string username);
+--- a/src/main.c
++++ b/src/main.c
+@@ -15,6 +15,8 @@
+  */
+ 
+ #include <glib.h>
++#include <glib/gi18n.h>
++#include <glib-unix.h>
+ #include <locale.h>
+ #include <libnotify/notify.h>
+ 
+@@ -62,12 +64,12 @@
+     }
+ 
+     pgloop = pa_glib_mainloop_new(NULL);
+-    options = indicator_sound_options_gsettings_new();
++    options = INDICATOR_SOUND_OPTIONS (indicator_sound_options_gsettings_new ());
+     accounts_service_access = accounts_service_access_new();
+     volume = volume_control_pulse_new(options, pgloop, accounts_service_access);
+-    warning = volume_warning_pulse_new(options, pgloop);
++    warning = VOLUME_WARNING (volume_warning_pulse_new (options, pgloop));
+ 
+-    service = indicator_sound_service_new (playerlist, volume, accounts, options, warning, accounts_service_access);
++    service = indicator_sound_service_new (playerlist, VOLUME_CONTROL (volume), accounts, options, warning, accounts_service_access);
+ 
+     g_clear_object(&playerlist);
+     g_clear_object(&options);
+--- a/src/media-player-list-greeter.vala
++++ b/src/media-player-list-greeter.vala
+@@ -19,7 +19,7 @@
+ 
+ [DBus (name="com.canonical.UnityGreeter.List")]
+ public interface UnityGreeterList : Object {
+-	public abstract async string get_active_entry () throws IOError;
++	public abstract async string get_active_entry () throws GLib.DBusError, GLib.IOError;
+ 	public signal void entry_selected (string entry_name);
+ }
+ 
+@@ -45,8 +45,12 @@
+ 			this.proxy.entry_selected.connect(active_user_changed);
+ 			this.proxy.get_active_entry.begin ((obj, res) => {
+ 				try {
+-					var value = (obj as UnityGreeterList).get_active_entry.end(res);
+-					active_user_changed(value);
++					var list = (obj as UnityGreeterList);
++
++					if (list != null) {
++						var value = list.get_active_entry.end(res);
++						active_user_changed(value);
++					}
+ 				} catch (Error e) {
+ 					warning("Unable to get active entry: %s", e.message);
+ 				}
+--- a/src/media-player-list-mpris.vala
++++ b/src/media-player-list-mpris.vala
+@@ -94,7 +94,7 @@
+ 	public override void sync (string[] desktop_ids) {
+ 
+ 		/* hash desktop_ids for faster lookup */
+-		var hash = new HashTable<string, unowned string> (str_hash, str_equal);
++		var hash = new GenericSet<string> (str_hash, str_equal);
+ 		foreach (var id in desktop_ids)
+ 			hash.add (id);
+ 
+--- a/src/media-player-mpris.vala
++++ b/src/media-player-mpris.vala
+@@ -146,7 +146,7 @@
+ 				this.state = "Launching";
+ 			}
+ 			else if (this.root != null && this.root.CanRaise) {
+-				this.root.Raise ();
++				this.root.Raise.begin ();
+ 			}
+ 		}
+ 		catch (Error e) {
+--- a/src/media-player-user.vala
++++ b/src/media-player-user.vala
+@@ -238,7 +238,11 @@
+ 		if (this.greeter != null) {
+ 			this.greeter.RequestSoundPlayPause.begin(this.username, (obj, res) => {
+ 				try {
+-					(obj as GreeterBroadcast).RequestSoundPlayPause.end(res);
++					var broadcasts = (obj as GreeterBroadcast);
++
++					if (broadcasts != null) {
++						broadcasts.RequestSoundPlayPause.end(res);
++					}
+ 				} catch (Error e) {
+ 					warning("Unable to send play pause: %s", e.message);
+ 				}
+@@ -253,7 +257,11 @@
+ 		if (this.greeter != null) {
+ 			this.greeter.RequestSoundNext.begin(this.username, (obj, res) => {
+ 				try {
+-					(obj as GreeterBroadcast).RequestSoundNext.end(res);
++					var broadcasts = (obj as GreeterBroadcast);
++
++					if (broadcasts != null) {
++						broadcasts.RequestSoundNext.end(res);
++					}
+ 				} catch (Error e) {
+ 					warning("Unable to send next: %s", e.message);
+ 				}
+@@ -268,7 +276,11 @@
+ 		if (this.greeter != null) {
+ 			this.greeter.RequestSoundPrev.begin(this.username, (obj, res) => {
+ 				try {
+-					(obj as GreeterBroadcast).RequestSoundPrev.end(res);
++					var broadcasts = (obj as GreeterBroadcast);
++
++					if (broadcasts != null) {
++						broadcasts.RequestSoundPrev.end(res);
++					}
+ 				} catch (Error e) {
+ 					warning("Unable to send previous: %s", e.message);
+ 				}
+--- a/src/mpris2-interfaces.vala
++++ b/src/mpris2-interfaces.vala
+@@ -28,8 +28,8 @@
+   public abstract string Identity{owned get; set;}
+   public abstract string DesktopEntry{owned get; set;}
+   // methods
+-  public abstract async void Quit() throws IOError;
+-  public abstract async void Raise() throws IOError;
++  public abstract async void Quit() throws GLib.Error;
++  public abstract async void Raise() throws GLib.Error;
+ }
+ 
+ [DBus (name = "org.mpris.MediaPlayer2.Player")]
+@@ -42,10 +42,10 @@
+   public abstract bool CanGoNext{owned get; set;}
+   public abstract bool CanGoPrevious{owned get; set;}
+   // methods
+-  public abstract async void PlayPause() throws IOError;
+-  public abstract async void Next() throws IOError;
+-  public abstract async void Previous() throws IOError;
+-  public abstract async void Seek(int64 offset) throws IOError;
++  public abstract async void PlayPause() throws GLib.Error;
++  public abstract async void Next() throws GLib.Error;
++  public abstract async void Previous() throws GLib.Error;
++  public abstract async void Seek(int64 offset) throws GLib.Error;
+   // signals
+   public signal void Seeked(int64 new_position);
+ }
+@@ -71,11 +71,11 @@
+   public abstract ActivePlaylistContainer? ActivePlaylist {owned get; set;}
+   
+   //methods
+-  public abstract async void ActivatePlaylist(ObjectPath playlist_id) throws IOError;
++  public abstract async void ActivatePlaylist(ObjectPath playlist_id) throws GLib.Error;
+   public abstract async PlaylistDetails[]? GetPlaylists ( uint32 index,
+                                                           uint32 max_count,
+                                                           string order,
+-                                                          bool reverse_order ) throws IOError;
++                                                          bool reverse_order ) throws GLib.Error;
+   //signals
+   public signal void PlaylistChanged (PlaylistDetails details);
+   
+--- a/src/notification.vala
++++ b/src/notification.vala
+@@ -19,7 +19,7 @@
+ 
+ public abstract class IndicatorSound.Notification: Object
+ {
+-	public Notification () {
++	internal Notification () {
+ 		BusWatcher.watch_namespace (
+ 			GLib.BusType.SESSION,
+ 			"org.freedesktop.Notifications",
+--- a/src/options-gsettings.vala
++++ b/src/options-gsettings.vala
+@@ -35,9 +35,9 @@
+ 
+         /** MAX VOLUME PROPERTY **/
+ 
+-	private static const string AMP_dB_KEY = "amplified-volume-decibels";
+-	private static const string NORMAL_dB_KEY = "normal-volume-decibels";
+-	private static const string ALLOW_AMP_KEY = "allow-amplified-volume";
++	private const string AMP_dB_KEY = "amplified-volume-decibels";
++	private const string NORMAL_dB_KEY = "normal-volume-decibels";
++	private const string ALLOW_AMP_KEY = "allow-amplified-volume";
+ 
+         private void init_max_volume() {
+                 _settings.changed[NORMAL_dB_KEY].connect(() => update_max_volume());
+@@ -66,8 +66,8 @@
+ 
+ 	/** LOUD VOLUME **/
+ 
+-	private static const string LOUD_ENABLED_KEY = "warning-volume-enabled";
+-	private static const string LOUD_DECIBEL_KEY = "warning-volume-decibels";
++	private const string LOUD_ENABLED_KEY = "warning-volume-enabled";
++	private const string LOUD_DECIBEL_KEY = "warning-volume-decibels";
+ 
+         private void init_loud_volume() {
+                 _settings.changed[LOUD_ENABLED_KEY].connect(() => update_loud_volume());
+--- a/src/service.vala
++++ b/src/service.vala
+@@ -100,7 +100,6 @@
+ 		this.menus.insert ("desktop_greeter", new SoundMenu (null, SoundMenu.DisplayFlags.SHOW_MUTE | SoundMenu.DisplayFlags.HIDE_PLAYERS | SoundMenu.DisplayFlags.GREETER_PLAYERS));
+ 		this.menus.insert ("phone_greeter", new SoundMenu (null, SoundMenu.DisplayFlags.SHOW_SILENT_MODE | SoundMenu.DisplayFlags.HIDE_INACTIVE_PLAYERS | SoundMenu.DisplayFlags.GREETER_PLAYERS));
+ 		this.menus.insert ("desktop", new SoundMenu ("indicator.desktop-settings", SoundMenu.DisplayFlags.SHOW_MUTE | SoundMenu.DisplayFlags.HIDE_INACTIVE_PLAYERS_PLAY_CONTROLS | SoundMenu.DisplayFlags.ADD_PLAY_CONTROL_INACTIVE_PLAYER));
+-		this.menus.insert ("phone", new SoundMenu ("indicator.phone-settings", SoundMenu.DisplayFlags.SHOW_SILENT_MODE | SoundMenu.DisplayFlags.HIDE_INACTIVE_PLAYERS));
+ 
+ 		this.menus.@foreach ( (profile, menu) => {
+ 			this.volume_control.bind_property ("active-mic", menu, "show-mic-volume", BindingFlags.SYNC_CREATE);
+@@ -191,7 +190,6 @@
+ 		{ "root", null, null, "@a{sv} {}", null },
+ 		{ "scroll", activate_scroll_action, "i", null, null },
+ 		{ "desktop-settings", activate_desktop_settings, null, null, null },
+-		{ "phone-settings", activate_phone_settings, null, null, null },
+ 		{ "indicator-shown", null, null, "@b false", null },
+ 	};
+ 
+@@ -251,12 +249,6 @@
+ 		unowned string env = Environment.get_variable ("DESKTOP_SESSION");
+ 		string cmd;
+ 
+-		if (Environment.get_variable ("MIR_SOCKET") != null)
+-		{
+-			UrlDispatch.send ("settings:///system/sound");
+-			return;
+-		}
+-
+ 		if (env == "xubuntu" || env == "ubuntustudio")
+ 			cmd = "pavucontrol";
+ 		else if (env == "mate")
+@@ -273,10 +265,6 @@
+ 		}
+ 	}
+ 
+-	void activate_phone_settings (SimpleAction action, Variant? param) {
+-		UrlDispatch.send ("settings:///system/sound");
+-	}
+-
+ 	/* Returns a serialized version of @icon_name suited for the panel */
+ 	static Variant serialize_themed_icon (string icon_name)
+ 	{
+--- a/src/sound-menu.vala
++++ b/src/sound-menu.vala
+@@ -271,6 +271,8 @@
+ 				case VolumeControl.ActiveOutput.HDMI_HEADPHONES:
+ 					label = _("Volume (HDMI headphones)");
+ 					break;
++				case VolumeControl.ActiveOutput.CALL_MODE:
++					break;
+ 			}
+ 			this.volume_section.remove (index);
+ 			this.volume_section.insert_item (index, this.create_slider_menu_item (_(label), "indicator.volume(0)", 0.0, 1.0, 0.01,
+--- a/src/volume-control-pulse.vala
++++ b/src/volume-control-pulse.vala
+@@ -201,8 +201,14 @@
+ 						this._source_sink_mic_activated = false;
+ 						this.active_mic = _external_mic_detected;
+ 						break;
++
++					default:
++						break;
+ 				}
+ 				break;
++
++			default:
++				break;
+ 		}
+ 	}
+ 
+--- a/src/volume-control.vala
++++ b/src/volume-control.vala
+@@ -54,7 +54,7 @@
+ 
+ 	protected IndicatorSound.Options _options = null;
+ 
+-	public VolumeControl(IndicatorSound.Options options) {
++	internal VolumeControl(IndicatorSound.Options options) {
+ 		_options = options;
+ 	}
+ 
+--- a/src/volume-warning.vala
++++ b/src/volume-warning.vala
+@@ -44,7 +44,7 @@
+ 		}
+ 	}
+ 
+-	public VolumeWarning (IndicatorSound.Options options) {
++	internal VolumeWarning (IndicatorSound.Options options) {
+ 
+ 		_options = options;
+ 
+@@ -133,7 +133,7 @@
+ 	**/
+ 
+ 	private Settings _settings = new Settings ("com.canonical.indicator.sound");
+-	private static const string TTL_KEY = "warning-volume-confirmation-ttl";
++	private const string TTL_KEY = "warning-volume-confirmation-ttl";
+ 	private uint _approved_timer = 0;
+ 	private int64 _approved_at = 0;
+ 	private int64 _approved_ttl_usec = 0;
+@@ -214,7 +214,7 @@
+ 			approve_high_volume ();
+ 			sound_system_set_multimedia_volume (_ok_volume);
+ 		} else {
+-			this.cancel_pressed (this.volume_to_double(_options.loud_volume));
++			this.cancel_pressed (VolumeWarning.volume_to_double(_options.loud_volume));
+ 		}
+ 
+ 		_ok_volume = PulseAudio.Volume.INVALID;

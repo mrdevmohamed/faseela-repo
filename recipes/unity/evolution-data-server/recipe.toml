@@ -1,0 +1,68 @@
+# unity recipe: evolution-data-server — GNOME data server (calendar/address book backends + daemons)
+# Source: Ubuntu archive orig tarball (3.56.2, resolute). Built minimal for
+# indicator-datetime: libecal-2.0 + libedataserver-1.2 and the
+# evolution-source-registry / evolution-calendar-factory /
+# evolution-addressbook-factory daemons with their D-Bus service files.
+# Disabled backends/options (all verified against the upstream CMakeLists
+# and debian/control of 3.56.2-8; nothing below is a guess):
+# - ENABLE_GTK=OFF, ENABLE_GTK4=OFF (libedataserverui not needed; also drops
+#   evolution-alarm-notify and evolution-user-prompter, both HAVE_GTK-gated)
+# - ENABLE_OAUTH2_WEBKITGTK{,4}=OFF (no webkitgtk in repo)
+# - ENABLE_GOA=OFF (no gnome-online-accounts in repo)
+# - ENABLE_WEATHER=OFF (no libgweather in repo)
+# - ENABLE_CANBERRA=OFF (alarm-notify sounds; canberra-gtk3 not needed)
+# - WITH_OPENLDAP=OFF (no libldap in repo; LDAP backend dropped)
+# - WITH_LIBDB=OFF (no Berkeley DB in repo; the libdb address-book backend
+#   is dropped — the file/sqlite backends remain)
+# - WITH_KRB5=OFF (Kerberos/GSSAPI mail auth not needed for the indicator)
+# - WITH_PHONENUMBER=OFF (no libphonenumber in repo)
+# - ENABLE_EXAMPLES=OFF, ENABLE_TESTS=OFF, ENABLE_INSTALLED_TESTS=OFF
+# - ENABLE_INTROSPECTION=OFF (no gobject-introspection on this branch),
+#   ENABLE_VALA_BINDINGS=OFF (default OFF; requires introspection anyway),
+#   ENABLE_GTK_DOC=OFF (default OFF)
+# NOT needed at all (verified absent from every CMakeLists.txt in the tree):
+# libgdata, librest, liboauth — the Google/OAuth2 code uses libsoup +
+# json-glib directly. ICU is REQUIRED upstream (FATAL_ERROR without it).
+[package]
+name = "evolution-data-server"
+version = "3.56.2"
+rel = 2
+arch = ["x86_64"]
+summary = "GNOME data server: calendar/address-book libraries and daemons"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "evolution-data-server"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/e/evolution-data-server/evolution-data-server_3.56.2.orig.tar.xz"
+sha256 = "df4ec29950f29a76eac6fbe0f814c48d2cef7d3fdb905002a4a883dd761ce93c"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "glib", "libsoup3", "sqlite", "nss", "nspr", "libsecret", "dbus", "libxml2", "libical3", "json-glib", "icu", "gettext", "intltool", "gperf", "util-linux", "zlib"]
+run = ["glib", "libsoup3", "sqlite", "nss", "nspr", "libsecret", "libxml2", "libical3", "json-glib", "icu", "util-linux", "zlib", "dbus"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DSYSCONF_INSTALL_DIR=/etc -DCMAKE_SKIP_RPATH=ON -DWITH_LIBDB=OFF -DWITH_OPENLDAP=OFF -DWITH_KRB5=OFF -DWITH_PHONENUMBER=OFF -DENABLE_GTK=OFF -DENABLE_GTK4=OFF -DENABLE_OAUTH2_WEBKITGTK=OFF -DENABLE_OAUTH2_WEBKITGTK4=OFF -DENABLE_GOA=OFF -DENABLE_WEATHER=OFF -DENABLE_CANBERRA=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TESTS=OFF -DENABLE_INSTALLED_TESTS=OFF -DENABLE_INTROSPECTION=OFF -DENABLE_VALA_BINDINGS=OFF -DENABLE_GTK_DOC=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -e %{pkgdir}/usr/lib/libecal-2.0.so
+test -e %{pkgdir}/usr/lib/libedataserver-1.2.so
+test -e %{pkgdir}/usr/lib/pkgconfig/libecal-2.0.pc
+test -e %{pkgdir}/usr/lib/pkgconfig/libedataserver-1.2.pc
+test -x %{pkgdir}/usr/libexec/evolution-source-registry
+test -x %{pkgdir}/usr/libexec/evolution-calendar-factory
+test -x %{pkgdir}/usr/libexec/evolution-addressbook-factory
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Sources.service
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Calendar.service
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.AddressBook.service
+'''

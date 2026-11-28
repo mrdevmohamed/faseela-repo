@@ -1,0 +1,15 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.10)
+ 
+ project(properties-cpp)
+ 
+@@ -40,6 +40,5 @@
+ add_subdirectory(doc)
+ add_subdirectory(data)
+ add_subdirectory(include)
+-add_subdirectory(tests)
+ 
+ # enable_coverage_report(posix_process_test linux_process_test)

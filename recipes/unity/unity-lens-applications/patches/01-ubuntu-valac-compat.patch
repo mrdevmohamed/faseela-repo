@@ -1,0 +1,70 @@
+--- unity-lens-applications-7.1.0+16.10.20160927.orig/src/app-watcher.vala
++++ unity-lens-applications-7.1.0+16.10.20160927/src/app-watcher.vala
+@@ -97,7 +97,7 @@
+     }
+ 
+     private void running_apps_changed (DBusConnection connection,
+-                                       string sender_name,
++                                       string? sender_name,
+                                        string object_path,
+                                        string interface_name,
+                                        string signal_name,
+--- unity-lens-applications-7.1.0+16.10.20160927.orig/src/daemon.vala
++++ unity-lens-applications-7.1.0+16.10.20160927/src/daemon.vala
+@@ -99,8 +99,8 @@
+     private uint app_menu_changed_reindex_timeout = 0;
+     private GMenu.Tree app_menu = null;
+ 
+-    private Regex? uri_regex;
+-    private Regex  mountable_regex;
++    private GLib.Regex? uri_regex;
++    private GLib.Regex  mountable_regex;
+ 
+     private Settings gp_settings;
+ 
+@@ -166,9 +166,9 @@
+       commands_scope = new Unity.ApplicationsLens.CommandsScope (this);
+ 
+       try {
+-        uri_regex = new Regex ("^[a-z]+:.+$");
+-        mountable_regex = new Regex ("((ftp|ssh|sftp|smb|dav)://).+");
+-      } catch (RegexError e) {
++        uri_regex = new GLib.Regex ("^[a-z]+:.+$");
++        mountable_regex = new GLib.Regex ("((ftp|ssh|sftp|smb|dav)://).+");
++      } catch (GLib.RegexError e) {
+         uri_regex = null;
+         critical ("Failed to compile URI regex. URL launching will be disabled");
+       }
+--- unity-lens-applications-7.1.0+16.10.20160927.orig/src/utils.vala
++++ unity-lens-applications-7.1.0+16.10.20160927/src/utils.vala
+@@ -98,7 +98,7 @@
+     return "%s\n%s".printf (uncamelcased, folded);
+   }
+ 
+-  private static Regex camelcase_matcher;
++  private static GLib.Regex camelcase_matcher;
+ 
+   public string uncamelcase (string text)
+   {
+@@ -108,8 +108,8 @@
+       {
+         // 1+ upper characters followed by 1+ non-upper 
+         // (but preceded by non-upper or start of the string)
+-        camelcase_matcher = new Regex ("(?<=^|[^[:upper:]\\s])[[:upper:]]+[^[:upper:]]+",
+-                                       RegexCompileFlags.OPTIMIZE);
++        camelcase_matcher = new GLib.Regex ("(?<=^|[^[:upper:]\\s])[[:upper:]]+[^[:upper:]]+",
++                                       GLib.RegexCompileFlags.OPTIMIZE);
+       }
+       catch (Error e) { warning ("%s", e.message); }
+     }
+--- unity-lens-applications-7.1.0+16.10.20160927.orig/vapi/unity-package-search.vapi
++++ unity-lens-applications-7.1.0+16.10.20160927/vapi/unity-package-search.vapi
+@@ -3,7 +3,7 @@
+ [CCode (cprefix = "Unity", lower_case_cprefix = "unity_", cheader_filename = "unity-package-search.h")]
+ namespace Unity {
+ 
+-  [CCode (cprefix = "UnityPackage", lower_case_cprefix = "unity_package_")]
++  [CCode (cprefix = "UnityPackage", lower_case_cprefix = "unity_package_", cheader_filename = "unity-package-search.h")]
+   namespace Package {
+     
+     [CCode (cprefix = "UNITY_PACKAGE_SEARCHTYPE_", has_type_id = false, cheader_filename = "unity-package-search.h")]    

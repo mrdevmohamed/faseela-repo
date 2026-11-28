@@ -1,0 +1,84 @@
+From: Florent 'Skia' Jacquet <skia@ubuntu.com>
+Date: Fri, 27 Feb 2026 15:02:28 +0100
+Subject: [PATCH] Move old changes to a patch
+Forwarded: not-needed
+
+---
+ src/config.vala.in                   | 14 +++++++-------
+ tests/fake-server/fake-sss-server.py |  4 ++--
+ tests/unit/config-tests.vala.in      | 16 ++++++++--------
+ 3 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/src/config.vala.in b/src/config.vala.in
+index 63130dd54a03..60e53ea35ea2 100644
+--- a/src/config.vala.in
++++ b/src/config.vala.in
+@@ -1,16 +1,16 @@
+ namespace Config {
+ 
+-  const string PREFIX = "@prefix@";
++  public const string PREFIX = "@prefix@";
+ 
+-  const string DATADIR = "@DATADIR@";
++  public const string DATADIR = "@DATADIR@";
+ 
+-  const string PKGDATADIR = "@DATADIR@/unity";
++  public const string PKGDATADIR = "@DATADIR@/unity";
+ 
+-  const string BINDIR = "@prefix@/bin";
++  public const string BINDIR = "@prefix@/bin";
+ 
+-  const string LOCALEDIR = "@DATADIR@/locale";
++  public const string LOCALEDIR = "@DATADIR@/locale";
+ 
+-  const string PACKAGE = "@PACKAGE@";
++  public const string PACKAGE = "@PACKAGE@";
+ 
+-  const string VERSION = "@VERSION@";
++  public const string VERSION = "@VERSION@";
+ }
+diff --git a/tests/fake-server/fake-sss-server.py b/tests/fake-server/fake-sss-server.py
+index 372905513b8f..17f8cf596051 100755
+--- a/tests/fake-server/fake-sss-server.py
++++ b/tests/fake-server/fake-sss-server.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ #
+ # Copyright (C) 2013 Canonical Ltd
+ #
+@@ -61,7 +61,7 @@ class FakeServerApp:
+       "/smartscopes/v1/feedback": self.feedback,
+       "/smartscopes/v1/remote-scopes": self.remote_scopes
+     }
+-    if routes.has_key (method):
++    if method in routes:
+       return routes[method](environ, start_response)
+       
+     return self.error ('404 NOT FOUND', 'Unknown method', environ, start_response)
+diff --git a/tests/unit/config-tests.vala.in b/tests/unit/config-tests.vala.in
+index 45c596ee5842..c8b27e859a9f 100644
+--- a/tests/unit/config-tests.vala.in
++++ b/tests/unit/config-tests.vala.in
+@@ -1,10 +1,10 @@
+ namespace Config {
+-  const string VERSION = "@VERSION@";
+-  const string TOPSRCDIR = "@abs_top_srcdir@";
+-  const string TESTDATADIR = "@abs_top_srcdir@/tests/unit/data";
+-  const string TESTRUNDATADIR = "@abs_top_builddir@/tests/unit";
+-  const string DATADIR = "@DATADIR@";
+-  const string PKGDATADIR = "@abs_top_srcdir@/tests/unit/data/unity";
+-  const string LOCALEDIR = "@DATADIR@/locale";
+-  const string PACKAGE = "@PACKAGE@";
++  public const string VERSION = "@VERSION@";
++  public const string TOPSRCDIR = "@abs_top_srcdir@";
++  public const string TESTDATADIR = "@abs_top_srcdir@/tests/unit/data";
++  public const string TESTRUNDATADIR = "@abs_top_builddir@/tests/unit";
++  public const string DATADIR = "@DATADIR@";
++  public const string PKGDATADIR = "@abs_top_srcdir@/tests/unit/data/unity";
++  public const string LOCALEDIR = "@DATADIR@/locale";
++  public const string PACKAGE = "@PACKAGE@";
+ }
+-- 
+2.51.0
+

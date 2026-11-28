@@ -1,0 +1,66 @@
+# base recipe: glib-gir — GObject Introspection data for GLib
+# The .gir and .typelib files for GLib, GObject, GModule and Gio are
+# generated in a SEPARATE package instead of inside glib itself. Why:
+# glib cannot declare gobject-introspection as a build dep — that would
+# create a glib -> gobject-introspection -> glib cycle, which the checker
+# rejects as a hard error — and a shard installs only its declared
+# closure, so glib built the ordinary way never has g-ir-scanner in its
+# build root. glib therefore stays at introspection=disabled, and this
+# recipe rebuilds the same glib source with introspection enabled and
+# installs ONLY the generated .gir/.typelib files (the compiled libraries
+# are discarded). Version tracks glib's version exactly: bump both in
+# lockstep, and keep the meson flags identical to glib's. Every recipe
+# that generates GIRs declares glib-gir as a build dep (so the .gir files
+# are in its build root) and as a run dep (so the .typelib files resolve
+# at runtime).
+[package]
+name = "glib-gir"
+version = "2.82.2"
+rel = 3
+arch = ["x86_64"]
+summary = "GObject Introspection data for GLib"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "glib"
+url = "https://download.gnome.org/sources/glib/2.82/glib-%{version}.tar.xz"
+sha256 = "ab45f5a323048b1659ee0fbda5cecd94b099ab3e4b9abf26ae06aeb3e781fd63"
+strip_components = 1
+
+[depends]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "libffi", "pcre2", "zlib", "util-linux", "gettext", "python-packaging", "glib", "gobject-introspection", "setuptools"]
+run = ["glib", "gobject-introspection"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=enabled -D man-pages=disabled -D documentation=false -D selinux=disabled -D sysprof=disabled -D libmount=enabled -D glib_debug=disabled"
+compile = "ninja -C build"
+install = '''
+mkdir -p %{pkgdir}/usr/share/gir-1.0 %{pkgdir}/usr/lib/girepository-1.0
+install -m 0644 build/girepository/introspection/*.gir %{pkgdir}/usr/share/gir-1.0/
+install -m 0644 build/girepository/introspection/*.typelib %{pkgdir}/usr/lib/girepository-1.0/
+test -e %{pkgdir}/usr/share/gir-1.0/GLib-2.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/GLibUnix-2.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/GObject-2.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/GModule-2.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/Gio-2.0.gir
+test -e %{pkgdir}/usr/share/gir-1.0/GioUnix-2.0.gir
+test -e %{pkgdir}/usr/lib/girepository-1.0/GLib-2.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/GLibUnix-2.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/GObject-2.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/GModule-2.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/Gio-2.0.typelib
+test -e %{pkgdir}/usr/lib/girepository-1.0/GioUnix-2.0.typelib
+'''

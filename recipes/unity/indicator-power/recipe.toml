@@ -1,0 +1,64 @@
+# unity recipe: indicator-power — Unity power indicator service
+# Source: Ubuntu archive orig tarball (12.10.6+17.10.20170829.1); Ubuntu's
+# patches are vendored under patches/ (ubuntu-resolute.patch: drops
+# url-dispatcher support — the three url_dispatch_send("settings:///system/
+# battery") call sites and both #includes are removed, the service just does
+# nothing for the battery-settings action — and disables the test suite)
+# plus Faseela additions (faseela.patch: cmake_minimum_required 2.8.9 ->
+# 3.10 for CMake 4, drop the Upstart job/override installs).
+# Build-time absolute-path note: src/CMakeLists.txt runs gdbus-codegen on
+# the literal path /usr/share/accountsservice/interfaces/
+# com.ubuntu.touch.AccountsService.Sound.xml, which is installed by the
+# gsettings-ubuntu-touch-schemas recipe (as a symlink into dbus-1/interfaces)
+# — hence that build dep, for build ordering.
+# UPower is D-Bus-only at runtime (the service never links libupower-glib).
+[package]
+name = "indicator-power"
+version = "12.10.6"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity power indicator service"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "indicator-power"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/i/indicator-power/indicator-power_12.10.6+17.10.20170829.1.orig.tar.gz"
+sha256 = "033dda58971929de265a1dc262932c31a69fc64522bc9f5f0be850585d27e3df"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "glib", "libnotify", "libgudev", "gettext", "intltool", "cmake-extras", "gsettings-ubuntu-touch-schemas"]
+run = ["libnotify", "glib", "upower", "libindicator", "dconf"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/ubuntu-resolute.patch", "patches/faseela.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/ubuntu-resolute.patch
+patch -p1 < %{assetsdir}/patches/faseela.patch
+'''
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -x %{pkgdir}/usr/lib/indicator-power/indicator-power-service
+test -e %{pkgdir}/usr/share/unity/indicators/com.canonical.indicator.power
+test -e %{pkgdir}/usr/lib/systemd/user/indicator-power.service
+test -e %{pkgdir}/usr/share/glib-2.0/schemas/com.canonical.indicator.power.gschema.xml
+test -e %{pkgdir}/usr/share/indicator-power/sounds/Low
+'''

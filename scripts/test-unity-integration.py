@@ -21,6 +21,13 @@ required = {
     "ido", "libindicator", "libappindicator", "indicator-application", "indicator-appmenu",
     "ibus", "gnome-desktop3", "accountsservice", "colord", "libgusb",
     "xpathselect", "gsettings-ubuntu-touch-schemas", "dconf",
+    # Complete Unity 7: own greeter, control-center, Dash lenses + home scope,
+    # the four panel indicators and Unity's notification daemon.
+    "unity-greeter", "unity-control-center",
+    "unity-lens-applications", "unity-lens-files", "unity-lens-music",
+    "unity-lens-photos", "unity-lens-video", "unity-scope-home",
+    "indicator-sound", "indicator-session", "indicator-datetime", "indicator-power",
+    "notify-osd",
 }
 present = {p.parent.name for p in UNITY.glob("*/recipe.toml")}
 assert required <= present, f"missing Unity recipes: {sorted(required - present)}"
@@ -59,7 +66,11 @@ d_install = desktop["build"]["install"]
 d_run = set(desktop["depends"]["run"])
 assert {"unity-session", "unity", "unity-settings-daemon", "compiz", "bamf", "zeitgeist",
         "audio-session", "xorg-server", "xf86-input-libinput", "polkit", "dbus-system",
-        "xdg-desktop-portal-gtk", "xkeyboard-config", "xkbcomp"} <= d_run
+        "xdg-desktop-portal-gtk", "xkeyboard-config", "xkbcomp",
+        "unity-lens-applications", "unity-lens-files", "unity-lens-music",
+        "unity-lens-photos", "unity-lens-video", "unity-scope-home",
+        "indicator-sound", "indicator-session", "indicator-datetime", "indicator-power",
+        "unity-control-center", "notify-osd", "appmenu-gtk-module"} <= d_run
 assert "XkbLayout" in d_install and "us,ara" in d_install and "grp:alt_shift_toggle" in d_install
 assert "OnlyShowIn=Unity;" in d_install
 assert "faseela-audio-session" in d_install
@@ -85,7 +96,7 @@ assert "--disable-gestures" in nux["build"]["configure"]
 flavors = tomllib.loads((ROOT / "flavors.toml").read_text(encoding="utf-8"))["flavor"]
 unity_flavor = flavors["iso-unity"]
 assert unity_flavor["extends"] == ["iso-nogui"]
-assert {"unity-desktop", "lightdm", "lightdm-gtk-greeter"} <= set(unity_flavor["include"])
+assert {"unity-desktop", "lightdm", "unity-greeter"} <= set(unity_flavor["include"])
 for forbidden in ("greetd", "cosmic-greeter", "sway"):
     assert forbidden not in unity_flavor["include"]
 assert "disable_services" not in unity_flavor  # LightDM stays the login manager
@@ -94,7 +105,7 @@ assert "disable_services" not in unity_flavor  # LightDM stays the login manager
 groups = tomllib.loads((ROOT / "groups.toml").read_text(encoding="utf-8"))["group"]
 unity_group = next(g for g in groups if g["id"] == "unity")
 assert unity_group["mandatory"] == ["unity-desktop"]
-assert {"lightdm", "lightdm-gtk-greeter", "firefox"} <= set(unity_group["default"])
+assert {"lightdm", "unity-greeter", "firefox"} <= set(unity_group["default"])
 # The group mirrors iso-unity's desktop applications (minus the meta package).
 assert set(unity_flavor["include"]) - {"unity-desktop"} <= set(unity_group["default"])
 # Every group member must be a real recipe (check-groups.py also enforces this).
@@ -105,8 +116,8 @@ for member in unity_group["mandatory"] + unity_group["default"] + unity_group["o
 # --- documentation: recipe counts, layout and the runtime smoke checklist ----
 recipes_readme = (ROOT / "recipes" / "README.md").read_text(encoding="utf-8")
 assert "├── unity/" in recipes_readme, "recipes/README.md must list the unity category"
-assert "36 Unity" in recipes_readme, "recipes/README.md must count the Unity recipes"
-assert "590 recipes" in recipes_readme, "recipes/README.md total must match the recipe tree"
+assert "73 Unity" in recipes_readme, "recipes/README.md must count the Unity recipes"
+assert "633 recipes" in recipes_readme, "recipes/README.md total must match the recipe tree"
 assert str(len(all_recipes)) in recipes_readme
 layout = (ROOT / "docs" / "repository-layout.md").read_text(encoding="utf-8")
 assert "| **unity** |" in layout, "docs/repository-layout.md must list the unity category"

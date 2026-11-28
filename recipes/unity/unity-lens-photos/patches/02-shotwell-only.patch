@@ -1,0 +1,44 @@
+# Ship SHOTWELL-ONLY: drop the dead online daemons (flickr, facebook,
+# picasa) from the photos lens.
+#
+# Those three daemons talk to dead Canonical-era web services (Flickr /
+# Facebook / Picasa APIs via gdata, signon, libsoup, httplib2, oauthlib)
+# and would pull in libsoup2 + oauth deps for services that no longer
+# exist. The Shotwell daemon is the only one that works offline against a
+# local photo library. The recipe's prepare step `rm -f`s the dead daemon
+# .py files, their D-Bus .service files, their .scope.in files and
+# unity-lens-photos.application.in; this patch removes the references to
+# them from setup.py data_files and setup.cfg so the DistUtilsExtra
+# build_i18n step (intltool-merge over the .scope files) only processes
+# shotwell. The Ubuntu NoDisplay patch (01) is separate and kept.
+# NOT fixed here (documented in the recipe): the shotwell previewer
+# hardcodes /usr/bin/shotwell, /usr/bin/nautilus and /usr/bin/lpr paths.
+--- a/setup.py
++++ b/setup.py
+@@ -12,13 +12,7 @@
+       license="GNU General Public License (GPL)",
+       data_files=[
+     ('share/unity-scopes/shotwell', ['src/unity_shotwell_daemon.py']),
+-    ('share/unity-scopes/flickr', ['src/unity_flickr_daemon.py']),
+-    ('share/unity-scopes/facebook', ['src/unity_facebook_daemon.py']),
+-    ('share/unity-scopes/picasa', ['src/unity_picasa_daemon.py']),
+     ('share/dbus-1/services', ['data/unity-scope-shotwell.service']),
+-    ('share/dbus-1/services', ['data/unity-scope-flickr.service']),
+-    ('share/dbus-1/services', ['data/unity-scope-facebook.service']),
+-    ('share/dbus-1/services', ['data/unity-scope-picasa.service']),
+     ('share/applications', ['unity-lens-photos.desktop']),
+     ('share/pixmaps', ['unity-lens-photos.png']),
+     ], cmdclass={"build":  build_extra.build_extra,
+--- a/setup.cfg
++++ b/setup.cfg
+@@ -3,9 +3,5 @@
+ 
+ [build_i18n]
+ domain=unity-lens-photos
+-desktop_files=[("share/unity/scopes/photos", ("data/facebook.scope.in",
+-                                              "data/flickr.scope.in",
+-                                              "data/picasa.scope.in",
+-                                              "data/shotwell.scope.in",))]
+-xml_files_no_trans=[("share/accounts/applications", ("unity-lens-photos.application.in",))]
++desktop_files=[("share/unity/scopes/photos", ("data/shotwell.scope.in",))]
+ 

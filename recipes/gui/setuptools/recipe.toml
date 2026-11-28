@@ -1,0 +1,47 @@
+# gui recipe: setuptools — Python packaging and distribution tools (pure python)
+# Required by gobject-introspection: its meson errors on Python >= 3.12
+# without setuptools installed. Faseela ships Python 3.13.
+[package]
+name = "setuptools"
+version = "84.2.1"
+rel = 3
+arch = ["x86_64"]
+summary = "Python packaging and distribution tools (pure python)"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "setuptools"
+url = "https://files.pythonhosted.org/packages/70/b3/c19426f783614d625699a4b247faf628ea9ab1db228674491767b417f9e1/setuptools-%{version}.tar.gz"
+sha256 = "3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc"
+strip_components = 1
+
+[depends]
+build = ["python"]
+run = ["python"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+install = '''
+# The standalone top-level pkg_resources package was removed upstream in
+# setuptools 81, so only setuptools/ and _distutils_hack/ are installed.
+# The distutils-precedence.pth is also required: it is what activates
+# _distutils_hack at interpreter startup, so that `import distutils`
+# resolves to setuptools' bundled distutils. Without it, g-ir-scanner
+# (gobject-introspection) fails on Python 3.13 with
+# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1).
+# The .pth contents are upstream setuptools' own install_with_pth text.
+site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+install -d "%{pkgdir}$site"
+cp -r setuptools "%{pkgdir}$site/"
+cp -r _distutils_hack "%{pkgdir}$site/"
+printf '%s\n' "import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.environ.get(var, 'local') == 'local'; enabled and __import__('_distutils_hack').add_shim()" > "%{pkgdir}$site/distutils-precedence.pth"
+find "%{pkgdir}$site/setuptools" "%{pkgdir}$site/_distutils_hack" -name __pycache__ -prune -exec rm -rf {} +
+'''

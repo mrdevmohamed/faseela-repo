@@ -1,0 +1,51 @@
+# unity recipe: notify-osd — Unity notification daemon
+# Source: Ubuntu archive orig tarball (0.9.35+20.04.20191129, debian
+# revision -4, resolute). Autotools. This is Unity's own notification
+# daemon, in ubuntu-unity-desktop Depends (via the `notify-osd` binary);
+# nothing else in the repo provides org.freedesktop.Notifications.
+# Build deps verified from configure.in (all PKG_CHECK_MODULES, REQUIRED):
+# glib-2.0/gthread-2.0/gio-2.0, libwnck-3.0 (dnd code), libnotify,
+# dbus-glib-1, x11, pixman-1 + gtk+-3.0. The src/apport.c file is
+# self-contained (glib only) — no apport package is needed. The D-Bus
+# service file org.freedesktop.Notifications.service is installed by
+# upstream (Debian deletes it and uses an autostart .desktop instead; here
+# it is kept so D-Bus activation works — session wiring is the flavor's job).
+# The daemon binary installs to /usr/libexec/notify-osd (upstream
+# libexecdir default; the .service Exec= matches).
+[package]
+name = "notify-osd"
+version = "0.9.35"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity notification daemon"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "notify-osd"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/n/notify-osd/notify-osd_0.9.35+20.04.20191129.orig.tar.gz"
+sha256 = "3148c4bf3bb896251912180f2f0983fe6ad2093a60e4a6aefc1c75a7588fe235"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "libnotify", "dbus-glib", "libX11", "pixman", "libwnck3", "gnome-common", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "libnotify", "dbus-glib", "libX11", "pixman", "libwnck3", "gsettings-desktop-schemas"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = '''export CFLAGS="-O2 -std=gnu17 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -x %{pkgdir}/usr/libexec/notify-osd
+test -e %{pkgdir}/usr/share/dbus-1/services/org.freedesktop.Notifications.service
+'''

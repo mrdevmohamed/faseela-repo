@@ -1,0 +1,105 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -46,11 +46,6 @@
+ )
+ include_directories(${SOUNDSERVICE_INCLUDE_DIRS})
+ 
+-pkg_check_modules(
+-  TEST REQUIRED
+-  dbustest-1>=15.04.0
+-)
+-include_directories(${TEST_INCLUDE_DIRS})
+ 
+ find_package(Vala 0.20)
+ 
+--- a/data/CMakeLists.txt
++++ b/data/CMakeLists.txt
+@@ -39,36 +39,6 @@
+          DESTINATION "${SYSTEMD_USER_DIR}")
+ 
+ ###########################
+-#  Upstart systemd override Job File
+-###########################
+-
+-set (UPSTART_SYSTEMD_OVERRIDE_DIR "${CMAKE_INSTALL_FULL_DATADIR}/upstart/systemd-session/upstart")
+-message (STATUS "${UPSTART_SYSTEMD_OVERRIDE_DIR} is the Upstart override Job File for systemd dir")
+-
+-install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.override"
+-         DESTINATION "${UPSTART_SYSTEMD_OVERRIDE_DIR}")
+-
+-###########################
+-# Upstart Job
+-###########################
+-
+-set(
+-  INDICATOR_SOUND_CONF
+-  "${CMAKE_CURRENT_BINARY_DIR}/indicator-sound.conf"
+-)
+-
+-configure_file(
+-  "indicator-sound.conf.in"
+-  ${INDICATOR_SOUND_CONF}
+-  @ONLY
+-)
+-
+-install(
+-  FILES "${INDICATOR_SOUND_CONF}"
+-  DESTINATION "${CMAKE_INSTALL_DATADIR}/upstart/sessions/"
+-)
+-
+-###########################
+ # GSettings
+ ###########################
+ 
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -7,18 +7,7 @@
+ set(SYMBOLS_PATH "${CMAKE_CURRENT_BINARY_DIR}/indicator-sound-service.def")
+ set(VAPI_PATH "${CMAKE_CURRENT_BINARY_DIR}/indicator-sound-service.vapi")
+ 
+-vapi_gen(accounts-service
+-    LIBRARY
+-        accounts-service
+-    PACKAGES
+-        gio-2.0
+-    INPUT
+-        /usr/share/gir-1.0/AccountsService-1.0.gir
+-)
+-
+ vala_init(indicator-sound-service
+-  DEPENDS
+-    accounts-service
+   PACKAGES
+     config
+     gee-0.8
+@@ -275,7 +264,6 @@
+   RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/indicator-sound/
+ )
+ 
+-add_subdirectory(gmenuharness)
+ 
+ # coverage reporting
+ set(COVERAGE_TARGETS
+--- a/vapi/accounts-service.vapi
++++ b/vapi/accounts-service.vapi
+@@ -0,0 +1,20 @@
++/* Minimal hand-written VAPI for libaccountsservice (Act namespace).
++ *
++ * indicator-sound only uses Act.UserManager.get_default(), get_user(),
++ * Act.User.is_loaded and Act.User.get_object_path(). Upstream generates
++ * this VAPI from AccountsService-1.0.gir via vapigen, but the Faseela
++ * accountsservice recipe builds with introspection disabled, so no .gir
++ * exists in the build root. This binding covers exactly the API the
++ * service uses; the C functions come from libaccountsservice (act/act.h).
++ */
++[CCode (cheader_filename = "act/act.h")]
++namespace Act {
++	public class UserManager : GLib.Object {
++		public static UserManager get_default ();
++		public User? get_user (string username);
++	}
++	public class User : GLib.Object {
++		public bool is_loaded { get; }
++		public string get_object_path ();
++	}
++}

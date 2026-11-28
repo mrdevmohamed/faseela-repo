@@ -1,0 +1,65 @@
+# unity recipe: messaging-menu — messaging-menu client library + Ayatana indicator-messages service
+# Source: the AYATANA fork (ayatana-indicator-messages 22.2.0, resolute):
+# resolute's libmessaging-menu0 is built from this source, NOT from the
+# original Canonical messaging-menu (no longer published as such). The .pc
+# name stays `messaging-menu` and version 22.2.0 satisfies
+# indicator-datetime's >= 12.10 requirement.
+# API verdict (checked, not assumed): all 8 messaging_menu_* symbols
+# indicator-datetime uses (app_new/register/unregister/append_message/
+# append_source/has_source/remove_message_by_id, message_new) are declared
+# in the Ayatana headers (messaging-menu-app.h / messaging-menu-message.h);
+# `messaging_menu_data` in indicator-datetime is a local struct, not a
+# library symbol. A real build (CI) is still the proof.
+# Faseela patch (no-gir-no-docs.patch): the GIR/typelib/VAPI generation in
+# libmessaging-menu/CMakeLists.txt is unconditional and REQUIRES
+# gobject-introspection + valac — neither is usable on this branch, and the
+# .gir/.typelib/.vapi are not needed by indicator-datetime — so that whole
+# block is removed; the gtk-doc reference docs (add_subdirectory(doc),
+# needs gtkdoc-scan) are dropped too.
+[package]
+name = "messaging-menu"
+version = "22.2.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Messaging menu client library and indicator-messages service (Ayatana fork)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "messaging-menu"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/a/ayatana-indicator-messages/ayatana-indicator-messages_22.2.0.orig.tar.gz"
+sha256 = "11eb715a9ac59bb6a2e0d99d7937e40656801d3f789d7c015e05d7b7d60603c3"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "glib", "accountsservice", "cmake-extras", "gettext", "intltool", "systemd"]
+run = ["glib", "accountsservice", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-gir-no-docs.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-gir-no-docs.patch
+'''
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -e %{pkgdir}/usr/lib/libmessaging-menu.so
+test -e %{pkgdir}/usr/lib/pkgconfig/messaging-menu.pc
+test -x %{pkgdir}/usr/lib/ayatana-indicator-messages/ayatana-indicator-messages-service
+'''

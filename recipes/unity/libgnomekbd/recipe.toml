@@ -1,0 +1,47 @@
+# unity recipe: libgnomekbd — GNOME keyboard library, keyboard-display tool
+# and its GSettings schemas. Needed by unity-control-center: the region panel
+# reads the org.gnome.libgnomekbd.desktop schema and shells out to
+# gkbd-keyboard-display. (Ubuntu's gkbd-capplet binary is just a transitional
+# package for gkbd-keyboard-display in 3.28, so this recipe covers that run
+# dep too.) Introspection and the Vala API are disabled: nothing in the repo
+# consumes the Gkbd GIR or .vapi.
+[package]
+name = "libgnomekbd"
+version = "3.28.1"
+rel = 2
+arch = ["x86_64"]
+summary = "GNOME keyboard library and keyboard layout display"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgnomekbd"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libg/libgnomekbd/libgnomekbd_3.28.1.orig.tar.xz"
+sha256 = "22dc59566d73c0065350f5a97340e62ecc7b08c4df19183804bb8be24c8fe870"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "libxklavier", "libX11", "gettext"]
+run = ["glib", "gtk3", "libxklavier", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dintrospection=disabled -Dvapi=disabled -Dtests=false"
+compile = "ninja -C build"
+install = '''DESTDIR=%{pkgdir} meson install -C build
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -e %{pkgdir}/usr/lib/libgnomekbd.so
+test -x %{pkgdir}/usr/bin/gkbd-keyboard-display
+test -e %{pkgdir}/usr/share/glib-2.0/schemas/org.gnome.libgnomekbd.desktop.gschema.xml
+'''

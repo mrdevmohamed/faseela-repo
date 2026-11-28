@@ -2,10 +2,19 @@
 # Native Ubuntu tarball. The patch drops appstream-glib (title/icon lookup in the
 # software-center integration only) and the multitouch-gesture code (needs a nux
 # built with libgeis), and adds two missing includes.
+# uwidgets: the uwidgets/ Python framework ships in this source but is NOT built
+# or installed by CMake (no add_subdirectory(uwidgets)); the install step below
+# installs it via setup.py, as Debian's unity-uwidgets package does.
+# unity-scopes-runner: NOT from this source — no such file/target exists in the
+# 7.7.1 tarball and Ubuntu's unity .deb does not ship it. It is the Python
+# script bindings/python/scope-runner-dbus.py from the libunity source, and
+# ships in the `libunity` recipe (Ubuntu's unity-scopes-runner .deb, Source:
+# libunity, contains only that one file, byte-identical to the tarball copy).
+# unity-scope-home (the master scope) is a run dep below.
 [package]
 name = "unity"
 version = "7.7.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity 7 desktop shell"
 license = ["GPL-3.0-only", "LGPL-3.0-only"]
@@ -18,8 +27,8 @@ sha256 = "2fb80ea1802181ed853862aa8494df169f20911ced41bd315a1a8a0b3b1ee69a"
 strip_components = 1
 
 [depends]
-build = ["cmake", "make", "pkgconf", "python", "glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "libxcb", "linux-pam", "mesa", "libglu", "glewmx", "boost", "protobuf", "libwnck3", "gsettings-desktop-schemas", "gettext", "intltool"]
-run = ["glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "linux-pam", "mesa", "libglu", "glewmx", "boost", "libwnck3", "gsettings-desktop-schemas"]
+build = ["cmake", "make", "pkgconf", "python", "setuptools", "pycairo", "libXinerama", "glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "libxcb", "linux-pam", "mesa", "libglu", "glewmx", "boost", "protobuf", "libwnck3", "gsettings-desktop-schemas", "gettext", "intltool"]
+run = ["glib", "glibmm", "gtk3", "gdk-pixbuf", "cairo", "pango", "at-spi2-core", "libdbusmenu", "dee", "json-glib", "bamf", "gnome-desktop3", "unity-settings-daemon", "libnotify", "startup-notification", "nux", "libsigc++", "libunity", "libunity-misc", "libindicator", "xpathselect", "zeitgeist", "compiz", "libX11", "libXfixes", "libXi", "libXrender", "linux-pam", "mesa", "libglu", "glewmx", "boost", "libwnck3", "gsettings-desktop-schemas", "unity-greeter", "unity-scope-home", "unity-asset-pool", "libappstream-glib8", "pygobject", "gsettings-ubuntu-touch-schemas", "python", "pycairo"]
 
 [capabilities]
 provides = []
@@ -51,4 +60,18 @@ rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
 test -x %{pkgdir}/usr/bin/unity
 test -e %{pkgdir}/usr/lib/compiz/libunityshell.so
 test -x %{pkgdir}/usr/lib/unity/unity-panel-service
+# --- uwidgets: Python widget framework shipped in this source ---------------
+# CMake never builds it (no add_subdirectory(uwidgets)); Debian installs the
+# same files as its unity-uwidgets package (Recommends of unity): the library
+# + uwidgets-runner + the autostart entry. setup.py builds a C extension
+# (uwidgets._x11, links cairo/X11/Xinerama, includes pycairo.h) — hence the
+# setuptools/pycairo/libXinerama build deps. Same `setup.py install` shape as
+# unity-lens-photos. The tarball ships a stale Ubuntu build dir (cpython-312);
+# drop it so nothing prebuilt leaks into this package.
+rm -rf uwidgets/build
+python3 uwidgets/setup.py install --prefix=/usr --root=%{pkgdir}
+install -D -m 0644 uwidgets/uwidgets-runner.desktop %{pkgdir}/etc/xdg/autostart/uwidgets-runner.desktop
+test -x %{pkgdir}/usr/bin/uwidgets-runner
+test -e %{pkgdir}/etc/xdg/autostart/uwidgets-runner.desktop
+ls -d %{pkgdir}/usr/lib/python3*/site-packages/uwidgets/__init__.py >/dev/null
 '''

@@ -1,0 +1,47 @@
+# unity recipe: libcolumbus — error-tolerant fuzzy matching library (Unity)
+# Source: Ubuntu pool orig tarball 1.1.0+15.10.20150806 (same upstream for
+# resolute 0ubuntu39 and 0ubuntu41; only the packaging revision differs).
+# sha256 verified against the signed .dsc. CMake build; the C++ library
+# needs ICU (hard requirement) and sparsehash (optional upstream, enabled
+# here to match Ubuntu). The Python bindings are NOT built: upstream's
+# cmake/python.cmake only enables them when boost/python.hpp AND the
+# python3 dev libs AND a boost_python lib are all found, and this tree has
+# no boost-python, so build_python stays FALSE. Ubuntu's
+# 0001-fix-build-with-python3.10 patch touches only the bindings path and
+# is therefore not carried. Tests are off (they need the bindings).
+[package]
+name = "libcolumbus"
+version = "1.1.0+15.10.20150806"
+rel = 2
+arch = ["x86_64"]
+summary = "Error-tolerant fuzzy matching library"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libcolumbus"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libc/libcolumbus/libcolumbus_%{version}.orig.tar.gz"
+sha256 = "b57fc4a4d0a90b62273f11d5e9ccde0eb6cce9f220ca300631d95d115690eb79"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "icu", "sparsehash"]
+run = ["icu"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Denable_tests=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -n "$(ls %{pkgdir}/usr/lib/libcolumbus.so* 2>/dev/null)"
+test -e %{pkgdir}/usr/lib/pkgconfig/libcolumbus.pc
+test -e %{pkgdir}/usr/include/columbus1/columbus.h
+'''

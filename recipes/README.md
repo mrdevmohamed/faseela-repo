@@ -26,12 +26,12 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 11 toolchain + 40 base + 53 system + 8 boot + 98 extra =
-**210 core packages**. Optional categories contain 149 GUI, 23 COSMIC, 2 greeter,
+Current set: 11 toolchain + 41 base + 53 system + 8 boot + 98 extra =
+**211 core packages**. Optional categories contain 149 GUI, 23 COSMIC, 2 greeter,
 30 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
 12 security, 1 peripheral, 12 dev, 4 development, 1 Cinnamon, 20 MATE,
 16 Unity and 12 Flatpak packages. The recipe tree
-contains **603 recipes** in total (counts generated from the current recipe tree).
+contains **604 recipes** in total (counts generated from the current recipe tree).
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,

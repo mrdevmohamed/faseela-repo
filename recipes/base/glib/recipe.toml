@@ -1,15 +1,8 @@
 # gui recipe: glib — Low-level core library of GNOME
-# Two-stage bootstrap: gobject-introspection is built FIRST against the
-# stage-1 glib (introspection disabled), then glib is rebuilt with
-# introspection enabled. The build dep on gobject-introspection is
-# deliberately NOT declared here: declaring it would create a
-# glib -> gobject-introspection -> glib cycle, which check-recipes.py
-# rejects as a hard error. Build order must be: glib (stage 1) ->
-# gobject-introspection -> glib (stage 2, this recipe) -> GIR consumers.
 [package]
 name = "glib"
 version = "2.82.2"
-rel = 3
+rel = 2
 arch = ["x86_64"]
 summary = "Low-level core library of GNOME"
 license = ["LGPL-2.1-or-later"]
@@ -34,6 +27,6 @@ conflicts = []
 replaces = []
 
 [build]
-configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=enabled -D man-pages=disabled -D documentation=false -D selinux=disabled -D sysprof=disabled -D libmount=enabled -D glib_debug=disabled"
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D tests=false -D introspection=disabled -D man-pages=disabled -D documentation=false -D selinux=disabled -D sysprof=disabled -D libmount=enabled -D glib_debug=disabled"
 compile = "ninja -C build"
 install = "DESTDIR=%{pkgdir} meson install -C build"

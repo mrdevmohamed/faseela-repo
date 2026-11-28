@@ -19,8 +19,8 @@ sha256 = "ece6b860aab77cb649fdfc6e88d8a83765e7a62f7ffd39a628d6e2a0d397a7ff"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "python", "pycairo", "glib", "gobject-introspection", "libffi", "cairo"]
-run = ["python", "pycairo", "glib", "gobject-introspection", "cairo"]
+build = ["meson", "ninja", "pkgconf", "python", "pycairo", "glib", "gobject-introspection", "glib-gir", "libffi", "cairo"]
+run = ["python", "pycairo", "glib", "glib-gir", "gobject-introspection", "cairo"]
 
 [capabilities]
 provides = []

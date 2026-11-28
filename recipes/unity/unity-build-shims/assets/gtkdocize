@@ -11,4 +11,4 @@ while [ $# -gt 0 ]; do
     shift
 done
 mkdir -p "$dir"
-cp /usr/share/gtk-doc/data/gtk-doc.make "$dir/gtk-doc.make"
+cp /usr/lib/unity-build-shims/gtk-doc.make "$dir/gtk-doc.make"

@@ -4,11 +4,13 @@
 # version is 1.28.1, not 1.28.2: the v1.28.2 tag's release asset is actually
 # the 1.28.1 tarball. The wnck option defaults off (upstream warns it
 # segfaults), and systemd support stays on. No mate-desktop dependency:
-# meson.build never references mate-desktop-2.0.
+# meson.build never references mate-desktop-2.0. itstool is a hard meson
+# requirement (help/meson.build: "Program 'itstool' not found") — PR #237
+# wave 2, run 46126068976; same missing-dep class as mate-panel (87d155e).
 [package]
 name = "mate-system-monitor"
 version = "1.28.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE system monitor: processes and resources"
 license = ["GPL-2.0-or-later"]
@@ -21,7 +23,7 @@ sha256 = "42d663d6b90fb5361ebc13f6547983d6f1e2ac75dc2ae4f1cac6ea6329965a25"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gtkmm", "glibmm", "libgtop", "librsvg", "libxml2", "systemd"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gtkmm", "glibmm", "libgtop", "librsvg", "libxml2", "systemd", "itstool"]
 run = ["glib", "gtk3", "gtkmm", "glibmm", "libgtop", "librsvg", "libxml2", "systemd"]
 
 [capabilities]

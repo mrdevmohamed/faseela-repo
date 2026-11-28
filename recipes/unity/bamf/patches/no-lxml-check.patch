@@ -1,0 +1,14 @@
+# bamf: drop the hard python3-lxml configure check.
+# lxml is only used by tests/gtester2xunit.py (test-result conversion),
+# which this build never runs, so the check is demoted to a warning
+# instead of adding a whole python-lxml recipe for it.
+--- a/configure.ac
++++ b/configure.ac
+@@ -112,7 +112,7 @@ AC_PATH_PROG([PYTHON],[python3])
+ AC_MSG_CHECKING(for gtester2xunit dependencies)
+ if !($PYTHON -c "from lxml import etree" 2> /dev/null); then
+   AC_MSG_RESULT([no])
+-  AC_MSG_ERROR([You need to install python3-lxml]);
++  AC_MSG_WARN([python3-lxml missing; gtester2xunit tests will be skipped]);
+ fi
+ AC_MSG_RESULT([yes])

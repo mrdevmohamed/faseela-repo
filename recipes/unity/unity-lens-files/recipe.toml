@@ -1,0 +1,68 @@
+# unity recipe: unity-lens-files — Unity files lens (Dash files)
+# Source: Ubuntu pool orig tarball 7.1.0+17.10.20170605 (sha256 verified).
+# Single pkglibexec daemon (unity-files-daemon) + D-Bus service + GSettings
+# schema. No .scope file is installed upstream (the lens registers via its
+# D-Bus service only). Uses the zeitgeist-2.0 API — depends on the repo's
+# `zeitgeist` recipe (1.0.4), NOT on libzeitgeist-1.0.
+#
+# locate: KEPT AS-IS, no mlocate/plocate recipe. src/locate.vala shells
+# out to the `locate` binary, but a missing binary raises SpawnError,
+# which propagates through perform_locate (throws Error) to both call
+# sites in daemon.vala, where `catch (GLib.Error e)` logs a warning and
+# commits the transaction with the Zeitgeist recent-files results already
+# added. Filename search then yields nothing; Zeitgeist results are
+# preserved. Graceful degradation — no patch, documented here.
+# The tarball ships no configure script (only configure.ac), so
+# autoreconf -fi runs first, like unity-lens-applications. Patch 01 is
+# test-only valac-compat and touches no build file.
+[package]
+name = "unity-lens-files"
+version = "7.1.0+17.10.20170605"
+rel = 3
+arch = ["x86_64"]
+summary = "Unity files lens"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-lens-files"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-lens-files/unity-lens-files_%{version}.orig.tar.gz"
+sha256 = "f1642cdf1b6383dd58771c9733b839a6e86d3a79368a07703b91740cf18fac92"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "dee", "zeitgeist", "libunity", "libgee-0.8", "vala", "intltool", "gettext", "gnome-common", "autoconf", "automake", "libtool", "dbus"]
+run = ["glib", "dee", "zeitgeist", "libunity", "libgee-0.8"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/01-ubuntu-valac-compat.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/libexec/unity-lens-files/unity-files-daemon
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-files-local.service
+test -e %{pkgdir}/usr/share/glib-2.0/schemas/com.canonical.Unity.FilesLens.gschema.xml
+'''
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"

@@ -1,0 +1,32 @@
+# gui recipe: pycairo — Python bindings for the cairo graphics library
+[package]
+name = "pycairo"
+version = "1.29.2"
+rel = 2
+arch = ["x86_64"]
+summary = "Python bindings for the cairo graphics library"
+license = ["LGPL-2.1-only", "MPL-1.1"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "pycairo"
+url = "https://files.pythonhosted.org/packages/bb/5e/19ab2572981a996ce96b853a189d2dcced40506b67d9555a7568457abcf2/pycairo-%{version}.tar.gz"
+sha256 = "3e69fff74fe64f5ba2dfa31f67c6bdf26413342574047437d2ac520d35e9a489"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "python", "cairo"]
+run = ["python", "cairo"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dtests=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

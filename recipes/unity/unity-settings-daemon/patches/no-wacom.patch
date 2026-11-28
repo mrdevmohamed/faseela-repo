@@ -1,0 +1,27 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -302,23 +302,7 @@
+ dnl - wacom (disabled for s390/s390x and non Linux platforms)
+ dnl ---------------------------------------------------------------------------
+ 
+-case $host_os in
+-  linux*)
+-    if test "$host_cpu" = s390 -o "$host_cpu" = s390x; then
+-      have_wacom=no
+-    else
+-      if test x$enable_gudev != xno; then
+-        PKG_CHECK_MODULES(WACOM, [libwacom >= $LIBWACOM_REQUIRED_VERSION x11 xi xtst gudev-1.0 gnome-desktop-3.0 >= $GNOME_DESKTOP_REQUIRED_VERSION xorg-wacom librsvg-2.0 >= $LIBRSVG_REQUIRED_VERSION])
+-      else
+-        AC_MSG_ERROR([GUdev is necessary to compile Wacom support])
+-      fi
+-      have_wacom=yes
+-    fi
+-    ;;
+-  *)
+-    have_wacom=no
+-    ;;
+-esac
++have_wacom=no
+ AM_CONDITIONAL(HAVE_WACOM, test x$have_wacom = xyes)
+ 
+ dnl ==============================================

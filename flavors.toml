@@ -13,6 +13,7 @@
 #   iso-sway    common base + Sway Wayland desktop
 #   iso-xfce    common base + Xfce desktop on Xorg
 #   iso-cosmic  common base + COSMIC Wayland desktop
+#   iso-unity   common base + Unity 7 desktop on Xorg
 #
 # Optional applications (media players, editors, messaging, VPN clients,
 # peripherals, developer tools) are installed separately through Nawa.
@@ -91,3 +92,24 @@ include = ["@cosmic", "firefox", "greetd", "cosmic-greeter"]
 exclude = ["lightdm", "lightdm-gtk-greeter"]
 disable_services = ["getty@tty1", "lightdm"]
 enable_services = ["cosmic-greeter"]
+
+# Unity 7 desktop image: Compiz + Nux shell on Xorg, started by LightDM.
+# The session (unity-session) imports the login environment into the systemd
+# user manager; LightDM autologin/greeter selection uses the unity xsession.
+[flavor.iso-unity]
+summary = "Live system with Unity 7 on Xorg and LightDM"
+extends = ["iso-nogui"]
+include = [
+    "unity-desktop",
+    "lightdm",
+    "unity-greeter",
+    "xfce4-terminal",
+    "mousepad",
+    "ristretto",
+    "xfce4-taskmanager",
+    "network-manager-applet",
+    "thunar-archive-plugin",
+    "xarchiver",
+    "pavucontrol",
+    "firefox"
+]

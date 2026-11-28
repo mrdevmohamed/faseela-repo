@@ -1,0 +1,12 @@
+--- a/compizconfig/CMakeLists.txt
++++ b/compizconfig/CMakeLists.txt
+@@ -20,9 +20,7 @@
+ endif (COMPIZ_PACKAGING_ENABLED)
+ 
+ add_subdirectory (libcompizconfig)
+-add_subdirectory (compizconfig-python)
+ add_subdirectory (integration)
+-add_subdirectory (ccsm)
+ add_subdirectory (gsettings)
+ 
+ if (COMPIZ_BUILD_TESTING)

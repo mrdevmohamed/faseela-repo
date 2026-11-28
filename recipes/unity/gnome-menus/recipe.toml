@@ -1,0 +1,40 @@
+# unity recipe: gnome-menus — GNOME menu library (libgnome-menu-3).
+# Needed by unity-control-center (shell) and the applications lens.
+# Source: Ubuntu orig tarball 3.38.1 (Resolute). Introspection is disabled:
+# nothing in the repo consumes the GMenu GIR (the lens uses the Vala API).
+[package]
+name = "gnome-menus"
+version = "3.38.1"
+rel = 2
+arch = ["x86_64"]
+summary = "GNOME menu library (libgnome-menu-3)"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gnome-menus"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/g/gnome-menus/gnome-menus_3.38.1.orig.tar.xz"
+sha256 = "1198a91cdbdcfb232df94e71ef5427617d26029e327be3f860c3b0921c448118"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gettext"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = '''export CFLAGS="-O2 -Wno-error"
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-introspection
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libgnome-menu-3.so
+test -e %{pkgdir}/usr/lib/pkgconfig/libgnome-menu-3.0.pc
+'''

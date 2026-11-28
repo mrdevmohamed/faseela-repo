@@ -1,0 +1,41 @@
+# unity recipe: unity-gtk-module — GTK module exporting menus for the Unity global menu
+# Source: Ubuntu archive orig tarball (0.0.0+18.04.20171202); Ubuntu's patches are vendored under patches/.
+[package]
+name = "unity-gtk-module"
+version = "0.0.0"
+rel = 2
+arch = ["x86_64"]
+summary = "GTK module exporting menus for the Unity global menu"
+license = ["LGPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-gtk-module"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-gtk-module/unity-gtk-module_0.0.0+18.04.20171202.orig.tar.gz"
+sha256 = "5a78ae6b021aaf35f573a56c7803773b0accdf34112ebfebd00651be87c0e28e"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "libX11", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''set -eu
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --with-gtk=3
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/gtk-3.0/modules/libunity-gtk-module.so
+'''

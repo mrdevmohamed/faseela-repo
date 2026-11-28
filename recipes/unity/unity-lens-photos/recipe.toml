@@ -1,0 +1,68 @@
+# unity recipe: unity-lens-photos — Unity photos lens (Dash photos)
+# Source: Ubuntu pool orig tarball 1.0+17.10.20170605 (sha256 verified).
+# Python (setup.py distutils + DistUtilsExtra), NOT compiled. Ships
+# SHOTWELL-ONLY: patch 02 drops the flickr/facebook/picasa daemons, their
+# D-Bus services and .scope files (dead online services; would need
+# gdata/signon/libsoup/httplib2/oauthlib). The Shotwell daemon is the only
+# one that works offline against a local photo library.
+#
+# Build decision: a `python-distutils-extra` recipe (direct-copy install
+# of DistUtilsExtra/ into site-packages) instead of patching setup.py to
+# plain setuptools. setup.py imports `distutils.core` (provided at build
+# time by the setuptools distutils-precedence.pth shim — hence setuptools
+# in build deps) and DistUtilsExtra's build_extra/build_i18n commands
+# (intltool-merge + msgfmt for the .scope translations — hence intltool
+# and gettext in build deps). Run deps: python + pygobject (the daemons
+# do `from gi.repository import Unity, UnityExtras`; the GI typelibs come
+# from the libunity recipe's introspection, another agent's work).
+#
+# Documented, NOT fixed: the shotwell previewer hardcodes
+# /usr/bin/shotwell, /usr/bin/nautilus and /usr/bin/lpr paths (harmless
+# without Shotwell/Nautilus installed; previews just fail to launch).
+[package]
+name = "unity-lens-photos"
+version = "1.0+17.10.20170605"
+rel = 3
+arch = ["x86_64"]
+summary = "Unity photos lens (Shotwell only)"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-lens-photos"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-lens-photos/unity-lens-photos_%{version}.orig.tar.gz"
+sha256 = "ef1f05288c643b6e98d4b4d7b8fcadfd043ed13ae525584c96c65ceb9ea629b7"
+strip_components = 1
+
+[depends]
+build = ["python", "setuptools", "python-distutils-extra", "intltool", "gettext"]
+run = ["python", "pygobject"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/01-ubuntu-nodisplay.patch", "patches/02-shotwell-only.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+rm -f src/unity_flickr_daemon.py src/unity_facebook_daemon.py src/unity_picasa_daemon.py data/unity-scope-flickr.service data/unity-scope-facebook.service data/unity-scope-picasa.service data/facebook.scope.in data/flickr.scope.in data/picasa.scope.in unity-lens-photos.application.in
+'''
+install = '''
+python3 setup.py install --prefix=/usr --root=%{pkgdir}
+chmod 755 %{pkgdir}/usr/share/unity-scopes/shotwell/unity_shotwell_daemon.py
+test -e %{pkgdir}/usr/share/unity-scopes/shotwell/unity_shotwell_daemon.py
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-shotwell.service
+test -e %{pkgdir}/usr/share/unity/scopes/photos/shotwell.scope
+test -e %{pkgdir}/usr/share/applications/unity-lens-photos.desktop
+test ! -e %{pkgdir}/usr/share/unity-scopes/flickr
+test ! -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-flickr.service
+'''

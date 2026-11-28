@@ -1,0 +1,82 @@
+# ido: provide Ubuntu's patched-GTK3 private header locally.
+# <gtk/ubuntu-private.h> only exists in Ubuntu's patched GTK3; Faseela's
+# gtk3 is vanilla upstream, so the header is missing and ido fails to
+# compile: idomenuitemfactory.c implements the UbuntuMenuItemFactory
+# interface declared there (UBUNTU_TYPE_MENU_ITEM_FACTORY,
+# UBUNTU_MENU_ITEM_FACTORY_EXTENSION_POINT_NAME, create_menu_item).
+# This patch ships a stub ubuntu-private.h next to the source and
+# defines the interface type in idomenuitemfactory.c
+# (G_DEFINE_INTERFACE). Replaces no-ubuntu-private-header.patch,
+# which wrongly assumed the file used no symbol from the header.
+--- a/src/idomenuitemfactory.c
++++ b/src/idomenuitemfactory.c
+@@ -18,7 +18,7 @@
+  */
+ 
+ #include <gtk/gtk.h>
+-#include <gtk/ubuntu-private.h>
++#include "ubuntu-private.h"
+ 
+ #include "idoalarmmenuitem.h"
+ #include "idoappointmentmenuitem.h"
+@@ -34,6 +34,17 @@
+ #include "idoswitchmenuitem.h"
+ #include "idoprogressmenuitem.h"
+ 
++/* The UbuntuMenuItemFactory interface is declared in Ubuntu's patched
++ * GTK3 header <gtk/ubuntu-private.h>; Faseela's gtk3 is vanilla upstream
++ * and does not provide it, so the interface type is defined here (the
++ * declaration lives in ubuntu-private.h next to this file). */
++G_DEFINE_INTERFACE (UbuntuMenuItemFactory, ubuntu_menu_item_factory, G_TYPE_OBJECT)
++
++static void
++ubuntu_menu_item_factory_default_init (UbuntuMenuItemFactoryInterface *iface)
++{
++}
++
+ #define IDO_TYPE_MENU_ITEM_FACTORY         (ido_menu_item_factory_get_type ())
+ #define IDO_MENU_ITEM_FACTORY(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), IDO_TYPE_MENU_ITEM_FACTORY, IdoMenuItemFactory))
+ #define IDO_IS_MENU_ITEM_FACTORY(o)        (G_TYPE_CHECK_INSTANCE_TYPE ((o), IDO_TYPE_MENU_ITEM_FACTORY))
+--- a/src/ubuntu-private.h
++++ b/src/ubuntu-private.h
+@@ -0,0 +1,40 @@
++/* Stub for Ubuntu's patched-GTK3 private header <gtk/ubuntu-private.h>.
++ *
++ * Faseela's gtk3 is vanilla upstream GTK3, which does not ship this header
++ * (it only exists in Ubuntu's patched GTK). ido's menu-item factory
++ * implements the UbuntuMenuItemFactory interface declared there, so the
++ * interface is declared here and its GType is defined in
++ * idomenuitemfactory.c (G_DEFINE_INTERFACE). Nothing in Faseela's GTK
++ * looks the factory up, so the extension-point registration is a harmless
++ * no-op at runtime; the factory's create_menu_item stays reachable
++ * through ido itself.
++ */
++#ifndef IDO_UBUNTU_PRIVATE_H
++#define IDO_UBUNTU_PRIVATE_H
++
++#include <gtk/gtk.h>
++
++G_BEGIN_DECLS
++
++#define UBUNTU_MENU_ITEM_FACTORY_EXTENSION_POINT_NAME "ubuntu-menu-item-factory"
++
++typedef struct _UbuntuMenuItemFactory UbuntuMenuItemFactory;
++typedef struct _UbuntuMenuItemFactoryInterface UbuntuMenuItemFactoryInterface;
++
++struct _UbuntuMenuItemFactoryInterface
++{
++  GTypeInterface parent_iface;
++
++  GtkMenuItem * (*create_menu_item) (UbuntuMenuItemFactory *factory,
++                                     const gchar           *type,
++                                     GMenuItem             *menuitem,
++                                     GActionGroup          *actions);
++};
++
++#define UBUNTU_TYPE_MENU_ITEM_FACTORY (ubuntu_menu_item_factory_get_type ())
++
++GType ubuntu_menu_item_factory_get_type (void);
++
++G_END_DECLS
++
++#endif /* IDO_UBUNTU_PRIVATE_H */

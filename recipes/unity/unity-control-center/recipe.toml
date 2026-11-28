@@ -1,0 +1,64 @@
+# unity recipe: unity-control-center — Unity 7 settings center (19 panels).
+# Source: Ubuntu native tarball 15.04.0+23.04.20230220-0ubuntu13 (Resolute).
+# Do NOT use 0ubuntu16: that is the Stonking (26.10) upload.
+# Patches: no-wacom.patch — upstream configure.ac hard-fails without libwacom
+# (PKG_CHECK_MODULES with no fallback); the patch makes the Wacom check fall
+# back to have_wacom=no so the Wacom panel is skipped instead of breaking the
+# build. The Network panel is skipped the same way upstream (the mm-glib check
+# already has a fallback) — libmm-glib is intentionally not packaged.
+# Tests are tolerated-failing upstream (dh_auto_test || true) — skipped here.
+# Cheese is disabled (--without-cheese), fcitx is disabled, online-accounts
+# is disabled (no GOA in the repo), docs are disabled (no xsltproc needed).
+# The Info-panel logo keeps Debian's "unity 7.7.1" text: it labels the Unity
+# version shown in the Info panel, not the distro.
+[package]
+name = "unity-control-center"
+version = "15.04.0+23.04.20230220"
+rel = 2
+arch = ["x86_64"]
+summary = "Settings center for the Unity 7 session"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-control-center"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-control-center/unity-control-center_15.04.0+23.04.20230220-0ubuntu13.tar.gz"
+sha256 = "843a0dc00caa0cdeede2354693df37248a612bb419fa296db968994852a9d81c"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "gettext", "intltool", "glib", "gtk3", "gdk-pixbuf", "desktop-file-utils", "gsettings-desktop-schemas", "accountsservice", "libcanberra", "colord", "libcups", "dbus", "dbus-glib", "gnome-desktop3", "libgtop", "ibus", "krb5", "network-manager", "libnma", "libnotify", "polkit", "libpulse", "upower", "libX11", "libXi", "libxkbfile", "libxklavier", "libxml2", "shared-mime-info", "vala", "unity-settings-daemon", "mesa", "fontconfig", "iso-codes", "gnome-menus", "libgnomekbd", "libgeonames", "libpwquality", "timezonemap", "indicator-datetime"]
+run = ["glib", "gtk3", "gdk-pixbuf", "accountsservice", "libcanberra", "colord", "libcups", "dbus", "dbus-glib", "gnome-desktop3", "libgtop", "ibus", "krb5", "libnotify", "polkit", "libpulse", "upower", "libX11", "libXi", "libxklavier", "libxml2", "shared-mime-info", "unity-settings-daemon", "mesa", "fontconfig", "gsettings-desktop-schemas", "gsettings-ubuntu-touch-schemas", "gnome-menus", "libgnomekbd", "libgeonames", "libpwquality", "timezonemap", "apg", "indicator-datetime"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-wacom.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-wacom.patch
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-error=incompatible-pointer-types"
+./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-static --disable-onlineaccounts --disable-update-mimedb --disable-fcitx --disable-documentation --without-cheese
+'''
+compile = "make -j%{jobs}"
+install = '''# Info-panel logo (Debian's debian/rules runs the same command after the
+# build, before install, so `make install` picks the generated file up):
+# logo-generator is a noinst program built by `make`.
+./panels/info/logo-generator --logo panels/info/UnityLogoBlank.png --text "unity 7.7.1" --output panels/info/UnityLogo.png
+make DESTDIR=%{pkgdir} install
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -x %{pkgdir}/usr/bin/unity-control-center
+test -e %{pkgdir}/usr/lib/unity-control-center-1/panels/libdatetime.so
+'''

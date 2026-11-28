@@ -1,0 +1,45 @@
+# unity recipe: ibus — input-method framework (library, daemon, GTK3 immodule)
+# Built without the vala binding / gobject-introspection: engine, ui, setup
+# and tools are not built. valac is still needed at configure time (the
+# meson project lists vala), so vala is a build dep.
+[package]
+name = "ibus"
+version = "1.5.35"
+rel = 3
+arch = ["x86_64"]
+summary = "Intelligent Input Bus: library, daemon and GTK3 input-method module"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "ibus"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/i/ibus/ibus_1.5.35.orig.tar.xz"
+sha256 = "5e6d888529a413c85773eafcdd3e73bf18a392a70eeb95bb3c9bfb358db7689c"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "dbus", "libX11", "libXfixes", "libxkbcommon", "iso-codes", "gettext", "vala"]
+run = ["glib", "gtk3", "dbus", "libX11", "libXfixes", "libxkbcommon"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-vapi-no-tools.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-vapi-no-tools.patch
+'''
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dgtk2=disabled -Dgtk4=false -Dwayland=disabled -Dvapi=disabled -Dsystemd-services=disabled -Ddconf=disabled -Dgtk3=true -Dsetup=false -Dui=false -Dengine=false -Demoji-dict=false -Dunicode-dict=false -Dintrospection=false -Dgtk-doc=false -Dappindicator=false -Dlibnotify=false -Dtests=false"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/libibus-1.0.so
+test -x %{pkgdir}/usr/bin/ibus-daemon
+'''

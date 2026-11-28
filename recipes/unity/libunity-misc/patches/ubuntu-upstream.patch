@@ -1,0 +1,11 @@
+--- libunity-misc-4.0.5+14.04.20140115.orig/configure.ac
++++ libunity-misc-4.0.5+14.04.20140115/configure.ac
+@@ -64,7 +64,7 @@
+ fi
+ AC_SUBST(GCC_FLAGS)
+ 
+-MAINTAINER_CFLAGS="-Werror -Wno-error=deprecated-declarations -Wall -Wshadow -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self"
++MAINTAINER_CFLAGS="-Wno-error=deprecated-declarations -Wall -Wshadow -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self"
+ AC_SUBST(MAINTAINER_CFLAGS)
+ 
+ dnl = GTK Doc Check ===========================================================

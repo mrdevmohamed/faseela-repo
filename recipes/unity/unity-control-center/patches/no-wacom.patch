@@ -1,0 +1,17 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -259,9 +259,11 @@
+       PKG_CHECK_MODULES(WACOM_PANEL, $COMMON_MODULES
+                         unity-settings-daemon
+                         xi >= 1.2 x11 libwacom >= $LIBWACOM_REQUIRED_VERSION
+-                        libunity-settings-daemon)
+-      AC_DEFINE(BUILD_WACOM, 1, [Define to 1 to build the Wacom panel])
+-      have_wacom=yes
++                        libunity-settings-daemon,
++                        [have_wacom=yes], [have_wacom=no])
++      if test "x$have_wacom" = xyes; then
++        AC_DEFINE(BUILD_WACOM, 1, [Define to 1 to build the Wacom panel])
++      fi
+     fi
+     ;;
+   *)

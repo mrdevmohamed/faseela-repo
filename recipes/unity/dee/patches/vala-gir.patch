@@ -1,0 +1,17 @@
+Description: Fix build with newer valac
+Author: Rico Tzschichholz <ricotz@ubuntu.com>
+Last-Updated: Mon, 17 Jan 2022 21:51:53 +0100
+
+Index: b/vapi/Dee-1.0.metadata
+===================================================================
+--- a/vapi/Dee-1.0.metadata
++++ b/vapi/Dee-1.0.metadata
+@@ -1,6 +1,8 @@
+ GListResultSet skip
+ GListResultSetClass skip
+ 
++Filter
++	.new skip
+ FilterModel
+         .filter skip // unsupported type for construct property
+ Index

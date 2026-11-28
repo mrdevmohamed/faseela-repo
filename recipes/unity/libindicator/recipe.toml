@@ -1,0 +1,46 @@
+# unity recipe: libindicator — Panel indicator library
+# Source: Ubuntu archive orig tarball (16.10.0+18.04.20180321.1); Ubuntu's patches are vendored under patches/.
+[package]
+name = "libindicator"
+version = "16.10.0"
+rel = 3
+arch = ["x86_64"]
+summary = "Panel indicator library"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libindicator"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/libi/libindicator/libindicator_16.10.0+18.04.20180321.1.orig.tar.gz"
+sha256 = "0029ac3aa8d5a339de252f66209b40c12e5bfa9072221b9b32d07844273f62fd"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gtk3", "ido", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib", "gtk3", "ido"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = '''set -eu
+cp /usr/lib/unity-build-shims/gtk-doc.make .
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --with-gtk=3
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libindicator3.so
+# The whole point of the indicator-common dep: upstream installs
+# data/indicators-pre.target to SYSTEMD_USERDIR (pkg-config systemd's
+# systemduserunitdir = /usr/lib/systemd/user; systemd is in the transitive
+# build closure). Every indicator's user unit has After=indicators-pre.target.
+test -e %{pkgdir}/usr/lib/systemd/user/indicators-pre.target
+'''

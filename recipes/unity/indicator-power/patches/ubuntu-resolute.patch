@@ -1,0 +1,122 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -43,7 +43,7 @@
+                   gio-unix-2.0>=2.36
+                   gudev-1.0>=204
+                   libnotify>=0.7.6
+-                  url-dispatcher-1>=1)
++                  )
+ 
+ include_directories (SYSTEM ${SERVICE_DEPS_INCLUDE_DIRS})
+ 
+@@ -73,7 +73,6 @@
+ endif()
+ set(C_WARNING_ARGS "${C_WARNING_ARGS} -Wno-missing-field-initializers") # GActionEntry
+ 
+-
+ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
+ include_directories (${CMAKE_CURRENT_BINARY_DIR}/include)
+ 
+@@ -83,11 +82,13 @@
+ add_subdirectory(po)
+ 
+ # testing & coverage
+-enable_testing ()
+-add_subdirectory(tests)
+-find_package(CoverageReport)
+-ENABLE_COVERAGE_REPORT(
+-  TARGETS ${SERVICE_LIB} ${SERVICE_EXEC}
+-  TESTS ${COVERAGE_TEST_TARGETS}
+-  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
+-)
++# DISABLED due to C++14 incompatibilities in indicator-power
++#
++#enable_testing ()
++#add_subdirectory(tests)
++#find_package(CoverageReport)
++#ENABLE_COVERAGE_REPORT(
++#  TARGETS ${SERVICE_LIB} ${SERVICE_EXEC}
++#  TESTS ${COVERAGE_TEST_TARGETS}
++#  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
++#)
+--- a/src/notifier.c
++++ b/src/notifier.c
+@@ -23,8 +23,6 @@
+ #include "dbus-shared.h"
+ #include "notifier.h"
+ 
+-#include <url-dispatcher.h>
+-
+ #include <libnotify/notify.h>
+ 
+ #include <glib/gi18n.h>
+@@ -222,14 +220,6 @@
+ }
+ 
+ static void
+-on_battery_settings_clicked(NotifyNotification * nn        G_GNUC_UNUSED,
+-                            char               * action    G_GNUC_UNUSED,
+-                            gpointer             user_data G_GNUC_UNUSED)
+-{
+-  url_dispatch_send("settings:///system/battery", NULL, NULL);
+-}
+-
+-static void
+ on_dismiss_clicked(NotifyNotification * nn        G_GNUC_UNUSED,
+                    char               * action    G_GNUC_UNUSED,
+                    gpointer             user_data G_GNUC_UNUSED)
+@@ -319,7 +309,6 @@
+       notify_notification_set_hint(nn, "x-canonical-snap-decisions-timeout", g_variant_new_int32(INT32_MAX));
+       notify_notification_set_timeout(nn, NOTIFY_EXPIRES_NEVER);
+       notify_notification_add_action(nn, "dismiss", _("OK"), on_dismiss_clicked, NULL, NULL);
+-      notify_notification_add_action(nn, "settings", _("Battery settings"), on_battery_settings_clicked, NULL, NULL);
+     }
+ 
+   /* if we can show it, keep it */
+--- a/src/service.c
++++ b/src/service.c
+@@ -20,7 +20,6 @@
+ 
+ #include <glib/gi18n.h>
+ #include <gio/gio.h>
+-#include <url-dispatcher.h>
+ 
+ #include "brightness.h"
+ #include "dbus-shared.h"
+@@ -817,12 +816,7 @@
+ 
+   if (control_center_cmd == NULL)
+     {
+-      if (g_getenv ("MIR_SOCKET") != NULL)
+-        {
+-          url_dispatch_send("settings:///system/battery", NULL, NULL);
+-          return;
+-        }
+-      else if (!g_strcmp0 (g_getenv ("DESKTOP_SESSION"), "xubuntu"))
++      if (!g_strcmp0 (g_getenv ("DESKTOP_SESSION"), "xubuntu"))
+         {
+           control_center_cmd = "xfce4-power-manager-settings";
+         }
+@@ -862,14 +856,6 @@
+   g_free (cmd);
+ }
+ 
+-static void
+-on_phone_settings_activated (GSimpleAction * a      G_GNUC_UNUSED,
+-                             GVariant      * param  G_GNUC_UNUSED,
+-                             gpointer        gself  G_GNUC_UNUSED)
+-{
+-  url_dispatch_send("settings:///system/battery", NULL, NULL);
+-}
+-
+ /***
+ ****
+ ***/
+@@ -906,7 +892,6 @@
+ 
+   GActionEntry entries[] = {
+     { "activate-settings", on_settings_activated },
+-    { "activate-phone-settings", on_phone_settings_activated },
+     { "activate-statistics", on_statistics_activated, "s" }
+   };
+ 

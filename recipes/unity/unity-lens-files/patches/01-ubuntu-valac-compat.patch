@@ -1,0 +1,141 @@
+--- unity-lens-files-7.1.0+17.10.20170605.orig/tests/assertions.vapi
++++ unity-lens-files-7.1.0+17.10.20170605/tests/assertions.vapi
+@@ -1,23 +1,25 @@
+ [CCode (cprefix = "G", lower_case_cprefix = "g_", cheader_filename = "glib.h")]
+ namespace Assertions {
+-  public enum OperatorType {
++#if !VALA_0_52
++  public enum CompareOperator {
+     [CCode (cname = "==")]
+-    EQUAL,
++    EQ,
+     [CCode (cname = "!=")]
+-    NOT_EQUAL,
++    NE,
+     [CCode (cname = "<")]
+-    LESS_THAN,
++    LT,
+     [CCode (cname = ">")]
+-    GREATER_THAN,
++    GT,
+     [CCode (cname = "<=")]
+-    LESS_OR_EQUAL,
++    LE,
+     [CCode (cname = ">=")]
+-    GREATER_OR_EQUAL
++    GE
+   }
+ 
+-  public void assert_cmpstr (string? s1, OperatorType op, string? s2);
+-  public void assert_cmpint (int n1, OperatorType op, int n2);
+-  public void assert_cmpuint (uint n1, OperatorType op, uint n2);
+-  public void assert_cmphex (uint n1, OperatorType op, uint n2);
+-  public void assert_cmpfloat (float n1, OperatorType op, float n2);
++  public void assert_cmpstr (string? s1, CompareOperator op, string? s2);
++  public void assert_cmpint (int n1, CompareOperator op, int n2);
++  public void assert_cmpuint (uint n1, CompareOperator op, uint n2);
++  public void assert_cmphex (uint n1, CompareOperator op, uint n2);
++  public void assert_cmpfloat (float n1, CompareOperator op, float n2);
++#endif
+ }
+--- unity-lens-files-7.1.0+17.10.20170605.orig/tests/test-url-checker.vala
++++ unity-lens-files-7.1.0+17.10.20170605/tests/test-url-checker.vala
+@@ -41,40 +41,40 @@
+     UrlType url_type;
+ 
+     result = checker.check_url ("facebook.com", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "http://facebook.com");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "http://facebook.com");
+ 
+     result = checker.check_url ("google.co.uk", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "http://google.co.uk");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "http://google.co.uk");
+ 
+     result = checker.check_url ("http://www.bbc.co.uk", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "http://www.bbc.co.uk");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "http://www.bbc.co.uk");
+ 
+     result = checker.check_url ("https://launchpad.net", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "https://launchpad.net");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "https://launchpad.net");
+ 
+     result = checker.check_url ("https://code.launchpad.net/unity-lens-files", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "https://code.launchpad.net/unity-lens-files");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "https://code.launchpad.net/unity-lens-files");
+ 
+     result = checker.check_url ("google.com/?q=unity-lens-files", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "http://google.com/?q=unity-lens-files");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "http://google.com/?q=unity-lens-files");
+ 
+     result = checker.check_url ("192.168.0.1", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.WEB);
+-    assert_cmpstr (result, OperatorType.EQUAL, "http://192.168.0.1");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.WEB);
++    assert_cmpstr (result, CompareOperator.EQ, "http://192.168.0.1");
+ 
+     result = checker.check_url ("daemon.vala", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.UNKNOWN);
+-    assert_cmpstr (result, OperatorType.EQUAL, null);
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.UNKNOWN);
++    assert_cmpstr (result, CompareOperator.EQ, null);
+ 
+     result = checker.check_url ("non-existing-tld.qv", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.UNKNOWN);
+-    assert_cmpstr (result, OperatorType.EQUAL, null);
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.UNKNOWN);
++    assert_cmpstr (result, CompareOperator.EQ, null);
+   }
+ 
+   private static void test_mountable_uris ()
+@@ -84,27 +84,27 @@
+     UrlType url_type;
+ 
+     result = checker.check_url ("\\\\smb_share", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "smb://smb_share");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "smb://smb_share");
+ 
+     result = checker.check_url ("smb://another_share", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "smb://another_share");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "smb://another_share");
+ 
+     result = checker.check_url ("ftp://mozilla.org", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "ftp://mozilla.org");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "ftp://mozilla.org");
+ 
+     result = checker.check_url ("ssh://a.server.somewhere", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "ssh://a.server.somewhere");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "ssh://a.server.somewhere");
+ 
+     result = checker.check_url ("sftp://secure.mozilla.org", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "sftp://secure.mozilla.org");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "sftp://secure.mozilla.org");
+ 
+     result = checker.check_url ("dav://dav.share.co.uk", out url_type);
+-    assert_cmpint (url_type, OperatorType.EQUAL, UrlType.MOUNTABLE);
+-    assert_cmpstr (result, OperatorType.EQUAL, "dav://dav.share.co.uk");
++    assert_cmpint (url_type, CompareOperator.EQ, UrlType.MOUNTABLE);
++    assert_cmpstr (result, CompareOperator.EQ, "dav://dav.share.co.uk");
+   }
+ }

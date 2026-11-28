@@ -1,0 +1,45 @@
+# unity recipe: libgee-0.8 — GObject collection library (Vala)
+# Source: Ubuntu 26.04 (resolute) 0.20.8-2, main. 0.20.8 is the last
+# autotools release; 0.21+ moved to meson. Debian delta is control-only,
+# no source patches. Gating dep for all five Vala lenses + unity-scope-home.
+# Configure needs valac (VALA_CHECK) and g-ir-scanner
+# (GOBJECT_INTROSPECTION_CHECK); the tarball ships a pre-generated
+# configure, so no autoreconf is run.
+[package]
+name = "libgee-0.8"
+version = "0.20.8"
+rel = 2
+arch = ["x86_64"]
+summary = "GObject collection library"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgee-0.8"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libg/libgee-0.8/libgee-0.8_%{version}.orig.tar.xz"
+sha256 = "189815ac143d89867193b0c52b7dc31f3aa108a15f04d6b5dca2b6adfad0b0ee"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "gobject-introspection", "glib-gir", "setuptools", "vala", "autoconf", "automake", "libtool", "gettext"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-doc --disable-benchmark"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libgee-0.8.so
+test -e %{pkgdir}/usr/lib/pkgconfig/gee-0.8.pc
+test -e %{pkgdir}/usr/share/vala/vapi/gee-0.8.vapi
+test -e %{pkgdir}/usr/share/gir-1.0/Gee-0.8.gir
+test -e %{pkgdir}/usr/lib/girepository-1.0/Gee-0.8.typelib
+'''

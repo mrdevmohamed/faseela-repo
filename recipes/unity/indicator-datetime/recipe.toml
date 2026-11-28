@@ -1,0 +1,70 @@
+# unity recipe: indicator-datetime — Unity date/time indicator service
+# Source: Ubuntu archive orig tarball (15.10+21.04.20210304); Ubuntu's
+# patches are vendored under patches/ (ubuntu-resolute.patch drops the
+# -std=c++11 flag) plus Faseela additions (faseela.patch:
+# cmake_minimum_required 2.8.9 -> 3.10 for CMake 4, do not build tests/,
+# drop the Upstart job/override installs).
+# CI note (PR #236, run 46120910095): cmake/GdbusCodegen.cmake still calls
+# cmake_minimum_required with a < 3.5 floor, which CMake 4 removed — same
+# failure indicator-power hit in run 46110173999. Pass
+# -DCMAKE_POLICY_VERSION_MINIMUM=3.5 like indicator-power does.
+# CI note (PR #236, run 46127973592): the vendored cmake/UseGSettings.cmake
+# ran glib-compile-schemas against the absolute /usr/share/glib-2.0/schemas
+# at install time, which fails read-only inside nawa's sandbox — faseela.patch
+# now makes it compile "$ENV{DESTDIR}/usr/share/glib-2.0/schemas" instead,
+# verified locally with a DESTDIR install test (rel 4).
+# The service talks to evolution-source-registry and
+# evolution-calendar-factory over D-Bus (D-Bus activation), so the
+# evolution-data-server run dep is the daemons, not just the libraries.
+# Timezone-from-location uses Geoclue over D-Bus only (no link dep) and
+# Geoclue is not packaged: automatic timezone will not work without a
+# provider, by design.
+[package]
+name = "indicator-datetime"
+version = "15.10"
+rel = 4
+arch = ["x86_64"]
+summary = "Unity date/time indicator service"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "indicator-datetime"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/i/indicator-datetime/indicator-datetime_15.10+21.04.20210304.orig.tar.gz"
+sha256 = "29af10576be2f83a790aa0e5fd9ff8aba0792822e145cd1adcbb54c98c21c6a4"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "glib", "libnotify", "gstreamer", "gettext", "intltool", "util-linux", "gsettings-ubuntu-touch-schemas", "cmake-extras", "evolution-data-server", "libical3", "libaccounts-glib", "messaging-menu", "properties-cpp"]
+run = ["evolution-data-server", "libical3", "gstreamer", "libnotify", "libaccounts-glib", "messaging-menu", "util-linux", "gsettings-ubuntu-touch-schemas", "libindicator", "systemd"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/ubuntu-resolute.patch", "patches/faseela.patch"]
+
+[hooks]
+post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/ubuntu-resolute.patch
+patch -p1 < %{assetsdir}/patches/faseela.patch
+'''
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+rm -f %{pkgdir}/usr/share/glib-2.0/schemas/gschemas.compiled
+test -x %{pkgdir}/usr/lib/indicator-datetime/indicator-datetime-service
+test -e %{pkgdir}/usr/share/unity/indicators/com.canonical.indicator.datetime
+test -e %{pkgdir}/usr/lib/systemd/user/indicator-datetime.service
+test -e %{pkgdir}/usr/share/glib-2.0/schemas/com.canonical.indicator.datetime.gschema.xml
+'''

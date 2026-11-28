@@ -2,7 +2,7 @@
 [package]
 name = "pciutils"
 version = "3.13.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "pciutils — PCI bus utilities (lspci, setpci)"
 license = ["GPL-2.0-or-later"]
@@ -26,6 +26,9 @@ schema = 1
 conflicts = []
 replaces = []
 
+# NOTE: plain `make install` does NOT install libpci.pc or the headers —
+# upstream only installs those via the `install-lib` target. nux's configure
+# needs libpci.pc, so install-lib must run too.
 [build]
 compile = "make -j%{jobs} SHARED=yes PREFIX=/usr"
-install = "make SHARED=yes PREFIX=/usr DESTDIR=%{pkgdir} MANDIR=/usr/share/man install"
+install = "make SHARED=yes PREFIX=/usr DESTDIR=%{pkgdir} MANDIR=/usr/share/man install install-lib"

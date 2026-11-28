@@ -1,0 +1,223 @@
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -230,7 +230,6 @@
+ set(UNITY_PROTOCOL_PRIVATE_DEPS unity-protocol-private>=7.1.0)
+ set(UNITY_PLUGIN_SHARED_DEPS
+     ${UNITY_PROTOCOL_PRIVATE_DEPS}
+-    appstream-glib
+     atk
+     atk-bridge-2.0
+     cairo>=1.13.1
+@@ -261,7 +260,6 @@
+   set(UNITY_PLUGIN_DEPS
+       ${UNITY_PLUGIN_DEPS}
+       compiz>=0.9.11
+-      libgeis
+       x11
+       xfixes
+       xi>=1.6.99.1
+
+--- a/launcher/Launcher.h
++++ b/launcher/Launcher.h
+@@ -24,7 +24,10 @@
+ #include <Nux/View.h>
+ #include <Nux/TimerProc.h>
+ #include <NuxCore/Animation.h>
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ #include <NuxGraphics/GestureEvent.h>
++#endif
+ #ifndef USE_GLES
+ # include <NuxGraphics/IOpenGLAsmShader.h>
+ #endif
+
+--- a/plugins/unityshell/src/CompoundGestureRecognizer.cpp
++++ b/plugins/unityshell/src/CompoundGestureRecognizer.cpp
+@@ -1,3 +1,5 @@
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ /*
+  * CompoundGestureRecognizer.cpp
+  * This file is part of Unity
+@@ -245,3 +247,5 @@
+ {
+   return p->GestureEvent(event);
+ }
++
++#endif // NUX_GESTURES_SUPPORT
+
+--- a/plugins/unityshell/src/GesturalWindowSwitcher.cpp
++++ b/plugins/unityshell/src/GesturalWindowSwitcher.cpp
+@@ -1,3 +1,5 @@
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ /*
+  * GesturalWindowSwitcher.cpp
+  * This file is part of Unity
+@@ -438,3 +440,5 @@
+ {
+   return p->GestureEvent(event);
+ }
++
++#endif // NUX_GESTURES_SUPPORT
+
+--- a/plugins/unityshell/src/UnityGestureBroker.cpp
++++ b/plugins/unityshell/src/UnityGestureBroker.cpp
+@@ -1,3 +1,5 @@
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ /*
+  * UnityGestureBroker.cpp
+  * This file is part of Unity
+@@ -117,3 +119,5 @@
+ 
+   return nullptr;
+ }
++
++#endif // NUX_GESTURES_SUPPORT
+
+--- a/plugins/unityshell/src/UnityGestureTarget.cpp
++++ b/plugins/unityshell/src/UnityGestureTarget.cpp
+@@ -1,3 +1,5 @@
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ /*
+  * UnityGestureTarget.cpp
+  * This file is part of Unity
+@@ -55,3 +57,5 @@
+ 
+   return GestureDeliveryRequest::NONE;
+ }
++
++#endif // NUX_GESTURES_SUPPORT
+
+--- a/plugins/unityshell/src/WindowGestureTarget.cpp
++++ b/plugins/unityshell/src/WindowGestureTarget.cpp
+@@ -1,3 +1,5 @@
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ /*
+  * WindowGestureTarget.cpp
+  * This file is part of Unity
+@@ -211,3 +213,5 @@
+     return false;
+   }
+ }
++
++#endif // NUX_GESTURES_SUPPORT
+
+--- a/plugins/unityshell/src/unityshell.cpp
++++ b/plugins/unityshell/src/unityshell.cpp
+@@ -46,7 +46,9 @@
+ #include "XKeyboardUtil.h"
+ #include "unityshell.h"
+ #include "BackgroundEffectHelper.h"
++#ifdef NUX_GESTURES_SUPPORT
+ #include "UnityGestureBroker.h"
++#endif
+ #include "launcher/XdndCollectionWindowImp.h"
+ #include "launcher/XdndManagerImp.h"
+ #include "launcher/XdndStartStopNotifierImp.h"
+@@ -4163,15 +4165,18 @@
+ 
+ void UnityScreen::UpdateGesturesSupport()
+ {
++#ifdef NUX_GESTURES_SUPPORT
+   auto& s = Settings::Instance();
+   bool locked = lockscreen_controller_ && lockscreen_controller_->IsLocked();
+   (!locked && s.gestures_launcher_drag()) ? gestures_sub_launcher_->Activate() : gestures_sub_launcher_->Deactivate();
+   (!locked && s.gestures_dash_tap()) ? gestures_sub_dash_->Activate() : gestures_sub_dash_->Deactivate();
+   (!locked && s.gestures_windows_drag_pinch()) ? gestures_sub_windows_->Activate() : gestures_sub_windows_->Deactivate();
++#endif
+ }
+ 
+ void UnityScreen::InitGesturesSupport()
+ {
++#ifdef NUX_GESTURES_SUPPORT
+   std::unique_ptr<nux::GestureBroker> gesture_broker(new UnityGestureBroker);
+   wt->GetWindowCompositor().SetGestureBroker(std::move(gesture_broker));
+   gestures_sub_launcher_.reset(new nux::GesturesSubscription);
+@@ -4193,6 +4198,7 @@
+ 
+   // Apply the user's settings
+   UpdateGesturesSupport();
++#endif
+ }
+ 
+ CompAction::Vector& UnityScreen::getActions()
+
+--- a/plugins/unityshell/src/unityshell.h
++++ b/plugins/unityshell/src/unityshell.h
+@@ -23,7 +23,10 @@
+ #define UNITYSHELL_H
+ 
+ #include <NuxCore/AnimationController.h>
++#include <Nux/Features.h>
++#ifdef NUX_GESTURES_SUPPORT
+ #include <Nux/GesturesSubscription.h>
++#endif
+ #include <Nux/WindowThread.h>
+ #include <NuxCore/Property.h>
+ #include <sigc++/sigc++.h>
+@@ -349,6 +352,7 @@
+ 
+   session::Manager::Ptr session_;
+ 
++#ifdef NUX_GESTURES_SUPPORT
+   /* Subscription for gestures that manipulate Unity launcher */
+   std::unique_ptr<nux::GesturesSubscription> gestures_sub_launcher_;
+ 
+@@ -357,6 +361,7 @@
+ 
+   /* Subscription for gestures that manipulate windows. */
+   std::unique_ptr<nux::GesturesSubscription> gestures_sub_windows_;
++#endif
+ 
+   bool needsRelayout;
+   bool super_keypressed_;
+
+--- a/unity-shared/AppStreamApplication.cpp
++++ b/unity-shared/AppStreamApplication.cpp
+@@ -19,7 +19,6 @@
+ 
+ #include "AppStreamApplication.h"
+ 
+-#include <appstream-glib.h>
+ 
+ #include <iostream>
+ 
+@@ -35,21 +34,7 @@
+   title.SetGetterFunction([this](){ return title_; });
+   icon_pixbuf.SetGetterFunction([this](){ return icon_pixbuf_; });
+ 
+-  glib::Object<AsStore> as_store(as_store_new());
+-  g_return_if_fail(as_store);
+-
+-  as_store_load(as_store, AS_STORE_LOAD_FLAG_APP_INFO_SYSTEM, nullptr, nullptr);
+-
+-  AsApp *as_app = as_store_get_app_by_id(as_store, appstream_id_.c_str());
+-  g_return_if_fail(as_app);
+-
+-  title_ = glib::gchar_to_string(as_app_get_name(as_app, nullptr));
+-
+-  AsIcon *as_icon = as_app_get_icon_default(as_app);
+-  g_return_if_fail(as_icon);
+-
+-  as_icon_load(as_icon, AS_ICON_LOAD_FLAG_SEARCH_SIZE, nullptr);
+-  icon_pixbuf_ = glib::Object<GdkPixbuf>(as_icon_get_pixbuf(as_icon), glib::AddRef());
++  // AppStream metadata is not available in this build: title and icon stay empty
+ }
+ 
+ AppType Application::type() const
+
+--- a/unity-shared/UnityWindowStyle.h
++++ b/unity-shared/UnityWindowStyle.h
+@@ -23,6 +23,7 @@
+ #define UNITYWINDOWSTYLE_H
+ 
+ #include <sigc++/sigc++.h>
++#include <unordered_map>
+ #include <Nux/Nux.h>
+ 
+ #include "RawPixel.h"

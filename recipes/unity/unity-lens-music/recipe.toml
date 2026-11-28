@@ -1,0 +1,58 @@
+# unity recipe: unity-lens-music — Unity music lens (Dash music)
+# Source: Ubuntu pool orig tarball 6.9.1+16.04 (sha256 verified).
+# Two pkglibexec programs: unity-music-daemon (Banshee/Rhythmbox scopes,
+# reads Rhythmbox TDB databases via libtdb) + music-preview-player
+# (GStreamer; also used by unity-lens-video for video previews).
+# Ubuntu's patch (01) is REQUIRED: the raw orig tarball fails at
+# configure on gee-1.0. It switches configure.ac AND src/Makefile.am to
+# gee-0.8, deletes the libsoup-2.4/oauth checks (dead Ubuntu One music
+# store), drops musicstore.scope.in and the purchase_sku/PURCHASE code.
+# No libsoup, no oauth. No zeitgeist in this lens at all.
+[package]
+name = "unity-lens-music"
+version = "6.9.1+16.04"
+rel = 2
+arch = ["x86_64"]
+summary = "Unity music lens"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "unity-lens-music"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/u/unity-lens-music/unity-lens-music_%{version}.orig.tar.gz"
+sha256 = "fc6970c5f7ee9c8138175ce124f2e522c2deb56e1decfef092affbb7d45b6e37"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "glib", "dee", "libunity", "libgee-0.8", "libtdb", "vala", "intltool", "gettext", "gnome-common", "autoconf", "automake", "libtool", "dbus", "json-glib", "libnotify", "sqlite", "gstreamer", "gst-plugins-base"]
+run = ["glib", "dee", "libunity", "libgee-0.8", "libtdb", "sqlite", "json-glib", "libnotify", "gstreamer", "gst-plugins-base"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/01-ubuntu.patch", "patches/series"]
+
+[build]
+prepare = '''set -eu
+for p in $(cat %{assetsdir}/patches/series); do
+    patch -p1 < %{assetsdir}/patches/$p
+done
+'''
+configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
+autoreconf -fi
+./configure --prefix=/usr --libdir=/usr/lib --disable-static
+'''
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/libexec/unity-lens-music/unity-music-daemon
+test -e %{pkgdir}/usr/libexec/unity-lens-music/music-preview-player
+test -e %{pkgdir}/usr/share/dbus-1/services/unity-scope-music.service
+test -e %{pkgdir}/usr/share/dbus-1/services/music-preview-player.service
+'''

@@ -1,0 +1,36 @@
+Index: nux-4.0.8+18.10.20180623/configure.ac
+===================================================================
+--- nux-4.0.8+18.10.20180623.orig/configure.ac
++++ nux-4.0.8+18.10.20180623/configure.ac
+@@ -93,7 +93,7 @@ AC_CONFIG_MACRO_DIR([m4])
+ dnl ===========================================================================
+ 
+ # Checks for programs
+-AM_CXXFLAGS-"$CXXFLAGS -std=c++0x"
++AM_CXXFLAGS-"$CXXFLAGS"
+ AC_PROG_CC_C99
+ AC_PROG_CXX
+ AM_PROG_CC_C_O
+@@ -382,11 +382,11 @@ AM_CONDITIONAL(BUILD_DOCUMENTATION, [tes
+ dnl ==========================================================================
+ 
+ if test "x$GCC" = "xyes"; then
+-  GCC_FLAGS="-g -Wall -Wextra -Wno-unused-parameter -std=c++0x"
++  GCC_FLAGS="-g -Wall -Wextra -Wno-unused-parameter"
+ fi
+ 
+ # gcc flags for building the tests.
+-GCC_TESTS_FLAGS="-g -O0 -Wall -Wextra -std=c++0x"
++GCC_TESTS_FLAGS="-g -O0 -Wall -Wextra"
+ 
+ # use strict compiler flags only on development releases
+ AC_ARG_ENABLE([maintainer-mode],
+@@ -411,7 +411,7 @@ AC_ARG_ENABLE([debug],
+ AS_IF([test "x$enable_debug" = "xyes"],
+       [
+         MAINTAINER_CFLAGS+=" -DNUX_DEBUG"
+-        GCC_FLAGS="-g -O0 -Wall -Wextra -Wno-unused-parameter -std=c++0x"
++        GCC_FLAGS="-g -O0 -Wall -Wextra -Wno-unused-parameter"
+       ]
+ )
+ 

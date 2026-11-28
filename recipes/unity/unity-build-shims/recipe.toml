@@ -1,13 +1,28 @@
-# unity recipe: unity-build-shims — build-only stand-ins for gtk-doc and gobject-introspection macros
+# unity recipe: unity-build-shims — build-only stand-ins for gtk-doc macros,
+# plus the REAL gobject-introspection autoconf macro.
 # Bamf, Dee, libunity and the indicator libraries call GTK_DOC_CHECK and
-# GOBJECT_INTROSPECTION_CHECK from configure.ac. Neither gtk-doc nor
-# GObject-Introspection is packaged, and the manuals/typelibs are not wanted, so
-# these shims define the macros as "unavailable" (documentation and introspection off).
+# GOBJECT_INTROSPECTION_CHECK from configure.ac. gtk-doc is still not
+# packaged, so the gtk-doc stand-ins remain (documentation off). But
+# gobject-introspection IS packaged now (gui/gobject-introspection 1.82.0),
+# and libunity/dee/libdbusmenu need real introspection for their typelibs —
+# so assets/introspection.m4 is now the REAL upstream macro, copied verbatim
+# from gobject-introspection 1.82.0 (m4/introspection.m4; refresh it when GI
+# is bumped). Recipes that keep --disable-introspection are unaffected: the
+# real macro defaults to auto and silently disables itself when the
+# gobject-introspection-1.0.pc is absent; only an explicit --enable errors.
+# OWNERSHIP: this package owns /usr/share/aclocal/introspection.m4, so the
+# gobject-introspection recipe MUST NOT install its own copy of that file
+# (it removes it at install time) — two packages must not own one path.
 # Only ever a build dependency: nothing installs it into an image.
+# NOTE: gtk-doc.make lives under /usr/lib/unity-build-shims, NOT under
+# /usr/share/gtk-doc/data: nawa's doc split moves anything under the gtk-doc
+# data directory into the -doc subpackage, and the packages that copy this file
+# at prepare time only declare the main package. (That split is what broke the
+# first Unity build: the published rel-2 main archive had no gtk-doc.make.)
 [package]
 name = "unity-build-shims"
 version = "1.0"
-rel = 2
+rel = 5
 arch = ["x86_64"]
 source_date_epoch = 1767225600
 summary = "Build-only gtk-doc and gobject-introspection autoconf stand-ins for the Unity libraries"
@@ -33,6 +48,6 @@ replaces = []
 install = '''
 install -Dm644 %{assetsdir}/assets/gtk-doc.m4 %{pkgdir}/usr/share/aclocal/gtk-doc.m4
 install -Dm644 %{assetsdir}/assets/introspection.m4 %{pkgdir}/usr/share/aclocal/introspection.m4
-install -Dm644 %{assetsdir}/assets/gtk-doc.make %{pkgdir}/usr/share/gtk-doc/data/gtk-doc.make
+install -Dm644 %{assetsdir}/assets/gtk-doc.make %{pkgdir}/usr/lib/unity-build-shims/gtk-doc.make
 install -Dm755 %{assetsdir}/assets/gtkdocize %{pkgdir}/usr/bin/gtkdocize
 '''

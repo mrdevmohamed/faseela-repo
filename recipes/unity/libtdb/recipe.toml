@@ -1,0 +1,50 @@
+# unity recipe: libtdb — trivial database library (TDB)
+# Source: standalone tdb 1.4.10 orig tarball (Debian sync; sha256 verified
+# against the signed .dsc). NOTE on version: in Ubuntu 26.04 (resolute)
+# libtdb1 is built from the *samba* source (2:1.4.14+samba4.23.6), not from
+# the standalone tdb source — building all of Samba for this leaf is out of
+# scope. The standalone 1.4.10 satisfies the music lens's `tdb >= 1.2.6`
+# requirement with the same upstream code. Waf build; the Python bindings
+# are disabled (the music lens only needs libtdb + tdb.pc + tdb.h).
+[package]
+name = "libtdb"
+version = "1.4.10"
+rel = 3
+arch = ["x86_64"]
+summary = "Trivial database library"
+license = ["LGPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libtdb"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/t/tdb/tdb_%{version}.orig.tar.gz"
+sha256 = "02338e33c16c21c9e29571cef523e76b2b708636254f6f30c6cf195d48c62daf"
+strip_components = 1
+
+[depends]
+build = ["python", "pkgconf"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-which.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-which.patch
+'''
+configure = "./configure --prefix=/usr --libdir=/usr/lib --disable-python"
+compile = "make -j%{jobs}"
+install = '''
+make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libtdb.so
+test -e %{pkgdir}/usr/lib/pkgconfig/tdb.pc
+test -e %{pkgdir}/usr/include/tdb.h
+'''

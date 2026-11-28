@@ -1,0 +1,16 @@
+# Faseela: GCC 14 makes -Wint-conversion an error by default, and the
+# recipe's -Wno-error does not downgrade it. bubble_window_get_accessible
+# initialises two GType (unsigned long) locals with NULL; use 0 instead.
+--- a/src/bubble-window.c
++++ b/src/bubble-window.c
+@@ -78,8 +78,8 @@
+     {
+       AtkObjectFactory *factory = NULL;
+       AtkRegistry *registry = NULL;
+-      GType derived_type = NULL;
+-      GType derived_atk_type = NULL;
++      GType derived_type = 0;
++      GType derived_atk_type = 0;
+ 
+       /*
+        * Figure out whether accessibility is enabled by looking at the

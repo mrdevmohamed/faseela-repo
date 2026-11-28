@@ -1,0 +1,7 @@
+migrate-to-libpcre2.patch
+no-Werror.patch
+add-shared_ptr-include.patch
+drop-std.patch
+disable-TestLoggingWriter-test.diff
+boost1.90.patch
+remove_unicode_licensed.patch

@@ -1,0 +1,72 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ project (indicator-datetime C CXX)
+-cmake_minimum_required (VERSION 2.8.9)
++cmake_minimum_required (VERSION 3.10)
+ 
+ list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+ 
+@@ -82,12 +82,4 @@
+ add_subdirectory(src)
+ add_subdirectory(data)
+ add_subdirectory(po)
+-add_subdirectory(tests)
+ 
+-# testing & coverage
+-find_package(CoverageReport)
+-ENABLE_COVERAGE_REPORT(
+-  TARGETS indicatordatetimeservice indicator-datetime-service
+-  TESTS ${COVERAGE_TEST_TARGETS}
+-  FILTER /usr/include ${CMAKE_BINARY_DIR}/*
+-)
+--- a/data/CMakeLists.txt
++++ b/data/CMakeLists.txt
+@@ -39,36 +39,6 @@
+          DESTINATION "${SYSTEMD_USER_DIR}")
+ 
+ ##
+-##  Upstart systemd override Job File
+-##
+-
+-set (UPSTART_SYSTEMD_OVERRIDE_DIR "${CMAKE_INSTALL_FULL_DATADIR}/upstart/systemd-session/upstart")
+-message (STATUS "${UPSTART_SYSTEMD_OVERRIDE_DIR} is the Upstart override Job File for systemd dir")
+-
+-install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME}.override"
+-         DESTINATION "${UPSTART_SYSTEMD_OVERRIDE_DIR}")
+-
+-##
+-##  Upstart Job File
+-##
+-
+-# where to install
+-set (UPSTART_JOB_DIR "${CMAKE_INSTALL_FULL_DATADIR}/upstart/sessions")
+-message (STATUS "${UPSTART_JOB_DIR} is the Upstart Job File install dir")
+-
+-set (UPSTART_JOB_NAME "${CMAKE_PROJECT_NAME}.conf")
+-set (UPSTART_JOB_FILE "${CMAKE_CURRENT_BINARY_DIR}/${UPSTART_JOB_NAME}")
+-set (UPSTART_JOB_FILE_IN "${CMAKE_CURRENT_SOURCE_DIR}/${UPSTART_JOB_NAME}.in")
+-
+-# build it
+-set (pkglibexecdir "${CMAKE_INSTALL_FULL_PKGLIBEXECDIR}")
+-configure_file ("${UPSTART_JOB_FILE_IN}" "${UPSTART_JOB_FILE}")
+-
+-# install it
+-install (FILES "${UPSTART_JOB_FILE}"
+-         DESTINATION "${UPSTART_JOB_DIR}")
+-
+-##
+ ##  Unity Indicator File
+ ##
+ 
+
+--- a/cmake/UseGSettings.cmake
++++ b/cmake/UseGSettings.cmake
+@@ -18,6 +18,6 @@
+     install (FILES ${SCHEMA_NAME} DESTINATION ${GSETTINGS_DIR} OPTIONAL)
+ 
+     install (CODE "message (STATUS \"Compiling GSettings schemas\")")
+-    install (CODE "execute_process (COMMAND ${_glib_compile_schemas} ${GSETTINGS_DIR})")
++    install (CODE "execute_process (COMMAND ${_glib_compile_schemas} \"\$ENV{DESTDIR}${GSETTINGS_DIR}\")")
+ endmacro()
+ 

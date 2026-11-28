@@ -1,0 +1,49 @@
+# unity recipe: properties-cpp — header-only C++ properties/signals library
+# Source: Ubuntu archive orig tarball (0.0.1+14.10.20140730 — that IS the
+# pool-latest; the 0.0.4 version in the research notes does not exist in the
+# Ubuntu pool, and the source itself reports version 0.0.1). Header-only:
+# the build installs include/core/*.h and properties-cpp.pc, nothing
+# compiles. Faseela patch (no-tests-cmake4.patch): cmake_minimum_required
+# 2.8 -> 3.10 for CMake 4, do not build tests/ (needs gtest, not packaged).
+[package]
+name = "properties-cpp"
+version = "0.0.1"
+rel = 3
+arch = ["x86_64"]
+summary = "Header-only C++ properties and signals library"
+license = ["LGPL-2.1-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "properties-cpp"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/p/properties-cpp/properties-cpp_0.0.1+14.10.20140730.orig.tar.gz"
+sha256 = "5c5400d5e7f16e90916d9be2742785c68e7ce544641739a380d2d815cff67223"
+strip_components = 1
+
+[depends]
+build = ["cmake"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/no-tests-cmake4.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-tests-cmake4.patch
+'''
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DPROPERTIES_CPP_ENABLE_DOC_GENERATION=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = '''
+DESTDIR=%{pkgdir} cmake --install build
+test -e %{pkgdir}/usr/include/core/property.h
+test -e %{pkgdir}/usr/include/core/signal.h
+test -e %{pkgdir}/usr/lib/pkgconfig/properties-cpp.pc
+'''

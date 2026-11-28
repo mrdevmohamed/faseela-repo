@@ -1,0 +1,43 @@
+Description: do not link with libzeitgeist-datamodel
+Forwarded: https://gitlab.freedesktop.org/zeitgeist/zeitgeist/-/issues/27
+Last-Update: 2023-12-25
+---
+
+diff --git a/test/c/Makefile.am b/test/c/Makefile.am
+index 9a840c2b..46612eb3 100644
+--- a/test/c/Makefile.am
++++ b/test/c/Makefile.am
+@@ -21,6 +21,12 @@ AM_LDFLAGS = \
+ 	$(ZEITGEIST_LIBS) \
+ 	$(NULL)
+ 
++test_monitor_LDFLAGS = \
++       $(top_builddir)/libzeitgeist/libzeitgeist-2.0.la \
++       $(GIO_UNIX_LIBS) \
++       $(ZEITGEIST_LIBS) \
++       $(NULL)
++
+ check_PROGRAMS = \
+ 	test-timerange \
+ 	test-timestamp \
+diff --git a/test/direct/Makefile.am b/test/direct/Makefile.am
+index 56061c28..780c5acd 100644
+--- a/test/direct/Makefile.am
++++ b/test/direct/Makefile.am
+@@ -43,6 +43,13 @@ AM_LDFLAGS = \
+ 	$(top_builddir)/src/libzeitgeist-engine.la \
+ 	$(NULL)
+ 
++monitor_test_LDFLAGS = \
++       -export-dynamic -no-undefined \
++       $(top_builddir)/libzeitgeist/libzeitgeist-2.0.la \
++       $(top_builddir)/libzeitgeist/libzeitgeist-internal.la \
++       $(top_builddir)/src/libzeitgeist-engine.la \
++       $(NULL)
++
+ check_PROGRAMS = \
+ 	datamodel-test \
+ 	datasource-test \
+-- 
+2.39.2
+

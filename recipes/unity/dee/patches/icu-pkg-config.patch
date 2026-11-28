@@ -1,0 +1,40 @@
+Description: Use pkg-config to detect icu
+Author: Hugh McMaster <hugh.mcmaster@outlook.com>
+Last-Update: 2018-12-03
+
+--- dee-1.2.7+17.10.20170616.orig/configure.ac
++++ dee-1.2.7+17.10.20170616/configure.ac
+@@ -198,26 +198,14 @@ AC_ARG_ENABLE([icu],
+               [enable_icu=yes])
+ 
+ if test "x$enable_icu" = "xyes"; then
+-	AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[
+-	#include "unicode/uvernum.h"
+-	#if U_ICU_VERSION_MAJOR_NUM < 4
+-	#error Dee ICU requires at least ICU v4.6
+-	#elif U_ICU_VERSION_MAJOR_NUM == 4 && U_ICU_VERSION_MINOR_NUM < 6
+-	#error Dee ICU requires at least ICU v4.6
+-	#endif]], [[]])],
+-	[icu_available=yes],
+-	[icu_available=no])
++    PKG_CHECK_MODULES([ICU], [icu-i18n >= 4.6], [icu_available=yes], [icu_available=no])
+ 
+-	if test "x$icu_available" = "xyes"; then
+-		AC_DEFINE(HAVE_ICU, 1, [Define to 1 if we have ICU])
+-		ICU_CFLAGS="$(icu-config --cflags)"
+-		ICU_LIBS="$(icu-config --ldflags-libsonly)"
+-		AC_SUBST(ICU_CFLAGS)
+-		AC_SUBST(ICU_LIBS)
+-		AC_OUTPUT([dee-icu-1.0.pc])
+-	else
+-		AC_MSG_ERROR([Dee ICU support requires ICU >= 4.6])
+-	fi
++    if test "x$icu_available" = "xyes"; then
++        AC_DEFINE(HAVE_ICU, 1, [Define to 1 if we have ICU])
++        AC_OUTPUT([dee-icu-1.0.pc])
++    else
++        AC_MSG_ERROR([Dee ICU support requires ICU >= 4.6])
++    fi
+ fi
+ 
+ AM_CONDITIONAL(HAVE_ICU, test "x$enable_icu" = "xyes")

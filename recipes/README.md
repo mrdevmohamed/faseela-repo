@@ -14,6 +14,7 @@ recipes/
 ├── greeter/     optional login daemon and greeter packages (opt-in)
 ├── browser/     optional Firefox/Google Chrome and their GTK3 browser stack (opt-in, on top of gui/)
 ├── xfce/        optional Xfce 4.20 desktop, applications, LightDM and greeter (opt-in)
+├── unity/       optional complete Unity 7 desktop: own greeter, Dash lenses, indicators, control-center, Compiz shell, LightDM session (opt-in)
 ├── xorg/        optional X11 display stack: Xorg server, input driver and client utilities (opt-in)
 ├── media/       optional ffmpeg, mpv, Vulkan tools and codec/subtitle/render libs (opt-in)
 ├── creative/    optional Storytold Craft desktop apps for Wayland (opt-in)
@@ -26,15 +27,15 @@ recipes/
 └── dev/         opt-in developer runtimes and toolchains
 ```
 
-Current set: 10 toolchain + 40 base + 53 system + 8 boot + 97 extra =
-**208 core packages**. Optional categories contain 140 GUI, 23 COSMIC, 2 greeter,
-29 browser, 48 Xfce, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
-12 security, 1 peripheral, 12 dev and 4 development packages. The recipe tree
-contains **542 recipes** in total (counts generated from the current recipe tree).
+Current set: 10 toolchain + 41 base + 53 system + 8 boot + 97 extra =
+**209 core packages**. Optional categories contain 144 GUI, 23 COSMIC, 2 greeter,
+29 browser, 48 Xfce, 73 Unity, 18 Xorg, 27 media, 15 creative, 2 messaging, 1 networking,
+12 security, 1 peripheral, 12 dev, 4 development, 1 Cinnamon and 12 flatpak packages. The recipe tree
+contains **633 recipes** in total (counts generated from the current recipe tree).
 
 The normal Stage 2/Stage 3 build uses the core set. The GUI category is added
 only when `WITH_GUI=1`; COSMIC, browser, media, creative, messaging, networking,
-security, peripheral, developer, Xfce and Xorg packages remain opt-in.
+security, peripheral, developer, Xfce, Unity and Xorg packages remain opt-in.
 
 The low-level `glib` library belongs to `base/`, not the optional GUI category:
 non-desktop packages such as `gdk-pixbuf` need it even when `WITH_GUI` is off.

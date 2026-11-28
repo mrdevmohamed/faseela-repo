@@ -1,0 +1,259 @@
+--- unity-lens-music-6.9.1+16.04.orig/Makefile.am
++++ unity-lens-music-6.9.1+16.04/Makefile.am
+@@ -1,12 +1,11 @@
+ SUBDIRS = src data po tests
+ 
+ #
+-# Install the music.lens and musicstore.scope files
++# Install the music.lens files
+ #
+ scope_in_files = \
+   banshee.scope.in \
+-  rhythmbox.scope.in \
+-  musicstore.scope.in
++  rhythmbox.scope.in
+ scopedir = $(SCOPESDIR)/music
+ scope_DATA = $(scope_in_files:.scope.in=.scope)
+ 
+--- unity-lens-music-6.9.1+16.04.orig/configure.ac
++++ unity-lens-music-6.9.1+16.04/configure.ac
+@@ -1,5 +1,5 @@
+ AC_INIT(unity-lens-music, 6.9.1, https://launchpad.net/unity-lens-music)
+-AC_COPYRIGHT([Copyright 2011-2014 Canonical])
++AC_COPYRIGHT([Copyright 2011-2015 Canonical])
+ 
+ AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+ 
+@@ -73,11 +73,9 @@
+                   gio-unix-2.0 >= $GLIB_REQUIRED
+                   dee-1.0 >= 1.2.5
+                   sqlite3 >= 3.7.7
+-                  gee-1.0
++                  gee-0.8
+                   json-glib-1.0
+                   libnotify
+-                  libsoup-2.4
+-                  oauth
+                   unity >= 7.1.0
+                   unity-extras >= 7.0.0
+                   tdb >= 1.2.6)
+--- unity-lens-music-6.9.1+16.04.orig/po/POTFILES.skip
++++ unity-lens-music-6.9.1+16.04/po/POTFILES.skip
+@@ -4,6 +4,3 @@
+ src/simple-scope.c
+ src/banshee-scope.c
+ src/rhythmbox-scope.c
+-src/musicstore-scope.c
+-src/ubuntuone-webservices.c
+-tests/unit/ubuntuone-webservices.c
+--- unity-lens-music-6.9.1+16.04.orig/src/Makefile.am
++++ unity-lens-music-6.9.1+16.04/src/Makefile.am
+@@ -31,7 +31,7 @@
+   --pkg sqlite3 \
+   --pkg unity \
+   --pkg unity-extras \
+-  --pkg gee-1.0 \
++  --pkg gee-0.8 \
+   --pkg gio-2.0 \
+   --pkg gio-unix-2.0 \
+   --pkg glib-2.0 \
+--- unity-lens-music-6.9.1+16.04.orig/src/album.vala
++++ unity-lens-music-6.9.1+16.04/src/album.vala
+@@ -29,7 +29,6 @@
+     public string artwork_path { get; set; }
+     public double price { get; set; }
+     public string formatted_price { get; set; }
+-    public string purchase_sku { get; set; }
+ 
+   }
+ }
+--- unity-lens-music-6.9.1+16.04.orig/src/categories.vala
++++ unity-lens-music-6.9.1+16.04/src/categories.vala
+@@ -23,7 +23,6 @@
+     MUSIC,
+     SONGS,
+     ALBUMS,
+-    PURCHASE,
+     RADIOS
+   }
+ 
+--- unity-lens-music-6.9.1+16.04.orig/src/filter-parser.vala
++++ unity-lens-music-6.9.1+16.04/src/filter-parser.vala
+@@ -23,7 +23,7 @@
+   
+   public abstract class FilterParser : Object
+   {
+-    public FilterParser (Filter filter)
++    protected FilterParser (Filter filter)
+     {
+       this.filter = filter;
+     }
+@@ -33,4 +33,4 @@
+     public abstract string id { get;}
+     public abstract string parse ();
+   }
+-}
+\ No newline at end of file
++}
+--- unity-lens-music-6.9.1+16.04.orig/src/player.vala
++++ unity-lens-music-6.9.1+16.04/src/player.vala
+@@ -21,7 +21,7 @@
+ 
+ namespace PreviewPlayer
+ {
+-  errordomain PreviewPlayerError
++  public errordomain PreviewPlayerError
+   {
+     GST_INIT_FAILED
+   }
+@@ -36,7 +36,6 @@
+       PAUSED
+     }
+ 
+-    private static uint GST_NETWORK_TIMEOUT_SECS = 10; //gstreamer network timeout (in seconds)
+     private static uint64 GST_STATE_QUERY_TIMEOUT = 1000000;
+ 
+     // gstreamer - playbin plugin flags; run 'gst-inspect1.0 playbin' for more flags & description
+@@ -88,12 +87,6 @@
+       GLib.Value source_element = GLib.Value (GLib.Type.from_name("GstElement"));
+       gst_playbin.get_property ("source", ref source_element);
+       Gst.Element obj = (Gst.Element)source_element.get_object();
+-
+-      // playbin use different source plugins (e.g. FileSrc), timeout is only valid for http source
+-      if (obj.get_class ().get_type ().name () == "GstSoupHTTPSrc")
+-      {
+-        obj.set_property ("timeout", GST_NETWORK_TIMEOUT_SECS);
+-      }
+     }
+ 
+     internal bool gst_bus_message_cb (Gst.Bus bus, Gst.Message message)
+--- unity-lens-music-6.9.1+16.04.orig/src/simple-scope.vala
++++ unity-lens-music-6.9.1+16.04/src/simple-scope.vala
+@@ -36,7 +36,7 @@
+                                                   int max_results = -1,
+                                                   GLib.Cancellable? cancellable = null);
+ 
+-    public SimpleScope ()
++    protected SimpleScope ()
+     {
+     }
+ 
+--- unity-lens-music-6.9.1+16.04.orig/tests/unit/Makefile.am
++++ unity-lens-music-6.9.1+16.04/tests/unit/Makefile.am
+@@ -15,13 +15,11 @@
+ AM_VALAFLAGS = \
+   -C			\
+   --pkg dee-1.0 \
+-  --pkg gee-1.0 \
++  --pkg gee-0.8 \
+   --pkg gio-2.0 \
+   --pkg gio-unix-2.0 \
+   --pkg glib-2.0 \
+   --pkg json-glib-1.0 \
+-  --pkg oauth \
+-  --pkg libsoup-2.4 \
+   --vapidir $(top_srcdir)/src \
+   --pkg tdb \
+   --pkg unity \
+--- unity-lens-music-6.9.1+16.04.orig/tests/unit/assertions.vapi
++++ unity-lens-music-6.9.1+16.04/tests/unit/assertions.vapi
+@@ -1,23 +1,25 @@
+ [CCode (cprefix = "G", lower_case_cprefix = "g_", cheader_filename = "glib.h")]
+ namespace Assertions {
+-  public enum OperatorType {
++#if !VALA_0_52
++  public enum CompareOperator {
+     [CCode (cname = "==")]
+-    EQUAL,
++    EQ,
+     [CCode (cname = "!=")]
+-    NOT_EQUAL,
++    NE,
+     [CCode (cname = "<")]
+-    LESS_THAN,
++    LT,
+     [CCode (cname = ">")]
+-    GREATER_THAN,
++    GT,
+     [CCode (cname = "<=")]
+-    LESS_OR_EQUAL,
++    LE,
+     [CCode (cname = ">=")]
+-    GREATER_OR_EQUAL
++    GE
+   }
+ 
+-  public void assert_cmpstr (string? s1, OperatorType op, string? s2);
+-  public void assert_cmpint (int n1, OperatorType op, int n2);
+-  public void assert_cmpuint (uint n1, OperatorType op, uint n2);
+-  public void assert_cmphex (uint n1, OperatorType op, uint n2);
+-  public void assert_cmpfloat (float n1, OperatorType op, float n2);
++  public void assert_cmpstr (string? s1, CompareOperator op, string? s2);
++  public void assert_cmpint (int n1, CompareOperator op, int n2);
++  public void assert_cmpuint (uint n1, CompareOperator op, uint n2);
++  public void assert_cmphex (uint n1, CompareOperator op, uint n2);
++  public void assert_cmpfloat (float n1, CompareOperator op, float n2);
++#endif
+ }
+--- unity-lens-music-6.9.1+16.04.orig/tests/unit/test-rhythmbox-parser.vala
++++ unity-lens-music-6.9.1+16.04/tests/unit/test-rhythmbox-parser.vala
+@@ -61,12 +61,12 @@
+ 
+     parser.track_info_ready.connect ((track) =>
+     {
+-      assert_cmpstr (track.title, OperatorType.EQUAL, "Absolute Radio 80s (Modem)");
+-      assert_cmpstr (track.genre, OperatorType.EQUAL, "other");
+-      assert_cmpstr (track.artist, OperatorType.EQUAL, "");
+-      assert_cmpstr (track.album, OperatorType.EQUAL, "");
+-      assert_cmpstr (track.uri, OperatorType.EQUAL, "http://network.absoluteradio.co.uk/core/audio/ogg/live.pls?service=a8");
+-      assert_cmpint (track.year, OperatorType.EQUAL, 0);
++      assert_cmpstr (track.title, CompareOperator.EQ, "Absolute Radio 80s (Modem)");
++      assert_cmpstr (track.genre, CompareOperator.EQ, "other");
++      assert_cmpstr (track.artist, CompareOperator.EQ, "");
++      assert_cmpstr (track.album, CompareOperator.EQ, "");
++      assert_cmpstr (track.uri, CompareOperator.EQ, "http://network.absoluteradio.co.uk/core/audio/ogg/live.pls?service=a8");
++      assert_cmpint (track.year, CompareOperator.EQ, 0);
+       assert (track.type_track == TrackType.RADIO);
+     });
+     parser.parse(collection_to_parse, collection_to_parse.length);
+@@ -99,13 +99,13 @@
+ 
+     parser.track_info_ready.connect ((track) =>
+     {
+-      assert_cmpstr (track.title, OperatorType.EQUAL, "LA PASSION");
+-      assert_cmpstr (track.genre, OperatorType.EQUAL, "techno");
+-      assert_cmpstr (track.artist, OperatorType.EQUAL, "GIGI D'AGOSTINO");
+-      assert_cmpstr (track.album, OperatorType.EQUAL, "Loulou 007");
+-      assert_cmpstr (track.uri, OperatorType.EQUAL, "file:///home/moi/Gigi%20d'agostino%20Passion.mp3");
+-      assert_cmpint (track.year, OperatorType.EQUAL, 2000);
+-      assert_cmpstr (track.mime_type, OperatorType.EQUAL, "audio/mpeg");
++      assert_cmpstr (track.title, CompareOperator.EQ, "LA PASSION");
++      assert_cmpstr (track.genre, CompareOperator.EQ, "techno");
++      assert_cmpstr (track.artist, CompareOperator.EQ, "GIGI D'AGOSTINO");
++      assert_cmpstr (track.album, CompareOperator.EQ, "Loulou 007");
++      assert_cmpstr (track.uri, CompareOperator.EQ, "file:///home/moi/Gigi%20d'agostino%20Passion.mp3");
++      assert_cmpint (track.year, CompareOperator.EQ, 2000);
++      assert_cmpstr (track.mime_type, CompareOperator.EQ, "audio/mpeg");
+       assert (track.type_track == TrackType.SONG);
+     });
+     parser.parse(collection_to_parse, collection_to_parse.length);
+@@ -140,8 +140,8 @@
+   </entry>""";
+     parser.track_info_ready.connect ((track) =>
+     {
+-      assert_cmpstr (track.title, OperatorType.EQUAL, "LA PASSION");
+-      assert_cmpstr (track.album, OperatorType.EQUAL, "Loulou 007");
++      assert_cmpstr (track.title, CompareOperator.EQ, "LA PASSION");
++      assert_cmpstr (track.album, CompareOperator.EQ, "Loulou 007");
+       assert (track.type_track == TrackType.SONG);
+     });  
+     parser.parse(collection_to_parse_chunk, collection_to_parse_chunk.length);
+@@ -164,7 +164,7 @@
+ 
+     parser.track_info_ready.connect ((track) =>
+     {
+-      assert_cmpstr (track.title, OperatorType.EQUAL, "le poisson");
++      assert_cmpstr (track.title, CompareOperator.EQ, "le poisson");
+       assert (track.type_track == TrackType.SONG);
+     });     
+     parser.parse(collection_to_parse_chunk, collection_to_parse_chunk.length);

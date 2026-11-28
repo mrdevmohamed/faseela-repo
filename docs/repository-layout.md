@@ -24,6 +24,7 @@ faseela-repo/
 │   ├── greeter/
 │   ├── xorg/
 │   ├── xfce/
+│   ├── unity/
 │   ├── browser/
 │   ├── media/
 │   ├── creative/
@@ -63,6 +64,7 @@ recipes/
 | **greeter** | Optional login daemons and greeter applications. |
 | **xorg** | The X.Org server, its input driver, and X11 client utilities. |
 | **xfce** | The Xfce desktop, applications, panel plugins, LightDM, GTK greeter, and session integration. |
+| **unity** | The complete Unity 7 desktop: Compiz shell, Unity's own greeter, Dash lenses, indicators, control-center, settings daemon, LightDM session, and session integration. |
 | **browser** | Optional browser packages and their supporting libraries. |
 | **media** | Optional media playback, codecs, and related libraries. |
 | **creative** | Optional desktop applications from the Storytold Craft collection. |

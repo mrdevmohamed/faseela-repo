@@ -1,0 +1,19 @@
+# indicator-power: GLib 2.82 changed g_object_ref() to return GObject*
+# (was gpointer), so assigning it to GDBusConnection* p->conn trips
+# GCC 14's -Wincompatible-pointer-types, which is an error by default
+# (run 46120910095, wave 5, src/service.c:970). The connection IS a
+# GDBusConnection (it is on_bus_acquired's parameter), so the cast is
+# safe; it just tells the compiler what we already know.
+# Generated from the pristine 12.10.6+17.10.20170829.1 source with
+# ubuntu-resolute.patch + faseela.patch applied first, via diff -ruN.
+--- a/src/service.c
++++ b/src/service.c
+@@ -967,7 +967,7 @@
+ 
+   g_debug ("bus acquired: %s", name);
+ 
+-  p->conn = g_object_ref (G_OBJECT (connection));
++  p->conn = G_DBUS_CONNECTION (g_object_ref (G_OBJECT (connection)));
+   g_object_notify_by_pspec (G_OBJECT(self), properties[PROP_BUS]);
+ 
+   /* export the battery properties */

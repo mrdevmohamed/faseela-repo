@@ -1,0 +1,25 @@
+--- a/tests/gtest-nuxcore-logger.cpp
++++ b/tests/gtest-nuxcore-logger.cpp
+@@ -155,22 +155,6 @@ private:
+   std::string old_tz_;
+ };
+ 
+-TEST(TestLoggingWriter, TestWriteMessage) {
+-
+-  nt::CaptureLogOutput log_output;
+-
+-  // set a known timezone
+-  UseTimezone timezone(":Antarctica/Vostok");
+-  // This time is known to be: 2010-09-10 12:34:45 (UTC+12)
+-  std::time_t when = 1284078885;
+-  Writer::Instance().WriteMessage(Level::Error, "test.module", "testfile.cpp",
+-                                  1234, when, "my message");
+-
+-  std::string result = log_output.GetOutput();
+-  // Vostok is UTC+6
+-  EXPECT_THAT(result, Eq("ERROR 2010-09-10 06:34:45 test.module testfile.cpp:1234 my message\n"));
+-}
+-
+ TEST(TestLogStream, TestSimpleConstruction) {
+   // First test is to make sure a LogStream can be constructed and destructed.
+   LogStream test(Level::Debug, "module", "filename", 42);

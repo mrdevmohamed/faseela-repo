@@ -1,0 +1,41 @@
+# unity recipe: libpwquality — password quality checking library.
+# Needed by unity-control-center (user-accounts panel, unconditional
+# configure check for the pwquality pkg-config module).
+# Minimal build: cracklib dictionary check, the PAM module and the Python
+# bindings are all disabled — ucc only links libpwquality itself.
+[package]
+name = "libpwquality"
+version = "1.4.5"
+rel = 2
+arch = ["x86_64"]
+summary = "Password quality checking library"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libpwquality"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libp/libpwquality/libpwquality_1.4.5.orig.tar.bz2"
+sha256 = "6fcf18b75d305d99d04d2e42982ed5b787a081af2842220ed63287a2d6a10988"
+strip_components = 1
+
+[depends]
+build = ["pkgconf", "gettext"]
+run = []
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = '''export CFLAGS="-O2 -Wno-error"
+./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-cracklib-check --disable-pam --disable-python-bindings
+'''
+compile = "make -j%{jobs}"
+install = '''make DESTDIR=%{pkgdir} install
+test -e %{pkgdir}/usr/lib/libpwquality.so
+test -e %{pkgdir}/usr/lib/pkgconfig/pwquality.pc
+'''

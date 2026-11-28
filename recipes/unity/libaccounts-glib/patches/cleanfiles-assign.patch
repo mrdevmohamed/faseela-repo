@@ -1,0 +1,19 @@
+# libaccounts-glib: automake 1.17 rejects `CLEANFILES += ...` when
+# CLEANFILES was never assigned with `=` first. The comment claimed
+# it was "already defined in gtk-doc.make", but the unity-build-shims
+# stand-in gtk-doc.make defines no CLEANFILES, so assign directly.
+--- a/docs/reference/Makefile.am
++++ b/docs/reference/Makefile.am
+@@ -91,8 +91,10 @@
+ 	ag-backup.1 \
+ 	ag-tool.1
+ 
+-# Already defined in gtk-doc.make.
+-CLEANFILES += $(nodist_man_MANS)
++# gtk-doc.make does not define CLEANFILES here (the unity-build-shims
++# stand-in gtk-doc.make has no CLEANFILES), and automake 1.17 errors
++# on `+=` before any `=` assignment, so assign directly.
++CLEANFILES = $(nodist_man_MANS)
+ endif
+ 
+ if ENABLE_GTK_DOC

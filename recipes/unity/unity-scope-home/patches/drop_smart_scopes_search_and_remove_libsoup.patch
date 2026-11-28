@@ -1,0 +1,1108 @@
+Description: Drop Smart Scopes Search functionality and remove libsoup* dependencies.
+ Smart Scopes Search functionality has been broken for many years already and
+ it could be dropped. In future Unity will have similar feature implemented but
+ without 3rd-party servers working as data aggregators or fetchers.
+
+ This patch also removes all dependencies on libsoup* libraries including
+ obsolete libsoup-gnome-2.4-1 (LP: #2069962).
+Author: Tomasz Jeruzalski <tomekdev17@gmail.com>
+Bug: https://bugs.launchpad.net/ubuntu/+source/unity-scope-home/+bug/2069962
+Last-Update: 2026-02-16
+---
+--- a/configure.ac
++++ b/configure.ac
+@@ -64,7 +64,6 @@
+                   dee-1.0 >= 1.0.7
+                   gee-0.8
+                   json-glib-1.0
+-                  libsoup-gnome-2.4
+                   uuid >= 2.20.0
+                   unity >= $LIBUNITY_REQURED
+                   unity-protocol-private >= $LIBUNITY_REQURED
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -35,8 +35,6 @@
+   --pkg gio-unix-2.0 \
+   --pkg glib-2.0 \
+   --pkg json-glib-1.0 \
+-  --pkg libsoup-gnome-2.4 \
+-  --pkg libsoup-2.4 \
+   --pkg libuuid \
+   --vapidir $(srcdir) \
+   --vapidir $(top_srcdir)/vapi \
+@@ -71,7 +69,6 @@
+   smart-scopes-interface.vala \
+   smart-scopes-id-map.vala \
+   smart-scopes-parse.vala \
+-  smart-scopes-search.vala \
+   smart-scopes-metrics.vala \
+   smart-scopes-default-parser.vala \
+   smart-scopes-more-suggestions-parser.vala \
+--- a/src/scope.vala
++++ b/src/scope.vala
+@@ -43,7 +43,6 @@
+   private KeywordSearch keywords_search = new KeywordSearch ();
+   private bool smart_scopes_initialized = false;
+   public bool smart_scopes_ready { get; internal set; default = false; }
+-  internal SmartScopes.SmartScopeClientInterface sss_client = null;
+   private SmartScopes.ChannelIdMap channel_id_map = new SmartScopes.ChannelIdMap ();
+   private uint metrics_timer;
+   private int remote_scopes_retry_count = 0;
+@@ -106,18 +105,12 @@
+     debug ("Exporting home scope");
+     export ();
+ 
+-    scope_mgr.notify["remote-content-search"].connect ((obj, pspec) =>
+-    {
+-      remote_content_search_changed ();
+-    });
+-
+     scope_mgr.disabled_scopes_changed.connect (() =>
+     {
+       debug ("The list of disabled scopes has changed.");
+       populate_filters ();
+     });
+ 
+-    init_sss_client ();
+   }
+ 
+   private static bool discovery_started = false;
+@@ -141,29 +134,6 @@
+     MetaScopeRegistry.instance ().update (reg, null);
+   }
+ 
+-  internal void remote_content_search_changed ()
+-  {
+-    debug ("remote-content-search flag changed");
+-
+-    update_search_hint ();
+-
+-    if (!scope_mgr.remote_content_search)
+-    {
+-      if (smart_scopes_initialized)
+-      {
+-        debug ("Disabling Smart Scopes Server connectivity"); 
+-        smart_scopes_initialized = false;
+-        smart_scopes_ready = false;
+-        if (metrics_timer > 0)
+-        {
+-          GLib.Source.remove (metrics_timer);
+-          metrics_timer = 0;
+-        }
+-        sss_client = null;
+-      }
+-    } // don't do anything if it got enabled - this will be handled on next search ()
+-  }
+-
+   internal void update_search_hint ()
+   {
+     debug ("Updating search hint");
+@@ -174,130 +144,6 @@
+       search_hint = _("Search your computer and online sources");
+   }
+ 
+-  internal void init_sss_client ()
+-  {
+-    if (scope_mgr.remote_content_search == false)
+-      return;
+-
+-    if (!smart_scopes_initialized)
+-    {
+-      debug ("Initializing Smart Scopes client");
+-
+-      ClientScopesInfo client_scopes_info = null;
+-
+-      try
+-      {
+-        client_scopes_info = ClientScopesInfo.from_file (ClientScopesInfo.CLIENT_SCOPES_FILE, ScopeRegistry.instance ().flatten ());
+-      }
+-      catch (Error e)
+-      {
+-        warning ("Cannot determine client scopes: %s", e.message);
+-      }
+-
+-      var platform_info = SmartScopes.PlatformInfo.gather_platform_info (client_scopes_info);
+-
+-      smart_scopes_initialized = true;
+-      sss_client = new SmartScopes.SmartScopesClient (platform_info);
+-
+-      request_remote_scopes.begin ();
+-      
+-      metrics_timer = GLib.Timeout.add_seconds (METRICS_SEND_INTERVAL_SECS, flush_metrics_async);
+-    }
+-  }
+-
+-  internal async void request_remote_scopes ()
+-  {
+-    if (remote_scopes_request_running || smart_scopes_ready)
+-      return;
+-
+-    remote_scopes_request_running = true;
+-
+-    SmartScopes.RemoteScopeInfo[]? scopes = null;
+-    // issue a request for remote_scopes list
+-    try
+-    {
+-      scopes = yield sss_client.remote_scopes (null);
+-      if (scopes != null)
+-      {
+-        debug ("Got %u remote scopes", scopes.length);
+-        foreach (var remote_scope in scopes)
+-        {
+-          if (remote_scope.keywords.length > 0)
+-          {
+-            var kw = new GLib.SList<string> ();
+-            foreach (var k in remote_scope.keywords)
+-            {
+-              kw.append (k);
+-            }
+-            keywords_search.index_keywords (remote_scope.scope_id, kw);
+-          }
+-        }
+-
+-        remote_scope_registry = new RemoteScopeRegistry.for_scopes (scopes);
+-        remote_scope_registry.create_model ();
+-        MetaScopeRegistry.instance ().update (ScopeRegistry.instance (), remote_scope_registry);
+-        
+-        smart_scopes_ready = true;
+-
+-        populate_filters (); // recreate filters
+-      }
+-    }
+-    catch (Error e)
+-    {
+-      warning ("Failed to get list of remote scopes: %s", e.message);
+-    }
+-    remote_scopes_request_running = false;
+-
+-    if (!smart_scopes_ready)
+-    {
+-      bool network_available = GLib.NetworkMonitor.get_default ().network_available;
+-
+-      // if network not available, monitor it and re-try when it becomes available
+-      if (netmon == null && !network_available)
+-      {
+-        debug ("Network not available, creating netmon");
+-
+-        netmon = GLib.NetworkMonitor.get_default ();
+-        netmon_sig_id = netmon.network_changed.connect ((available) =>
+-        {
+-          // note: we get network_changed notification multiple times, 
+-          // remote_scopes_request_running ensures we retry once at a time.
+-          if (available && !smart_scopes_ready && !remote_scopes_request_running)
+-          {
+-            remote_scopes_retry_count = 0;
+-            // just retry after small initial delay (don't multiply by num of failures)
+-            GLib.Timeout.add_seconds (REMOTE_SCOPES_INITIAL_RETRY_INTERVAL_SECS, request_remote_scopes_retry);
+-          }
+-        });
+-      }
+-
+-      // network considered available but for some reason remote-scopes query failed - setup a retry after timeout
+-      if (network_available)
+-      {
+-        var retry_delay = int.min (REMOTE_SCOPES_INITIAL_RETRY_INTERVAL_SECS * ++remote_scopes_retry_count,
+-                                   REMOTE_SCOPES_RETRY_INTERVAL_MAX_SECS);
+-        debug ("Network is available, will retry in %d secs", retry_delay);
+-        GLib.Timeout.add_seconds (retry_delay, request_remote_scopes_retry);
+-      }
+-    }
+-    else
+-    {
+-      // once we got remote-scopes, disconnect and remove netmon
+-      if (netmon != null)
+-      {
+-        SignalHandler.disconnect (netmon, netmon_sig_id);
+-        netmon = null;
+-        netmon_sig_id = 0;
+-      }
+-    }
+-  }
+-
+-  internal bool request_remote_scopes_retry ()
+-  {
+-    request_remote_scopes.begin ();
+-    return false; // don't run this timeout callback anymore
+-  }
+-
+   internal void populate_filters ()
+   {
+     var reg = ScopeRegistry.instance ();
+@@ -406,63 +252,6 @@
+     channel_id_map.remove_channel (channel_id);
+   }
+ 
+-  /**
+-    * Creates new session id if search string changed considerably, or returns existing session id
+-    */
+-  private string get_session_id (SearchQueryChange query_status, string home_channel_id)
+-  {
+-    string? session_id = null;
+-    if (query_status != SearchQueryChange.NEW_QUERY)
+-    {
+-      if (channel_id_map.has_session_id_for_channel (home_channel_id))
+-      {
+-        session_id = channel_id_map.session_id_for_channel (home_channel_id);
+-        debug ("Using existing session id %s for channel %s", session_id, home_channel_id);
+-      }
+-      else
+-      {
+-        debug ("no smart scopes session mapping for channel %s", home_channel_id);
+-      }
+-    }
+-    if (session_id == null)
+-    {
+-      session_id = sss_client.create_session_id ();
+-      debug ("Creating new session id %s for channel %s", session_id, home_channel_id);
+-      channel_id_map.map_session_id (home_channel_id, session_id);
+-    }
+-    return session_id;
+-  }
+-
+-  internal bool flush_metrics_async ()
+-  {
+-    handle_feedback_sending.begin (true, (obj, res) =>
+-    {
+-      handle_feedback_sending.end (res);
+-    });
+-    return true;
+-  }
+-
+-  internal void handle_metrics (uint action_type, string scope_id, string? session_id, string? server_sid)
+-  {
+-    // server_sid may be null if we didn't query smart scopes service
+-    if (server_sid == null)
+-      return;
+-
+-    debug ("Adding activation metrics record for scope %s, action_type=%u", scope_id, action_type);
+-    var timestamp = new DateTime.now_utc ();
+-
+-    if (action_type == Unity.Protocol.ActionType.ACTIVATE_RESULT 
+-        || action_type == Unity.Protocol.ActionType.PREVIEW_ACTION)
+-    {
+-      sss_client.add_click_event (session_id, server_sid, scope_id, timestamp);
+-    }
+-    else if (action_type == Unity.Protocol.ActionType.PREVIEW_RESULT)
+-    {
+-      sss_client.add_preview_event (session_id, server_sid, scope_id, timestamp);
+-    }
+-
+-    handle_feedback_sending.begin ();
+-  }
+ 
+   internal void handle_found_metrics (string home_channel_id, string session_id, string server_sid, List<SmartScopes.RecommendedScope?> recommendations)
+   {
+@@ -482,141 +271,12 @@
+     }
+ 
+     var timestamp = new DateTime.now_utc ();
+-    sss_client.add_found_event (session_id, server_sid, result_counts, timestamp);
+-
+-    handle_feedback_sending.begin ();
+-  }
+-
+-  internal async void handle_feedback_sending (bool force = false)
+-  {
+-    if (force || sss_client.num_feedback_events () > METRICS_MIN_NUM_EVENTS)
+-    {
+-      try
+-      {
+-        yield sss_client.send_feedback (null); //TODO cancellable
+-      }
+-      catch (Error e)
+-      {
+-        warning ("Sending feedback failed: %s", e.message);
+-      }
+-    }
+-  }
+-
+-  internal async ActivationResponse? handle_preview (Unity.AggregatorActivation activation, string session_id, string server_sid) throws Error
+-  {
+-    if (activation.scope_result == null)
+-    {
+-      warning ("activation on channel %s has no result", activation.channel_id);
+-      return null;
+-    }
+-    
+-    var content = activation.scope_result.metadata.lookup ("content"); //master scopes put 'metadata' in 'content'
+-    if (content == null)
+-    {
+-      warning ("'content' element not found"); //this shouldn't really happen
+-      return null;
+-    }
+-
+-    var result_id = content.lookup_value ("id", VariantType.STRING);
+-    if (result_id == null)
+-    {
+-      warning ("result_id not present for activation request on channel %s, uri %s", activation.channel_id, activation.scope_result.uri);
+-      return null;
+-    }
+-    
+-    var preview = yield sss_client.preview (server_sid, session_id, result_id.get_string (), activation.scope_result, null); //TODO cancellable?
+-    if (preview == null)
+-    {
+-      warning ("Request for server preview for uri %s returned null", activation.scope_result.uri);
+-      return null;
+-    }
+-    
+-    return new ActivationResponse.with_preview (preview);
+   }
+ 
+   internal override async ActivationResponse? activate (Unity.AggregatorActivation activation)
+   {
+     debug ("Activation request for scope %s, action_type=%u", activation.scope_id, activation.action_type);
+ 
+-    // handle 'did you mean..' type of results (new search query provide via 'scopes-query://' results)
+-    if (activation.action_type == Unity.Protocol.ActionType.ACTIVATE_RESULT &&
+-        activation.scope_result.uri.has_prefix (SCOPES_QUERY_SCHEMA_PREFIX))
+-    {
+-      var query = activation.scope_result.uri.substring (SCOPES_QUERY_SCHEMA_PREFIX.length);
+-      var escaped_query = GLib.Uri.unescape_string (query);
+-      if (escaped_query == null)
+-        escaped_query = query;
+-      if (!escaped_query.validate ()) {
+-        escaped_query = "error: Invalid UTF8";
+-        warning ("Invalid UTF8 received from the server");
+-      }
+-
+-      if (escaped_query != null)
+-          query = escaped_query;
+-      query_state.set_canned_query (activation.channel_id, query);
+-      return new ActivationResponse.with_search (query, null, null);
+-    }
+-
+-    if (!scope_mgr.remote_content_search || sss_client == null ||
+-        (activation.action_type != Unity.Protocol.ActionType.ACTIVATE_RESULT &&
+-         activation.action_type != Unity.Protocol.ActionType.PREVIEW_RESULT &&
+-         activation.action_type != Unity.Protocol.ActionType.PREVIEW_ACTION))
+-      return null; //nothing to do
+- 
+-    string? server_sid = channel_id_map.server_sid_for_channel (activation.channel_id);
+-    string? session_id = channel_id_map.session_id_for_channel (activation.channel_id);
+-
+-    var scope_id = activation.scope_id; //this is an id of master (or a standalone scope such as apps)
+-    var scope_id_var = activation.scope_result.metadata.lookup ("scope-id");
+-
+-    if (scope_id_var != null)
+-      scope_id = scope_id_var.get_string ();
+-    else
+-      debug ("No specific scope_id in the result from master '%s'", scope_id);
+-
+-    bool is_local_scope = scope_mgr.is_client_scope (scope_id) || ScopeRegistry.instance ().is_master (scope_id);
+-
+-    // special case for more suggestions in home lens: both lmb & rmb should display a preview
+-    if (scope_id.has_prefix ("more_suggestions-") &&
+-        !is_local_scope &&
+-        (activation.action_type == Unity.Protocol.ActionType.ACTIVATE_RESULT ||
+-         activation.action_type == Unity.Protocol.ActionType.PREVIEW_RESULT))
+-    {
+-      var preview = yield handle_preview (activation, session_id, server_sid);
+-      handle_metrics (Unity.Protocol.ActionType.PREVIEW_RESULT, scope_id, session_id, server_sid);
+-      return preview;
+-    }
+-
+-    handle_metrics (activation.action_type, scope_id, session_id, server_sid);
+-
+-    // do nothing for local scopes - activation will be handled by actual scope
+-    if (is_local_scope)
+-    {
+-      debug ("Scope %s is a local scope, passing request to it", scope_id);
+-      return null;
+-    }
+-
+-    // at this point it can only be a remote scope activation request;
+-    // if it's a preview action, then take activation uri from the id
+-    // and make the Dash go there via goto_uri argument.
+-    if (activation.action_type == Unity.Protocol.ActionType.PREVIEW_ACTION)
+-    {
+-      string action_id = activation.hints["preview-action-id"].get_string ();
+-      return new ActivationResponse (Unity.HandledType.NOT_HANDLED, action_id);
+-    }
+-
+-    if (activation.action_type == Unity.Protocol.ActionType.PREVIEW_RESULT)
+-    {
+-      try
+-      {
+-        var preview = yield handle_preview (activation, session_id, server_sid);
+-        return preview;
+-      }
+-      catch (Error e)
+-      {
+-        warning ("Preview request for scope %s failed: %s", activation.scope_id, e.message);
+-      }
+-    }
+ 
+     return null; // activation will be handled by actual scope
+   }
+@@ -625,8 +285,6 @@
+   {
+     debug ("------------ Search query: %s, channel %s -----------", scope_search.search_string, scope_search.channel_id);
+ 
+-    init_sss_client ();
+-
+     GLib.Cancellable cancellable = scope_search.search_context.cancellable.get_gcancellable();
+ 
+     CategoryManager.instance ().observe (scope_search.channel_id, scope_search.results_model);
+@@ -736,51 +394,48 @@
+     // this mean user set filters *after* entering a query and we apply them;
+     // otherwise smart scopes recommendations will take precedence.
+     // if search query is empty, then apply default user's filters.
+-    if (filter_change_only || empty_query || sss_client == null)
+-    {
+-      unowned Unity.OptionsFilter categories_filter = scope_search.get_filter ("categories") as Unity.OptionsFilter;
+-      unowned Unity.OptionsFilter sources_filter = scope_search.get_filter ("sources") as Unity.OptionsFilter;
++    unowned Unity.OptionsFilter categories_filter = scope_search.get_filter ("categories") as Unity.OptionsFilter;
++    unowned Unity.OptionsFilter sources_filter = scope_search.get_filter ("sources") as Unity.OptionsFilter;
++
++    bool relations_changed = false;
+ 
+-      bool relations_changed = false;
+-        
+-      // if query is empty but it's not just a filter change (i.e. state is REMOVES_FROM_PREVIOUS_QUERY or NEW_QUERY),
+-      // then apply default user filters.
+-      if (empty_query && search_query_changed != SearchQueryChange.NOT_CHANGED)
++    // if query is empty but it's not just a filter change (i.e. state is REMOVES_FROM_PREVIOUS_QUERY or NEW_QUERY),
++    // then apply default user filters.
++    if (empty_query && search_query_changed != SearchQueryChange.NOT_CHANGED)
++    {
++      var default_filters = scope_mgr.home_lens_default_view;
++      if (default_filters.length > 0)
+       {
+-        var default_filters = scope_mgr.home_lens_default_view;
+-        if (default_filters.length > 0)
+-        {
+-          debug ("Empty query, applying default filter view");
+-          needs_filter_update |= FilterState.set_filters (categories_filter, sources_filter, default_filters);
+-        }
+-        default_view = true;
++        debug ("Empty query, applying default filter view");
++        needs_filter_update |= FilterState.set_filters (categories_filter, sources_filter, default_filters);
+       }
++      default_view = true;
++    }
+ 
+-      if (!disable_filter_updates) {
+-        debug ("Updating filter interrelationships");
+-        relations_changed = filter_state.update_filter_relations (scope_search.channel_id, categories_filter, sources_filter);
+-      } else {
+-        needs_filter_update = false; //reset filter update flag if on the phone
+-      }
++    if (!disable_filter_updates) {
++      debug ("Updating filter interrelationships");
++      relations_changed = filter_state.update_filter_relations (scope_search.channel_id, categories_filter, sources_filter);
++    } else {
++      needs_filter_update = false; //reset filter update flag if on the phone
++    }
+ 
+-      // caution: push_filter_settings may get cancelled if we ever yield before;
+-      // in such case internal filter state must be updated later (at the end of search).
+-      if (relations_changed)
+-        push_filters_update (scope_search);
+-      debug ("Filter interrelationships changed: %s", relations_changed.to_string ());
+-
+-      SearchUtil.scopes_to_query_from_filters (scope_search.get_filter ("sources") as Unity.OptionsFilter,
+-                                               scope_search.get_filter ("categories") as Unity.OptionsFilter,
+-                                               search_scopes);
+-
+-      // if this search request is a filter change only and query is empty,
+-      // update user's default view in gsettings
+-      if (filter_change_only && empty_query && relations_changed)
+-      {
+-        default_view = true;
+-        debug ("Updating user's default filter view");
+-        scope_mgr.home_lens_default_view = SearchUtil.scopes_to_query_to_array (search_scopes);
+-      }
++    // caution: push_filter_settings may get cancelled if we ever yield before;
++    // in such case internal filter state must be updated later (at the end of search).
++    if (relations_changed)
++      push_filters_update (scope_search);
++    debug ("Filter interrelationships changed: %s", relations_changed.to_string ());
++
++    SearchUtil.scopes_to_query_from_filters (scope_search.get_filter ("sources") as Unity.OptionsFilter,
++                                              scope_search.get_filter ("categories") as Unity.OptionsFilter,
++                                              search_scopes);
++
++    // if this search request is a filter change only and query is empty,
++    // update user's default view in gsettings
++    if (filter_change_only && empty_query && relations_changed)
++    {
++      default_view = true;
++      debug ("Updating user's default filter view");
++      scope_mgr.home_lens_default_view = SearchUtil.scopes_to_query_to_array (search_scopes);
+     }
+ 
+     // handle keywords (direct search)
+@@ -831,155 +486,8 @@
+       }
+     }));
+ 
+-    // initiate Smart Scopes Search (if enabled and query not empty)
+-    if (smart_scopes_ready)
+-    {
+-      if (empty_query)
+-      {
+-        if (channel_id_map.has_session_id_for_channel (scope_search.channel_id))
+-        {
+-          debug ("Empty search, removing session mapping for channel %s", scope_search.channel_id);
+-          channel_id_map.remove_channel (scope_search.channel_id);
+-        }
+-      }
+-      else // only sent the query to smart scopes if it's not empty
+-      {
+-        var session_id = get_session_id (search_query_changed, scope_search.channel_id);
+-
+-        AsyncReadyCallback sss_cb = (obj, res) =>
+-        {
+-          try
+-          {
+-            sss_client.search.end (res);
+-          }
+-          catch (IOError.CANCELLED canc_err)
+-          {
+-            // silently ignore
+-          }
+-          catch (Error e)
+-          {
+-            warning ("Remote search failed: %s", e.message);
+-          }
+-          debug ("Smart scopes query finished");
+-          sss_query_done = true;
+-          if (wait_for_sss_query)
+-            search.callback ();
+-        };
+-
+-        // apply filters to remote scopes query (either keyword-search filters or normal filters)
+-        string[] remote_scopes_to_query = new string [0];
+-        var iter = HashTableIter<string, Gee.Set<string>> (search_scopes);
+-        string scope_id;
+-        Gee.Set<string> subscopes;
+-        while (iter.next (out scope_id, out subscopes))
+-        {
+-          // this is to support virtual more_suggestions-* scopes and
+-          // effectively filter out applications.scope and alike.
+-          if (subscopes == null && remote_scope_registry.has_scope (scope_id))
+-            remote_scopes_to_query += scope_id;
+-
+-          if (subscopes != null)
+-          {
+-            foreach (var subscope_id in subscopes)
+-            {
+-              if (remote_scope_registry.has_scope (subscope_id))
+-                remote_scopes_to_query += subscope_id;
+-            }
+-          }
+-        };
+-
+-        // if specific scopes were requested via filters or direct search, then
+-        // only send the query to smart scopes server if
+-        // it has (some) of the requested scopes (will be passed via &scopes=)
+-        if ((direct_search || filter_change_only) && (remote_scopes_to_query == null || remote_scopes_to_query.length == 0))
+-        {
+-          debug ("No remote scopes to query based on keyword search or filters");
+-        }
+-        else
+-        {
+-          // timeout to give cancellable a chance for update; it depends on query length (the longer the string, the shorter timeout);
+-          // the formula is as follows:
+-          // min_delay + (max_delay - min_delay) / query_length
+-          // it gives the following values for lengths in 1..inf and min=50, max=100:
+-          // 100, 75, 66, 62, 60, 58, 57, 56, 55, 55, 54, 54, 53, 53, 53, 53, 52, 52, 52, ... 50 ...
+-          //
+-          // note: query is guaranteed to be non-empty at this point, so we're never dividing by 0!
+-          GLib.Timeout.add (SMART_SCOPES_QUERY_MIN_DELAY_MS + 
+-                            (SMART_SCOPES_QUERY_MAX_DELAY_MS - SMART_SCOPES_QUERY_MIN_DELAY_MS) / 
+-                            search_string.length,
+-                            ()=>
+-                            {
+-                              if (wait_for_search == false
+-                                  && wait_for_push == false
+-                                  && wait_for_sss_query == false)
+-                                search.callback ();
+-                              return false;
+-                            });
+-          yield;
+-
+-          if (cancellable.is_cancelled ())
+-          {
+-            debug ("The search for '%s' on channel %s was cancelled", scope_search.search_string, scope_search.channel_id);
+-            return;
+-          }
+-
+-          sss_query_started = true;
+-          sss_client.search.begin (search_string, form_factor, session_id, remote_scopes_to_query, scope_mgr.disabled_scopes,
+-                                   (scope_id, row) =>
+-            {
+-              // note: we get one row at a time in this callback but when we push the results,
+-              // we need to push all of them at once (per-scope), otherwise we would overwrite previously pushed rows;
+-              // this is currently guaranteed because smart-scopes-parse just calls us back in parser loop
+-              // (and sss search results are grouped by scope).
+-              var pushed_model = push_data.lookup (scope_id);
+-              if (pushed_model == null)
+-              {
+-                pushed_model = new Dee.SequenceModel ();
+-                pushed_model.set_schema_full ({"s", "s", "u", "u", "s", "s", "s", "s", "a{sv}"});
+-                push_data[scope_id] = pushed_model;
+-              }
+-              pushed_model.append_row (row);
+-              if (push_data_idle_src == 0)
+-              {
+-                push_data_idle_src = Idle.add (() =>
+-                {
+-                  push_data_idle_cb ();
+-                  push_data_idle_src = 0;
+-                  return false;
+-                });
+-              }
+-            },
+-            (server_sid, recommendations) =>
+-            {
+-              if (server_sid != null)
+-              {
+-                channel_id_map.map_server_sid (scope_search.channel_id, server_sid);
+-                int rec_limit_count = 0;
+-                foreach (var scope_rec in recommendations)
+-                {
+-                  if (scope_rec.scope_type == SmartScopes.ScopeType.ClientScope)
+-                  {
+-                    if (rec_limit_count == SMART_SCOPES_RECOMMENDATIONS_CUTOFF)
+-                      continue; // past cut off, ignore this client scope
+-                    ++rec_limit_count;
+-                  }
+-                  recommended_search_scopes.append (scope_rec);
+-                  debug ("Got recommended scope: %s, %s", scope_rec.scope_id, scope_rec.scope_type.to_string ());
+-                }
+-              }
+-              else
+-              {
+-                warning ("server_sid is null");
+-              }
+-            }, cancellable, sss_cb);
+-        }
+-      }
+-    }
+-    else
+-    {
+-      // may happen if remote-scopes haven't finished or returned an error
+-      debug ("Smart scopes not ready or not enabled for this query");
+-    }
++    // may happen if remote-scopes haven't finished or returned an error
++    debug ("Smart scopes not ready or not enabled for this query");
+ 
+     // no filters set / no scopes to search, use always-search scopes
+     if (search_scopes.size () == 0)
+@@ -1148,9 +656,6 @@
+ 
+     if (needs_filter_update)
+     {
+-      unowned Unity.OptionsFilter categories_filter = scope_search.get_filter ("categories") as Unity.OptionsFilter;
+-      unowned Unity.OptionsFilter sources_filter = scope_search.get_filter ("sources") as Unity.OptionsFilter;
+-
+       filter_state.set_state_from_filters (scope_search.channel_id, categories_filter, sources_filter);
+       push_filters_update (scope_search);
+     }
+--- a/tests/unit/Makefile.am
++++ b/tests/unit/Makefile.am
+@@ -23,8 +23,6 @@
+ 	  --vapidir $(srcdir) \
+ 	  --vapidir $(top_srcdir)/vapi \
+ 	  --target-glib=2.26 \
+-	  --pkg libsoup-gnome-2.4 \
+-	  --pkg libsoup-2.4 \
+ 	  --pkg libuuid \
+ 	  --pkg posix \
+ 	  $(MAINTAINER_VALAFLAGS) \
+@@ -66,7 +64,6 @@
+ 	../../src/smart-scopes-default-parser.vala \
+ 	../../src/smart-scopes-more-suggestions-parser.vala \
+ 	../../src/smart-scopes-remote-scopes-parser.vala \
+-	../../src/smart-scopes-search.vala \
+ 	../../src/smart-scopes-metrics.vala \
+ 	../../src/client-scopes-info.vala \
+ 	../../src/platform-info.vala \
+--- a/tests/unit/test-home-scope.vala
++++ b/tests/unit/test-home-scope.vala
+@@ -124,16 +124,8 @@
+     Test.add_data_func ("/Unit/SmartScopes/Parse", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_parse));
+     Test.add_data_func ("/Unit/SmartScopes/ParseErrors", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_parse_errors));
+     Test.add_data_func ("/Unit/SmartScopes/ParseMissingOptionalFields", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_parse_missing_optional_fields));
+-    Test.add_data_func ("/Unit/SmartScopes/SearchString", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_search_string));
+-    Test.add_data_func ("/Unit/SmartScopes/OnChunkData", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_on_chunk_data));
+-    Test.add_data_func ("/Unit/SmartScopes/Metrics", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_metrics));
+-    Test.add_data_func ("/Unit/SmartScopes/SessionId", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_smart_scopes_session_id));
++
+     Test.add_data_func ("/Unit/SmartScopes/ChannelIdMap", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_channel_id_map));
+-    Test.add_data_func ("/Unit/SmartScopes/ClientInterfaceSearch", Fixture.create<SmartScopesInterfaceTester>
+-        (SmartScopesInterfaceTester.test_smart_scopes_client_iface_search));
+-    Test.add_data_func ("/Unit/SmartScopes/ClientInterfaceMetrics",Fixture.create<SmartScopesInterfaceTester>
+-        (SmartScopesInterfaceTester.test_smart_scopes_client_iface_metrics));
+-    Test.add_data_func ("/Unit/SmartScopes/ClientInterfaceError", Fixture.create<SmartScopesInterfaceTester> (SmartScopesInterfaceTester.test_smart_scopes_client_iface_error));
+     Test.add_data_func ("/Unit/SmartScopes/ClientScopesInfoFromData", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_client_scopes_info_from_data));
+     Test.add_data_func ("/Unit/SmartScopes/ClientScopesInfoFromFile", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_client_scopes_info_from_file));
+     Test.add_data_func ("/Unit/SmartScopes/PlatformVersion", Fixture.create<SmartScopesUtilTester> (SmartScopesUtilTester.test_platform_version));
+@@ -158,7 +150,6 @@
+     Test.add_data_func ("/Unit/MarkupCleaner/UnsupportedEntitiesAreRaw", Fixture.create<MarkupCleanerTester> (MarkupCleanerTester.test_unsupported_entities_are_raw));
+     Test.add_data_func ("/Unit/MarkupCleaner/NumericEntitiesArePreserved", Fixture.create<MarkupCleanerTester> (MarkupCleanerTester.test_num_entities_are_preserved));
+ 
+-    Test.add_data_func ("/Unit/HomeScopeInstance/ActivationMetrics", Fixture.create<HomeScopeInstanceTester> (HomeScopeInstanceTester.test_activation_metrics));
+     Test.add_data_func ("/Unit/HomeScopeInstance/PhoneFilters", Fixture.create<HomeScopeInstanceTester> (HomeScopeInstanceTester.test_phone_filters));
+     Test.add_data_func ("/Unit/HomeScopeInstance/DesktopFilters", Fixture.create<HomeScopeInstanceTester> (HomeScopeInstanceTester.test_desktop_filters));
+ 
+@@ -203,65 +194,6 @@
+       proxy = null;
+     }
+ 
+-    internal void test_activation_metrics ()
+-    {
+-      // ignore warnings
+-      Test.log_set_fatal_handler (() => { return false; });
+-
+-      int num_click_events = 0;
+-      scope.sss_client.metrics_event_added.connect ((ev) => {
+-          if (ev.get_event_type () == "clicked") {
+-            if ((ev as SmartScopesMetrics.ClickMetricEvent).scope_id == "reference-wikipedia.scope")
+-              num_click_events++;
+-          }
+-      });
+-
+-      var search_hints = new HashTable<string, Variant> (str_hash, str_equal);
+-      search_hints["form-factor"] = "phone";
+-      perform_search (proxy, channel_id, "black sabbath", search_hints, null);
+-
+-      var content = new HashTable<string, Variant> (str_hash, str_equal);
+-      content["scope-id"] = new Variant.string ("reference-wikipedia.scope");
+-      content["content"] = new HashTable<string, Variant> (str_hash, str_equal);
+-
+-      Unity.ScopeResult result = Unity.ScopeResult ();
+-      result.uri = "http://askubuntu.com";
+-      result.icon_hint = "";
+-      result.category = 0;
+-      result.result_type = Unity.ResultType.DEFAULT;
+-      result.mimetype = "inode/folder";
+-      result.title = "Title";
+-      result.comment = "";
+-      result.dnd_uri = "file:///";
+-      result.metadata = new HashTable<string, Variant> (str_hash, str_equal);
+-      result.metadata["scope-id"] = new Variant.string ("reference.scope");
+-      result.metadata["content"] = content;
+-
+-      var hints = new HashTable<string, Variant>(str_hash, str_equal);
+-
+-      // activate result, expect result url back
+-      Unity.Protocol.ActivationReplyRaw? activation_reply = activate (proxy, channel_id, Unity.Protocol.ActionType.ACTIVATE_RESULT, result, hints);
+-      assert (activation_reply.handled == Unity.HandledType.NOT_HANDLED);
+-      assert (activation_reply.uri == "http://askubuntu.com");
+-
+-      // activate preview action, pass url via action id and expect it back in reply uri
+-      hints["preview-action-id"] = new Variant.string ("http://ubuntu.com");
+-      activation_reply = activate (proxy, channel_id, Unity.Protocol.ActionType.PREVIEW_ACTION, result, hints);
+-
+-      assert (activation_reply.handled == Unity.HandledType.NOT_HANDLED);
+-      assert (activation_reply.uri == "http://ubuntu.com");
+-
+-      // force metrics sending, otherwise Home Scope would flush them much too late
+-      var ml = new MainLoop ();
+-      scope.sss_client.send_feedback.begin (null, (obj, res) =>
+-      {
+-        scope.sss_client.send_feedback.end (res);
+-        ml.quit ();
+-      });
+-      assert (run_with_timeout (ml));
+-      assert (num_click_events == 2); // activation events for wikipedia scope from this test case
+-    }
+-
+     internal void test_phone_filters ()
+     {
+       // ignore warnings
+@@ -949,79 +881,6 @@
+     const string SERVER_URI = "https://foobar.ubuntu.com";
+     const string SEARCH_URI_PREFIX = SERVER_URI + "/smartscopes/v1/search";
+ 
+-    internal void test_smart_scopes_search_string ()
+-    {
+-      // ignore warnings
+-      Test.log_set_fatal_handler (() => { return false; });
+-
+-      Environment.set_variable ("SMART_SCOPES_SERVER", SERVER_URI, true);
+-      var pinfo = new SmartScopes.PlatformInfo.with_data ("1304", "EN", {"scope1","scope2"}, {"scope3","scope4"});
+-      var client = new SmartScopes.SmartScopesClient (pinfo);
+-
+-      assert (client.build_search_uri ("foo", "desktop", "xyz") ==
+-          SEARCH_URI_PREFIX + "?q=foo&platform=desktop-1304&session_id=xyz&locale=EN&added_scopes=scope1,scope2&removed_scopes=scope3,scope4");
+-
+-      // locale and added/removed scopes are optional
+-      pinfo = new SmartScopes.PlatformInfo.with_data ("1304", null, {}, {});
+-      client = new SmartScopes.SmartScopesClient (pinfo);
+-      assert (client.build_search_uri ("foo", "desktop", "xyz", {"scope3"}) ==
+-          SEARCH_URI_PREFIX + "?q=foo&platform=desktop-1304&session_id=xyz&scopes=scope3");
+-
+-      // build_id is optional as well
+-      pinfo = new SmartScopes.PlatformInfo.with_data ("1304", null, {}, {});
+-      pinfo.build_id = "edge-2014";
+-      client = new SmartScopes.SmartScopesClient (pinfo);
+-      assert (client.build_search_uri ("foo", "phone", "xyz", {}) ==
+-          SEARCH_URI_PREFIX + "?q=foo&platform=phone-1304&session_id=xyz&build_id=edge-2014");
+-
+-      // try the full build_id, mcc & mnc triple
+-      pinfo = new SmartScopes.PlatformInfo.with_data ("1304", null, {}, {});
+-      pinfo.build_id = "edge-2014";
+-      pinfo.country_code = "234";
+-      pinfo.network_code = "000";
+-      client = new SmartScopes.SmartScopesClient (pinfo);
+-      assert (client.build_search_uri ("foo", "phone", "xyz", {}) ==
+-          SEARCH_URI_PREFIX + "?q=foo&platform=phone-1304&session_id=xyz&build_id=edge-2014&country_code=234&network_code=000");
+-    }
+-
+-    internal void test_smart_scopes_on_chunk_data ()
+-    {
+-      CategoryManager.instance ().register ("more_suggestions.scope");
+-      CategoryManager.instance ().register ("reference.scope");
+-
+-      int recommend_count = 0;
+-      int result_count = 0;
+-
+-      var search_msg = new SmartScopesClient.SearchMessage ((scope_id, row) =>
+-          {
+-            result_count++;
+-            assert (scope_id == "more_suggestions-amazon.scope");
+-          },
+-          (server_sid, scopes) =>
+-          {
+-            recommend_count++;
+-            assert (scopes.length () == 2);
+-            assert (scopes.nth_data (0).scope_id == "more_suggestions-amazon.scope");
+-            assert (scopes.nth_data (1).scope_id == "more_suggestions-skimlinks.scope");
+-          });
+-
+-      string data1 = """{"scopes": [["more_suggestions-amazon.scope", "server"], ["more_suggestions-skimlinks.scope", "server"]], "server_sid": "abcd", "type":"recommendations"}
+-                        {"info": {"more_suggestions-amazon.scope": [{"metadata": {"category": "music", "price": "8.5", "currency": "GBP", "images": {"30x26": ["http://ecx.images-amazon.com/images/I/41e6vjJc4vL._SL30_.jpg"], "160x138": ["http://ecx.es-amazon.com/Jc4vL._SL_.jpg"]}, "id": "zon:K:music:YATC3C", "formatted_price": "\u00a38"}, "icon_hint": "http://mages-aon.com/ages/I/110_.jpg", "uri": "https://product.com/v1/%2FE", "title": "Even The Odd Ones"}]}, "type": "results"}""";
+-      var end = data1.length;
+-
+-      // simulate small chunks of data
+-      var buffer1 = new Soup.Buffer (Soup.MemoryUse.TEMPORARY, data1.data[0:10]);
+-      search_msg.on_data_chunk (buffer1);
+-      buffer1 = new Soup.Buffer (Soup.MemoryUse.TEMPORARY, data1.data[10:30]);
+-      search_msg.on_data_chunk (buffer1);
+-      buffer1 = new Soup.Buffer (Soup.MemoryUse.TEMPORARY, data1.data[30:end]);
+-      search_msg.on_data_chunk (buffer1);
+-      search_msg.finalize_parsing (); // normally called by do_search
+-
+-      assert (recommend_count == 1);
+-      assert (result_count == 1);
+-    }
+-
+     internal void test_smart_scopes_metrics ()
+     {
+       var server_sid1 = "abcdef";
+@@ -1167,15 +1026,6 @@
+       assert (metrics.num_events == 0);
+     }
+ 
+-    internal void test_smart_scopes_session_id ()
+-    {
+-      // a very basic check of uuid
+-      var pinfo = new SmartScopes.PlatformInfo.with_data ("1304", "EN", {}, {});
+-      var client = new SmartScopes.SmartScopesClient (pinfo);
+-      var session_id = client.create_session_id ();
+-      assert (session_id != null);
+-      assert (session_id.replace ("-", "").length == 32);
+-    }
+ 
+     internal void test_client_scopes_info_from_data ()
+     {
+@@ -1268,196 +1118,6 @@
+ 
+   class SmartScopesInterfaceTester: Object, Fixture
+   {
+-    internal void test_smart_scopes_client_iface_search ()
+-    {
+-      // ignore warnings
+-      Test.log_set_fatal_handler (() => { return false; });
+-
+-      Environment.set_variable ("SMART_SCOPES_SERVER", "http://127.0.0.1:%d".printf (fake_server.server_port), true);
+-      var pinfo = new SmartScopes.PlatformInfo.with_data ("1304", "EN", {"scope1"}, {"scope3"});
+-      var client = new SmartScopes.SmartScopesClient (pinfo);
+-      var session_id = "5d06cc10-751b-11e2-87e0-fb468b0a185a";
+-
+-      var ml = new MainLoop ();
+-
+-      int num_results = 0;
+-      int num_recommend = 0;
+-      client.search.begin ("foo", "desktop", session_id, {"scope3"}, {}, (scope_id, row) => 
+-          {
+-            num_results++;
+-          },
+-          (server_sid, recommend) =>
+-          {
+-            num_recommend++;
+-            assert (recommend.length () == 7);
+-          }, null, (obj, res) =>
+-          {
+-            try
+-            {
+-              client.search.end (res);
+-            }
+-            catch (Error e)
+-            {
+-              warning ("Smart scopes search failed: %s", e.message);
+-              assert_not_reached ();
+-              }
+-
+-            ml.quit ();
+-          });
+-
+-      assert (run_with_timeout (ml));
+-
+-      assert (num_results > 0);
+-      assert (num_recommend == 1);
+-
+-      uint8[] contents;
+-      var search_dump = File.new_for_path (Config.TESTRUNDATADIR + "/search.dump");
+-      assert (search_dump.load_contents (null, out contents, null));
+-      assert (((string)contents).strip () == "q=foo&platform=desktop-1304&session_id=5d06cc10-751b-11e2-87e0-fb468b0a185a&locale=EN&added_scopes=scope1&removed_scopes=scope3&scopes=scope3");
+-    }
+-
+-    internal void test_smart_scopes_client_iface_metrics ()
+-    {
+-      // ignore warnings
+-      Test.log_set_fatal_handler (() => { return false; });
+-
+-      Environment.set_variable ("SMART_SCOPES_SERVER", "http://127.0.0.1:%d".printf (fake_server.server_port), true);
+-      var pinfo = new SmartScopes.PlatformInfo.with_data ("1304", "EN", {"scope1"}, {"scope3"});
+-      var client = new SmartScopes.SmartScopesClient (pinfo);
+-      var session_id = "5d06cc10-751b-11e2-87e0-fb468b0a185a";
+-
+-      var session_id1 = "5d06cc10-751b-11e2-87e0-fb468b0a185a";
+-      var session_id2 = "9d06cd01-931c-2212-3333-ab668b0a3850";
+-      var server_sid1 = "abcdef";
+-      var server_sid2 = "ghijkl";
+-      var server_sid3 = "mnopqr";
+-
+-      var scope_res1 = new Gee.HashMap<string, int> ();
+-      scope_res1["foo1.scope"] = 1;
+-
+-      var scope_res2 = new Gee.HashMap<string, int> ();
+-      scope_res1["foo2.scope"] = 2;
+-
+-      var scope_res3 = new Gee.HashMap<string, int> ();
+-      scope_res1["foo3.scope"] = 3;
+-
+-      var ml = new MainLoop ();
+-
+-      var now = new DateTime.now_utc ();
+-      client.add_found_event (session_id1, server_sid1, scope_res1, now);
+-      client.add_preview_event (session_id1, server_sid1, "scope1.scope", now);
+-      client.add_click_event (session_id1, server_sid1, "scope1.scope", now);
+-      client.add_found_event (session_id1, server_sid2, scope_res2, now);
+-      client.add_click_event (session_id1, server_sid2, "scope3.scope", now);
+-      client.add_found_event (session_id2, server_sid3, scope_res3, now);
+-      client.add_click_event (session_id2, server_sid3, "scope4.scope", now);
+-
+-      client.send_feedback.begin (null, (obj, res) =>
+-          {
+-            client.send_feedback.end (res);
+-            ml.quit ();
+-          });
+-
+-      assert (run_with_timeout (ml));
+-
+-      // load feedback data dumped by server, verify events
+-      var parser = new Json.Parser ();
+-      bool status = parser.load_from_file (Config.TESTRUNDATADIR + "/feedback.dump");
+-      assert (status == true);
+-
+-      var ev_array = parser.get_root ().get_array ();
+-      assert (ev_array.get_length () == 7);
+-
+-      Json.Object el;
+-      el = ev_array.get_element (0).get_object ();
+-      assert (el.get_string_member ("type") == "found");
+-      assert (el.get_string_member ("session_id") == session_id1);
+-      assert (el.get_string_member ("server_sid") == server_sid1);
+-      
+-      el = ev_array.get_element (1).get_object ();
+-      assert (el.get_string_member ("type") == "previewed");
+-      assert (el.get_string_member ("session_id") == session_id1);
+-      assert (el.has_member ("server_sid") == false); // same server_sid, optimized out
+-
+-      el = ev_array.get_element (2).get_object ();
+-      assert (el.get_string_member ("type") == "clicked");
+-      assert (el.get_string_member ("session_id") == session_id1);
+-      assert (el.has_member ("server_sid") == false); // same server_sid, optimized out
+-
+-      el = ev_array.get_element (3).get_object ();
+-      assert (el.get_string_member ("type") == "found");
+-      assert (el.get_string_member ("session_id") == session_id1);
+-      assert (el.get_string_member ("server_sid") == server_sid2);
+-      
+-      el = ev_array.get_element (4).get_object ();
+-      assert (el.get_string_member ("type") == "clicked");
+-      assert (el.get_string_member ("session_id") == session_id1);
+-      assert (el.has_member ("server_sid") == false); // same server_sid, optimized out
+-
+-      el = ev_array.get_element (5).get_object ();
+-      assert (el.get_string_member ("type") == "found");
+-      assert (el.get_string_member ("session_id") == session_id2);
+-      assert (el.get_string_member ("server_sid") == server_sid3);
+-      
+-      el = ev_array.get_element (6).get_object ();
+-      assert (el.get_string_member ("type") == "clicked");
+-      assert (el.get_string_member ("session_id") == session_id2);
+-      assert (el.has_member ("server_sid") == false); // same server_sid, optimized out
+-    }
+-
+-    internal void test_smart_scopes_client_iface_error ()
+-    {
+-      // ignore warnings
+-      Test.log_set_fatal_handler (() => { return false; });
+-
+-      Environment.set_variable ("SMART_SCOPES_SERVER", "http://127.0.0.1:9999", true); // non-existing server (connection failure)
+-      var pinfo = new SmartScopes.PlatformInfo.with_data ("1304", "EN", {"scope1"}, {"scope3"});
+-      var client = new SmartScopes.SmartScopesClient (pinfo);
+-      var session_id = "5d06cc10-751b-11e2-87e0-fb468b0a185a";
+-      var server_sid = "abcdef";
+-
+-      var ml = new MainLoop ();
+-
+-      client.search.begin ("foo", "desktop", session_id, {"scope3"}, {}, (scope_id, row) => 
+-          {
+-            assert_not_reached ();
+-          },
+-          (recommend) =>
+-          {
+-            assert_not_reached ();
+-          }, null, (obj, res) =>
+-          {
+-            try
+-            {
+-              client.search.end (res);
+-              assert_not_reached ();
+-            }
+-            catch (Error e)
+-            {
+-            ml.quit ();
+-            }
+-          });
+-
+-      assert (run_with_timeout (ml));
+-
+-      var now = new DateTime.now_utc ();
+-      client.add_click_event (session_id, server_sid, "scope1.scope", now);
+-
+-      client.send_feedback.begin (null, (obj, res) =>
+-          {
+-            try
+-            {
+-              client.send_feedback.end (res);
+-              assert_not_reached ();
+-            }
+-            catch (Error e)
+-            {
+-              ml.quit ();
+-              }
+-          });
+-
+-      assert (run_with_timeout (ml));
+-    }
+   }
+ 
+   class MarkupCleanerTester: Object, Fixture

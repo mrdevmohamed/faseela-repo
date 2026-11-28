@@ -1,0 +1,17 @@
+Description: Don't build with Werror
+Bug-Debian: https://bugs.debian.org/940163
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1843730
+Author: Sebastien Bacher <seb128@ubuntu.com>
+Last-Update: 2020-12-24
+
+--- dee-1.2.7+17.10.20170616.orig/configure.ac
++++ dee-1.2.7+17.10.20170616/configure.ac
+@@ -121,7 +121,7 @@ AC_ARG_ENABLE([maintainer-flags],
+ MAINTAINER_CFLAGS=""
+ AS_IF([test "x$enable_maintainer_flags" = "xyes" && test "x$GCC" = "xyes"],
+       [
+-        MAINTAINER_CFLAGS="-Werror -Wall -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self -Wno-error=deprecated-declarations"
++        MAINTAINER_CFLAGS="-Wall -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Winit-self -Wno-error=deprecated-declarations"
+       ]
+ )
+ 

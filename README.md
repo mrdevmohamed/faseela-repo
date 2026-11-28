@@ -8,7 +8,7 @@ packages**.
 
 ```
 recipes/      one recipe.toml per package (toolchain, base, system, boot, extra, gui, cosmic, greeter, browser, media, creative, messaging, networking, security, peripherals, dev)
-flavors.toml  build roots and desktop images (bootstrap, seed, rootfs-min, iso-nogui, iso-sway, iso-xfce, iso-cosmic)
+flavors.toml  build roots and desktop images (bootstrap, seed, rootfs-min, iso-nogui, iso-sway, iso-xfce, iso-cosmic, iso-unity)
 scripts/      recipe tooling: check-recipes, recipe-ids, flavor, file-conflicts,
               distributed-releases, pin-nawa-source
 .github/workflows/

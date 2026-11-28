@@ -1,0 +1,40 @@
+# unity recipe: libgeonames — GeoNames geocoding library.
+# Needed by unity-control-center (datetime panel, unconditional configure
+# check). Source package is "geonames" (0.3.1, Resolute); the 170 MB orig
+# tarball is mostly the GeoNames place database under data/, which the build
+# compiles into the library via mkdb (GResource) — it is not shipped raw.
+# Docs (gtk-doc) and tests are off; the locale .mo files are built with msgfmt.
+[package]
+name = "libgeonames"
+version = "0.3.1"
+rel = 3
+arch = ["x86_64"]
+summary = "GeoNames geocoding library"
+license = ["GPL-3.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgeonames"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/g/geonames/geonames_0.3.1.orig.tar.gz"
+sha256 = "02b95e1682a011deedde1bd706eb6483f291c77e88b74cecfa7489e4b7ce3f32"
+strip_components = 1
+
+[depends]
+build = ["cmake", "make", "pkgconf", "glib", "gettext"]
+run = ["glib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DWANT_DOC=OFF -DWANT_TESTS=OFF -DWANT_DEMO=OFF"
+compile = "make -C build -j%{jobs}"
+install = '''DESTDIR=%{pkgdir} make -C build install
+test -e %{pkgdir}/usr/lib/libgeonames.so
+test -e %{pkgdir}/usr/lib/pkgconfig/geonames.pc
+'''

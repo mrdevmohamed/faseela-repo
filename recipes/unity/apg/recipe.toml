@@ -1,0 +1,44 @@
+# unity recipe: apg — Automated Password Generator.
+# Hard run dep of unity-control-center (user-accounts panel). Tiny C tool;
+# links -lcrypt (libxcrypt). The upstream Makefile has no DESTDIR support and
+# its install target chowns files, so the binaries and man pages are
+# installed by hand here. NOTE: plain `make` only builds apg and
+# apgbfm - the Makefile's first target is `standalone`, not `all` - so
+# the compile step must run `make all` to also build apgd.
+[package]
+name = "apg"
+version = "2.2.3"
+rel = 3
+arch = ["x86_64"]
+summary = "Automated Password Generator"
+license = ["BSD-3-Clause"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "apg"
+url = "https://archive.ubuntu.com/ubuntu/pool/universe/a/apg/apg_2.2.3.dfsg.1.orig.tar.gz"
+sha256 = "c7e3c556426e2d5d2f599873a71100c5f6d14fa8784e0b1d879916784de801df"
+strip_components = 1
+
+[depends]
+build = ["libxcrypt"]
+run = ["libxcrypt"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+compile = "make -j%{jobs} all FLAGS=\"-O2 -std=gnu89 -fcommon -Wno-error\""
+install = '''install -Dm755 apg %{pkgdir}/usr/bin/apg
+install -Dm755 apgd %{pkgdir}/usr/sbin/apgd
+install -Dm755 apgbfm %{pkgdir}/usr/bin/apgbfm
+install -Dm644 doc/man/apg.1 %{pkgdir}/usr/share/man/man1/apg.1
+install -Dm644 doc/man/apgd.8 %{pkgdir}/usr/share/man/man8/apgd.8
+install -Dm644 doc/man/apgbfm.1 %{pkgdir}/usr/share/man/man1/apgbfm.1
+test -x %{pkgdir}/usr/bin/apg
+'''

@@ -1,0 +1,30 @@
+# properties-cpp: CMake 4 fixes + drop the release-workflow include.
+# - cmake_minimum_required 2.8 -> 3.10 (CMake 4 removed < 3.5 compat).
+# - Do not build tests/ (needs gtest, not packaged).
+# - Do not include cmake/PrePush.cmake: its pre-push target depends on
+#   an `android-build` target that is never defined anywhere, so
+#   configure fails at generate time. Pre-push is a developer
+#   release workflow (bzr/pdebuild/Android cross-build), not part
+#   of the package build.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,11 +1,10 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.10)
+ 
+ project(properties-cpp)
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
+ include(cmake/EnableCoverageReport.cmake)
+-include(cmake/PrePush.cmake)
+ include(GNUInstallDirs)
+ 
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -pedantic -Wextra -fPIC -fvisibility=hidden -pthread")
+@@ -40,6 +39,5 @@
+ add_subdirectory(doc)
+ add_subdirectory(data)
+ add_subdirectory(include)
+-add_subdirectory(tests)
+ 
+ # enable_coverage_report(posix_process_test linux_process_test)

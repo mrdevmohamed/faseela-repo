@@ -1,0 +1,36 @@
+# unity recipe: libgusb — GObject wrapper around libusb (needed by colord)
+[package]
+name = "libgusb"
+version = "0.4.9"
+rel = 2
+arch = ["x86_64"]
+summary = "GLib wrapper around libusb"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgusb"
+url = "https://archive.ubuntu.com/ubuntu/pool/main/libg/libgusb/libgusb_%{version}.orig.tar.xz"
+sha256 = "9df5ef301d6a4b361002aa52cce1165a87a89744055879bdbab31e7e86f1e846"
+strip_components = 1
+
+[depends]
+build = ["meson", "ninja", "pkgconf", "glib", "json-glib", "libusb", "hwdata"]
+run = ["glib", "json-glib", "libusb", "hwdata"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dintrospection=false -Dvapi=false -Ddocs=false -Dtests=false -Dumockdev=disabled"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+test -e %{pkgdir}/usr/lib/libgusb.so
+test -e %{pkgdir}/usr/lib/pkgconfig/gusb.pc
+'''

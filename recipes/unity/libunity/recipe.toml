@@ -1,9 +1,12 @@
 # unity recipe: libunity — Unity launcher/dash integration library
-# Source: Ubuntu archive orig tarball (7.1.4+19.04.20190319); Ubuntu's patches are vendored under patches/.
+# Source: Launchpad orig tarball (7.1.4+19.04.20190319). The Ubuntu pool copy
+# is gone (libunity was removed from the archive); the Launchpad
+# +sourcefiles copy is byte-identical (sha256 verified). Ubuntu's patches
+# are vendored under patches/.
 [package]
 name = "libunity"
 version = "7.1.4"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity launcher/dash integration library"
 license = ["LGPL-3.0-only"]
@@ -11,7 +14,7 @@ source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
 
 [[package.sources]]
 name = "libunity"
-url = "https://archive.ubuntu.com/ubuntu/pool/universe/libu/libunity/libunity_7.1.4+19.04.20190319.orig.tar.gz"
+url = "https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/libunity/7.1.4+19.04.20190319-0ubuntu1/libunity_7.1.4+19.04.20190319.orig.tar.gz"
 sha256 = "56ecb380d74bf74caba193d9e8ad6b0c85ccf9eeb461bc9731c2b8636e1f1492"
 strip_components = 1
 

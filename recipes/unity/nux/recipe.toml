@@ -3,7 +3,7 @@
 [package]
 name = "nux"
 version = "4.0.8"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Nux: OpenGL toolkit used by the Unity shell"
 license = ["LGPL-3.0-only", "GPL-3.0-only"]
@@ -37,8 +37,12 @@ for p in $(cat %{assetsdir}/patches/series); do
 done
 cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
+# NOTE: C++17, not C++14: ICU's headers use `auto` non-type template
+# parameters (unicode/localpointer.h), which C++14 rejects (PR #236 wave 2).
+# The drop-std.patch already removed nux's own -std=c++0x, so the standard
+# comes from CXXFLAGS here.
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"
-export CXXFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -fpermissive -std=gnu++14"
+export CXXFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -fpermissive -std=gnu++17"
 autoreconf -fi
 ./configure --prefix=/usr --libdir=/usr/lib --disable-static --disable-gtk-doc --disable-introspection --disable-gestures --enable-documentation=no --disable-tests
 '''

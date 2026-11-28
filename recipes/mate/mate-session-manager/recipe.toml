@@ -6,10 +6,18 @@
 # configure requirement ("Package 'xtrans' not found") — PR #237 wave 4,
 # run 46126068976. Build dep only: xtrans ships headers + .pc, nothing
 # links it at runtime.
+# rel 4: gvariant-builder-init.patch — the tarball ships a pre-generated
+# org.gnome.SessionManager.App.c from a NEWER gdbus-codegen (glib 2.84+):
+# line 1417 calls g_variant_builder_init_static, which does not exist in
+# our glib 2.82.2 (implicit declaration = error under GCC 14). Worse, its
+# #if guard is unreliable on old glib: GLIB_VERSION_2_84 is UNDEFINED in
+# 2.82 headers, so it evaluates to 0 and the >= test is always true. The
+# patch replaces the call with g_variant_builder_init — exactly what glib
+# 2.82's own codegen emits (and what the #else branch already does).
 [package]
 name = "mate-session-manager"
 version = "1.28.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "MATE session manager: starts the desktop and manages logout"
 license = ["GPL-2.0-or-later"]
@@ -33,7 +41,11 @@ schema = 1
 conflicts = []
 replaces = []
 
+[assets]
+include = ["patches/gvariant-builder-init.patch"]
+
 [build]
+prepare = "patch -p1 < %{assetsdir}/patches/gvariant-builder-init.patch"
 configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --with-default-wm=marco --with-systemd --without-elogind --without-libglesv2"
 compile = "make -j%{jobs}"
 install = "make DESTDIR=%{pkgdir} install"

@@ -2,11 +2,14 @@
 # Taskbar, applets, and menus. Autotools only: the 1.28.7 tarball ships a
 # prebuilt configure and no meson.build. Wayland support is off (this is
 # the X11 session); X11 is explicit. The clock applet needs libmateweather,
-# and the window-list applet needs libwnck3.
+# and the window-list applet needs libwnck3. itstool is a hard configure
+# requirement (PR #237 wave 3, run 46113938187: "configure: error: itstool
+# not found") — it must be a build dep so the planner schedules mate-panel
+# in a later wave than itstool.
 [package]
 name = "mate-panel"
 version = "1.28.7"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE panel: taskbar, applets, and menus"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -19,7 +22,7 @@ sha256 = "b254791dc05219566cec9a1cec71a3dcc7674e87d94e9628b98157b764bc724c"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "pango", "mate-desktop", "mate-menus", "dconf", "libwnck3", "libmateweather", "libX11", "libXrandr", "libSM", "libICE", "mate-common"]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "pango", "mate-desktop", "mate-menus", "dconf", "libwnck3", "libmateweather", "libX11", "libXrandr", "libSM", "libICE", "mate-common", "itstool"]
 run = ["glib", "gtk3", "gdk-pixbuf", "pango", "mate-desktop", "mate-menus", "dconf", "libwnck3", "libmateweather", "libX11", "libXrandr", "libSM", "libICE"]
 
 [capabilities]

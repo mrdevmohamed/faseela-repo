@@ -5,10 +5,14 @@
 # --no-build-isolation` with the repo's setuptools (84.2.1) and pip (26.3)
 # recipes, verified empirically to build a wheel with no wheel package
 # installed. --no-index/--no-cache-dir keep the build offline.
+# pip writes direct_url.json into the dist-info recording the build
+# source path (/build/src); nawa lint errors on sandbox paths in the
+# archive, so it is deleted after install (PR #237 wave 2, run
+# 46126068976: "direct_url.json: contains the sandbox path /build/src").
 [package]
 name = "psutil"
 version = "7.2.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Cross-platform library for process and system monitoring"
 license = ["BSD-3-Clause"]
@@ -36,4 +40,5 @@ replaces = []
 install = '''
 python3 -m pip install --no-build-isolation --no-deps --no-index --no-cache-dir --disable-pip-version-check --prefix=/usr --root=%{pkgdir} .
 find %{pkgdir} -name __pycache__ -prune -exec rm -rf {} +
+find %{pkgdir} -name direct_url.json -delete
 '''

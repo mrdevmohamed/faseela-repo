@@ -9,10 +9,14 @@
 # `python3 setup.py install` also runs, but it lands in /usr/local on
 # Debian-style sysconfig layouts instead of respecting --prefix, so pip is
 # the reliable path. --no-index/--no-cache-dir keep the build offline.
+# pip writes direct_url.json into the dist-info recording the build
+# source path (/build/src); nawa lint errors on sandbox paths in the
+# archive, so it is deleted after install (PR #237 wave 2, run
+# 46126068976: "direct_url.json: contains the sandbox path /build/src").
 [package]
 name = "setproctitle"
 version = "1.3.8"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Set the process title from Python"
 license = ["BSD-3-Clause"]
@@ -40,4 +44,5 @@ replaces = []
 install = '''
 python3 -m pip install --no-build-isolation --no-deps --no-index --no-cache-dir --disable-pip-version-check --prefix=/usr --root=%{pkgdir} .
 find %{pkgdir} -name __pycache__ -prune -exec rm -rf {} +
+find %{pkgdir} -name direct_url.json -delete
 '''

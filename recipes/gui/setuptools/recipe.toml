@@ -4,7 +4,7 @@
 [package]
 name = "setuptools"
 version = "84.2.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Python packaging and distribution tools (pure python)"
 license = ["MIT"]
@@ -32,9 +32,18 @@ replaces = []
 install = '''
 # The standalone top-level pkg_resources package was removed upstream in
 # setuptools 81, so only setuptools/ and _distutils_hack/ are installed.
+# The distutils-precedence.pth is also required: it is what activates
+# _distutils_hack at interpreter startup, so that `import distutils`
+# resolves to setuptools' bundled distutils. Without it, g-ir-scanner
+# (gobject-introspection) fails on Python 3.13 with
+# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1),
+# and pip builds with --no-build-isolation fail too ("invalid command
+# 'dist_info'", psutil/setproctitle, PR #237 wave 2). The .pth contents
+# are upstream setuptools' own install_with_pth text.
 site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
 install -d "%{pkgdir}$site"
 cp -r setuptools "%{pkgdir}$site/"
 cp -r _distutils_hack "%{pkgdir}$site/"
+printf '%s\n' "import os; var = 'SETUPTOOLS_USE_DISTUTILS'; enabled = os.environ.get(var, 'local') == 'local'; enabled and __import__('_distutils_hack').add_shim()" > "%{pkgdir}$site/distutils-precedence.pth"
 find "%{pkgdir}$site/setuptools" "%{pkgdir}$site/_distutils_hack" -name __pycache__ -prune -exec rm -rf {} +
 '''

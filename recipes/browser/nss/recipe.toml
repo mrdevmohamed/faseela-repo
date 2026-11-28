@@ -3,7 +3,7 @@
 [package]
 name = "nss"
 version = "3.133"
-rel = 4
+rel = 5
 arch = ["x86_64"]
 summary = "Mozilla Network Security Services libraries"
 license = ["MPL-2.0"]
@@ -79,4 +79,22 @@ if [ ! -e "%{pkgdir}/usr/lib/libnss3.so" ]; then
     ls -la "%{pkgdir}/usr/lib" >&2
     exit 1
 fi
+
+# NSS's build installs no .pc file, but poppler's CMake finds NSS3 through
+# pkg-config ("Package 'nss' not found", PR #237 wave 1), so write one
+# (same pattern as the lua recipe).
+install -d "%{pkgdir}/usr/lib/pkgconfig"
+cat > "%{pkgdir}/usr/lib/pkgconfig/nss.pc" <<'PC'
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/nss
+
+Name: NSS
+Description: Network Security Services
+Version: %{version}
+Requires: nspr
+Libs: -L${libdir} -lnss3 -lnssutil -lsmime3 -lssl3
+Cflags: -I${includedir}
+PC
 """

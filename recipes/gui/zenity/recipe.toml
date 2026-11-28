@@ -1,0 +1,48 @@
+# gui recipe: zenity — Display GTK dialog boxes from the command line and shell scripts
+#
+# zenity 4.x needs gtk4 + libadwaita, which the repo does not have yet, so
+# this is the last GTK3-based release (3.44.6). Its meson.build only needs
+# gtk+-3.0 >= 3.16 and glib-2.0 >= 2.43.4; libnotify and webkitgtk are
+# optional and default to off, and are kept off here.
+#
+# The help/ subdir is patched out (see patches/0001-Drop-help-subdir.patch):
+# it calls gnome.yelp(), which needs yelp-build from yelp-tools, and the
+# repo has no yelp-tools recipe. The help pages are documentation only;
+# skipping them matches how other recipes disable docs.
+[package]
+name = "zenity"
+version = "3.44.6"
+rel = 2
+arch = ["x86_64"]
+summary = "Display GTK dialog boxes from the command line and shell scripts"
+license = ["LGPL-2.1-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "zenity"
+url = "https://download.gnome.org/sources/zenity/3.44/zenity-%{version}.tar.xz"
+sha256 = "cb8f5ead7d72fb180865f41563acab99b0eca5a4a3f37df66ebfc0c5a0cbbc22"
+strip_components = 1
+
+[depends]
+build = ["gtk3", "glib", "gettext", "libX11", "perl"]
+run = ["gtk3", "glib", "libX11"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[assets]
+include = ["patches/0001-Drop-help-subdir.patch"]
+
+[build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/0001-Drop-help-subdir.patch
+'''
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -Dlibnotify=false -Dwebkitgtk=false"
+compile = "ninja -C build"
+install = "DESTDIR=%{pkgdir} meson install -C build"

@@ -1,0 +1,58 @@
+# toolchain recipe: cargo-cbuild — Cargo subcommand to build and install C-ABI libraries
+#
+# librsvg's meson.build requires cargo-cbuild >= 0.10.10 (find_program
+# 'cargo-cbuild'). The crate itself is named `cargo-c` on crates.io; the
+# binary it ships is cargo-cbuild (plus cargo-capi, cargo-cinstall,
+# cargo-ctest), which is what cargo looks for as a subcommand.
+#
+# Version pin: cargo-c versions track the cargo library API
+# (0.10.22+cargo-0.96.0 needs cargo 0.96.0), and the repo's rust is 1.96.1
+# (cargo 1.96.0), so 0.10.22 is the matching release. The `+` is valid
+# semver build metadata and the crates.io download endpoint accepts it
+# literally (verified by download).
+#
+# BUILD GAP (honest): the `cargo` library crate pulls in libgit2-sys and
+# libssh2-sys, which link system libgit2/libssh2 via pkg-config (the
+# vendored features are opt-in and cargo does not enable them). The repo
+# has neither recipe yet, so this package cannot link until libgit2 and
+# libssh2 recipes are added. The recipe itself is complete and correct;
+# the missing native libs are the only blocker.
+[package]
+name = "cargo-cbuild"
+version = "0.10.22+cargo-0.96.0"
+rel = 2
+arch = ["x86_64"]
+summary = "Cargo subcommand to build and install C-ABI compatible libraries"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+workdir = "."
+
+[[package.sources]]
+name = "cargo-c"
+url = "https://crates.io/api/v1/crates/cargo-c/%{version}/download"
+sha256 = "608749b7bc6c26638c676215e35603a8eeff40d87feb7d65375b0445a110a1c8"
+into = "."
+strip_components = 1
+
+[depends]
+build = ["rust", "openssl", "curl", "zlib", "libgit2", "libssh2"]
+run = ["glibc", "openssl", "curl", "zlib", "libgit2", "libssh2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[fetch.cargo]
+dir = "."
+
+[build]
+compile = "cargo build --release --locked --offline"
+install = '''install -Dm0755 target/release/cargo-cbuild "%{pkgdir}/usr/bin/cargo-cbuild"
+install -Dm0755 target/release/cargo-capi "%{pkgdir}/usr/bin/cargo-capi"
+install -Dm0755 target/release/cargo-cinstall "%{pkgdir}/usr/bin/cargo-cinstall"
+install -Dm0755 target/release/cargo-ctest "%{pkgdir}/usr/bin/cargo-ctest"
+'''

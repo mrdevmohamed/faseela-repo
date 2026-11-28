@@ -9,7 +9,7 @@
 [package]
 name = "caja"
 version = "1.28.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE file manager"
 license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
@@ -22,8 +22,10 @@ sha256 = "e82d6eb22a07bd87d9abe801276ca48ac926bc02ea5005bfd65eb022764f9b2e"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info"]
-run = ["glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info"]
+# libnotify: configure requires it ("Package 'libnotify' not found",
+# PR #237 wave 3); caja links it, so it is a run dep too.
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info", "libnotify"]
+run = ["glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info", "libnotify"]
 
 [capabilities]
 provides = []

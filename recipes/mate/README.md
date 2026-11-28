@@ -62,13 +62,12 @@ used for every package here.
   maintained meson build.
 - **caja has no `--disable-introspection` flag** in 1.28.1; the check is
   non-fatal and stays off on its own.
-- **mate-control-center is NOT included (blocked).** It needs an
+- **mate-control-center 1.28.2 is included.** It needs an
   AppIndicator library (`appindicator3-0.1` or
-  `ayatana-appindicator3-0.1`); its `meson.build` errors when neither is
-  present and offers no disable switch, and no `libappindicator` recipe
-  exists on this branch yet. It also needs `marco` (libmarco-private).
-  Add it — and add it back to `mate-session`'s run list — once
-  `libappindicator` lands.
+  `ayatana-appindicator3-0.1`); its meson option
+  `-Dlibappindicator=appindicator` is used now that `libappindicator`
+  is packaged (recipes/unity/), together with
+  `-Daccountsservice=enabled`. It also needs `marco` (libmarco-private).
 - **Disabled for missing recipes:** eom XMP (no exempi), pluma spell
   checking (no enchant), mate-settings-daemon smartcard support (no NSS
   use), atril djvu/dvi/XPS/PostScript backends (no libspectre, djvulibre,

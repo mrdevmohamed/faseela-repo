@@ -1,9 +1,12 @@
 # unity recipe: indicator-appmenu — global-menu panel indicator
 # Source: Ubuntu's native source tarball (no separate orig/patches).
+# Build dep libxslt: src/Makefile.am runs $(XSLT_PROC) (xsltproc) to strip
+# namespaces from the D-Bus XML before gdbus-codegen; without it XSLT_PROC
+# is empty and the shell tries to execute clean-namespaces.xslt itself.
 [package]
 name = "indicator-appmenu"
 version = "15.02.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Panel indicator that shows the focused application's menu"
 license = ["GPL-3.0-only"]
@@ -16,7 +19,7 @@ sha256 = "a92e68e17bd36cd676c11a68ce9f964f3f5fb9434b710f5bcf301d70f7ad0afc"
 strip_components = 1
 
 [depends]
-build = ["pkgconf", "glib", "gtk3", "libindicator", "libappindicator", "libdbusmenu", "bamf", "indicator-application", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext"]
+build = ["pkgconf", "glib", "gtk3", "libindicator", "libappindicator", "libdbusmenu", "bamf", "indicator-application", "gnome-common", "unity-build-shims", "intltool", "autoconf", "automake", "libtool", "gettext", "libxslt"]
 run = ["glib", "gtk3", "libindicator", "libdbusmenu", "bamf", "indicator-application"]
 
 [capabilities]

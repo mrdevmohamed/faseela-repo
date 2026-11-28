@@ -15,7 +15,7 @@
 [package]
 name = "indicator-power"
 version = "12.10.6"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity power indicator service"
 license = ["GPL-3.0-only"]
@@ -51,7 +51,7 @@ prepare = '''set -eu
 patch -p1 < %{assetsdir}/patches/ubuntu-resolute.patch
 patch -p1 < %{assetsdir}/patches/faseela.patch
 '''
-configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release"
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 compile = "cmake --build build -j%{jobs}"
 install = '''
 DESTDIR=%{pkgdir} cmake --install build

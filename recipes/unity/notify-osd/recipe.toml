@@ -12,10 +12,12 @@
 # it is kept so D-Bus activation works — session wiring is the flavor's job).
 # The daemon binary installs to /usr/libexec/notify-osd (upstream
 # libexecdir default; the .service Exec= matches).
+# patches/faseela.patch: GType locals initialised with 0, not NULL (GCC 14
+# -Wint-conversion is an error by default and -Wno-error does not downgrade it).
 [package]
 name = "notify-osd"
 version = "0.9.35"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Unity notification daemon"
 license = ["GPL-3.0-only"]
@@ -39,7 +41,13 @@ schema = 1
 conflicts = []
 replaces = []
 
+[assets]
+include = ["patches/faseela.patch"]
+
 [build]
+prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/faseela.patch
+'''
 configure = '''export CFLAGS="-O2 -std=gnu17 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types -Wno-error=return-mismatch"
 autoreconf -fi
 ./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --disable-static

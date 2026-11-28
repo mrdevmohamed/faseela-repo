@@ -17,7 +17,7 @@
 [package]
 name = "unity-lens-video"
 version = "0.3.15+16.04.20160212.1"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity video lens (local only)"
 license = ["GPL-3.0-only"]

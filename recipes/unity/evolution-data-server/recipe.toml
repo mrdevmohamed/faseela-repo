@@ -26,7 +26,7 @@
 [package]
 name = "evolution-data-server"
 version = "3.56.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "GNOME data server: calendar/address-book libraries and daemons"
 license = ["LGPL-2.1-or-later"]
@@ -62,7 +62,7 @@ test -e %{pkgdir}/usr/lib/pkgconfig/libedataserver-1.2.pc
 test -x %{pkgdir}/usr/libexec/evolution-source-registry
 test -x %{pkgdir}/usr/libexec/evolution-calendar-factory
 test -x %{pkgdir}/usr/libexec/evolution-addressbook-factory
-test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Sources.service
-test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Calendar.service
-test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.AddressBook.service
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Sources5.service
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.Calendar8.service
+test -e %{pkgdir}/usr/share/dbus-1/services/org.gnome.evolution.dataserver.AddressBook10.service
 '''

@@ -4,7 +4,7 @@
 [package]
 name = "unity-settings-daemon"
 version = "26.10.2"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Settings daemon of the Unity 7 session (keyboard, media keys, power, sound, xsettings, background...)"
 license = ["GPL-2.0-or-later"]
@@ -29,7 +29,7 @@ conflicts = []
 replaces = []
 
 [assets]
-include = ["patches/no-wacom.patch"]
+include = ["patches/no-wacom.patch", "patches/no-act-input-sources.patch"]
 
 [hooks]
 post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
@@ -38,6 +38,7 @@ post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
 [build]
 prepare = '''set -eu
 patch -p1 < %{assetsdir}/patches/no-wacom.patch
+patch -p1 < %{assetsdir}/patches/no-act-input-sources.patch
 cp /usr/lib/unity-build-shims/gtk-doc.make . 2>/dev/null || true
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"

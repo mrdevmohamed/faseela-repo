@@ -7,7 +7,9 @@
 # local files + thumbnails) is untouched and needs neither libsoup nor
 # json-glib — json-glib was used ONLY by the remote scope. This patch:
 # - configure.ac: drop libsoup-gnome-2.4 and json-glib-1.0 from the
-#   SCOPE_DAEMON PKG check (zeitgeist-1.0, dee, gee, unity stay);
+#   SCOPE_DAEMON PKG check (zeitgeist-1.0, dee, gee, unity stay), and
+#   drop data/remote.scope.in from AC_CONFIG_FILES (the file is deleted
+#   by the recipe's prepare step, so autoreconf would fail without this);
 # - src/Makefile.am: remove unity-scope-video-remote from
 #   pkglibexec_PROGRAMS and delete its CPPFLAGS/VALAFLAGS/LDADD/
 #   VALASOURCES/SOURCES blocks, its .vala.stamp rule and all references
@@ -25,6 +27,15 @@
 -                  libsoup-gnome-2.4
 -                  json-glib-1.0
                    zeitgeist-1.0 >= 0.3.8
+@@ -174,8 +174,7 @@
+ AC_CONFIG_FILES([
+   Makefile
+   data/Makefile
+   data/local.scope.in
+-  data/remote.scope.in
+   src/Makefile
+   po/Makefile.in
+   src/config.vala
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -12,4 +12,3 @@

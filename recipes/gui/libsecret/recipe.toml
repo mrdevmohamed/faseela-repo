@@ -4,7 +4,7 @@
 [package]
 name = "libsecret"
 version = "0.20.5"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Library for accessing the Secret Service API"
 license = ["LGPL-2.1-or-later"]
@@ -17,7 +17,11 @@ sha256 = "3fb3ce340fcd7db54d87c893e69bfc2b1f6e4d4b279065ffe66dac9f0fd12b4d"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "libgcrypt", "gobject-introspection", "glib-gir"]
+# setuptools: g-ir-scanner imports distutils (removed in Python 3.13);
+# the distutils-precedence.pth shim only activates if setuptools is
+# installed in this package's build root, so it must be a build dep
+# (PR #239: glib-gir failed with "No module named 'distutils'").
+build = ["meson", "ninja", "pkgconf", "glib", "libgcrypt", "gobject-introspection", "glib-gir", "setuptools"]
 run = ["glib", "glib-gir", "libgcrypt"]
 
 [capabilities]

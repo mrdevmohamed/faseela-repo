@@ -11,6 +11,10 @@
 # /usr/share/glib-2.0/schemas, which fails read-only inside nawa's sandbox
 # — now it compiles "$ENV{DESTDIR}/usr/share/glib-2.0/schemas", verified
 # locally with a DESTDIR install test; rel 5, wave-5 fix, run 46127973592).
+# rel 6: the install test asserted the sound file as .../sounds/Low — the
+# real file is "Low battery.ogg" (with a space), so the unquoted test -e
+# failed silently right after cmake --install succeeded (run 46137154588,
+# wave 5, install exit status 1 with no diagnostic). Quote the full name.
 # Build-time absolute-path note: src/CMakeLists.txt runs gdbus-codegen on
 # the literal path /usr/share/accountsservice/interfaces/
 # com.ubuntu.touch.AccountsService.Sound.xml, which is installed by the
@@ -20,7 +24,7 @@
 [package]
 name = "indicator-power"
 version = "12.10.6"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "Unity power indicator service"
 license = ["GPL-3.0-only"]
@@ -66,5 +70,5 @@ test -x %{pkgdir}/usr/lib/indicator-power/indicator-power-service
 test -e %{pkgdir}/usr/share/unity/indicators/com.canonical.indicator.power
 test -e %{pkgdir}/usr/lib/systemd/user/indicator-power.service
 test -e %{pkgdir}/usr/share/glib-2.0/schemas/com.canonical.indicator.power.gschema.xml
-test -e %{pkgdir}/usr/share/indicator-power/sounds/Low
+test -e "%{pkgdir}/usr/share/indicator-power/sounds/Low battery.ogg"
 '''

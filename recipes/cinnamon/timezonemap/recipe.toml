@@ -5,10 +5,18 @@
 # autoreconf; the version is taken from the tarball name, 0.4.6.
 # The Debian patches are vendored under patches/ (see recipes/unity/glewmx
 # for the same pattern) and applied in series order.
+# unity-build-shims is a build dep: configure.ac calls
+# GOBJECT_INTROSPECTION_CHECK, but src/Makefile.am's `if HAVE_INTROSPECTION`
+# only resolves when aclocal finds introspection.m4 — and the shims package
+# owns /usr/share/aclocal/introspection.m4 (gobject-introspection drops its
+# own copy at install). Without the shims dep, autoreconf fails with
+# "HAVE_INTROSPECTION does not appear in AM_CONDITIONAL" (PR #241 wave 2,
+# run 46126226861). Same dep as ido, the only other autoreconf-time macro
+# consumer.
 [package]
 name = "timezonemap"
 version = "0.4.6"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Timezone map widget library"
 license = ["GPL-2.0-or-later", "GPL-3.0-or-later"]
@@ -21,7 +29,7 @@ sha256 = "0d634cc2476d8f57d1ee1864bd4f442180ae4bf040a9ae4bf73b66bbd85d7195"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "gtk3", "cairo", "libsoup3", "json-glib", "gobject-introspection", "glib-gir"]
+build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "gtk3", "cairo", "libsoup3", "json-glib", "gobject-introspection", "glib-gir", "unity-build-shims"]
 run = ["glib", "glib-gir", "gtk3", "cairo", "libsoup3", "json-glib"]
 
 [capabilities]

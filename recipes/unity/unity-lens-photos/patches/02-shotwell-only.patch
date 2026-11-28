@@ -10,7 +10,10 @@
 # unity-lens-photos.application.in; this patch removes the references to
 # them from setup.py data_files and setup.cfg so the DistUtilsExtra
 # build_i18n step (intltool-merge over the .scope files) only processes
-# shotwell. The Ubuntu NoDisplay patch (01) is separate and kept.
+# shotwell. It also trims po/POTFILES.in to the two surviving files -
+# without that, intltool-update fails at install time because it tries
+# to extract strings from the deleted daemon and .scope.in files.
+# The Ubuntu NoDisplay patch (01) is separate and kept.
 # NOT fixed here (documented in the recipe): the shotwell previewer
 # hardcodes /usr/bin/shotwell, /usr/bin/nautilus and /usr/bin/lpr paths.
 --- a/setup.py
@@ -42,3 +45,16 @@
 -xml_files_no_trans=[("share/accounts/applications", ("unity-lens-photos.application.in",))]
 +desktop_files=[("share/unity/scopes/photos", ("data/shotwell.scope.in",))]
  
+--- a/po/POTFILES.in
++++ b/po/POTFILES.in
+@@ -1,10 +1,3 @@
+ [encoding: UTF-8]
+-src/unity_facebook_daemon.py
+-src/unity_picasa_daemon.py
+ src/unity_shotwell_daemon.py
+-src/unity_flickr_daemon.py
+-[type: gettext/ini]data/flickr.scope.in
+-[type: gettext/ini]data/facebook.scope.in
+ [type: gettext/ini]data/shotwell.scope.in
+-[type: gettext/ini]data/picasa.scope.in
+-[type: gettext/xml]unity-lens-photos.application.in

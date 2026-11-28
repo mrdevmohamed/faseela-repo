@@ -22,7 +22,7 @@
 [package]
 name = "unity-lens-photos"
 version = "1.0+17.10.20170605"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Unity photos lens (Shotwell only)"
 license = ["GPL-3.0-only"]

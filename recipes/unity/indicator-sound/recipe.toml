@@ -13,12 +13,16 @@
 #   hand-written vapi/accounts-service.vapi (Act.UserManager.get_default,
 #   get_user, Act.User.is_loaded, get_object_path — the only Act API the
 #   service uses) is vendored in faseela.patch instead.
+#   CI note (PR #236, run 46120910095): the vapi hunk header in faseela.patch
+#   miscounted its lines (said 20, the file has 24), so patch silently
+#   truncated the file mid-class and valac failed at EOF. Header fixed to 24;
+#   always count hunk lines, never trust a hand-written header.
 # - CMAKE_INSTALL_LOCALSTATEDIR=/var (Debian's /usr/var default is wrong:
 #   the polkit .pkla must land in /var/lib/polkit-1).
 [package]
 name = "indicator-sound"
 version = "12.10.2"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Unity sound indicator service"
 license = ["GPL-3.0-only"]

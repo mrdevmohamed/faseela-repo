@@ -82,7 +82,7 @@
  set(COVERAGE_TARGETS
 --- a/vapi/accounts-service.vapi
 +++ b/vapi/accounts-service.vapi
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,24 @@
 +/* Minimal hand-written VAPI for libaccountsservice (Act namespace).
 + *
 + * indicator-sound only uses Act.UserManager.get_default(), get_user(),

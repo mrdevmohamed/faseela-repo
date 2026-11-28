@@ -15,7 +15,7 @@
 [package]
 name = "indicator-power"
 version = "12.10.6"
-rel = 3
+rel = 4
 arch = ["x86_64"]
 summary = "Unity power indicator service"
 license = ["GPL-3.0-only"]
@@ -40,7 +40,7 @@ conflicts = []
 replaces = []
 
 [assets]
-include = ["patches/ubuntu-resolute.patch", "patches/faseela.patch"]
+include = ["patches/ubuntu-resolute.patch", "patches/faseela.patch", "patches/gobject-ref-cast.patch"]
 
 [hooks]
 post_install = "glib-compile-schemas /usr/share/glib-2.0/schemas"
@@ -50,6 +50,7 @@ post_remove = "glib-compile-schemas /usr/share/glib-2.0/schemas"
 prepare = '''set -eu
 patch -p1 < %{assetsdir}/patches/ubuntu-resolute.patch
 patch -p1 < %{assetsdir}/patches/faseela.patch
+patch -p1 < %{assetsdir}/patches/gobject-ref-cast.patch
 '''
 configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_LIBEXECDIR=lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 compile = "cmake --build build -j%{jobs}"

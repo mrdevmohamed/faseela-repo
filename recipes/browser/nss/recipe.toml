@@ -1,9 +1,14 @@
 # browser recipe: NSS — Mozilla Network Security Services.
 # Built against Faseela's NSPR, SQLite and zlib instead of bundling them.
+# The hand-written nss.pc below promises -lnssutil, but NSS's build only
+# ships the versioned libnssutil3.so — unlike libnss3/libsmime3/libssl3,
+# which exist as real files, there is no unversioned libnssutil.so linker
+# name, so consumers fail with "cannot find -lnssutil" (poppler, PR #237
+# wave 2, run 46126068976). The install step below creates that symlink.
 [package]
 name = "nss"
 version = "3.133"
-rel = 5
+rel = 6
 arch = ["x86_64"]
 summary = "Mozilla Network Security Services libraries"
 license = ["MPL-2.0"]
@@ -67,6 +72,10 @@ done
 install -d "%{pkgdir}/usr/lib" "%{pkgdir}/usr/include/nss" "%{pkgdir}/usr/bin"
 cp -RL "$dist/public/nss/." "%{pkgdir}/usr/include/nss/"
 cp -aL "$objdir"/lib/*.so* "%{pkgdir}/usr/lib/"
+# NSS ships only the versioned libnssutil3.so, but the hand-written nss.pc
+# below promises -lnssutil — create the unversioned linker name so
+# consumers can link (poppler link failure, PR #237 wave 2, run 46126068976).
+ln -sf libnssutil3.so "%{pkgdir}/usr/lib/libnssutil.so"
 find "$objdir/lib" -maxdepth 1 -type f -name '*.chk' -exec cp -a '{}' "%{pkgdir}/usr/lib/" ';'
 for tool in certutil modutil pk12util; do
     if [ -x "$objdir/bin/$tool" ]; then
@@ -76,6 +85,18 @@ done
 
 if [ ! -e "%{pkgdir}/usr/lib/libnss3.so" ]; then
     echo "nss: libnss3.so was not staged in %{pkgdir}/usr/lib" >&2
+    ls -la "%{pkgdir}/usr/lib" >&2
+    exit 1
+fi
+
+# NSS ships no unversioned libnssutil.so, but nss.pc promises -lnssutil
+# (see header comment): create the linker name pointing at the versioned
+# library, and fail loudly if the versioned library is ever absent.
+if [ -e "%{pkgdir}/usr/lib/libnssutil3.so" ]; then
+    ln -sf libnssutil3.so "%{pkgdir}/usr/lib/libnssutil.so"
+fi
+if [ ! -e "%{pkgdir}/usr/lib/libnssutil.so" ]; then
+    echo "nss: libnssutil.so could not be staged in %{pkgdir}/usr/lib" >&2
     ls -la "%{pkgdir}/usr/lib" >&2
     exit 1
 fi

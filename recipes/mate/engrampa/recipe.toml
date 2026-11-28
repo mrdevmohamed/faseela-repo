@@ -5,10 +5,13 @@
 # archive tools and does not link libarchive (no libarchive reference in
 # configure.ac or the sources), so no libarchive dependency is listed.
 # The Caja extension stays on (caja is built in this same category).
+# itstool is a hard configure requirement ("configure: error: itstool
+# not found") — PR #237 wave 4, run 46126068976; same missing-dep class
+# as mate-panel (87d155e).
 [package]
 name = "engrampa"
 version = "1.28.5"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "MATE archive manager"
 license = ["GPL-2.0-or-later"]
@@ -21,7 +24,7 @@ sha256 = "38df10e6b0d7e54adc9b03d707518544871535669267b4d39d85d1ed985dd013"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "libSM", "libICE", "caja", "json-glib", "mate-common"]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "libSM", "libICE", "caja", "json-glib", "mate-common", "itstool"]
 run = ["glib", "gtk3", "libSM", "libICE", "caja", "json-glib"]
 
 [capabilities]

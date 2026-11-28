@@ -3,7 +3,7 @@
 [package]
 name = "bamf"
 version = "0.5.6"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "Bamf: application-matching framework for Unity"
 license = ["LGPL-3.0-only", "GPL-3.0-only"]
@@ -29,6 +29,7 @@ replaces = []
 
 [build]
 prepare = '''set -eu
+patch -p1 < %{assetsdir}/patches/no-lxml-check.patch
 cp /usr/lib/unity-build-shims/gtk-doc.make .
 '''
 configure = '''export CFLAGS="-O2 -Wno-error -Wno-deprecated-declarations -Wno-incompatible-pointer-types"

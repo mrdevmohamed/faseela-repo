@@ -15,7 +15,7 @@ sha256 = "31f07d9350dad3f8964fd613c31309ac160fdef13dfac59df6fd082de78d6e8f"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "rust", "cairo", "glib", "gdk-pixbuf", "pango", "libxml2", "freetype", "fontconfig"]
+build = ["meson", "ninja", "pkgconf", "rust", "cargo-cbuild", "cairo", "glib", "gdk-pixbuf", "pango", "libxml2", "freetype", "fontconfig"]
 run = ["cairo", "glib", "gdk-pixbuf", "pango", "libxml2", "freetype", "fontconfig"]
 
 [capabilities]

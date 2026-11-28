@@ -36,8 +36,10 @@ install = '''
 # _distutils_hack at interpreter startup, so that `import distutils`
 # resolves to setuptools' bundled distutils. Without it, g-ir-scanner
 # (gobject-introspection) fails on Python 3.13 with
-# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1).
-# The .pth contents are upstream setuptools' own install_with_pth text.
+# "ModuleNotFoundError: No module named 'distutils'" (PR #239 wave 1),
+# and pip builds with --no-build-isolation fail too ("invalid command
+# 'dist_info'", psutil/setproctitle, PR #237 wave 2). The .pth contents
+# are upstream setuptools' own install_with_pth text.
 site=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
 install -d "%{pkgdir}$site"
 cp -r setuptools "%{pkgdir}$site/"

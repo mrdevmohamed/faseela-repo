@@ -1,0 +1,44 @@
+# dev recipe: itstool — ITS-based XML translation tool
+#
+# Used at build time by mate-terminal and mate-power-manager to merge
+# translations into XML files. It is a Python script (bin_SCRIPTS) plus
+# ITS rule files under /usr/share/itstool/its.
+#
+# BUILD GAP (honest): configure.ac hard-errors unless the Python libxml2
+# module is importable (`echo "import libxml2" | $PYTHON -`), and the repo
+# has no python-libxml2: libxml2 is built --without-python and no recipe
+# ships the module. This recipe is complete and correct, but it cannot
+# configure until a python-libxml2 package exists (new recipe, or
+# rebuilding libxml2 --with-python). The gap is a missing recipe, not a
+# defect in this one.
+[package]
+name = "itstool"
+version = "2.0.7"
+rel = 2
+arch = ["x86_64"]
+summary = "ITS-based XML translation tool"
+license = ["GPL-3.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "itstool"
+url = "https://files.itstool.org/itstool/itstool-%{version}.tar.bz2"
+sha256 = "6b9a7cd29a12bb95598f5750e8763cee78836a1a207f85b74d8b3275b27e87ca"
+strip_components = 1
+
+[depends]
+build = ["libxml2", "python-libxml2"]
+run = ["python", "libxml2", "python-libxml2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

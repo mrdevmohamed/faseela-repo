@@ -19,7 +19,7 @@ sha256 = "8ebdcb74b607e868336ba9a8146cdef8f97bce535c2b0cb3bf650c58f71eee21"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "libXext", "libXrandr", "xorgproto", "dbus", "dbus-glib", "libnotify", "libcanberra", "upower", "libsecret", "mate-desktop"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "libXext", "libXrandr", "xorgproto", "dbus", "dbus-glib", "libnotify", "libcanberra", "upower", "libsecret", "mate-desktop", "itstool"]
 run = ["glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "libXext", "libXrandr", "dbus", "dbus-glib", "libnotify", "libcanberra", "upower", "libsecret", "mate-desktop"]
 
 [capabilities]

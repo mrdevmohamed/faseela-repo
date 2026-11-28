@@ -1,0 +1,48 @@
+# system recipe: libgit2 — A linkable library for Git
+#
+# Needed by cargo-cbuild: its libgit2-sys 0.18.3+1.9.2 crate locates the
+# system libgit2 via pkg-config and requires >= 1.9.0 and < 1.10.0, so
+# 1.9.7 fits. The CMake build generates libgit2.pc (cmake/PkgBuildConfig,
+# called from src/libgit2/CMakeLists.txt) and installs it to
+# /usr/lib/pkgconfig — that file is what libgit2-sys actually consumes.
+#
+# Flags: USE_SSH=libssh2 (SSH transport via the repo's libssh2),
+# USE_HTTPS=OpenSSL (the repo's openssl), USE_BUNDLED_ZLIB=OFF (system
+# zlib), USE_GSSAPI=OFF (no Kerberos dep). BUILD_CLI=OFF: the experimental
+# `git2` CLI is not needed by anything; BUILD_TESTS=OFF (Clar suite,
+# needs network fixtures); BUILD_EXAMPLES=OFF. SHA1 defaults to the
+# bundled CollisionDetection implementation and the HTTP parser to the
+# builtin one, so neither needs an extra dep; the regex backend defaults
+# to the system regcomp_l on glibc. There is no BUILD_STATIC_LIBS option
+# in 1.9 — the single target follows BUILD_SHARED_LIBS.
+[package]
+name = "libgit2"
+version = "1.9.7"
+rel = 2
+arch = ["x86_64"]
+summary = "A linkable library for Git"
+license = ["GPL-2.0-only WITH Libgit2-exception"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libgit2"
+url = "https://github.com/libgit2/libgit2/archive/refs/tags/v%{version}.tar.gz"
+sha256 = "1a4fbe7589e814777ae76b64734ad80f4ecad22cd33a22682a2aaea4ae5375e7"
+strip_components = 1
+
+[depends]
+build = ["cmake", "pkgconf", "openssl", "zlib", "libssh2"]
+run = ["openssl", "zlib", "libssh2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=OFF -DBUILD_CLI=OFF -DBUILD_EXAMPLES=OFF -DUSE_SSH=libssh2 -DUSE_HTTPS=OpenSSL -DUSE_BUNDLED_ZLIB=OFF -DUSE_GSSAPI=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

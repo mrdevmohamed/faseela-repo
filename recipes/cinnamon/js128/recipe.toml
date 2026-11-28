@@ -19,12 +19,17 @@
 [package]
 name = "js128"
 version = "128.14.0"
-rel = 2
+rel = 3
 arch = ["x86_64"]
 summary = "SpiderMonkey JavaScript engine (Firefox 128 ESR)"
 license = ["MPL-2.0"]
 source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
-workdir = "firefox-128.14.0"
+
+# NOTE: no workdir — strip_components = 1 strips the tarball's top
+# directory, so the staged workspace IS the Firefox tree root (js/,
+# browser/, ...). The old workdir = "firefox-128.14.0" named the stripped
+# top directory, so nawa failed with "workdir does not exist" (PR #237
+# wave 1). The build steps below already run relative to the tree root.
 
 [[package.sources]]
 name = "firefox-esr-source"

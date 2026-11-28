@@ -23,8 +23,8 @@ strip_components = 1
 [depends]
 # pygobject: no recipe exists yet; the libxapp build cannot configure
 # with introspection=true without it.
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu", "gobject-introspection", "pygobject"]
-run = ["glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu", "gobject-introspection", "glib-gir", "pygobject"]
+run = ["glib", "glib-gir", "gtk3", "gdk-pixbuf", "cairo", "libX11", "gtk-layer-shell", "dbus", "libdbusmenu"]
 
 [capabilities]
 provides = []

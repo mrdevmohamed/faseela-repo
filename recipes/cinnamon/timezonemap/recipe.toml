@@ -21,8 +21,8 @@ sha256 = "0d634cc2476d8f57d1ee1864bd4f442180ae4bf040a9ae4bf73b66bbd85d7195"
 strip_components = 1
 
 [depends]
-build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "gtk3", "cairo", "libsoup3", "json-glib", "gobject-introspection"]
-run = ["glib", "gtk3", "cairo", "libsoup3", "json-glib"]
+build = ["autoconf", "automake", "libtool", "pkgconf", "glib", "gtk3", "cairo", "libsoup3", "json-glib", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "gtk3", "cairo", "libsoup3", "json-glib"]
 
 [capabilities]
 provides = []

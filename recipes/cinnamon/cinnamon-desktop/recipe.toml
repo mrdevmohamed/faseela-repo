@@ -20,8 +20,8 @@ strip_components = 1
 
 [depends]
 # systemd covers libsystemd and libudev.
-build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd", "gobject-introspection"]
-run = ["glib", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd"]
+build = ["meson", "ninja", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "gtk3", "gdk-pixbuf", "libX11", "libXext", "libXrandr", "libxkbfile", "xkeyboard-config", "iso-codes", "systemd"]
 
 [capabilities]
 provides = []

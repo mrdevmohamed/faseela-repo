@@ -22,11 +22,11 @@ sha256 = "62fe4a47f727fda66b4f38a83d21b23a7ccb9f2af169a5f8e7c0b4258131d6bf"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "gettext", "cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "gtk3", "gcr", "polkit", "at-spi2-core", "gobject-introspection", "network-manager", "libsecret", "gstreamer", "gst-plugins-base", "libxml2", "dbus", "libX11", "mesa"]
+build = ["meson", "ninja", "pkgconf", "gettext", "cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "gtk3", "gcr", "polkit", "at-spi2-core", "gobject-introspection", "glib-gir", "network-manager", "libsecret", "gstreamer", "gst-plugins-base", "libxml2", "dbus", "libX11", "mesa"]
 # accountsservice: the shell reads user data from it over D-Bus at runtime.
 # pygobject: the Python helpers shipped here (cinnamon-settings,
 # cinnamon-killer-daemon) import gi; no pygobject recipe exists yet.
-run = ["cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "gtk3", "gcr", "polkit", "network-manager", "libsecret", "accountsservice", "keybinder-3.0", "gstreamer", "gst-plugins-base", "python", "pygobject", "dbus", "libxml2", "mesa", "at-spi2-core"]
+run = ["cjs", "muffin", "cinnamon-desktop", "cinnamon-menus", "libxapp", "glib", "glib-gir", "gtk3", "gcr", "polkit", "network-manager", "libsecret", "accountsservice", "keybinder-3.0", "gstreamer", "gst-plugins-base", "python", "pygobject", "dbus", "libxml2", "mesa", "at-spi2-core"]
 
 [capabilities]
 provides = []

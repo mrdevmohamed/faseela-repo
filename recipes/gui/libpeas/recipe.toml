@@ -17,8 +17,8 @@ sha256 = "297cb9c2cccd8e8617623d1a3e8415b4530b8e5a893e3527bbfd1edd13237b4c"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "gobject-introspection"]
-run = ["glib", "gtk3", "gobject-introspection"]
+build = ["meson", "ninja", "pkgconf", "glib", "gtk3", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "gtk3", "gobject-introspection"]
 
 [capabilities]
 provides = []

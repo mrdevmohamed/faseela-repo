@@ -21,8 +21,8 @@ sha256 = "dbe35b951499e1d6f1fb552c2e0a09cea7cba2adf6c2eba0b2c85b6c094a3a02"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "dbus", "libxml2", "gettext", "gobject-introspection"]
-run = ["glib", "dbus", "libxml2"]
+build = ["meson", "ninja", "pkgconf", "glib", "dbus", "libxml2", "gettext", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "dbus", "libxml2"]
 
 [capabilities]
 provides = []

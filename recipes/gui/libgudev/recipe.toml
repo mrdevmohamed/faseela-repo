@@ -16,8 +16,8 @@ sha256 = "61266ab1afc9d73dbc60a8b2af73e99d2fdff47d99544d085760e4fa667b5dd1"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "systemd", "gobject-introspection"]
-run = ["glib", "systemd"]
+build = ["meson", "ninja", "pkgconf", "glib", "systemd", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "systemd"]
 
 [capabilities]
 provides = []

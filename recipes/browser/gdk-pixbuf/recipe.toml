@@ -20,8 +20,8 @@ sha256 = "b9505b3445b9a7e48ced34760c3bcb73e966df3ac94c95a148cb669ab748e3c7"
 strip_components = 1
 
 [depends]
-build = ["meson", "ninja", "pkgconf", "glib", "libpng", "libjpeg-turbo", "gettext", "gobject-introspection"]
-run = ["glib", "libpng", "libjpeg-turbo"]
+build = ["meson", "ninja", "pkgconf", "glib", "libpng", "libjpeg-turbo", "gettext", "gobject-introspection", "glib-gir"]
+run = ["glib", "glib-gir", "libpng", "libjpeg-turbo"]
 
 [capabilities]
 provides = []

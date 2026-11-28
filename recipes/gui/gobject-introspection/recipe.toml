@@ -1,0 +1,44 @@
+# gui recipe: gobject-introspection — Middleware for language bindings of GNOME libraries
+[package]
+name = "gobject-introspection"
+version = "1.82.0"
+rel = 4
+arch = ["x86_64"]
+summary = "Middleware for language bindings of GNOME libraries"
+license = ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "gobject-introspection"
+url = "https://download.gnome.org/sources/gobject-introspection/1.82/gobject-introspection-%{version}.tar.xz"
+sha256 = "0f5a4c1908424bf26bc41e9361168c363685080fbdb87a196c891c8401ca2f09"
+strip_components = 1
+
+[depends]
+# flex + bison: giscanner's meson.build requires both at configure time
+# (find_program('flex'/'bison')); without them the build fails in a shard
+# whose closure does not otherwise provide them (PR #237 wave 2).
+build = ["meson", "ninja", "pkgconf", "python", "glib", "libffi", "cairo", "setuptools", "flex", "bison"]
+run = ["glib", "libffi"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "meson setup build --prefix=/usr --libdir=lib --buildtype=release -D gtk_doc=false -D doctool=disabled -D cairo=enabled -D build_introspection_data=true"
+compile = "ninja -C build"
+install = '''
+DESTDIR=%{pkgdir} meson install -C build
+# /usr/share/aclocal/introspection.m4 is owned by unity-build-shims on this
+# branch (byte-identical to this package's own copy: the shims vendor the
+# real GI 1.82.0 macro). Two packages must not own one path, so drop this
+# copy; the macro still reaches every autotools build through the shims.
+rm -f %{pkgdir}/usr/share/aclocal/introspection.m4
+test -x %{pkgdir}/usr/bin/g-ir-compiler
+test -x %{pkgdir}/usr/bin/g-ir-scanner
+'''

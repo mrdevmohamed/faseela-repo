@@ -1,0 +1,39 @@
+# mate recipe: mate-session-manager — MATE session manager
+# Starts the desktop session and manages logout/reboot. Autotools only.
+# --with-systemd is explicit (default is auto); elogind is not supported
+# here, and the GLESv2 path is off. libcanberra sound events stay on
+# (default auto; the libcanberra recipe is present). xtrans is a hard
+# configure requirement ("Package 'xtrans' not found") — PR #237 wave 4,
+# run 46126068976. Build dep only: xtrans ships headers + .pc, nothing
+# links it at runtime.
+[package]
+name = "mate-session-manager"
+version = "1.28.2"
+rel = 3
+arch = ["x86_64"]
+summary = "MATE session manager: starts the desktop and manages logout"
+license = ["GPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "mate-session-manager"
+url = "https://github.com/mate-desktop/mate-session-manager/releases/download/v%{version}/mate-session-manager-%{version}.tar.xz"
+sha256 = "22eeef743fa0d665f144419857bcac04a6b3bc26da2e7b6e7326253597e0d255"
+strip_components = 1
+
+[depends]
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "dbus-glib", "libX11", "libSM", "libICE", "libXext", "libXau", "libXcomposite", "libepoxy", "mesa", "libcanberra", "systemd", "libXtst", "mate-common", "xtrans"]
+run = ["glib", "gtk3", "dbus-glib", "libX11", "libSM", "libICE", "libXext", "libXau", "libXcomposite", "libepoxy", "mesa", "libcanberra", "systemd", "libXtst", "marco"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --with-default-wm=marco --with-systemd --without-elogind --without-libglesv2"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

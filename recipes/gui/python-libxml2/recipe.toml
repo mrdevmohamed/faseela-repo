@@ -1,0 +1,64 @@
+# gui recipe: python-libxml2 — Python bindings for the libxml2 XML parser
+#
+# Needed by itstool: its configure.ac hard-errors unless `import libxml2`
+# works in Python, and the repo's libxml2 is built --without-python.
+# The bindings live in the libxml2 source tree under python/, so this
+# recipe reuses the exact same tarball as recipes/extra/libxml2 (version
+# 2.9.14, same URL + sha256 — the two recipes track in lockstep) and
+# builds only the python/ subdir.
+#
+# Build approach: pip with --no-build-isolation (setuptools from the
+# repo's setuptools recipe, pip from the repo's pip recipe) — the same
+# pattern as setproctitle, verified against the repo's toolchain.
+# setup.py imports distutils.core, which Python 3.13 no longer ships;
+# the setuptools build dep provides it via the distutils-precedence.pth
+# shim, and setup.py's own `import setuptools` activates that shim.
+# The legacy `setup.py install` path is NOT used: it ignores --prefix
+# on Debian-style sysconfig layouts. libxslt is NOT built: the tarball's
+# python/ dir ships no libxslt stub generator files, and the repo has no
+# libxslt recipe — itstool only needs the libxml2 module.
+# Python 3.13 removed PyEval_CallObject/PyEval_CallMethod; the bindings
+# call them in python/libxml.c, so GCC 14 fails the build with
+# -Wint-conversion errors on the implicit declarations ("assignment to
+# 'PyObject *' from 'int'"). PyObject_CallObject/PyObject_CallMethod are
+# the exact replacements (same signatures). Replaced in prepare (PR #237
+# wave 2, run 46126068976).
+# pip writes direct_url.json into the dist-info recording the build
+# source path (/build/src); nawa lint errors on sandbox paths in the
+# archive, so it is deleted after install (same fix as psutil /
+# setproctitle, PR #237 wave 2, run 46126068976).
+[package]
+name = "python-libxml2"
+version = "2.9.14"
+rel = 3
+arch = ["x86_64"]
+summary = "Python bindings for the libxml2 XML parser"
+license = ["MIT"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "libxml2"
+url = "https://deb.debian.org/debian/pool/main/libx/libxml2/libxml2_2.9.14+dfsg.orig.tar.xz"
+sha256 = "4fe913dec8b1ab89d13b489b419a8203176ea39e931eaa0d25b17eafb9c279e9"
+strip_components = 1
+
+[depends]
+build = ["python", "pip", "setuptools", "libxml2", "zlib"]
+run = ["python", "libxml2", "zlib"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+prepare = "sed -i 's/PyEval_CallObject/PyObject_CallObject/g; s/PyEval_CallMethod/PyObject_CallMethod/g' python/libxml.c"
+
+install = '''
+cd python && python3 -m pip install --no-build-isolation --no-deps --no-index --no-cache-dir --disable-pip-version-check --prefix=/usr --root=%{pkgdir} .
+find %{pkgdir} -name __pycache__ -prune -exec rm -rf {} +
+find %{pkgdir} -name direct_url.json -delete
+'''

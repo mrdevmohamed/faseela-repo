@@ -1,0 +1,41 @@
+# mate recipe: caja — MATE file manager
+# Autotools only: the 1.28.1 tarball ships a prebuilt configure and no
+# meson.build. XMP support is off (no exempi recipe), PackageKit is off,
+# and Wayland support is off (this is the X11 session). There is no
+# --disable-introspection flag in caja's configure.ac; the introspection
+# check is non-fatal and stays off because gobject-introspection is not a
+# declared build dependency, so it is absent from the build root.
+# install time works.
+[package]
+name = "caja"
+version = "1.28.1"
+rel = 3
+arch = ["x86_64"]
+summary = "MATE file manager"
+license = ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "caja"
+url = "https://github.com/mate-desktop/caja/releases/download/v%{version}/caja-%{version}.tar.xz"
+sha256 = "e82d6eb22a07bd87d9abe801276ca48ac926bc02ea5005bfd65eb022764f9b2e"
+strip_components = 1
+
+[depends]
+# libnotify: configure requires it ("Package 'libnotify' not found",
+# PR #237 wave 3); caja links it, so it is a run dep too.
+build = ["autoconf", "automake", "libtool", "pkgconf", "gettext", "glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info", "libnotify"]
+run = ["glib", "gtk3", "gdk-pixbuf", "mate-desktop", "libexif", "libxml2", "libX11", "libSM", "libICE", "shared-mime-info", "libnotify"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var --disable-static --disable-xmp --disable-packagekit --disable-wayland"
+compile = "make -j%{jobs}"
+install = "make DESTDIR=%{pkgdir} install"

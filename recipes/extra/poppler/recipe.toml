@@ -1,0 +1,41 @@
+# extra recipe: poppler — PDF rendering library
+# ENABLE_BOOST=OFF: no boost recipe in the tree; configure hard-errors
+# without it ("Boost recommended for Splash. Use ENABLE_BOOST=OFF to
+# skip.", PR #237 wave 2, run 46113938187).
+# harfbuzz is a real build+run dep: poppler's CMakeLists finds harfbuzz
+# (soft-mandatory — configure hard-errors "Could not find the version of
+# harfbuzz" without it) and libpoppler.so links it. It was missing from
+# the dep lists, so in PR #241 wave 1 (run 46126226861) configure failed
+# with "Package 'harfbuzz' not found"; stage 1 only passed configure by
+# accident (a shard-mate pulled harfbuzz into the shared rootfs).
+[package]
+name = "poppler"
+version = "26.11.0"
+rel = 4
+arch = ["x86_64"]
+summary = "PDF rendering library"
+license = ["GPL-2.0-only"]
+source = "local:/nawa-package-relations-1-requires-a-newer-nawa"
+
+[[package.sources]]
+name = "poppler"
+url = "https://poppler.freedesktop.org/poppler-%{version}.tar.xz"
+sha256 = "41c32680160addf5a8dd7a830e4869c01e9f6bee1abb91e44fabd1ba9d7828fb"
+strip_components = 1
+
+[depends]
+build = ["cmake", "ninja", "pkgconf", "glib", "cairo", "freetype", "fontconfig", "harfbuzz", "libjpeg-turbo", "libpng", "zlib", "curl", "nss", "lcms2"]
+run = ["glib", "cairo", "freetype", "fontconfig", "harfbuzz", "libjpeg-turbo", "libpng", "zlib", "curl", "nss", "lcms2"]
+
+[capabilities]
+provides = []
+
+[relations]
+schema = 1
+conflicts = []
+replaces = []
+
+[build]
+configure = "cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DENABLE_GLIB=ON -DENABLE_QT5=OFF -DENABLE_QT6=OFF -DENABLE_LIBTIFF=OFF -DENABLE_GPGME=OFF -DENABLE_GOBJECT_INTROSPECTION=OFF -DENABLE_NSS3=ON -DENABLE_CPP=ON -DENABLE_UTILS=ON -DENABLE_UNSTABLE_API_ABI_HEADERS=OFF -DBUILD_GTK_TESTS=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_QT5_TESTS=OFF -DBUILD_QT6_TESTS=OFF -DENABLE_ZLIB=ON -DENABLE_LIBCURL=ON -DENABLE_LIBOPENJPEG=OFF -DENABLE_CMS=ON -DENABLE_DCTDECODER=OFF -DENABLE_RELOCATABLE=OFF -DUSE_FIXEDPOINT=OFF -DUSE_FLOAT=ON -DENABLE_BOOST=OFF"
+compile = "cmake --build build -j%{jobs}"
+install = "DESTDIR=%{pkgdir} cmake --install build"

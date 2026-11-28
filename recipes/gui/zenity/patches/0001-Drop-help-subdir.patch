@@ -1,0 +1,10 @@
+--- a/meson.build
++++ b/meson.build
+@@ -108,7 +108,6 @@
+ subdir('src')
+ subdir('data')
+ subdir('po')
+-subdir('help')
+ 
+ gnome.post_install(
+   gtk_update_icon_cache: true,

@@ -1,9 +1,14 @@
 # browser recipe: NSS — Mozilla Network Security Services.
 # Built against Faseela's NSPR, SQLite and zlib instead of bundling them.
+# The hand-written nss.pc below promises -lnssutil, but NSS's build only
+# ships the versioned libnssutil3.so — unlike libnss3/libsmime3/libssl3,
+# which exist as real files, there is no unversioned libnssutil.so linker
+# name, so consumers fail with "cannot find -lnssutil" (poppler, PR #237
+# wave 2, run 46126068976). The install step below creates that symlink.
 [package]
 name = "nss"
 version = "3.133"
-rel = 4
+rel = 6
 arch = ["x86_64"]
 summary = "Mozilla Network Security Services libraries"
 license = ["MPL-2.0"]
@@ -79,4 +84,34 @@ if [ ! -e "%{pkgdir}/usr/lib/libnss3.so" ]; then
     ls -la "%{pkgdir}/usr/lib" >&2
     exit 1
 fi
+
+# NSS ships no unversioned libnssutil.so, but nss.pc promises -lnssutil
+# (see header comment): create the linker name pointing at the versioned
+# library, and fail loudly if the versioned library is ever absent.
+if [ -e "%{pkgdir}/usr/lib/libnssutil3.so" ]; then
+    ln -sf libnssutil3.so "%{pkgdir}/usr/lib/libnssutil.so"
+fi
+if [ ! -e "%{pkgdir}/usr/lib/libnssutil.so" ]; then
+    echo "nss: libnssutil.so could not be staged in %{pkgdir}/usr/lib" >&2
+    ls -la "%{pkgdir}/usr/lib" >&2
+    exit 1
+fi
+
+# NSS's build installs no .pc file, but poppler's CMake finds NSS3 through
+# pkg-config ("Package 'nss' not found", PR #237 wave 1), so write one
+# (same pattern as the lua recipe).
+install -d "%{pkgdir}/usr/lib/pkgconfig"
+cat > "%{pkgdir}/usr/lib/pkgconfig/nss.pc" <<'PC'
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/nss
+
+Name: NSS
+Description: Network Security Services
+Version: %{version}
+Requires: nspr
+Libs: -L${libdir} -lnss3 -lnssutil -lsmime3 -lssl3
+Cflags: -I${includedir}
+PC
 """

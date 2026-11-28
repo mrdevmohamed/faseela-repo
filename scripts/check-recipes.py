@@ -175,6 +175,39 @@ def firmware_split(recs):
     return []
 
 
+def assetsdir_policy(recs):
+    """A recipe that references %{assetsdir} must declare [assets].
+
+    Nawa only materialises the assets snapshot for recipes that declare
+    the table (fetch-phase.md §5.3); without it the build fails at fetch
+    with "recipe uses %{assetsdir} but does not enable it". Also verify
+    every declared include file exists under the recipe directory.
+    """
+    errors = []
+    for name, recipe in recs.items():
+        recipe_path = Path(recipe["_path"])
+        try:
+            source = recipe_path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(f"{recipe_path}: cannot read recipe for assets policy: {error}")
+            continue
+        if "%{assetsdir}" not in source:
+            continue
+        assets = recipe.get("assets")
+        if not isinstance(assets, dict):
+            errors.append(
+                f"{recipe_path}: `{name}` references %{{assetsdir}} but declares "
+                "no [assets] table; add one listing the referenced files"
+            )
+            continue
+        for include in assets.get("include", []):
+            if not (recipe_path.parent / include).is_file():
+                errors.append(
+                    f"{recipe_path}: [assets] lists missing file `{include}`"
+                )
+    return errors
+
+
 def main():
     recs, errors = load()
     placeholders = []
@@ -199,6 +232,7 @@ def main():
                 errors.append(f"{r['_path']}: sha256 is not 64 hex chars")
     errors += firmware_split(recs)
     errors += service_hook_policy(recs)
+    errors += assetsdir_policy(recs)
     if not errors:
         try:
             order(recs, list(recs))

@@ -27,6 +27,9 @@ schema = 1
 conflicts = []
 replaces = []
 
+[assets]
+include = ["patches/no-lxml-check.patch"]
+
 [build]
 prepare = '''set -eu
 patch -p1 < %{assetsdir}/patches/no-lxml-check.patch
